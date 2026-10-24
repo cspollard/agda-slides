@@ -22,7 +22,7 @@ The container free monad is the *concrete presentation*; agda-categories supplie
 
 | Idea | Where in agda-categories |
 | --- | --- |
-| Containers give polynomial endofunctors on setoids | `Categories.Category.Instance.Setoids`, `Categories.Functor` (new: `Slides.Polynomial`) |
+| Containers give polynomial endofunctors on setoids | `Categories.Category.Instance.Setoids`, `Categories.Functor` (new: `Container.Polynomial`) |
 | Container morphisms are natural transformations | `Categories.NaturalTransformation` |
 | Backends are algebras; fold is initiality | `Categories.Category.Construction.F-Algebras`, `Categories.Functor.Algebra`, `Categories.Object.Initial` |
 | Syntax = free monad = left adjoint | `Categories.FreeObjects.Free`, `Categories.Adjoint`, `Categories.Monad` |
@@ -31,7 +31,7 @@ The container free monad is the *concrete presentation*; agda-categories supplie
 | Layout as monoidal structure | `Categories.Category.Monoidal` |
 
 Guiding rules:
-- The categorical layer is **additive**: proofs live in `Slides.Polynomial*`/`Slides.FreeMonad*` modules, interpreters live in `Slides.Backend.*`. A deck must still render while a proof is unfinished.
+- The categorical layer is **additive**: proofs live in generic `Container.*` modules, interpreters live in `Slides.Backend.*`. A deck must still render while a proof is unfinished.
 - Prefer setoid-enriched statements; this avoids function extensionality for equalities on continuations.
 - All modules are `--safe --without-K` (set in `agda-slides.agda-lib`). Only the executable `Main` may use FFI/IO and must opt out explicitly.
 
@@ -40,19 +40,19 @@ Guiding rules:
 ```
 agda-slides.agda-lib      depends: standard-library, agda-categories; flags --safe --without-K
 Makefile                  `make check` typechecks everything under src/
-src/Slides.agda           top-level module / public API
-src/Slides/Polynomial.agda            (Phase 1)
-src/Slides/Polynomial/Morphism.agda   (Phase 1)
-src/Slides/FreeMonad.agda             (Phase 1)
-src/Slides/FreeMonad/Algebraic.agda   (Phase 1)
-src/Slides/Interpret.agda             (Phase 1)
+src/Container/Polynomial.agda            (Phase 1) generic: containers as polynomial functors on Setoids
+src/Container/Polynomial/Morphism.agda   (Phase 1)
+src/Container/FreeMonad.agda             (Phase 1)
+src/Container/FreeMonad/Algebraic.agda   (Phase 1)
+src/Container/Interpret.agda             (Phase 1) fold / fusion
+src/Slides.agda                          slide-specific top-level module / public API
 src/Slides/Core.agda, DSL.agda        (Phase 2: slide containers, smart constructors)
 src/Slides/Backend/*.agda             (Phases 3–4: HTML, reveal.js)
 examples/                             sample decks
 plan/                                 this plan and detailed sub-plans
 ```
 
-`src/Slides/Smoke.agda` only checks that dependencies resolve; delete it when Phase 1 modules import the same things.
+The `Container.*` namespace is deliberately independent of slides: nothing under `src/Container/` may import `Slides.*`, so it could be split out as its own library. `src/Slides/Smoke.agda` only checks that dependencies resolve; delete it when Phase 1 modules import the same things.
 
 ## Phases
 
@@ -128,5 +128,5 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 ## Immediate next steps
 
 1. Commit the scaffold.
-2. Implement `Slides.Polynomial` (Phase 1 step 1) with the agda MCP loop; commit when it typechecks.
-3. Implement `Slides.FreeMonad` (step 3), then `Slides.FreeMonad.Algebraic` (step 4).
+2. Implement `Container.Polynomial` (Phase 1 step 1) with the agda MCP loop; commit when it typechecks.
+3. Implement `Container.FreeMonad` (step 3), then `Container.FreeMonad.Algebraic` (step 4).
