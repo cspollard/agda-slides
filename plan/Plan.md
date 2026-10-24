@@ -141,6 +141,6 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 1. ~~R0 spike~~ — done: a hand-built deck printed by parsnip runs in reveal.js; empty non-void elements must be padded (`plan/HTML.md`).
 2. ~~Sketch `Slides.Core`~~ — done: `Slides.Core` (stratified containers), `Slides.DSL` (`do`-notation), `Slides.Examples.Intro`; nested bodies chosen.
 3. ~~Sum isomorphism and algebra copairing~~ — done (`Container.Sum`).
-4. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (R2).
+4. ~~Bridge lemma~~ — done: `Slides.Backend.XML` proves `XMLEq t u ↔ t ≈ₓ u` (`≈ₓ-from-Eq`, `Eq-from-≈ₓ`); validity evidence is handled by proof irrelevance of `T b`.
 5. Write the reveal.js algebra and driver (R3–R4).
 6. Optionally finish the Eilenberg–Moore comparison.

@@ -81,7 +81,7 @@ Original task:
 - **Entities and names.** Only the five XML entities; write other characters as UTF-8. parsnip names are ASCII `[A-Za-z_:][A-Za-z0-9_:.-]*`, which covers `data-*` and `aria-*`.
 - **Payload type.** parsnip uses `List Char`; slide text is `String` converted one way at the boundary.
 
-### R2 — Carrier and bridge lemmas (`Slides.Backend.XML`)
+### R2 — Carrier and bridge lemmas (`Slides.Backend.XML`) — bridge lemma done, carrier open
 - Carrier: **forest** `T = List XMLDoc` with pointwise `_≈ₓ_` (recommended), or XML trees with holes (`XMLM X`) if Kleisli-style composition proves more natural.
 - Relate `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` with parsnip's `_≈ₓ_` (both require equal shapes with arity transport and pairwise-equal children, so they should be equivalent) so generic fold lemmas apply to parsnip's equality.
 - `wrap : T → XMLDoc` building the page shell.
