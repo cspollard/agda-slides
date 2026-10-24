@@ -32,6 +32,8 @@ check("code highlighted", 'hljs' in dom if "<code" in source else True)
 check("inline markup rendered as mixed content", '<em>' in dom if '<em>' in source else True)
 check("columns laid out side by side",
       'class="columns"' in dom if 'class="columns"' in source else True)
-check("slide background applied", 'slide-background' in dom and '#2a2a40' in dom.replace(' ', '').lower()
-      if 'data-background-color' in source else True)
+colours = re.findall(r'data-background-color="([^"]+)"', source)
+check("slide backgrounds applied",
+      'slide-background' in dom and all(c.lower() in dom.replace(' ', '').lower() for c in colours)
+      if colours else True)
 sys.exit(1 if failures else 0)
