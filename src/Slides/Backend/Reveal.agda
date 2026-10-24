@@ -42,7 +42,9 @@ open import Categories.Functor.Algebra using (F-Algebra)
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
 open import Data.XML.Print using (renderXML)
-open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ)
+open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ; numberⱼ; jsonNumber)
+import Data.Sign.Base as Sign
+import Data.Integer.Base as ℤ
 open import Data.JSON.Print using (renderJSON)
 
 open import Container.Polynomial using (Poly; Poly₀)
@@ -101,6 +103,9 @@ record RevealConfig : Set where
     slideNumber : Bool
     controls    : Bool
     progress    : Bool
+    -- the size reveal.js lays slides out in (it scales to the window)
+    width       : Maybe ℕ
+    height      : Maybe ℕ
 
 defaultConfig : RevealConfig
 defaultConfig = record
@@ -111,6 +116,8 @@ defaultConfig = record
   ; slideNumber = false
   ; controls    = true
   ; progress    = true
+  ; width       = nothing
+  ; height      = nothing
   }
 
 private
@@ -155,7 +162,15 @@ options cfg = objectFromList
   ∷ ("slideNumber" , boolⱼ (RevealConfig.slideNumber cfg))
   ∷ ("controls" , boolⱼ (RevealConfig.controls cfg))
   ∷ ("progress" , boolⱼ (RevealConfig.progress cfg))
-  ∷ [] )
+  ∷ optNat "width" (RevealConfig.width cfg)
+  ++ optNat "height" (RevealConfig.height cfg) )
+  where
+    natⱼ : ℕ → JSON
+    natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
+
+    optNat : String → Maybe ℕ → List (String × JSON)
+    optNat k nothing  = []
+    optNat k (just n) = (k , natⱼ n) ∷ []
 
 -- `init.js`: the options plus the plugins (which are JavaScript values, not
 -- JSON).
