@@ -33,7 +33,7 @@ open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
 open import Slides.Core using ()
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; script; mount)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; script; mount; classed)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -157,6 +157,11 @@ fragmentWith style c = impure (inj₂ (Core.fragment (just style) c) , λ _ → 
 -- Everything after a `pause` in the same body appears step by step.
 pause : Body
 pause = impure (inj₂ Core.pause , λ _ → pure tt)
+
+-- Content in a `<div class=…>`: the hook for a deck's own stylesheet (cards,
+-- callouts, grids).  Several classes are separated by spaces.
+classed : String → Content → Body
+classed cls c = impure (inj₂ (Core.classed cls c) , λ _ → pure tt)
 
 box : Text → Content → Body
 box t c = impure (inj₂ (Core.box t c) , λ _ → pure tt)

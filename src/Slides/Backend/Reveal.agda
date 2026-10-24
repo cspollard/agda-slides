@@ -109,6 +109,9 @@ record RevealConfig : Set where
     height      : Maybe ℕ
     -- JavaScript appended to `init.js`, after `Reveal.initialize`
     scripts     : List String
+    -- extra JavaScript files (paths relative to the page), loaded after the
+    -- reveal.js plugins and before `init.js`
+    scriptFiles : List String
 
 defaultConfig : RevealConfig
 defaultConfig = record
@@ -122,6 +125,7 @@ defaultConfig = record
   ; width       = nothing
   ; height      = nothing
   ; scripts     = []
+  ; scriptFiles = []
   }
 
 private
@@ -151,7 +155,8 @@ page cfg slides =
         ∷ scriptTag (dist ++ˢ "plugin/notes.js")
         ∷ scriptTag (dist ++ˢ "plugin/highlight.js")
         ∷ scriptTag (dist ++ˢ "plugin/math.js")
-        ∷ scriptTag "init.js"
+        ∷ map scriptTag (RevealConfig.scriptFiles cfg)
+        ++ scriptTag "init.js"
         ∷ [] )
     ∷ [] )
   where

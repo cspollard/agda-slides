@@ -2,7 +2,7 @@
 
 A DSL, written in Agda, for scientific slide decks. A deck is a program in the free monad over a container of slide commands. Backends (reveal.js, plain HTML, …) are algebras for the container's polynomial functor, and rendering is the unique fold out of the free algebra. The generic part is proved with [agda-categories](https://github.com/agda/agda-categories); the HTML is printed by [parsnip](https://github.com/cspollard/parsnip) (a submodule) whose XML printer is verified.
 
-Docs: `docs/Authoring.md` (command reference), `plan/Plan.md` (roadmap), `plan/Capabilities.md` (optional features and backends), `Goals.md`.
+Docs: `docs/Authoring.md` (command reference), `docs/PairsDeck.md` (a full example deck with SVG diagrams and animations), `plan/Plan.md` (roadmap), `plan/Capabilities.md` (optional features and backends), `Goals.md`.
 
 ## A first deck
 
@@ -77,7 +77,8 @@ open out/mytalk/index.html
 | Steps | `pause` (everything after appears step by step), explicit `fragment`s with reveal.js styles |
 | Components | title and section slides, decorators, bullet/two-column/table bodies |
 | Backends | reveal.js (themes, size, slide numbers, controls) and standalone HTML (own navigation script and print stylesheet) |
-| JavaScript | `script` (run when its slide is first shown), `mount` (an element to draw into), deck-level `RevealConfig.scripts` |
+| Styling | `classed` (a `<div>` with CSS classes), custom stylesheets through the theme, diagram elements with classes, ids, rounded corners, dashes, opacity, paths |
+| JavaScript | `script` (run when its slide is first shown), `mount` (an element to draw into), deck-level `RevealConfig.scripts`, extra files through `RevealConfig.scriptFiles` |
 | Rewriting | `lowerDeck` with composable lowerings (`stripNotes`, `diagramPlaceholder`), Kleisli composition `_>=>_` |
 | Checks | undeclared figure/citation rejected; `make check-resources` checks figure files exist |
 
@@ -99,6 +100,7 @@ make example talk plain showcase   # render the example decks (REVEAL=… as abo
 make test             # golden-file diffs
 make test-browser     # headless Chrome checks (CHROME=… to override)
 make test-playwright  # drive the showcase deck in a real browser (42+ checks)
+make pairs test-pairs # the "It Just Takes Two" deck and its browser test (docs/PairsDeck.md)
 make test-negative    # decks citing undeclared resources must not typecheck
 make check-resources  # declared figures exist next to the rendered decks
 ```

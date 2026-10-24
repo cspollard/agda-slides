@@ -27,7 +27,7 @@ data Fn : Set where
   sin cos tan exp ln log : Fn
 
 data Rel : Set where
-  eq neq lt gt le ge approx to : Rel
+  eq neq lt gt le ge approx to mid elem : Rel
 
 data Math : Set where
   var       : String → Math              -- an identifier, printed as written
@@ -42,9 +42,15 @@ data Math : Set where
   fn        : Fn → Math → Math           -- \sin\left(…\right)
   sum       : (lower upper body : Math) → Math
   integral  : (lower upper body : Math) → Math
+  prod      : (lower upper body : Math) → Math
   paren     : Math → Math                -- \left( … \right)
   rel       : Rel → Math → Math → Math
   vec hat bar : Math → Math
+  cal bb    : Math → Math                -- \mathcal, \mathbb
+  call      : Math → List Math → Math    -- f\left(a, b\right)
+  tuple     : List Math → Math           -- a, b, c (no brackets)
+  juxt      : Math → Math → Math         -- a b, with a thin space
+  dd        : Math → Math                -- \mathrm{d}x, with a thin space before
   text      : String → Math              -- upright text
   raw       : String → Math              -- LaTeX, verbatim
 
@@ -71,6 +77,7 @@ private
   relSymbol eq = "="; relSymbol neq = "\\neq"; relSymbol lt = "<"
   relSymbol gt = ">"; relSymbol le = "\\leq"; relSymbol ge = "\\geq"
   relSymbol approx = "\\approx"; relSymbol to = "\\to"
+  relSymbol mid = "\\mid"; relSymbol elem = "\\in"
 
   -- Characters that are special in LaTeX text mode.
   escapeChar : Char → String
@@ -92,28 +99,45 @@ private
   grp : String → String
   grp s = "{" ++ˢ s ++ˢ "}"
 
-toLaTeX : Math → String
-toLaTeX (var s)            = s
-toLaTeX (num n)            = show n
-toLaTeX (greek g)          = "\\" ++ˢ greekName g
-toLaTeX (add a b)          = toLaTeX a ++ˢ " + " ++ˢ toLaTeX b
-toLaTeX (sub a b)          = toLaTeX a ++ˢ " - " ++ˢ toLaTeX b
-toLaTeX (mul a b)          = toLaTeX a ++ˢ " \\cdot " ++ˢ toLaTeX b
-toLaTeX (neg a)            = "-" ++ˢ toLaTeX a
-toLaTeX (frac a b)         = "\\frac" ++ˢ grp (toLaTeX a) ++ˢ grp (toLaTeX b)
-toLaTeX (pow a b)          = grp (toLaTeX a) ++ˢ "^" ++ˢ grp (toLaTeX b)
-toLaTeX (idx a b)          = grp (toLaTeX a) ++ˢ "_" ++ˢ grp (toLaTeX b)
-toLaTeX (sqrt a)           = "\\sqrt" ++ˢ grp (toLaTeX a)
-toLaTeX (fn f a)           = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
-toLaTeX (sum l u b)        = "\\sum_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
-toLaTeX (integral l u b)   = "\\int_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
-toLaTeX (paren a)          = "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
-toLaTeX (rel r a b)        = toLaTeX a ++ˢ " " ++ˢ relSymbol r ++ˢ " " ++ˢ toLaTeX b
-toLaTeX (vec a)            = "\\vec" ++ˢ grp (toLaTeX a)
-toLaTeX (hat a)            = "\\hat" ++ˢ grp (toLaTeX a)
-toLaTeX (bar a)            = "\\bar" ++ˢ grp (toLaTeX a)
-toLaTeX (text s)           = "\\text" ++ˢ grp (escape s)
-toLaTeX (raw s)            = s
+commaSep : List String → String
+commaSep []           = ""
+commaSep (x ∷ [])     = x
+commaSep (x ∷ y ∷ xs) = x ++ˢ ", " ++ˢ commaSep (y ∷ xs)
+
+mutual
+  toLaTeXs : List Math → List String
+  toLaTeXs []       = []
+  toLaTeXs (m ∷ ms) = toLaTeX m ∷ toLaTeXs ms
+
+  toLaTeX : Math → String
+  toLaTeX (var s)            = s
+  toLaTeX (num n)            = show n
+  toLaTeX (greek g)          = "\\" ++ˢ greekName g
+  toLaTeX (add a b)          = toLaTeX a ++ˢ " + " ++ˢ toLaTeX b
+  toLaTeX (sub a b)          = toLaTeX a ++ˢ " - " ++ˢ toLaTeX b
+  toLaTeX (mul a b)          = toLaTeX a ++ˢ " \\cdot " ++ˢ toLaTeX b
+  toLaTeX (neg a)            = "-" ++ˢ toLaTeX a
+  toLaTeX (frac a b)         = "\\frac" ++ˢ grp (toLaTeX a) ++ˢ grp (toLaTeX b)
+  toLaTeX (pow a b)          = grp (toLaTeX a) ++ˢ "^" ++ˢ grp (toLaTeX b)
+  toLaTeX (idx a b)          = grp (toLaTeX a) ++ˢ "_" ++ˢ grp (toLaTeX b)
+  toLaTeX (sqrt a)           = "\\sqrt" ++ˢ grp (toLaTeX a)
+  toLaTeX (fn f a)           = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
+  toLaTeX (sum l u b)        = "\\sum_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
+  toLaTeX (integral l u b)   = "\\int_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
+  toLaTeX (prod l u b)       = "\\prod_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
+  toLaTeX (paren a)          = "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
+  toLaTeX (rel r a b)        = toLaTeX a ++ˢ " " ++ˢ relSymbol r ++ˢ " " ++ˢ toLaTeX b
+  toLaTeX (vec a)            = "\\vec" ++ˢ grp (toLaTeX a)
+  toLaTeX (hat a)            = "\\hat" ++ˢ grp (toLaTeX a)
+  toLaTeX (bar a)            = "\\bar" ++ˢ grp (toLaTeX a)
+  toLaTeX (cal a)            = "\\mathcal" ++ˢ grp (toLaTeX a)
+  toLaTeX (bb a)             = "\\mathbb" ++ˢ grp (toLaTeX a)
+  toLaTeX (call f as)         = toLaTeX f ++ˢ "\\left(" ++ˢ commaSep (toLaTeXs as) ++ˢ "\\right)"
+  toLaTeX (juxt a b)          = toLaTeX a ++ˢ "\\, " ++ˢ toLaTeX b
+  toLaTeX (tuple as)          = commaSep (toLaTeXs as)
+  toLaTeX (dd a)              = "\\,\\mathrm{d}" ++ˢ toLaTeX a
+  toLaTeX (text s)           = "\\text" ++ˢ grp (escape s)
+  toLaTeX (raw s)            = s
 
 ------------------------------------------------------------------------
 -- Authoring: operators

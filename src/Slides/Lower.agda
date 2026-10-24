@@ -55,6 +55,7 @@ module _ (l : Lowering ContentC ContentC) where
   layout (box t c)        = box t (lower l c)
   layout (fragment s c)   = fragment s (lower l c)
   layout pause            = pause
+  layout (classed k c)    = classed k (lower l c)
   layout (placed x y w h c) = placed x y w h (lower l c)
   layout (stepped s sh)   = stepped s (layout sh)
 

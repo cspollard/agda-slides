@@ -1,0 +1,112 @@
+/* Look of the "It Just Takes Two" deck: a dark theme over reveal.js's `black`.
+   Classes used by the deck: .card .callout .tag .subtitle .hero (layout);
+   .node .on .lbl .dim .flow .pulse .bar .tile (diagram elements). */
+
+:root {
+  --bg0: #080b22; --bg1: #1b2160;
+  --ink: #e8eaf6; --muted: #9fa8da; --faint: rgba(255, 255, 255, .08);
+  --cyan: #4dd0e1; --amber: #ffb74d; --pink: #f06292; --green: #81c784;
+}
+
+.reveal-viewport {
+  background: radial-gradient(1100px 700px at 15% 0%, var(--bg1) 0%, var(--bg0) 62%) !important;
+}
+.reveal { color: var(--ink); font-size: 30px; }
+.reveal .slides section { text-align: left; }
+.reveal .slides section > * { position: relative; }
+
+.reveal h1, .reveal h2, .reveal h3 { text-transform: none; color: #fff; letter-spacing: -.01em; }
+.reveal h1 { font-size: 2.9em; line-height: 1.05; margin: 0 0 .15em; }
+.reveal h2 {
+  font-size: 1.55em; margin: 0 0 .55em; padding-bottom: .12em; display: block; width: fit-content;
+  border-bottom: 4px solid; border-image: linear-gradient(90deg, var(--cyan), var(--pink)) 1;
+}
+.reveal h3 { font-size: 1.05em; margin: .1em 0 .3em; color: var(--cyan); }
+.reveal p, .reveal li { line-height: 1.35; }
+.reveal ul { margin-left: .9em; }
+.reveal li::marker { color: var(--cyan); }
+.reveal a { color: var(--cyan); }
+.reveal em { color: var(--amber); font-style: normal; }
+.reveal strong { color: #fff; }
+
+/* Title block */
+.reveal .subtitle { font-size: 1.25em; color: var(--muted); margin: 0 0 1.1em; }
+.reveal .tag {
+  display: inline-block; font-size: .5em; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--cyan); margin: .2em 0; }
+.reveal .authors { font-size: .8em; margin: .2em 0 .1em; }
+#hero-title, #hero-end { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+#hero-title canvas, #hero-end canvas { width: 100%; height: 100%; display: block; }
+#hero-end canvas { opacity: .55; }
+.reveal .title-copy { position: relative; z-index: 1; }
+
+/* Cards and callouts */
+.reveal .card {
+  display: inline-block; width: 46.5%; margin: .8% 1.2%; vertical-align: top; box-sizing: border-box;
+  background: var(--faint); border: 1px solid rgba(255, 255, 255, .14); border-radius: 18px;
+  padding: .45em 1em .5em; box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+}
+.reveal .card p, .reveal .card li { font-size: .9em; margin: .35em 0; }
+.reveal .card { padding: .7em 1.1em .8em; min-height: 6.2em; }
+.reveal .card h3 { font-size: 1.15em; }
+.reveal .card.wide { width: 96%; }
+.reveal .card.pink h3 { color: var(--pink); }
+.reveal .card.amber h3 { color: var(--amber); }
+.reveal .card.green h3 { color: var(--green); }
+.reveal .callout {
+  border-left: 6px solid var(--amber); background: rgba(255, 183, 77, .1);
+  padding: .35em .9em; margin: .7em 0 0; border-radius: 0 14px 14px 0; font-size: .9em;
+}
+.reveal .callout.cyan { border-color: var(--cyan); background: rgba(77, 208, 225, .1); }
+.reveal .good { color: var(--green); }
+.reveal .bad { color: var(--pink); }
+.reveal .math { font-size: .85em; }
+.reveal .small { font-size: .62em; color: var(--muted); }
+
+/* Diagrams */
+.reveal .diagram svg { overflow: visible; }
+.reveal .diagram text { font-family: inherit; fill: var(--ink); }
+.reveal svg .node { fill: var(--faint); stroke: var(--muted); stroke-width: 2; transition: fill .5s, stroke .5s, filter .5s; }
+.reveal svg .node.on {
+  fill: rgba(77, 208, 225, .2); stroke: var(--cyan);
+  filter: drop-shadow(0 0 10px rgba(77, 208, 225, .7));
+}
+.reveal svg .node.cyan { stroke: var(--cyan); }
+.reveal svg .node.amber { stroke: var(--amber); fill: rgba(255, 183, 77, .12); }
+.reveal svg .node.pink { stroke: var(--pink); fill: rgba(240, 98, 146, .12); }
+.reveal svg .dim { fill: var(--muted); }
+.reveal svg .big { font-weight: 700; }
+.reveal svg .cy { stroke: var(--cyan); }
+.reveal svg .am { stroke: var(--amber); }
+.reveal svg .flow { stroke-width: 2; stroke-dasharray: 5 6; opacity: .7; }
+.reveal svg .pulse { fill: var(--amber); filter: drop-shadow(0 0 5px var(--amber)); }
+.reveal svg .axis { stroke: var(--muted); stroke-width: 2; }
+.reveal svg .bar {
+  transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0);
+  transition: transform 1.3s cubic-bezier(.2, .9, .2, 1);
+}
+.reveal svg .bar.go { transform: scaleY(1); }
+.reveal svg .b1 { fill: var(--pink); }
+.reveal svg .b2 { fill: var(--cyan); filter: drop-shadow(0 0 12px rgba(77, 208, 225, .6)); }
+.reveal svg .b3 { fill: var(--green); }
+.reveal svg .tile { fill: var(--faint); stroke: rgba(255, 255, 255, .18); stroke-width: 2; }
+.reveal svg .stat { font-weight: 800; fill: var(--cyan); }
+.reveal svg .stat.amber { fill: var(--amber); }
+.reveal svg .stat.pink { fill: var(--pink); }
+.reveal svg .stat.green { fill: var(--green); }
+
+/* The live histogram (drawn by pairs.js) */
+#bump { margin: 0 auto; }
+#bump text:not(.dim) { fill: var(--ink); }
+#bump + p { font-size: .58em; color: var(--muted); margin-top: .2em; }
+#bump svg { width: 100%; height: auto; display: block; }
+.reveal svg .hist-bkg { fill: var(--cyan); opacity: .85; }
+.reveal svg .hist-sig { fill: var(--amber); opacity: .95; }
+
+/* Closing slide */
+.reveal .title-copy ul li { font-size: 1.1em; margin: .45em 0; }
+.reveal .closing p {
+  font-size: 2.1em; font-weight: 800; margin: .5em 0 .2em; letter-spacing: -.01em;
+  background: linear-gradient(90deg, var(--cyan), var(--pink)); -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+}

@@ -40,10 +40,10 @@ Place it under `src/` (or add a directory to `include:` in `agda-slides.agda-lib
 | Level | Commands |
 | --- | --- |
 | Deck (`Deck`) | `slide body`, `slideWith options body`, `stack bodies`, `stackWith options bodies`; options: `background "#hex"`, `transition "zoom"` |
-| Body (`Body`, a `do` block) | `placed x y w h content`, `diagram d`, `heading n text`, `paragraph text`, `bullets texts`, `incremental texts`, `code language source`, `displayMath math`, `figure path caption` (checked), `notes text`, `table header rows`, `columns [contents]`, `box title content`, `fragment content`, `fragmentWith style content`, `pause`, `bibliography` |
+| Body (`Body`, a `do` block) | `placed x y w h content`, `classed classes content`, `diagram d`, `script js`, `mount id`, `heading n text`, `paragraph text`, `bullets texts`, `incremental texts`, `code language source`, `displayMath math`, `figure path caption` (checked), `notes text`, `table header rows`, `columns [contents]`, `box title content`, `fragment content`, `fragmentWith style content`, `pause`, `bibliography` |
 | Content (inside `columns`, `box`, `fragment`) | the same commands under `Content.`, for example `Content.paragraph` |
 | Text | a string literal, or a list of `Inline`s: `text`, `emph`, `strong`, `codeSpan`, `link url text`, `inlineMath math`, `cite key` (checked) |
-| Math (`Slides.Math`, imported qualified as `M`) | `M.var`, `M.num`, `M.greek`, `M.frac`, `M.sqrt`, `M.sum`, `M.integral`, `M.fn`, `M.paren`, `M.vec`, `M.text`, `M.raw`; operators `M.+ M.- M.* M./ M.^ M.≡ M.≤ …`; literals: `2` is a number and `"x"` an identifier |
+| Math (`Slides.Math`, imported qualified as `M`) | `M.var`, `M.num`, `M.greek`, `M.frac`, `M.sqrt`, `M.sum`, `M.integral`, `M.prod`, `M.fn`, `M.paren`, `M.call f [args]`, `M.tuple`, `M.juxt`, `M.dd`, `M.cal`, `M.bb`, `M.vec`, `M.hat`, `M.bar`, `M.text`, `M.raw`; relations include `M.mid` (∣) and `M.elem` (∈); operators `M.+ M.- M.* M./ M.^ M.≡ M.≤ …`; literals: `2` is a number and `"x"` an identifier |
 | Components (`Slides.Components`) | `titleSlide`, `sectionSlide`, `bulletBody`, `incrementalBody`, `twoColumn`, `resultsTable`, decorators `titled`, `withNotes` |
 
 Notes:
@@ -80,6 +80,39 @@ slide (do heading 2 "Pipeline"
           placed 60 70 35 20 (Content.paragraph "a note at 60%, 70%"))
 ```
 
+### Styling diagrams
+
+Every element takes a `Style`, built from `defaultStyle` with `stroked`, `filled`,
+`thick`, and the hooks for stylesheets and scripts:
+
+| Style function | Effect |
+| --- | --- |
+| `withClass "a b"` | CSS class(es); a stylesheet can then restyle the element, and scripts can find it |
+| `withId "x"` | element id (unique in the deck), e.g. to highlight a node from JavaScript |
+| `rounded n` | corner radius of a `rect` |
+| `dashed "6 4"` | `stroke-dasharray` |
+| `faded n` | opacity in percent |
+| `anchored "start"` | `text-anchor` of a `label` (default `"middle"`) |
+
+`path d style` draws an SVG path (`d` as in the attribute). The `<div class="diagram">`
+around the SVG has the diagram's `name` as its `id`, so a script can find it.
+Classes override the default colours (a stylesheet rule beats the SVG
+attributes), which is how `assets/pairs/pairs.css` themes a whole deck.
+
+## Styling slides: `classed`
+
+`classed "card pink" content` wraps content in `<div class="card pink">`. It is the
+hook for a deck's own stylesheet (cards, callouts, columns of your own). Content
+inside is a `Content` program, so use `Content.paragraph`, `Content.bullets`, … and
+`Content.diagram`. A stylesheet is added through the theme:
+
+```agda
+theme = record Reveal.blackTheme { stylesheets = "slides.css" ∷ "mydeck.css" ∷ [] }
+```
+
+Both backends render `classed`; with `pause` it appears on a later step like any
+layout command.
+
 Both backends render these. A future backend that cannot render a feature
 lowers it or refuses the deck; see `plan/Capabilities.md`.
 
@@ -96,6 +129,17 @@ slide (do heading 2 "Live"
           mount "counter"
           script "document.getElementById('counter').textContent = 'hello';")
 ```
+
+Extra JavaScript files go in `RevealConfig.scriptFiles` (paths relative to the
+page; loaded after the reveal.js plugins and before `init.js`), so a deck can
+keep its animations in a file and call them from `script`:
+
+```agda
+config = record Reveal.defaultConfig { scriptFiles = "mydeck.js" ∷ []
+                                     ; scripts = "Reveal.configure({center: false});" ∷ [] }
+```
+
+`docs/PairsDeck.md` shows this in a full deck.
 
 The code is not checked: it is carried in a `data-js` attribute (so the verified
 printer escapes it correctly) and a small loader in `init.js` / `plain.js` runs

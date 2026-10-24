@@ -71,6 +71,10 @@ test:
 	diff -u tests/golden/showcase.init.js out/showcase/init.js
 	diff -u tests/golden/showcase-plain.index.html out/showcase-plain/index.html
 	diff -u tests/golden/showcase-lowered.index.html out/showcase-lowered/index.html
+	diff -u tests/golden/pairs.index.html out/pairs/index.html
+	diff -u tests/golden/pairs.init.js out/pairs/init.js
+	diff -u tests/golden/pairs.css out/pairs/pairs.css
+	diff -u tests/golden/pairs.js out/pairs/pairs.js
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 
@@ -129,9 +133,25 @@ showcase:
 	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
 	$(BUILD_DIR)/ShowcaseMain
 
+# The "It Just Takes Two" deck (docs/PairsDeck.md): out/pairs/index.html.
+.PHONY: pairs
+pairs:
+	mkdir -p out/pairs $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/pairs/reveal
+	cp assets/slides.css assets/pairs/pairs.css assets/pairs/pairs.js out/pairs/
+	$(COMPILE) src/Slides/Examples/PairsMain.agda
+	mv PairsMain $(BUILD_DIR)/PairsMain 2>/dev/null || true
+	$(BUILD_DIR)/PairsMain
+
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.
 .PHONY: test-playwright
 test-playwright:
 	cd tests/browser && npm install --silent
 	node tests/browser/run.mjs out
+
+# Drive the "It Just Takes Two" deck (needs `make pairs` first).
+.PHONY: test-pairs
+test-pairs:
+	cd tests/browser && npm install --silent
+	node tests/browser/pairs.mjs out

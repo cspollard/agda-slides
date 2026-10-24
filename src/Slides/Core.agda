@@ -88,6 +88,8 @@ data LayoutShape : Set where
   -- `pause`: everything after it in the body appears step by step (see
   -- `Slides.Steps`); renders as nothing by itself
   pause    : LayoutShape
+  -- content in a `<div>` with the given CSS class(es), for stylesheets
+  classed  : (classes : String) → Content → LayoutShape
   -- content in a box at a fixed position: left, top, width, height, in whole
   -- percentages of the slide
   placed   : (x y w h : ℕ) → Content → LayoutShape

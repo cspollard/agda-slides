@@ -224,6 +224,8 @@ renderLayout (placed x y w h c) =
     pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
 
 renderLayout pause = []
+renderLayout (classed cls c) =
+  hElement "div" (("class" , cls) ∷ []) (renderContentProgram c) ∷ []
 renderLayout (stepped style l) =
   hElement "div" (("class" , cls style) ∷ []) (renderLayout l) ∷ []
   where

@@ -37,12 +37,25 @@ private
   num : ℕ → String
   num = show
 
+  _▹′_ : Maybe ℕ → (ℕ → String) → Maybe String
+  nothing ▹′ f = nothing
+  just n  ▹′ f = just (f n)
+
+  -- hooks and presentation shared by every element
+  commonAttrs : Style → Attrs
+  commonAttrs s =
+      opt "class" (Style.cls s)
+    ++ opt "id" (Style.ident s)
+    ++ opt "stroke-dasharray" (Style.dash s)
+    ++ opt "opacity" (Style.opacity s ▹′ (λ n → num n ++ˢ "%"))
+
   -- Shapes are outlined in the text colour and unfilled unless styled.
   shapeAttrs : Style → Attrs
   shapeAttrs s =
       ("stroke" , maybeOr "currentColor" (Style.stroke s))
     ∷ ("fill" , maybeOr "none" (Style.fill s))
     ∷ opt "stroke-width" (Style.strokeWidth s ▹ num)
+    ++ commonAttrs s
     where
       maybeOr : String → Maybe String → String
       maybeOr d nothing  = d
@@ -64,7 +77,8 @@ private
 
   mutual
     renderElement : String → Element → XMLM A
-    renderElement n (rect x y w h s)   = SVG.rect (num x) (num y) (num w) (num h) (shapeAttrs s)
+    renderElement n (rect x y w h s)   =
+      SVG.rect (num x) (num y) (num w) (num h) (opt "rx" (Style.rx s ▹′ num) ++ shapeAttrs s)
     renderElement n (circle x y r s)   = SVG.circle (num x) (num y) (num r) (shapeAttrs s)
     renderElement n (line a b c d s)   = lineEl a b c d (shapeAttrs s)
     renderElement n (arrow a b c d s)  =
@@ -72,14 +86,18 @@ private
     renderElement n (label x y sz t s) =
       textElement "text"
         ( ("x" , num x) ∷ ("y" , num y) ∷ ("font-size" , num sz)
-        ∷ ("text-anchor" , "middle") ∷ ("dominant-baseline" , "central")
-        ∷ ("fill" , maybeOr (Style.fill s)) ∷ [])
+        ∷ ("text-anchor" , maybeAnchor (Style.anchor s)) ∷ ("dominant-baseline" , "central")
+        ∷ ("fill" , maybeOr (Style.fill s)) ∷ commonAttrs s)
         (padText t)
       where
         maybeOr : Maybe String → String
         maybeOr nothing  = "currentColor"
         maybeOr (just v) = v
-    renderElement n (group es)         = SVG.g [] (renderElements n es)
+        maybeAnchor : Maybe String → String
+        maybeAnchor nothing  = "middle"
+        maybeAnchor (just v) = v
+    renderElement n (group es)         = SVG.g (commonAttrs defaultStyle) (renderElements n es)
+    renderElement n (path d s)         = SVG.path d (shapeAttrs s)
 
     renderElements : String → List Element → List (XMLM A)
     renderElements n []       = []
@@ -104,4 +122,4 @@ private
       (marker (Diagram.name d) ∷ renderElements (Diagram.name d) (Diagram.elements d))
 
 renderDiagram : Diagram → XMLM A
-renderDiagram d = hElement "div" (("class" , "diagram") ∷ []) (svgOf d ∷ [])
+renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name d) ∷ []) (svgOf d ∷ [])

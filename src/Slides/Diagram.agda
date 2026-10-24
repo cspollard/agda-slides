@@ -21,9 +21,19 @@ record Style : Set where
     stroke      : Maybe String
     fill        : Maybe String
     strokeWidth : Maybe ℕ
+    -- hooks for stylesheets and scripts, and finer presentation
+    cls         : Maybe String   -- CSS class
+    ident       : Maybe String   -- element id (unique in the deck)
+    rx          : Maybe ℕ        -- corner radius of a rectangle
+    dash        : Maybe String   -- stroke-dasharray, e.g. "6 4"
+    opacity     : Maybe ℕ        -- percent
+    anchor      : Maybe String   -- text-anchor of a label: start, middle, end
 
 defaultStyle : Style
-defaultStyle = record { stroke = nothing ; fill = nothing ; strokeWidth = nothing }
+defaultStyle = record
+  { stroke = nothing ; fill = nothing ; strokeWidth = nothing
+  ; cls = nothing ; ident = nothing ; rx = nothing ; dash = nothing
+  ; opacity = nothing ; anchor = nothing }
 
 stroked : String → Style → Style
 stroked c s = record s { stroke = just c }
@@ -34,6 +44,26 @@ filled c s = record s { fill = just c }
 thick : ℕ → Style → Style
 thick n s = record s { strokeWidth = just n }
 
+withClass : String → Style → Style
+withClass c s = record s { cls = just c }
+
+withId : String → Style → Style
+withId i s = record s { ident = just i }
+
+rounded : ℕ → Style → Style
+rounded n s = record s { rx = just n }
+
+dashed : String → Style → Style
+dashed d s = record s { dash = just d }
+
+-- opacity in percent
+faded : ℕ → Style → Style
+faded n s = record s { opacity = just n }
+
+-- text-anchor of a label: "start" (the point is the left end), "middle", "end"
+anchored : String → Style → Style
+anchored a s = record s { anchor = just a }
+
 data Element : Set where
   rect   : (x y w h : ℕ) → Style → Element
   circle : (cx cy r : ℕ) → Style → Element
@@ -43,6 +73,8 @@ data Element : Set where
   -- text centred at a point: position, font size, text, colour (the `fill`)
   label  : (x y size : ℕ) → String → Style → Element
   group  : List Element → Element
+  -- an SVG path, `d` as in the `d` attribute (curves, polygons)
+  path   : (d : String) → Style → Element
 
 record Diagram : Set where
   field

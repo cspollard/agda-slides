@@ -1,0 +1,81 @@
+# Example: an introduction to "It Just Takes Two"
+
+`src/Slides/Examples/Pairs.agda` is an eleven-slide introduction to
+*It Just Takes Two: Scaling Amortized Inference to Large Sets* (Wehenkel, Kagan,
+Heinrich, Pollard; [arXiv:2605.07972](https://arxiv.org/abs/2605.07972)). It is
+the largest example in the repository and uses most of the library: typed math,
+SVG diagrams, a custom stylesheet, and JavaScript animations.
+
+```
+make pairs REVEAL=/path/to/node_modules/reveal.js   # writes out/pairs/
+open out/pairs/index.html
+make test-pairs                                      # drives it in headless Chrome
+```
+
+## The slides
+
+| # | Title | What it shows |
+| --- | --- | --- |
+| 1 | It Just Takes Two | title; point pairs drifting on a canvas |
+| 2 | Inference from a set of observations | SVG diagram of θ, the shared nuisance ψ and the observations; the hierarchical model as typed math |
+| 3 | A bump hunt, event by event | a histogram filling with simulated events (background and signal) |
+| 4 | Two ways to scale, both costly | two cards; the question appears on the next step (`pause`) |
+| 5 | Building blocks: NPE with a Deep Set | pipeline diagram with pulses along the arrows; mean pooling and the NPE objective |
+| 6 | PAIRS: train on pairs, finetune on aggregates | the three stages, lit up in turn |
+| 7 | Why two is enough | the theorem in words; the chain N = 1, N = 2, Cauchy, every N building up |
+| 8 | Does it work? Five test beds | cards for the four benchmarks and the Gaussian check |
+| 9 | Results | bars growing to the paper's Circle Radius NLLs, counters |
+| 10 | Cost and scale | four statistic tiles counting up |
+| 11 | Take-aways | closing slide with the point-pairs background |
+
+The figures quoted (1.17, 0.35 and 0.05 for the Circle Radius test NLL at
+N = 1000; about 100× and 3–4× in cost; 128 scenes per batch; novel-view MSE
+0.011 to 0.004) are from the paper's text. The bar chart shows only the three
+numbers the text gives, not the full figure.
+
+## How it is built
+
+- **Content and structure** are an ordinary deck (`pairs : Deck`), a `do` block of
+  `slide`s. Formulas are `Slides.Math` values (`joint`, `meanPool`, `objective`,
+  `cauchy`).
+- **Diagrams** are `Slides.Diagram` values, one per slide (`problem`, `pipeline`,
+  `stages`, `chain`, `results`, `tiles`). Every look comes from a CSS class set
+  with `withClass`; the helpers `card`, `boxEl`, `txt`, `dim`, `big` and `flow`
+  at the top of the module keep the coordinates readable. Each diagram's `name`
+  is the `id` of its `<div>`, and nodes that are animated carry a `withId`.
+- **Styling** is `assets/pairs/pairs.css`: a dark gradient over reveal.js's
+  `black` theme, cards, callouts and the diagram classes (`node`, `on`, `flow`,
+  `bar`, `stat`, …). It is added through the theme's `stylesheets`.
+- **Animation** is `assets/pairs/pairs.js`, loaded with `RevealConfig.scriptFiles`.
+  Each slide calls one function from a `script` command; it runs once, when the
+  slide is first shown, and only advances while that slide is current:
+
+  | Call | Effect |
+  | --- | --- |
+  | `PAIRS.title(slide, id)` | point pairs drifting on a canvas in the `mount` with that id |
+  | `PAIRS.flow(slide)` | pulses travelling along every diagram line with class `flow` |
+  | `PAIRS.cycle(slide, ids, opts)` | lights up the nodes with these ids in turn (`{accumulate: true}` keeps earlier ones lit) |
+  | `PAIRS.bump(slide, id)` | a histogram of simulated events in the `mount` with that id |
+  | `PAIRS.grow(slide)` | grows `.bar` rectangles and counts up numbers in elements of class `count` |
+
+- **Configuration** is in `PairsMain.agda`: a 1280×720 canvas, slide numbers, the
+  two stylesheets, `pairs.js`, and a deck-level script
+  (`Reveal.configure({center: false})`) so titles stay at the top.
+
+## Library features added for this deck
+
+- `classed`, a `<div>` with CSS classes around content (`Slides.DSL`);
+- diagram styles `withClass`, `withId`, `rounded`, `dashed`, `faded`, `anchored`,
+  the `path` element, and the diagram's `name` as the container `id`;
+- math constructors `prod`, `call`, `tuple`, `juxt`, `dd`, `cal`, `bb` and the
+  relations `mid` and `elem`;
+- `RevealConfig.scriptFiles` for extra JavaScript files.
+
+They are described in `docs/Authoring.md`.
+
+## Reusing it
+
+To make your own animated deck, copy `Pairs.agda` and `PairsMain.agda`, keep
+`pairs.css` as a starting stylesheet, and write your animations in a JavaScript
+file next to it, called from `script`. Only use ids on diagram nodes that a script
+needs, and keep ids unique across the deck.
