@@ -100,10 +100,10 @@ async function open(dir, ready) {
 
   // diagrams: inline SVG, the second one on a later step
   await ev(() => Reveal.slide(11));
-  eq('diagram: two svgs, one on a later step', await ev(() => {
+  eq('diagram: three svgs, one on a later step, one placed', await ev(() => {
     const s = Reveal.getCurrentSlide();
-    return [s.querySelectorAll('.diagram svg').length, s.querySelectorAll('.fragment > .diagram').length].join(',');
-  }), '2,1');
+    return [s.querySelectorAll('.diagram svg').length, s.querySelectorAll('.fragment > .diagram').length, s.querySelectorAll('.placed .diagram svg').length].join(',');
+  }), '3,1,1');
   eq('diagram: elements of the first svg', await ev(() => {
     const v = Reveal.getCurrentSlide().querySelector('.diagram svg');
     return ['rect', 'line', 'text', 'marker'].map(t => v.querySelectorAll(t).length).join(',');
@@ -164,7 +164,7 @@ async function open(dir, ready) {
   await page.evaluate(() => { location.hash = '#13'; });
   await page.reload(); await page.waitForSelector('.slide.active');
   check('diagram: svg with a marker, fragment hidden then shown', await ev(() =>
-    document.querySelectorAll('.slide.active .diagram svg').length === 2 &&
+    document.querySelectorAll('.slide.active .diagram svg').length === 3 &&
     document.querySelectorAll('.slide.active .fragment.visible > .diagram').length === 0));
   await page.evaluate(() => { location.hash = '#12'; });
   await page.reload(); await page.waitForSelector('.slide.active');

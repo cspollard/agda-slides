@@ -169,6 +169,8 @@ renderContent (references refs)   =
     (map (λ { (k , t) → rich "li" (("id" , "ref-" ++ˢ k) ∷ []) t }) refs)
   ∷ []
 
+renderContent (diagram d)         = renderDiagram d ∷ []
+
 module A = Alg 0ℓ 0ℓ ContentC
 module L = Alg 0ℓ 0ℓ LayoutC
 module B = Alg 0ℓ 0ℓ BlockC
@@ -216,7 +218,6 @@ renderLayout (placed x y w h c) =
     -- `position: fixed`, whose containing block is the slide canvas
     pct : String → ℕ → String
     pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
-renderLayout (diagram d) = renderDiagram d ∷ []
 
 renderLayout pause = []
 renderLayout (stepped style l) =

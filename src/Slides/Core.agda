@@ -61,6 +61,8 @@ data ContentShape : Set where
   table       : (header : List Text) (rows : List (List Text)) → ContentShape
   -- the bibliography: keys with their entries
   references  : List (String × Text) → ContentShape
+  -- an inline vector diagram
+  diagram     : Diagram → ContentShape
 
 ContentC : Container 0ℓ 0ℓ
 ContentC = ContentShape ▷ λ _ → ⊤
@@ -84,8 +86,6 @@ data LayoutShape : Set where
   -- content in a box at a fixed position: left, top, width, height, in whole
   -- percentages of the slide
   placed   : (x y w h : ℕ) → Content → LayoutShape
-  -- an inline vector diagram
-  diagram  : Diagram → LayoutShape
   -- a layout command that appears on a later step (produced by `Slides.Steps`)
   stepped  : (style : Maybe String) → LayoutShape → LayoutShape
 

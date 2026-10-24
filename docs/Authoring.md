@@ -62,7 +62,9 @@ After a `pause` it appears on the next step.
 `name` (unique in the deck), a canvas `width` and `height`, the displayed
 `percent` of the slide width, and a list of elements: `rect`, `circle`, `line`,
 `arrow`, `label x y size text style` and `group`. Styles are built from
-`defaultStyle` with `stroked`, `filled` and `thick`.
+`defaultStyle` with `stroked`, `filled` and `thick`. A diagram is content, so
+`Content.diagram d` can go inside `placed`, `columns` or `box`; there `percent`
+is relative to the container.
 
 ```agda
 open import Slides.Diagram

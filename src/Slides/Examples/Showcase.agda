@@ -99,4 +99,7 @@ showcase = do
                        ∷ circle 80 30 20 (stroked "#5e5" defaultStyle)
                        ∷ [])
                 ∷ label 200 30 16 "two circles" defaultStyle
-                ∷ [] }))
+                ∷ [] })
+            placed 60 62 30 25 (Content.diagram (record
+              { name = "inset" ; width = 100 ; height = 50 ; percent = 100
+              ; elements = rect 5 5 90 40 (stroked "#e5e" defaultStyle) ∷ [] })))

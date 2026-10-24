@@ -90,6 +90,9 @@ module Content where
   references : List (String × Text) → Content
   references rs = cmd (Core.references rs)
 
+  diagram : Diagram → Content
+  diagram d = cmd (Core.diagram d)
+
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
 open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
 
@@ -149,7 +152,7 @@ placed x y w h c = impure (inj₂ (Core.placed x y w h c) , λ _ → pure tt)
 
 -- An inline vector diagram (see `Slides.Diagram`).
 diagram : Diagram → Body
-diagram d = impure (inj₂ (Core.diagram d) , λ _ → pure tt)
+diagram d = liftContent (Content.diagram d)
 
 ------------------------------------------------------------------------
 -- Deck commands
