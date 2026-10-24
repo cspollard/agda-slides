@@ -4,10 +4,12 @@ Goals (from `Goals.md`):
 1. A Container/FreeMonad-based DSL for producing high-quality scientific slide decks.
 2. Eventually, export to JS-based slides, pure HTML, etc.
 
+**Priority:** the reveal.js backend is the first use case and is ranked ahead of plain HTML (Phase 3). Plain HTML follows (Phase 4).
+
 This file is the overview and the ordered work list. Detailed plans live beside it:
 
 - `plan/Polynomial.md` — Phase 1 in detail: containers as polynomial functors on `Setoids`, and the algebraic description of the free monad. **This comes first.**
-- `plan/HTML.md` — HTML production on top of the `parsnip` submodule (verified XML printing/parsing); covers Phases 3–5 export work.
+- `plan/HTML.md` — reveal.js (top priority) and plain HTML production on top of the `parsnip` submodule (verified XML printing/parsing); covers Phases 3–5 export work.
 
 ## Core design idea
 
@@ -50,7 +52,7 @@ src/Container/Interpret.agda             (Phase 1) initial algebra, fold/hom, fu
 src/Slides.agda                          slide-specific top-level module / public API
 src/Slides/Core.agda, DSL.agda        (Phase 2: slide containers, smart constructors)
 src/Slides/Backend/XML.agda           bridge to parsnip's XML (Container machinery at `XMLC`)
-src/Slides/Backend/*.agda             (Phases 3–4: HTML, reveal.js)
+src/Slides/Backend/*.agda             (Phase 3: reveal.js, Phase 4: plain HTML)
 examples/                             sample decks
 plan/                                 this plan and detailed sub-plans
 ```
@@ -71,8 +73,8 @@ Status (all modules typecheck with `--safe --without-K`, no holes, no postulates
 - [x] `Container.Interpret`: initial algebra and Lambek's lemma, `fold-hom` (folds commute with algebra homomorphisms), `fusion` (translate along a container morphism = interpret with the pulled-back algebra).
 - [ ] Deferred (stretch): Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`; faithfulness/fullness of `Poly-⇒`; natural isomorphisms between `⟦·⟧` and the `Data.Container.Combinator` operations (`⊎`, `×`, `const`, `id`) — needed before Phase 2 relies on `⊎` to compose slide features.
 
-### Phase 2 — Slide vocabulary
-One container per concern, combined with container coproduct (`Data.Container.Combinator._⊎_`; its interpretation is proved in Phase 1 step 1):
+### Phase 2 — Slide vocabulary (minimal subset first)
+Build only what the reveal.js backend needs first (`slide`, vertical `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`, `code`, math, `figure`, `columns`, backgrounds) and grow from there. One container per concern, combined with container coproduct (`Data.Container.Combinator._⊎_`; its interpretation is proved in Phase 1 step 1):
 
 | Concern | Commands |
 | --- | --- |
@@ -91,15 +93,14 @@ Resolve with a proof of equivalence (or adjunction) between the two presentation
 
 Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-written deck.
 
-### Phase 3 — HTML backend (see `plan/HTML.md`)
-- The HTML backend is an `⟦SlideC⟧`-algebra with a carrier built from parsnip's `XMLSetoid`; `render` is `fold` (`Container.Interpret`), and the result is printed with parsnip's `printXML`, whose round trip `parse (print x) ≈ₓ x` is proved (`Data.XML.RoundTrip`).
-- Documents are well-formed by construction (parsnip's validity evidence); runtime strings go through `Data.XML.Sanitize`.
-- Work items H0–H4 in `plan/HTML.md`: bridge lemmas, forest carrier, core-vocabulary algebra, and a spike on HTML5-vs-XML gaps (self-closing tags, doctype, inline script/style).
-- `Main.agda` compiled with MAlonzo writes `out/deck.html`; golden tests diff rendered decks, and a runtime check re-parses the output with `parseXML`.
+### Phase 3 — reveal.js backend (top priority; see `plan/HTML.md`)
+- The reveal.js backend is an `⟦SlideC⟧`-algebra with a carrier built from parsnip's `XMLSetoid`; `render` is `fold` (`Container.Interpret`), printed with parsnip's `printXML` (proved round trip `parse (print x) ≈ₓ x`). Configuration is a JSON value printed by parsnip's JSON printer into `init.js`.
+- Documents are well-formed by construction; runtime strings go through `Data.XML.Sanitize`.
+- Work items R0–R4 in `plan/HTML.md`, in order: **R0 spike first** (a hand-built deck printed by parsnip and opened in a browser, to settle self-closing tags, doctype, and inline script/style), then HTML5 gap policy, carrier and bridge lemmas, the algebra, and the driver with golden and parse-back tests.
+- Mapping: `slide` → `<section>`, vertical `section` → nested `<section>`, `pause` → `class="fragment"`, `notes` → `<aside class="notes">`, math via the reveal.js math plugin.
 
-### Phase 4 — JS slide backend
-- reveal.js as the first target (`pause` → `class="fragment"`, `notes` → `<aside class="notes">`); same fold structure, reusing parsnip's XML AST; configuration and data via parsnip's JSON (`plan/HTML.md`, H5).
-- Option: a minimal custom JS runtime later.
+### Phase 4 — Plain standalone HTML backend
+- Same XML pipeline and shared vocabulary mapping as Phase 3, with a small built-in navigation script (external file) and print stylesheet (R5 in `plan/HTML.md`). Option: a minimal custom JS runtime later.
 
 ### Phase 5 — Authoring quality
 - Theming (`Theme` record passed to backends); reusable components as Kleisli arrows.
@@ -116,12 +117,13 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 1. **M1** — Phase 0 done; Phase 1 steps 1 and 3 (polynomial functor, free monad as `Monad`).
 2. **M2** — Phase 1 step 4 (free adjunction, algebraic description) and step 5 (interpret/fusion).
 3. **M3** — Phase 2: vocabulary and DSL, one example deck typechecks.
-4. **M4** — Phase 3: HTML end to end with golden tests.
-5. **M5** — Phase 4 reveal.js; then Phase 5 and 6.
+4. **M4** — R0 spike: a hand-built reveal.js deck printed by parsnip runs in a browser (can run in parallel with M1–M3, and should start now).
+5. **M5** — Phase 3: reveal.js end to end from a Slides DSL deck, with golden and parse-back tests.
+6. **M6** — Phase 4 plain HTML; then Phase 5 and 6.
 
 ## Risks and mitigations
 
-- **HTML5 vs XML.** parsnip prints XML (empty elements self-close, text is XML-escaped, no doctype node). The spike in `plan/HTML.md` H4 decides between XHTML output, a content-preserving smart constructor, or a custom printer.
+- **HTML5 vs XML (blocks the reveal.js backend).** parsnip prints XML (empty elements self-close, text is XML-escaped, no doctype node). The R0 spike and R1 in `plan/HTML.md` decide between padding empty non-void elements, XHTML output, or a custom printer. Do R0 before designing the backend.
 - **Submodule dependency.** parsnip is pinned by the submodule commit; builds need `git submodule update --init`. Its flags (`--cubical-compatible`, `-WnoUnsupportedIndexedMatch`) are compatible with our `--safe --without-K`.
 - **Universe levels** in agda-categories (`Setoids c ℓ` indexing). Fix level conventions in Phase 1 step 1 (e.g. container shapes/positions live in the same level `c` as setoid carriers) and keep them uniform across the project.
 - **Strict positivity** of nested slide bodies — stratify containers (Phase 2).
@@ -132,7 +134,9 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-1. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms; this is what Phase 2 needs for composing slide features.
-2. Decide the nested-vs-flat slide body representation (Phase 2) and sketch `Slides.Core` with `heading`, `paragraph`, `bullets`, `slide`.
-3. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (`plan/HTML.md` H1).
-4. Optionally finish the Eilenberg–Moore comparison.
+1. **R0 spike** (`plan/HTML.md`): build a minimal reveal.js page as an `XMLM` value, print it with parsnip, and open it with reveal.js in a browser. This de-risks the top-priority backend and settles the HTML5-vs-XML policy.
+2. Sketch `Slides.Core` with the minimal reveal.js vocabulary (`slide`, `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`) and decide nested vs flat bodies.
+3. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms, needed to compose slide containers.
+4. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (R2).
+5. Write the reveal.js algebra and driver (R3–R4).
+6. Optionally finish the Eilenberg–Moore comparison.
