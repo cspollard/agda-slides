@@ -36,7 +36,7 @@ The container free monad is the *concrete presentation*; agda-categories supplie
 Guiding rules:
 - The categorical layer is **additive**: proofs live in generic `Container.*` modules, interpreters live in `Slides.Backend.*`. A deck must still render while a proof is unfinished.
 - Prefer setoid-enriched statements; this avoids function extensionality for equalities on continuations.
-- All modules are `--safe --without-K` (set in `agda-slides.agda-lib`). Only the executable `Main` may use FFI/IO and must opt out explicitly.
+- Library modules are `--safe --without-K` (each carries its own `OPTIONS` pragma; the `.agda-lib` only sets `--without-K`). Only executables (`Main`, the spikes) drop `--safe` to use IO.
 
 ## Repository layout
 
@@ -86,10 +86,13 @@ Build only what the reveal.js backend needs first (`slide`, vertical `section`, 
 | Incremental reveal | `pause` / `step` |
 | Citation | `cite key` |
 
-Open design question — nested vs flat slide bodies:
-- *Nested*: `slide` carries a sub-program. Nicer authoring; needs a stratified container (outer `SlideC` with bodies in an inner `BodyC`) to keep strict positivity.
-- *Flat*: `beginSlide`/`endSlide` commands plus a well-formedness check; easiest to interpret.
-Resolve with a proof of equivalence (or adjunction) between the two presentations rather than picking one, using the Phase 1 machinery.
+Decision — nested vs flat slide bodies: **nested, by stratification** (implemented in `Slides.Core`).
+- The shape of a `slide` command contains the slide's content program (`Body = ContentC ⋆ ⊤`), and `stack` (a reveal.js vertical stack) contains a list of bodies. No container mentions itself, so strict positivity is not an issue, and `do`-notation works at both levels (`Slides.DSL`).
+- Why not a position-branching encoding (one position for the body, one for the rest): `bind` would substitute the continuation into the body's leaves too, which is wrong for scoped constructs. Stratifying avoids it.
+- Consequence for backends: a backend is a pair of algebras, one for `ContentC` and one for `DeckC` whose `slide`/`stack` handlers use the fold of the content algebra on the body they contain.
+- Further nesting (columns, boxes) adds another stratum (`LayoutC` whose `columns` shape contains content programs) combined with `ContentC` via container sum; this is why the `⊎` isomorphisms are needed.
+- `pause` in the beamer sense (everything after appears incrementally) needs a stateful algebra (carrier a function out of the current fragment mode). v1 uses explicit incremental bullets; revisit `pause` once the first backend works.
+- The flat begin/end presentation and its equivalence proof are optional and no longer on the critical path.
 
 Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-written deck.
 
@@ -135,7 +138,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 ## Immediate next steps
 
 1. ~~R0 spike~~ — done: a hand-built deck printed by parsnip runs in reveal.js; empty non-void elements must be padded (`plan/HTML.md`).
-2. Sketch `Slides.Core` with the minimal reveal.js vocabulary (`slide`, `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`) and decide nested vs flat bodies.
+2. ~~Sketch `Slides.Core`~~ — done: `Slides.Core` (stratified containers), `Slides.DSL` (`do`-notation), `Slides.Examples.Intro`; nested bodies chosen.
 3. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms, needed to compose slide containers.
 4. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (R2).
 5. Write the reveal.js algebra and driver (R3–R4).
