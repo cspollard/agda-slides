@@ -45,6 +45,7 @@ open import Container.Polynomial using (Poly; Poly₀)
 open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
+open import Slides.Math using (toLaTeX)
 open import Slides.Backend.HTML
 
 ------------------------------------------------------------------------
@@ -94,7 +95,7 @@ mutual
 
   piece : Inline → List Piece
   piece (text s)       = inj₁ s ∷ []
-  piece (inlineMath m) = inj₁ ("\\(" ++ˢ m ++ˢ "\\)") ∷ []
+  piece (inlineMath m) = inj₁ ("\\(" ++ˢ toLaTeX m ++ˢ "\\)") ∷ []
   piece (emph is)      = inj₂ (rich "em" [] is) ∷ []
   piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
   piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
@@ -136,7 +137,7 @@ renderContent (code lang src)     =
   hElement "pre" []
     ( hText "code" (("class" , "language-" ++ˢ lang) ∷ ("data-trim" , "") ∷ []) src ∷ [] )
   ∷ []
-renderContent (displayMath t)     = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ t ++ˢ " \\]") ∷ []
+renderContent (displayMath t)     = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ toLaTeX t ++ˢ " \\]") ∷ []
 renderContent (figure src cap)    =
   hElement "figure" []
     ( hElement "img" (("src" , src) ∷ ("alt" , plain cap) ∷ []) []
@@ -148,7 +149,7 @@ renderContent (figure src cap)    =
     plain : Text → String
     plain []                 = ""
     plain (text s ∷ is)      = s ++ˢ plain is
-    plain (inlineMath s ∷ is) = s ++ˢ plain is
+    plain (inlineMath m ∷ is) = toLaTeX m ++ˢ plain is
     plain (codeSpan s ∷ is)  = s ++ˢ plain is
     plain (cite k ∷ is)      = "[" ++ˢ k ++ˢ "]" ++ˢ plain is
     plain (_ ∷ is)           = plain is

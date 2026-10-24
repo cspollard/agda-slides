@@ -17,7 +17,6 @@
 module Slides.DSL where
 
 open import Level using (0ℓ)
-open import Agda.Builtin.FromString using (IsString; fromString) public
 open import Data.Bool using (Bool; true; false)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Maybe using (just; nothing)
@@ -25,36 +24,22 @@ open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.String using (String)
-import Data.String.Literals
 open import Data.Unit using (⊤; tt) public
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM
 open import Effect.Monad using (RawMonad)
 
+open import Slides.Literals public
+open import Slides.Math using (Math)
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
 
 ------------------------------------------------------------------------
--- Overloaded string literals and `do`-notation
---
--- A string literal at type `Text` or `Inline` is plain text.  Agda resolves
--- the literal's side condition with the instance `tt : ⊤`, which must be in
--- scope where the literal is written, and so must `fromString`; both are
--- re-exported from here.
+-- `do`-notation (the overloaded literals are in `Slides.Literals`)
 
 instance
-  -- once literals are overloaded, `String` literals need an instance too
-  isStringString : IsString String
-  isStringString = Data.String.Literals.isString
-
-  isStringInline : IsString Inline
-  isStringInline = record { Constraint = λ _ → ⊤ ; fromString = λ s → text s }
-
-  isStringText : IsString Text
-  isStringText = record { Constraint = λ _ → ⊤ ; fromString = λ s → text s ∷ [] }
-
   contentMonad : RawMonad {f = 0ℓ} (ContentC ⋆_)
   contentMonad = FM.monad
 
@@ -91,8 +76,8 @@ module Content where
   code : (language source : String) → Content
   code l s = cmd (Core.code l s)
 
-  displayMath : String → Content
-  displayMath s = cmd (Core.displayMath s)
+  displayMath : Math → Content
+  displayMath m = cmd (Core.displayMath m)
 
   -- unchecked: see `Slides.Resources` for the checked `figure`
   figureUnchecked : (src : String) → Text → Content
@@ -131,8 +116,8 @@ incremental xs = liftContent (Content.incremental xs)
 code : (language source : String) → Body
 code l s = liftContent (Content.code l s)
 
-displayMath : String → Body
-displayMath s = liftContent (Content.displayMath s)
+displayMath : Math → Body
+displayMath m = liftContent (Content.displayMath m)
 
 figureUnchecked : (src : String) → Text → Body
 figureUnchecked s c = liftContent (Content.figureUnchecked s c)

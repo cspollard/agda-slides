@@ -27,6 +27,8 @@ open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_)
 
+open import Slides.Math using (Math)
+
 ------------------------------------------------------------------------
 -- Inline markup
 
@@ -34,7 +36,7 @@ data Inline : Set where
   text       : String → Inline
   emph       : List Inline → Inline
   strong     : List Inline → Inline
-  inlineMath : String → Inline
+  inlineMath : Math → Inline
   codeSpan   : String → Inline
   link       : (url : String) → List Inline → Inline
   -- a citation of a bibliography key (checked against the deck's resources)
@@ -52,7 +54,7 @@ data ContentShape : Set where
   paragraph   : Text → ContentShape
   bullets     : (incremental : Bool) → List Text → ContentShape
   code        : (language source : String) → ContentShape
-  displayMath : String → ContentShape
+  displayMath : Math → ContentShape
   figure      : (src : String) (caption : Text) → ContentShape
   notes       : Text → ContentShape
   table       : (header : List Text) (rows : List (List Text)) → ContentShape
