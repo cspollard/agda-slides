@@ -20,7 +20,9 @@ open import Data.Bool using (Bool; true; false)
 open import Data.List using (List; []; _∷_; _++_; map; length)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Nat.Show using (show)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
 open import Function using (_∘_)
@@ -41,7 +43,8 @@ open import Data.XML.Print using (renderXML)
 open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; stringⱼ)
 open import Data.JSON.Print using (renderJSON)
 
-open import Container.Polynomial using (Poly)
+open import Container.Polynomial using (Poly; Poly₀)
+open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Backend.HTML
@@ -72,10 +75,42 @@ private
   nil = record { to = λ _ → [] ; cong = λ _ → PW.[] }
 
 ------------------------------------------------------------------------
+-- Inline markup
+
+private
+  Piece : Set
+  Piece = String ⊎ XMLDoc
+
+  -- Merge adjacent text into the text slots of mixed content.
+  normalise : List Piece → String × List (XMLDoc × String)
+  normalise []              = "" , []
+  normalise (inj₁ s ∷ ps)   with normalise ps
+  ... | t , cs = (s ++ˢ t) , cs
+  normalise (inj₂ x ∷ ps)   with normalise ps
+  ... | t , cs = "" , (x , t) ∷ cs
+
+mutual
+  pieces : List Inline → List Piece
+  pieces []       = []
+  pieces (i ∷ is) = piece i ++ pieces is
+
+  piece : Inline → List Piece
+  piece (text s)       = inj₁ s ∷ []
+  piece (inlineMath m) = inj₁ ("\\(" ++ˢ m ++ˢ "\\)") ∷ []
+  piece (emph is)      = inj₂ (rich "em" [] is) ∷ []
+  piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
+  piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
+  piece (link u is)    = inj₂ (rich "a" (("href" , u) ∷ []) is) ∷ []
+
+  -- An element whose content is running text.
+  rich : String → Attrs → List Inline → XMLDoc
+  rich tag attrs is = hMixed tag attrs (normalise (pieces is))
+
+------------------------------------------------------------------------
 -- Rendering the commands of a slide
 
-section : List XMLDoc → XMLDoc
-section = hElement "section" []
+section : Attrs → List XMLDoc → XMLDoc
+section attrs = hElement "section" attrs
 
 -- Heading levels 1–6; anything outside is clamped.
 hTag : ℕ → String
@@ -90,13 +125,13 @@ hTag n = "h" ++ˢ show (clamp n)
     clamp (suc (suc (suc (suc (suc zero))))) = 5
     clamp _ = 6
 
-bullet : Bool → String → XMLDoc
-bullet true  t = hText "li" (("class" , "fragment") ∷ []) t
-bullet false t = hText "li" [] t
+bullet : Bool → Text → XMLDoc
+bullet true  t = rich "li" (("class" , "fragment") ∷ []) t
+bullet false t = rich "li" [] t
 
 renderContent : ContentShape → Forest
-renderContent (heading n t)       = hText (hTag n) [] t ∷ []
-renderContent (paragraph t)       = hText "p" [] t ∷ []
+renderContent (heading n t)       = rich (hTag n) [] t ∷ []
+renderContent (paragraph t)       = rich "p" [] t ∷ []
 renderContent (bullets inc ts)    = hElement "ul" [] (map (bullet inc) ts) ∷ []
 renderContent (code lang src)     =
   hElement "pre" []
@@ -105,28 +140,73 @@ renderContent (code lang src)     =
 renderContent (displayMath t)     = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ t ++ˢ " \\]") ∷ []
 renderContent (figure src cap)    =
   hElement "figure" []
-    ( hElement "img" (("src" , src) ∷ ("alt" , cap) ∷ []) []
-    ∷ hText "figcaption" [] cap
+    ( hElement "img" (("src" , src) ∷ ("alt" , plain cap) ∷ []) []
+    ∷ rich "figcaption" [] cap
     ∷ [] )
   ∷ []
-renderContent (notes t)           = hText "aside" (("class" , "notes") ∷ []) t ∷ []
+  where
+    -- the alt text is the caption's plain text
+    plain : Text → String
+    plain []                 = ""
+    plain (text s ∷ is)      = s ++ˢ plain is
+    plain (inlineMath s ∷ is) = s ++ˢ plain is
+    plain (codeSpan s ∷ is)  = s ++ˢ plain is
+    plain (_ ∷ is)           = plain is
+renderContent (notes t)           = rich "aside" (("class" , "notes") ∷ []) t ∷ []
 
 module A = Alg 0ℓ 0ℓ ContentC
+module L = Alg 0ℓ 0ℓ LayoutC
+module B = Alg 0ℓ 0ℓ BlockC
 module D = Alg 0ℓ 0ℓ DeckC
 
 -- The content algebra: a command contributes its markup, then the rest.
-contentAlg : F-Algebra A.F
-contentAlg = record
-  { A = ForestSetoid
-  ; α = record
-      { to   = λ { (c , k) → renderContent c ++ k tt }
-      ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) →
-                   PW.++⁺ (forest-refl _) (k≈ tt) }
-      }
+contentα : Func (Poly₀ ContentC ForestSetoid) ForestSetoid
+contentα = record
+  { to   = λ { (c , k) → renderContent c ++ k tt }
+  ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → PW.++⁺ (forest-refl _) (k≈ tt) }
   }
 
+contentAlg : F-Algebra A.F
+contentAlg = record { A = ForestSetoid ; α = contentα }
+
+renderContentProgram : Content → Forest
+renderContentProgram = A.fold contentAlg {⊤ˢ} nil
+
+-- The layout algebra.
+renderLayout : LayoutShape → Forest
+renderLayout (columns cs) =
+  hElement "div" (("class" , "columns") ∷ [])
+    (map (λ c → hElement "div" (("class" , "column") ∷ []) (renderContentProgram c)) cs)
+  ∷ []
+renderLayout (box t c) =
+  hElement "div" (("class" , "box") ∷ [])
+    (rich "div" (("class" , "box-title") ∷ []) t ∷ renderContentProgram c)
+  ∷ []
+
+layoutα : Func (Poly₀ LayoutC ForestSetoid) ForestSetoid
+layoutα = record
+  { to   = λ { (c , k) → renderLayout c ++ k tt }
+  ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → PW.++⁺ (forest-refl _) (k≈ tt) }
+  }
+
+layoutAlg : F-Algebra L.F
+layoutAlg = record { A = ForestSetoid ; α = layoutα }
+
+-- The algebra for slide bodies is the copairing of the two.
+blockAlg : F-Algebra B.F
+blockAlg = record { A = ForestSetoid ; α = copair ContentC LayoutC ForestSetoid contentα layoutα }
+
 renderBody : Body → Forest
-renderBody = A.fold contentAlg {⊤ˢ} nil
+renderBody = B.fold blockAlg {⊤ˢ} nil
+
+-- Slide options become `data-*` attributes.
+slideAttrs : SlideOptions → Attrs
+slideAttrs o = opt "data-background-color" (SlideOptions.background o)
+            ++ opt "data-transition" (SlideOptions.transition o)
+  where
+    opt : String → Maybe String → Attrs
+    opt k nothing  = []
+    opt k (just v) = (k , v) ∷ []
 
 -- The deck algebra: each slide is a `<section>`; a stack is a `<section>`
 -- of `<section>`s.
@@ -134,11 +214,12 @@ deckAlg : F-Algebra D.F
 deckAlg = record
   { A = ForestSetoid
   ; α = record
-      { to   = λ { (slide b , k)  → section (renderBody b) ∷ k tt
-                 ; (stack bs , k) → section (map (section ∘ renderBody) bs) ∷ k tt }
-      ; cong = λ { {slide _ , _} {slide _ , _} (refl ,ₚ k≈) →
+      { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody b) ∷ k tt
+                 ; (stack o bs , k) →
+                     section (slideAttrs o) (map (section [] ∘ renderBody) bs) ∷ k tt }
+      ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt
-                 ; {stack _ , _} {stack _ , _} (refl ,ₚ k≈) →
+                 ; {stack _ _ , _} {stack _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt }
       }
   }
@@ -185,6 +266,7 @@ page cfg slides =
         ∷ stylesheet (dist ++ˢ "reveal.css")
         ∷ stylesheet (dist ++ˢ "theme/" ++ˢ theme ++ˢ ".css")
         ∷ stylesheet (dist ++ˢ "plugin/highlight/monokai.css")
+        ∷ stylesheet "slides.css"
         ∷ [] )
     ∷ hElement "body" []
         ( div "reveal" (div "slides" slides ∷ [])
@@ -228,5 +310,5 @@ count (impure (_ , k)) = suc (count (k tt))
 -- One top-level `<section>` per slide command, in order.
 renderDeck-length : ∀ d → length (renderDeck d) ≡ count d
 renderDeck-length (pure tt)                = refl
-renderDeck-length (impure (slide _ , k))   = cong suc (renderDeck-length (k tt))
-renderDeck-length (impure (stack _ , k))   = cong suc (renderDeck-length (k tt))
+renderDeck-length (impure (slide _ _ , k)) = cong suc (renderDeck-length (k tt))
+renderDeck-length (impure (stack _ _ , k)) = cong suc (renderDeck-length (k tt))

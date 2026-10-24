@@ -1,0 +1,8 @@
+/* Styles for the layout vocabulary (columns, boxes); reveal.js has none. */
+.reveal .columns { display: flex; gap: 2rem; justify-content: space-between; }
+.reveal .column { flex: 1; }
+.reveal .box { border: 2px solid currentColor; border-radius: 0.4rem; padding: 0.5rem 1rem; margin: 1rem 0; }
+.reveal .box-title { font-weight: bold; margin-bottom: 0.3rem; }
+.reveal .math { margin: 0.5rem 0; }
+.reveal figure { margin: 0.5rem 0; }
+.reveal figcaption { font-size: 0.7em; opacity: 0.8; }

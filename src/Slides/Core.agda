@@ -2,53 +2,98 @@
 
 -- The slide vocabulary as containers.
 --
--- A deck is a program in the free monad over `DeckC`; a slide's content is
--- a program in the free monad over `ContentC`.  Nesting is stratified rather
--- than recursive: the shape of the `slide` command *contains* a content
--- program (a `Body`), so no container mentions itself and strict positivity
--- is not an issue.  Backends are algebras for each level (see
--- `Container.Interpret`).
+-- A deck is a program in the free monad over `DeckC`; the content of a
+-- slide is a program over `BlockC = ContentC ⊎ LayoutC`.  Nesting is
+-- stratified rather than recursive: the shape of the `slide` command
+-- *contains* a body, and the shape of `columns` contains content programs,
+-- so no container mentions itself and strict positivity is not an issue.
+-- Backends are algebras for each level (`Container.Interpret`); the algebra
+-- for `BlockC` is the copairing of the algebras for its summands
+-- (`Container.Sum`).
 --
 -- All commands have a single continuation (`Position = ⊤`).
 
 module Slides.Core where
 
 open import Level using (0ℓ)
-open import Data.Bool using (Bool)
+open import Data.Bool using (Bool; false)
 open import Data.List using (List)
+open import Data.Maybe using (Maybe; nothing)
 open import Data.Nat using (ℕ)
 open import Data.String using (String)
 open import Data.Unit using (⊤)
 open import Data.Container.Core using (Container; _▷_)
+open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_)
+
+------------------------------------------------------------------------
+-- Inline markup
+
+data Inline : Set where
+  text       : String → Inline
+  emph       : List Inline → Inline
+  strong     : List Inline → Inline
+  inlineMath : String → Inline
+  codeSpan   : String → Inline
+  link       : (url : String) → List Inline → Inline
+
+-- Running text.
+Text : Set
+Text = List Inline
 
 ------------------------------------------------------------------------
 -- Content inside a slide
 
 data ContentShape : Set where
-  heading     : (level : ℕ) → String → ContentShape
-  paragraph   : String → ContentShape
-  bullets     : (incremental : Bool) → List String → ContentShape
+  heading     : (level : ℕ) → Text → ContentShape
+  paragraph   : Text → ContentShape
+  bullets     : (incremental : Bool) → List Text → ContentShape
   code        : (language source : String) → ContentShape
   displayMath : String → ContentShape
-  figure      : (src caption : String) → ContentShape
-  notes       : String → ContentShape
+  figure      : (src : String) (caption : Text) → ContentShape
+  notes       : Text → ContentShape
 
 ContentC : Container 0ℓ 0ℓ
 ContentC = ContentShape ▷ λ _ → ⊤
 
--- The content of one slide.
+-- A program over `ContentC`: the content of a column or box.
+Content : Set
+Content = ContentC ⋆ ⊤
+
+------------------------------------------------------------------------
+-- Layout
+
+data LayoutShape : Set where
+  columns : List Content → LayoutShape
+  box     : (title : Text) → Content → LayoutShape
+
+LayoutC : Container 0ℓ 0ℓ
+LayoutC = LayoutShape ▷ λ _ → ⊤
+
+-- Everything that can appear directly in a slide.
+BlockC : Container 0ℓ 0ℓ
+BlockC = ContentC ⊎ LayoutC
+
+-- The body of a slide.
 Body : Set
-Body = ContentC ⋆ ⊤
+Body = BlockC ⋆ ⊤
 
 ------------------------------------------------------------------------
 -- The deck
 
+record SlideOptions : Set where
+  field
+    background : Maybe String   -- any CSS colour
+    transition : Maybe String   -- none, fade, slide, convex, concave, zoom
+
+defaultSlide : SlideOptions
+defaultSlide = record { background = nothing ; transition = nothing }
+
 data DeckShape : Set where
   -- a horizontal slide
-  slide : Body → DeckShape
+  slide : SlideOptions → Body → DeckShape
   -- a vertical stack of slides (reveal.js nested sections)
-  stack : List Body → DeckShape
+  stack : SlideOptions → List Body → DeckShape
 
 DeckC : Container 0ℓ 0ℓ
 DeckC = DeckShape ▷ λ _ → ⊤

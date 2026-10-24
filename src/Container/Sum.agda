@@ -27,6 +27,14 @@ open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Container.Polynomial
 
+-- The injections of the sum, as container morphisms.
+module _ {s₁ s₂ p} {C₁ : Container s₁ p} {C₂ : Container s₂ p} where
+  inl : C₁ CC.⇒ (C₁ ⊎ C₂)
+  inl = record { shape = inj₁ ; position = λ x → x }
+
+  inr : C₂ CC.⇒ (C₁ ⊎ C₂)
+  inr = record { shape = inj₂ ; position = λ x → x }
+
 module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
          (A : Setoid c ℓ) where
   private

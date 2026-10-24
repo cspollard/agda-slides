@@ -22,12 +22,14 @@ spike:
 	$(AGDA) --compile --compile-dir=_build/spike src/Slides/Spike/Reveal.agda
 	mv Reveal _build/spike/Reveal 2>/dev/null || true
 	_build/spike/Reveal
+	cp assets/slides.css out/spike/slides.css
 
 # Render the example deck to out/intro/.
 .PHONY: example
 example:
 	mkdir -p out/intro _build/example
 	ln -sfn $(REVEAL) out/intro/reveal
+	cp assets/slides.css out/intro/slides.css
 	$(AGDA) --compile --compile-dir=_build/example src/Slides/Examples/IntroMain.agda
 	mv IntroMain _build/example/IntroMain 2>/dev/null || true
 	_build/example/IntroMain
@@ -37,6 +39,7 @@ example:
 test:
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
+	diff -u tests/golden/slides.css out/intro/slides.css
 
 # Load the rendered deck in headless Chrome (set CHROME to override the binary).
 test-browser:

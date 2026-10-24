@@ -29,4 +29,9 @@ check("vertical stack recognised", 'class="stack' in dom if "<section><section" 
 check("notes aside kept", ('class="notes"' in dom) == ('class="notes"' in source))
 check("math rendered by KaTeX", 'class="katex' in dom if r"\[" in source or r"\(" in source else True)
 check("code highlighted", 'hljs' in dom if "<code" in source else True)
+check("inline markup rendered as mixed content", '<em>' in dom if '<em>' in source else True)
+check("columns laid out side by side",
+      'class="columns"' in dom if 'class="columns"' in source else True)
+check("slide background applied", 'slide-background' in dom and '#2a2a40' in dom.replace(' ', '').lower()
+      if 'data-background-color' in source else True)
 sys.exit(1 if failures else 0)

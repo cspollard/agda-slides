@@ -4,14 +4,14 @@
 
 module Slides.Examples.Intro where
 
-open import Slides.Core using (Body; Deck)
+open import Slides.Core using (Body; Deck; Content; text; emph; codeSpan; link; inlineMath)
 open import Slides.DSL
 open import Data.List using (_∷_; [])
 
 titleSlide : Body
 titleSlide = do
   heading 1 "Slides in Agda"
-  paragraph "a free-monad DSL"
+  paragraph′ (text "a " ∷ emph (text "free-monad" ∷ []) ∷ text " DSL, checked by " ∷ codeSpan "agda" ∷ [])
   notes "Welcome everyone."
 
 why : Body
@@ -20,8 +20,20 @@ why = do
   incremental ("typed decks" ∷ "verified export" ∷ "reusable components" ∷ [])
   displayMath "E = mc^2"
 
+compare : Body
+compare = do
+  heading 2 "Two columns"
+  columns
+    ( (do Content.heading 3 "Left"; Content.paragraph′ (text "see " ∷ link "https://reveal.js" (text "reveal.js" ∷ []) ∷ []))
+    ∷ (do Content.heading 3 "Right"; Content.paragraph′ (text "inline " ∷ inlineMath "a^2 + b^2" ∷ text " math" ∷ []))
+    ∷ [] )
+  box "Remark" (do Content.paragraph "Boxes hold content programs, too.")
+
 demo : Deck
 demo = do
   slide titleSlide
   slide why
-  stack ( (do heading 2 "Details A"; paragraph "first") ∷ (do heading 2 "Details B"; code "agda" "id x = x") ∷ [] )
+  slideWith (background "#2a2a40") compare
+  stack ( (do heading 2 "Details A"; paragraph "first")
+        ∷ (do heading 2 "Details B"; code "agda" "id x = x")
+        ∷ [] )
