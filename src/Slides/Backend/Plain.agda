@@ -37,6 +37,7 @@ open import Data.XML.Print using (renderXML)
 open import Container.Polynomial using (Poly₀)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
+open import Slides.Steps using (steps)
 open import Slides.Backend.HTML
 open import Slides.Backend.Common
 
@@ -50,12 +51,12 @@ deckAlg : F-Algebra D.F
 deckAlg = record
   { A = ForestSetoid
   ; α = record
-      { to   = λ { (slide o b , k)  → slideSection o (renderBody b) ∷ k tt
-                 ; (stack o bs , k) → map (slideSection o ∘ renderBody) bs ++ k tt }
+      { to   = λ { (slide o b , k)  → slideSection o (renderBody (steps b)) ∷ k tt
+                 ; (stack o bs , k) → map (slideSection o ∘ renderBody ∘ steps) bs ++ k tt }
       ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt
                  ; {stack o bs , _} {stack _ _ , _} (refl ,ₚ k≈) →
-                     PW.++⁺ (Setoid.refl ForestSetoid {map (slideSection o ∘ renderBody) bs}) (k≈ tt) }
+                     PW.++⁺ (Setoid.refl ForestSetoid {map (slideSection o ∘ renderBody ∘ steps) bs}) (k≈ tt) }
       }
   }
 
@@ -128,6 +129,6 @@ renderDeck-length : ∀ d → length (renderDeck d) ≡ countSlides d
 renderDeck-length (pure tt)                  = refl
 renderDeck-length (impure (slide _ _ , k))   = cong suc (renderDeck-length (k tt))
 renderDeck-length (impure (stack o bs , k))  =
-  trans (length-++ (map (slideSection o ∘ renderBody) bs))
-        (cong₂ _+_ (length-map (slideSection o ∘ renderBody) bs) (renderDeck-length (k tt)))
+  trans (length-++ (map (slideSection o ∘ renderBody ∘ steps) bs))
+        (cong₂ _+_ (length-map (slideSection o ∘ renderBody ∘ steps) bs) (renderDeck-length (k tt)))
   where open import Relation.Binary.PropositionalEquality.Core using (cong₂)

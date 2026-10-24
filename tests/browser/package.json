@@ -1,0 +1,9 @@
+{
+  "name": "agda-slides-browser-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests that drive the rendered decks (keyboard navigation, fragments).",
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

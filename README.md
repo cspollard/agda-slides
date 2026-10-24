@@ -35,6 +35,8 @@ make example                     # writes out/intro/index.html and init.js
 make talk plain                  # component-based deck: reveal.js (out/talk) and standalone HTML (out/plain)
 make test                        # golden-file diffs
 make test-browser                # headless Chrome check (set CHROME to override)
+make showcase                   # every feature, with both backends (out/showcase, out/showcase-plain)
+make test-playwright             # drive the showcase in a real browser (needs `npm install` in tests/browser, done by the target)
 make test-negative               # decks citing undeclared resources must not typecheck
 make check-resources             # declared figures exist next to the rendered decks
 ```

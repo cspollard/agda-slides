@@ -77,6 +77,11 @@ data LayoutShape : Set where
   -- the content appears on a later step; the style is a reveal.js fragment
   -- class (fade-up, grow, highlight-red, …)
   fragment : (style : Maybe String) → Content → LayoutShape
+  -- `pause`: everything after it in the body appears step by step (see
+  -- `Slides.Steps`); renders as nothing by itself
+  pause    : LayoutShape
+  -- a layout command that appears on a later step (produced by `Slides.Steps`)
+  stepped  : (style : Maybe String) → LayoutShape → LayoutShape
 
 LayoutC : Container 0ℓ 0ℓ
 LayoutC = LayoutShape ▷ λ _ → ⊤

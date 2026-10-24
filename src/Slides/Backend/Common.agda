@@ -203,6 +203,14 @@ renderLayout (fragment style c) =
     cls nothing  = "fragment"
     cls (just s) = "fragment " ++ˢ s
 
+renderLayout pause = []
+renderLayout (stepped style l) =
+  hElement "div" (("class" , cls style) ∷ []) (renderLayout l) ∷ []
+  where
+    cls : Maybe String → String
+    cls nothing  = "fragment"
+    cls (just s) = "fragment " ++ˢ s
+
 layoutα : Func (Poly₀ LayoutC ForestSetoid) ForestSetoid
 layoutα = record
   { to   = λ { (c , k) → renderLayout c ++ k tt }

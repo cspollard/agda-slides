@@ -51,6 +51,7 @@ open import Container.Polynomial using (Poly; Poly₀)
 open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
+open import Slides.Steps using (steps)
 open import Slides.Backend.HTML
 open import Slides.Backend.Common public
 
@@ -62,9 +63,9 @@ deckAlg : F-Algebra D.F
 deckAlg = record
   { A = ForestSetoid
   ; α = record
-      { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody b) ∷ k tt
+      { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody (steps b)) ∷ k tt
                  ; (stack o bs , k) →
-                     section (slideAttrs o) (map (section [] ∘ renderBody) bs) ∷ k tt }
+                     section (slideAttrs o) (map (section [] ∘ renderBody ∘ steps) bs) ∷ k tt }
       ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt
                  ; {stack _ _ , _} {stack _ _ , _} (refl ,ₚ k≈) →
@@ -201,6 +202,6 @@ renderDeck-bind : ∀ (d₁ d₂ : Deck) →
                   renderDeck (d₁ FM.>>= λ _ → d₂) ≡ renderDeck d₁ ++ renderDeck d₂
 renderDeck-bind (pure tt)                 d₂ = refl
 renderDeck-bind (impure (slide o b , k))  d₂ =
-  cong (section (slideAttrs o) (renderBody b) ∷_) (renderDeck-bind (k tt) d₂)
+  cong (section (slideAttrs o) (renderBody (steps b)) ∷_) (renderDeck-bind (k tt) d₂)
 renderDeck-bind (impure (stack o bs , k)) d₂ =
-  cong (section (slideAttrs o) (map (section [] ∘ renderBody) bs) ∷_) (renderDeck-bind (k tt) d₂)
+  cong (section (slideAttrs o) (map (section [] ∘ renderBody ∘ steps) bs) ∷_) (renderDeck-bind (k tt) d₂)

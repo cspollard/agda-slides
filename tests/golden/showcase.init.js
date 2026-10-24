@@ -1,0 +1,1 @@
+Reveal.initialize(Object.assign({"hash":true,"transition":"fade","slideNumber":true,"controls":true,"progress":true,"width":960,"height":700}, {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));

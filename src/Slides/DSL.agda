@@ -31,7 +31,7 @@ open import Effect.Monad using (RawMonad)
 
 open import Slides.Literals public
 open import Slides.Math using (Math)
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -137,6 +137,10 @@ fragment c = impure (inj₂ (Core.fragment nothing c) , λ _ → pure tt)
 
 fragmentWith : String → Content → Body
 fragmentWith style c = impure (inj₂ (Core.fragment (just style) c) , λ _ → pure tt)
+
+-- Everything after a `pause` in the same body appears step by step.
+pause : Body
+pause = impure (inj₂ Core.pause , λ _ → pure tt)
 
 box : Text → Content → Body
 box t c = impure (inj₂ (Core.box t c) , λ _ → pure tt)
