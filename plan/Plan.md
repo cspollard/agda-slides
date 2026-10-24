@@ -142,7 +142,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 Steps 1–6 of the previous list are done (vocabulary, theming, components, restyling lemma, explicit fragments, plain HTML backend); see the status notes above and `plan/HTML.md`. What remains, roughly in order of value:
 
 1. **Author experience**
-   - Revisit overloaded string literals for `Inline`/`Text` (they did not engage across modules; the standalone test worked, so it is probably instance scoping). Today plain-`String` commands are the default and `paragraph′` etc. take `Text`.
+   - ~~Overloaded string literals~~ — done: a string literal at type `Text` or `Inline` is plain text (`heading 1 "Title"`, `paragraph ("a " ∷ emph "b" ∷ [])`), and the primed `′` variants are gone. Two scoping facts made it work: the user's module needs `fromString` in scope (the DSL re-exports `Agda.Builtin.FromString`) and the instance `tt : ⊤` for the literal's side condition (re-exported too); `String` literals then need an `IsString String` instance, also provided. The rendered output of all examples is unchanged.
    - Typecheck-time resource checks: figures and citations as proof-carrying commands (`Plan` Phase 5); a `cite` command with a bibliography.
    - Typed math instead of LaTeX strings.
 2. **Backends and tests**

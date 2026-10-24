@@ -10,48 +10,43 @@
 
 module Slides.Components where
 
-open import Data.List using (List; _∷_; []; map)
-open import Data.String using (String)
+open import Data.List using (List; _∷_; [])
 
-open import Slides.Core using (Body; Deck; Content; Text; text)
+open import Slides.Core using (Body; Deck; Content; Text)
 open import Slides.DSL
 
 -- Decorators: `Body → Body`.
 
-titled : String → Body → Body
+titled : Text → Body → Body
 titled t b = heading 2 t >> b
 
-withNotes : String → Body → Body
+withNotes : Text → Body → Body
 withNotes n b = b >> notes n
 
 -- Slide bodies.
 
-titleBody : (title subtitle author : String) → Body
+titleBody : (title subtitle author : Text) → Body
 titleBody t s a = do
   heading 1 t
   paragraph s
   paragraph a
 
-bulletBody : String → List String → Body
+bulletBody : Text → List Text → Body
 bulletBody t xs = titled t (bullets xs)
 
-incrementalBody : String → List String → Body
+incrementalBody : Text → List Text → Body
 incrementalBody t xs = titled t (incremental xs)
 
-twoColumn : String → Content → Content → Body
+twoColumn : Text → Content → Content → Body
 twoColumn t l r = titled t (columns (l ∷ r ∷ []))
 
-resultsTable : String → (header : List String) → List (List String) → Body
-resultsTable t header rows =
-  titled t (table (map plain header) (map (map plain) rows))
-  where
-    plain : String → Text
-    plain s = text s ∷ []
+resultsTable : Text → (header : List Text) → List (List Text) → Body
+resultsTable t header rows = titled t (table header rows)
 
 -- Whole slides.
 
-sectionSlide : String → Deck
+sectionSlide : Text → Deck
 sectionSlide t = slideWith (background "#1b1b2f") (heading 1 t)
 
-titleSlide : (title subtitle author : String) → Deck
+titleSlide : (title subtitle author : Text) → Deck
 titleSlide t s a = slide (titleBody t s a)
