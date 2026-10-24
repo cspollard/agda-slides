@@ -44,7 +44,7 @@ src/Container/Polynomial.agda            (Phase 1) generic: containers as polyno
 src/Container/Polynomial/Morphism.agda   (Phase 1)
 src/Container/FreeMonad.agda             (Phase 1)
 src/Container/FreeMonad/Algebraic.agda   (Phase 1)
-src/Container/Interpret.agda             (Phase 1) fold / fusion
+src/Container/Interpret.agda             (Phase 1) initial algebra, fold/hom, fusion
 src/Slides.agda                          slide-specific top-level module / public API
 src/Slides/Core.agda, DSL.agda        (Phase 2: slide containers, smart constructors)
 src/Slides/Backend/*.agda             (Phases 3–4: HTML, reveal.js)
@@ -52,21 +52,21 @@ examples/                             sample decks
 plan/                                 this plan and detailed sub-plans
 ```
 
-The `Container.*` namespace is deliberately independent of slides: nothing under `src/Container/` may import `Slides.*`, so it could be split out as its own library. `src/Slides/Smoke.agda` only checks that dependencies resolve; delete it when Phase 1 modules import the same things.
+The `Container.*` namespace is deliberately independent of slides: nothing under `src/Container/` may import `Slides.*`, so it could be split out as its own library. The scaffold's smoke module has been removed now that the Phase 1 modules import the same dependencies.
 
 ## Phases
 
 ### Phase 0 — Scaffolding (done)
 `.agda-lib`, git repository, `.gitignore`, `Makefile`, README, smoke module that imports stdlib `Data.Container`, `Data.Container.FreeMonad` and the agda-categories modules listed above. Typechecks with Agda 2.7.0.1.
 
-### Phase 1 — Containers, polynomial functors, free monad (see `plan/Polynomial.md`)
-1. `⟦C⟧` as an endofunctor on `Setoids`.
-2. Container morphisms as natural transformations.
-3. `Free C` as a monad on `Setoids`.
-4. `Free C ⊣ Forget` from `F-Algebras ⟦C⟧`; the induced monad is the stdlib free monad; Eilenberg–Moore comparison and initial algebra (Lambek).
-5. `interpret` as the unique fold; fusion lemma.
-
-Exit: all Phase 1 modules typecheck with no holes/postulates; `make check` passes.
+### Phase 1 — Containers, polynomial functors, free monad (see `plan/Polynomial.md`) — core done
+Status (all modules typecheck with `--safe --without-K`, no holes, no postulates; `make check` passes):
+- [x] `Container.Polynomial`: `⟦C⟧` as a functor `Setoids c ℓ ⟶ Setoids (s⊔p⊔c) (s⊔p⊔ℓ)` (endofunctor for `Set 0ℓ` containers).
+- [x] `Container.Polynomial.Morphism`: container morphisms as natural transformations; preserves identity and composition.
+- [x] `Container.FreeMonad`: `Free C` as a functor and a `Monad` on `Setoids` (structural tree equality, no funext).
+- [x] `Container.FreeMonad.Algebraic`: forgetful functor from `F-Algebras ⟦C⟧`, `Free₀ C X` as a `FreeObject`, the adjunction `Free ⊣ Forget`, and the proof that the monad of that adjunction is isomorphic to `Free C` (two `Monad⇒-id` morphisms, mutually inverse).
+- [x] `Container.Interpret`: initial algebra and Lambek's lemma, `fold-hom` (folds commute with algebra homomorphisms), `fusion` (translate along a container morphism = interpret with the pulled-back algebra).
+- [ ] Deferred (stretch): Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`; faithfulness/fullness of `Poly-⇒`; natural isomorphisms between `⟦·⟧` and the `Data.Container.Combinator` operations (`⊎`, `×`, `const`, `id`) — needed before Phase 2 relies on `⊎` to compose slide features.
 
 ### Phase 2 — Slide vocabulary
 One container per concern, combined with container coproduct (`Data.Container.Combinator._⊎_`; its interpretation is proved in Phase 1 step 1):
@@ -127,6 +127,6 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-1. Commit the scaffold.
-2. Implement `Container.Polynomial` (Phase 1 step 1) with the agda MCP loop; commit when it typechecks.
-3. Implement `Container.FreeMonad` (step 3), then `Container.FreeMonad.Algebraic` (step 4).
+1. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms; this is what Phase 2 needs for composing slide features.
+2. Decide the nested-vs-flat slide body representation (Phase 2) and sketch `Slides.Core` with `heading`, `paragraph`, `bullets`, `slide`.
+3. Optionally finish the Eilenberg–Moore comparison.

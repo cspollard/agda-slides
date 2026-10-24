@@ -1,5 +1,13 @@
 # Plan: Containers, polynomial functors, and the free monad (Phase 1)
 
+**Status:** steps 1–5 are implemented except the items listed as deferred in `plan/Plan.md` (Eilenberg–Moore comparison, fullness/faithfulness of `Poly-⇒`, combinator isomorphisms). Notes on how the implementation differs from the sketch below:
+
+- Tree equality is defined by recursion (`Container.FreeMonad.Eq`), not as an inductive family: an indexed family would live in a universe depending on the carrier level, which breaks the functor's target levels.
+- Levels: `Free C : Setoids c ℓ ⟶ Setoids (c⊔s⊔p) (ℓ⊔s⊔p)`; the monad and algebra constructions work on `Setoids c′ ℓ′` with `c′ = c⊔s⊔p`, `ℓ′ = ℓ⊔s⊔p`, where `Poly C` is an endofunctor.
+- Container `Pointwise` from the stdlib is used for `⟦C⟧`; for trees the equality is written out with `Σ` so Agda sees it as structurally recursive.
+- agda-categories has no forgetful functor from `F-Algebras`; `Alg.Forget` defines it, and `FO⇒LAdj` yields the adjunction.
+- The monad isomorphism is proved as two `Monad⇒-id` morphisms (identity on carriers) plus inverse laws; `fold-bind` (fold into a free algebra is `bind`) is the key lemma.
+
 This is the foundation of the project and the first thing to prove. Everything else (slide vocabulary, backends) sits on it. Module names below are verified against agda-categories at commit `c2e7c13e` and Agda 2.7.0.1.
 
 ## Goal

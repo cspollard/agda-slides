@@ -16,3 +16,9 @@ make check
 ```
 
 typechecks every module under `src/`.
+
+## Layout
+
+- `src/Container/` — generic, slide-independent development: containers as polynomial functors on `Setoids`, the free monad, its algebraic description, and interpretation/fusion. Nothing here imports `Slides.*`.
+- `src/Slides/` — the slide DSL (to come).
+- `plan/` — roadmap and detailed plans.
