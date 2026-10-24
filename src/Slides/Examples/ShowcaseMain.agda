@@ -12,6 +12,7 @@ open import IO using (Main; run; writeFile; _>>_)
 
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
+open import Slides.Driver
 open import Slides.Examples.Showcase using (showcase)
 
 revealConfig : Reveal.RevealConfig
@@ -29,6 +30,5 @@ plainConfig = record Plain.defaultConfig { title = "Showcase" }
 
 main : Main
 main = run
-  ( writeFile "out/showcase/index.html" (Reveal.renderReveal revealConfig showcase)
-  >> writeFile "out/showcase/init.js" (Reveal.initScript revealConfig)
-  >> writeFile "out/showcase-plain/index.html" (Plain.renderPlain plainConfig showcase) )
+  ( writeRevealDeck "out/showcase" revealConfig showcase
+  >> writePlainDeck "out/showcase-plain" plainConfig showcase )

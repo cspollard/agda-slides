@@ -5,13 +5,11 @@
 
 module Slides.Examples.IntroMain where
 
-open import Data.String using (_++_)
-open import IO using (Main; run; writeFile; _>>_)
+open import IO using (Main; run)
 
-open import Slides.Backend.Reveal
+open import Slides.Backend.Reveal using (defaultConfig)
+open import Slides.Driver
 open import Slides.Examples.Intro using (demo)
 
 main : Main
-main = run
-  ( writeFile "out/intro/index.html" (renderReveal defaultConfig demo)
-  >> writeFile "out/intro/init.js" (initScript defaultConfig) )
+main = run (writeRevealDeck "out/intro" defaultConfig demo)

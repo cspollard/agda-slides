@@ -2,7 +2,7 @@
 
 A DSL, written in Agda, for producing scientific slide decks. A deck is a program in the free monad over a container of slide commands. Backends (HTML, reveal.js, …) are algebras for the container's polynomial functor, and the interpreter is the unique fold out of the free algebra. Proofs use [agda-categories](https://github.com/agda/agda-categories).
 
-See `Goals.md` for the goals and `plan/Plan.md` for the roadmap.
+See `Goals.md` for the goals, `docs/Authoring.md` for how to write a deck, and `plan/Plan.md` for the roadmap.
 
 ## Requirements
 

@@ -5,10 +5,11 @@
 
 module Slides.Examples.PlainMain where
 
-open import IO using (Main; run; writeFile)
+open import IO using (Main; run)
 
-open import Slides.Backend.Plain
+open import Slides.Backend.Plain using (defaultConfig)
+open import Slides.Driver
 open import Slides.Examples.Talk using (talk)
 
 main : Main
-main = run (writeFile "out/plain/index.html" (renderPlain defaultConfig talk))
+main = run (writePlainDeck "out/plain" defaultConfig talk)
