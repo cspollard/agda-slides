@@ -1,0 +1,133 @@
+{-# OPTIONS --safe --without-K #-}
+
+-- The standalone HTML backend.
+--
+-- It shares the vocabulary mapping with the reveal.js backend
+-- (`Slides.Backend.Common`) and differs in the deck algebra and the page:
+-- every slide is a `<section class="slide">`, a vertical stack is flattened
+-- into consecutive slides, and navigation is a small external script
+-- (`assets/plain.js`) with a print stylesheet (`assets/plain.css`) that shows
+-- every slide and fragment.
+
+module Slides.Backend.Plain where
+
+open import Level using (0ℓ)
+open import Data.List using (List; []; _∷_; _++_; map; length)
+open import Data.List.Properties using (length-++; length-map)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Nat using (ℕ; suc; _+_)
+open import Data.Product using (_,_)
+open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.Unit using (tt)
+open import Function using (_∘_)
+open import Function.Bundles using (Func; _⟨$⟩_)
+open import Relation.Binary.Bundles using (Setoid)
+open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans)
+open import Data.Container.FreeMonad using (pure; impure)
+import Data.List.Relation.Binary.Pointwise as PW
+
+open import Data.Container.Relation.Binary.Pointwise
+  using () renaming (_,_ to _,ₚ_)
+open import Categories.Functor.Algebra using (F-Algebra)
+
+open import Data.XML.AST using (XMLDoc)
+open import Data.XML.Equality using (XMLSetoid)
+open import Data.XML.Print using (renderXML)
+
+open import Container.Polynomial using (Poly₀)
+open import Container.FreeMonad.Algebraic using (module Alg)
+open import Slides.Core
+open import Slides.Backend.HTML
+open import Slides.Backend.Common
+
+module D = Alg 0ℓ 0ℓ DeckC
+
+-- A slide: a section of class `slide` (plus the slide options).
+slideSection : SlideOptions → Forest → XMLDoc
+slideSection o = hElement "section" (("class" , "slide") ∷ slideAttrs o)
+
+deckAlg : F-Algebra D.F
+deckAlg = record
+  { A = ForestSetoid
+  ; α = record
+      { to   = λ { (slide o b , k)  → slideSection o (renderBody b) ∷ k tt
+                 ; (stack o bs , k) → map (slideSection o ∘ renderBody) bs ++ k tt }
+      ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
+                     Setoid.refl XMLSetoid PW.∷ k≈ tt
+                 ; {stack o bs , _} {stack _ _ , _} (refl ,ₚ k≈) →
+                     PW.++⁺ (Setoid.refl ForestSetoid {map (slideSection o ∘ renderBody) bs}) (k≈ tt) }
+      }
+  }
+
+renderDeck : Deck → Forest
+renderDeck = D.fold deckAlg {⊤ˢ} nil
+
+------------------------------------------------------------------------
+-- The page
+
+record PlainConfig : Set where
+  field
+    title       : String
+    stylesheets : List String       -- relative to the page
+    -- URL or path of a KaTeX distribution (with trailing slash), for math
+    katex       : Maybe String
+
+defaultConfig : PlainConfig
+defaultConfig = record
+  { title       = "Slides"
+  ; stylesheets = "plain.css" ∷ "slides.css" ∷ []
+  ; katex       = nothing
+  }
+
+private
+  script : String → XMLDoc
+  script src = hText "script" (("src" , src) ∷ []) " "
+
+  stylesheet : String → XMLDoc
+  stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
+
+page : PlainConfig → Forest → XMLDoc
+page cfg slides =
+  hElement "html" (("lang" , "en") ∷ [])
+    ( hElement "head" []
+        ( hElement "meta" (("charset" , "utf-8") ∷ []) []
+        ∷ hText "title" [] (PlainConfig.title cfg)
+        ∷ map stylesheet (PlainConfig.stylesheets cfg)
+        ++ katexCss (PlainConfig.katex cfg) )
+    ∷ hElement "body" []
+        ( hElement "div" (("class" , "deck") ∷ []) slides
+        ∷ hElement "div" (("class" , "progress") ∷ []) []
+        ∷ katexJs (PlainConfig.katex cfg)
+        ++ script "plain.js" ∷ [] )
+    ∷ [] )
+  where
+    katexCss : Maybe String → List XMLDoc
+    katexCss nothing  = []
+    katexCss (just k) = stylesheet (k ++ˢ "katex.min.css") ∷ []
+
+    katexJs : Maybe String → List XMLDoc
+    katexJs nothing  = []
+    katexJs (just k) = script (k ++ˢ "katex.min.js")
+                     ∷ script (k ++ˢ "contrib/auto-render.min.js") ∷ []
+
+-- `index.html`, with the (unverified, constant) doctype prefix.
+renderPlain : PlainConfig → Deck → String
+renderPlain cfg d = doctype ++ˢ renderXML (page cfg (renderDeck d))
+
+------------------------------------------------------------------------
+-- Structural properties
+
+-- The number of slides: a stack contributes one slide per body.
+countSlides : Deck → ℕ
+countSlides (pure _)                  = 0
+countSlides (impure (slide _ _ , k))  = suc (countSlides (k tt))
+countSlides (impure (stack _ bs , k)) = length bs + countSlides (k tt)
+
+-- One `<section class="slide">` per slide, with stacks flattened.
+renderDeck-length : ∀ d → length (renderDeck d) ≡ countSlides d
+renderDeck-length (pure tt)                  = refl
+renderDeck-length (impure (slide _ _ , k))   = cong suc (renderDeck-length (k tt))
+renderDeck-length (impure (stack o bs , k))  =
+  trans (length-++ (map (slideSection o ∘ renderBody) bs))
+        (cong₂ _+_ (length-map (slideSection o ∘ renderBody) bs) (renderDeck-length (k tt)))
+  where open import Relation.Binary.PropositionalEquality.Core using (cong₂)

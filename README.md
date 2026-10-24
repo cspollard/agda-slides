@@ -32,7 +32,8 @@ typechecks every module under `src/`.
 ```
 npm install reveal.js            # or point REVEAL at any reveal.js distribution
 make example                     # writes out/intro/index.html and init.js
-make test                        # golden-file diff
+make talk plain                  # component-based deck: reveal.js (out/talk) and standalone HTML (out/plain)
+make test                        # golden-file diffs
 make test-browser                # headless Chrome check (set CHROME to override)
 ```
 

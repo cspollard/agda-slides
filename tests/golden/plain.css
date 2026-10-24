@@ -1,0 +1,19 @@
+/* Standalone slides: one slide visible at a time (see plain.js). */
+html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #fff; color: #222; }
+.deck { position: relative; height: 100%; overflow: hidden; }
+.slide { display: none; box-sizing: border-box; height: 100%; padding: 3rem 4rem; font-size: 2rem; overflow: auto; }
+.slide.active { display: block; }
+.slide h1, .slide h2, .slide h3 { margin-top: 0; }
+.fragment { opacity: 0; transition: opacity 0.3s; }
+.fragment.visible { opacity: 1; }
+.notes { display: none; }
+.progress { position: fixed; left: 0; bottom: 0; height: 4px; background: #46c; transition: width 0.2s; }
+table { border-collapse: collapse; }
+th, td { border: 1px solid #999; padding: 0.3rem 0.8rem; }
+pre { background: #f4f4f4; padding: 0.5rem 1rem; overflow: auto; }
+@media print {
+  .deck { overflow: visible; height: auto; }
+  .slide { display: block; height: auto; page-break-after: always; }
+  .fragment { opacity: 1; }
+  .progress { display: none; }
+}

@@ -32,7 +32,7 @@ open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
 open import Container.Polynomial using (Poly₀; Poly₁)
 open import Container.Interpret using (module Fusion)
 open import Slides.Core
-open import Slides.Backend.Reveal
+open import Slides.Backend.Common
 
 module _ (f : XMLDoc → XMLDoc) (f-cong : ∀ {x y} → x ≈ₓ y → f x ≈ₓ f y) where
 

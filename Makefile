@@ -34,18 +34,22 @@ example:
 	mv IntroMain _build/example/IntroMain 2>/dev/null || true
 	_build/example/IntroMain
 
-# Golden-file tests for the example decks (run `make example talk` first).
+# Golden-file tests for the example decks (run `make example talk plain` first).
 .PHONY: test test-browser
 test:
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
 	diff -u tests/golden/talk.index.html out/talk/index.html
+	diff -u tests/golden/plain.index.html out/plain/index.html
+	diff -u tests/golden/plain.js out/plain/plain.js
+	diff -u tests/golden/plain.css out/plain/plain.css
 
 # Load the rendered deck in headless Chrome (set CHROME to override the binary).
 test-browser:
 	python3 tests/check_reveal.py out/intro/index.html
 	python3 tests/check_reveal.py out/talk/index.html
+	python3 tests/check_plain.py out/plain/index.html
 
 # Render the component-based example deck to out/talk/.
 .PHONY: talk
@@ -56,3 +60,12 @@ talk:
 	$(AGDA) --compile --compile-dir=_build/talk src/Slides/Examples/TalkMain.agda
 	mv TalkMain _build/talk/TalkMain 2>/dev/null || true
 	_build/talk/TalkMain
+
+# Render the component-based deck as standalone HTML to out/plain/.
+.PHONY: plain
+plain:
+	mkdir -p out/plain _build/plain
+	cp assets/plain.css assets/plain.js assets/slides.css out/plain/
+	$(AGDA) --compile --compile-dir=_build/plain src/Slides/Examples/PlainMain.agda
+	mv PlainMain _build/plain/PlainMain 2>/dev/null || true
+	_build/plain/PlainMain
