@@ -34,13 +34,25 @@ example:
 	mv IntroMain _build/example/IntroMain 2>/dev/null || true
 	_build/example/IntroMain
 
-# Golden-file test for the example deck (run `make example` first).
+# Golden-file tests for the example decks (run `make example talk` first).
 .PHONY: test test-browser
 test:
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
+	diff -u tests/golden/talk.index.html out/talk/index.html
 
 # Load the rendered deck in headless Chrome (set CHROME to override the binary).
 test-browser:
 	python3 tests/check_reveal.py out/intro/index.html
+	python3 tests/check_reveal.py out/talk/index.html
+
+# Render the component-based example deck to out/talk/.
+.PHONY: talk
+talk:
+	mkdir -p out/talk _build/talk
+	ln -sfn $(REVEAL) out/talk/reveal
+	cp assets/slides.css out/talk/slides.css
+	$(AGDA) --compile --compile-dir=_build/talk src/Slides/Examples/TalkMain.agda
+	mv TalkMain _build/talk/TalkMain 2>/dev/null || true
+	_build/talk/TalkMain

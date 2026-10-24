@@ -29,7 +29,9 @@ open import Function using (_∘_)
 open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Data.Container.FreeMonad using (pure; impure)
-open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong)
+import Data.Container.FreeMonad as FM
+open import Data.List.Properties using (++-assoc)
+open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans; sym)
 import Data.List.Relation.Binary.Pointwise as PW
 
 open import Data.Container.Relation.Binary.Pointwise
@@ -153,6 +155,15 @@ renderContent (figure src cap)    =
     plain (codeSpan s ∷ is)  = s ++ˢ plain is
     plain (_ ∷ is)           = plain is
 renderContent (notes t)           = rich "aside" (("class" , "notes") ∷ []) t ∷ []
+renderContent (table header rows) =
+  hElement "table" []
+    ( hElement "thead" [] (row "th" header ∷ [])
+    ∷ hElement "tbody" [] (map (row "td") rows)
+    ∷ [] )
+  ∷ []
+  where
+    row : String → List Text → XMLDoc
+    row cell cs = hElement "tr" [] (map (rich cell []) cs)
 
 module A = Alg 0ℓ 0ℓ ContentC
 module L = Alg 0ℓ 0ℓ LayoutC
@@ -335,3 +346,24 @@ renderDeck-length : ∀ d → length (renderDeck d) ≡ count d
 renderDeck-length (pure tt)                = refl
 renderDeck-length (impure (slide _ _ , k)) = cong suc (renderDeck-length (k tt))
 renderDeck-length (impure (stack _ _ , k)) = cong suc (renderDeck-length (k tt))
+
+-- Rendering is a monoid homomorphism: sequencing programs concatenates the
+-- markup.  (The fold of a program is the markup of its first command followed
+-- by the fold of the rest, and the leaf contributes nothing.)
+renderBody-bind : ∀ (b₁ b₂ : Body) →
+                  renderBody (b₁ FM.>>= λ _ → b₂) ≡ renderBody b₁ ++ renderBody b₂
+renderBody-bind (pure tt)             b₂ = refl
+renderBody-bind (impure (inj₁ c , k)) b₂ =
+  trans (cong (renderContent c ++_) (renderBody-bind (k tt) b₂))
+        (sym (++-assoc (renderContent c) (renderBody (k tt)) (renderBody b₂)))
+renderBody-bind (impure (inj₂ c , k)) b₂ =
+  trans (cong (renderLayout c ++_) (renderBody-bind (k tt) b₂))
+        (sym (++-assoc (renderLayout c) (renderBody (k tt)) (renderBody b₂)))
+
+renderDeck-bind : ∀ (d₁ d₂ : Deck) →
+                  renderDeck (d₁ FM.>>= λ _ → d₂) ≡ renderDeck d₁ ++ renderDeck d₂
+renderDeck-bind (pure tt)                 d₂ = refl
+renderDeck-bind (impure (slide o b , k))  d₂ =
+  cong (section (slideAttrs o) (renderBody b) ∷_) (renderDeck-bind (k tt) d₂)
+renderDeck-bind (impure (stack o bs , k)) d₂ =
+  cong (section (slideAttrs o) (map (section [] ∘ renderBody) bs) ∷_) (renderDeck-bind (k tt) d₂)

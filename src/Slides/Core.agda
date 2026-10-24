@@ -52,6 +52,7 @@ data ContentShape : Set where
   displayMath : String → ContentShape
   figure      : (src : String) (caption : Text) → ContentShape
   notes       : Text → ContentShape
+  table       : (header : List Text) (rows : List (List Text)) → ContentShape
 
 ContentC : Container 0ℓ 0ℓ
 ContentC = ContentShape ▷ λ _ → ⊤

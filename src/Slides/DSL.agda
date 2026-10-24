@@ -30,7 +30,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM
 open import Effect.Monad using (RawMonad)
 
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; slide; stack; columns; box)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; slide; stack; columns; box)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -102,6 +102,9 @@ module Content where
   notes : String → Content
   notes s = notes′ (plain s)
 
+  table : (header : List Text) (rows : List (List Text)) → Content
+  table h r = cmd (Core.table h r)
+
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
 open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
 
@@ -152,6 +155,9 @@ notes′ t = liftContent (Content.notes′ t)
 
 notes : String → Body
 notes s = liftContent (Content.notes s)
+
+table : (header : List Text) (rows : List (List Text)) → Body
+table h r = liftContent (Content.table h r)
 
 columns : List Content → Body
 columns cs = impure (inj₂ (Core.columns cs) , λ _ → pure tt)
