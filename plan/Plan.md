@@ -138,12 +138,17 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-Done so far: R0 spike, `Slides.Core`/`Slides.DSL`, `Container.Sum`, the `Eq`/`≈ₓ` bridge, and the first reveal.js backend with tests (see the status notes above and `plan/HTML.md`). Next:
+Steps 1–6 of the previous list are done (vocabulary, theming, components, restyling lemma, explicit fragments, plain HTML backend); see the status notes above and `plan/HTML.md`. What remains, roughly in order of value:
 
-1. ~~Grow the vocabulary~~ — done: `LayoutC` (`columns`, `box`) summed with `ContentC` into `BlockC` (the block algebra is `Container.Sum.copair` of the two; content lifts into bodies along `Container.Sum.inl` using `Container.Interpret.translate`); slide options (`background`, `transition` as `data-*`); structured inline markup (`Inline`: text, emph, strong, inline math, code, link) rendered as mixed content through a sanitised `hMixed` constructor. Overloaded string literals did not engage across modules, so plain-`String` commands are the default and primed variants (`paragraph′`, …) take `Text`.
-2. ~~**Theming and configuration**~~ — done: `Theme` (reveal theme, highlight style, extra stylesheets; `blackTheme`, `whiteTheme`, `serifTheme`, `solarizedTheme`) and `RevealConfig` (title, base, theme, transition, slideNumber, controls, progress) feeding the page and the JSON options. Still open: width/height (needs JSON numbers) and theme-specific CSS classes.
-3. ~~**Components**~~ — done: `Slides.Components` (decorators `titled`/`withNotes`, `titleBody`, `bulletBody`, `incrementalBody`, `twoColumn`, `resultsTable`, `sectionSlide`, `titleSlide`) built as ordinary functions into the free monad; new `table` command; `Slides.Examples.Talk` (`make talk`). Composition is faithful: `renderBody-bind` and `renderDeck-bind` prove rendering a sequence is the concatenation of the renderings.
-4. ~~**Structural lemmas**~~ — mostly done: `Slides.Backend.Restyle` shows `map f` is an algebra homomorphism from the content algebra to its restyled version, and `restyle` (from `Container.Interpret.fold-hom`) says mapping `f` over a rendering equals interpreting with the restyled algebra. Not done: a per-command property such as "fragments appear exactly for `incremental` bullets"; it needs lemmas about parsnip's attribute handling (`fixAttrs`) on text-dependent mixed content, and the payoff is small.
-5. **`pause`** — explicit fragments done: `fragment`/`fragmentWith` wrap a content program in a `<div class="fragment …">` (`LayoutShape.fragment`). Beamer-style implicit `pause` (everything after appears incrementally) is deferred on purpose: it needs a stateful algebra with carrier `Mode → Forest`, and then sequencing no longer concatenates renderings (a pause in `b₁` affects `b₂`), so `renderBody-bind` would have to be restated with the mode threaded through. Revisit if explicit fragments prove too verbose.
-6. ~~**Plain HTML backend** (Phase 4)~~ — done: the shared vocabulary mapping moved to `Slides.Backend.Common`; `Slides.Backend.Plain` adds its own deck algebra (`<section class="slide">`, stacks flattened), page, and external `assets/plain.js` / `plain.css` (arrow-key navigation, fragments, progress bar, print stylesheet); optional KaTeX via a base URL; `countSlides`/`renderDeck-length` lemma; `make plain`, golden test, and a headless-Chrome check that the navigation script ran. The keyboard handling itself is not exercised by the tests (they would need a browser driver such as Playwright).
-7. Optionally finish the Eilenberg–Moore comparison (Phase 1 stretch).
+1. **Author experience**
+   - Revisit overloaded string literals for `Inline`/`Text` (they did not engage across modules; the standalone test worked, so it is probably instance scoping). Today plain-`String` commands are the default and `paragraph′` etc. take `Text`.
+   - Typecheck-time resource checks: figures and citations as proof-carrying commands (`Plan` Phase 5); a `cite` command with a bibliography.
+   - Typed math instead of LaTeX strings.
+2. **Backends and tests**
+   - A browser driver (Playwright) to exercise keyboard navigation in the plain backend and fragment stepping in reveal.js.
+   - JSON numbers in `options` (width, height, margin) and per-theme CSS classes.
+   - Implicit beamer-style `pause` via a stateful algebra (see the note under step 5 of the previous list in git history: it forces restating `renderBody-bind`).
+3. **Phase 1 stretch**
+   - Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`: the comparison functor exists in agda-categories (`Categories.Adjoint.Construction.EilenbergMoore`); what is missing is a `WeakInverse` for it, i.e. an inverse functor and two natural isomorphisms.
+   - Fullness/faithfulness of `Poly-⇒`; naturality of the sum isomorphism in the setoid argument.
+4. **Phase 6 ideas**: indexed containers for typed slide state, layout as a monoidal structure, further backends (Beamer/LaTeX, PDF, Markdown), watch mode.
