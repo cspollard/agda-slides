@@ -20,6 +20,7 @@ open import Data.Bool using (Bool; false)
 open import Data.List using (List)
 open import Data.Maybe using (Maybe; nothing)
 open import Data.Nat using (ℕ)
+open import Data.Product using (_×_)
 open import Data.String using (String)
 open import Data.Unit using (⊤)
 open import Data.Container.Core using (Container; _▷_)
@@ -36,6 +37,8 @@ data Inline : Set where
   inlineMath : String → Inline
   codeSpan   : String → Inline
   link       : (url : String) → List Inline → Inline
+  -- a citation of a bibliography key (checked against the deck's resources)
+  cite       : (key : String) → Inline
 
 -- Running text.
 Text : Set
@@ -53,6 +56,8 @@ data ContentShape : Set where
   figure      : (src : String) (caption : Text) → ContentShape
   notes       : Text → ContentShape
   table       : (header : List Text) (rows : List (List Text)) → ContentShape
+  -- the bibliography: keys with their entries
+  references  : List (String × Text) → ContentShape
 
 ContentC : Container 0ℓ 0ℓ
 ContentC = ContentShape ▷ λ _ → ⊤

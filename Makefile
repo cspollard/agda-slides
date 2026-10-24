@@ -56,7 +56,7 @@ test-browser:
 talk:
 	mkdir -p out/talk _build/talk
 	ln -sfn $(REVEAL) out/talk/reveal
-	cp assets/slides.css out/talk/slides.css
+	cp assets/slides.css assets/plot.svg out/talk/
 	$(AGDA) --compile --compile-dir=_build/talk src/Slides/Examples/TalkMain.agda
 	mv TalkMain _build/talk/TalkMain 2>/dev/null || true
 	_build/talk/TalkMain
@@ -65,7 +65,22 @@ talk:
 .PHONY: plain
 plain:
 	mkdir -p out/plain _build/plain
-	cp assets/plain.css assets/plain.js assets/slides.css out/plain/
+	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/plain/
 	$(AGDA) --compile --compile-dir=_build/plain src/Slides/Examples/PlainMain.agda
 	mv PlainMain _build/plain/PlainMain 2>/dev/null || true
 	_build/plain/PlainMain
+
+# Decks that refer to a resource they did not declare must not typecheck.
+.PHONY: test-negative check-resources
+test-negative:
+	@for f in tests/negative/*.agda; do \
+	  if out=$$($(AGDA) -i tests/negative $$f 2>&1); then \
+	    echo "FAIL $$f typechecks but should not"; exit 1; \
+	  elif echo "$$out" | grep -q "No instance of type"; then echo "ok   $$f is rejected"; \
+	  else echo "FAIL $$f failed for another reason:"; echo "$$out"; exit 1; fi; \
+	done
+
+# Declared figures exist next to the rendered decks (run `make talk plain` first).
+check-resources:
+	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/talk
+	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/plain

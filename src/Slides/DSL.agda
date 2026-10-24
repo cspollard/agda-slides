@@ -22,7 +22,7 @@ open import Data.Bool using (Bool; true; false)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ)
-open import Data.Product using (_,_)
+open import Data.Product using (_×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.String using (String)
 import Data.String.Literals
@@ -31,7 +31,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM
 open import Effect.Monad using (RawMonad)
 
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; slide; stack; columns; box; fragment)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -94,14 +94,18 @@ module Content where
   displayMath : String → Content
   displayMath s = cmd (Core.displayMath s)
 
-  figure : (src : String) → Text → Content
-  figure s c = cmd (Core.figure s c)
+  -- unchecked: see `Slides.Resources` for the checked `figure`
+  figureUnchecked : (src : String) → Text → Content
+  figureUnchecked s c = cmd (Core.figure s c)
 
   notes : Text → Content
   notes t = cmd (Core.notes t)
 
   table : (header : List Text) (rows : List (List Text)) → Content
   table h r = cmd (Core.table h r)
+
+  references : List (String × Text) → Content
+  references rs = cmd (Core.references rs)
 
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
 open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
@@ -130,8 +134,8 @@ code l s = liftContent (Content.code l s)
 displayMath : String → Body
 displayMath s = liftContent (Content.displayMath s)
 
-figure : (src : String) → Text → Body
-figure s c = liftContent (Content.figure s c)
+figureUnchecked : (src : String) → Text → Body
+figureUnchecked s c = liftContent (Content.figureUnchecked s c)
 
 notes : Text → Body
 notes t = liftContent (Content.notes t)

@@ -35,6 +35,8 @@ make example                     # writes out/intro/index.html and init.js
 make talk plain                  # component-based deck: reveal.js (out/talk) and standalone HTML (out/plain)
 make test                        # golden-file diffs
 make test-browser                # headless Chrome check (set CHROME to override)
+make test-negative               # decks citing undeclared resources must not typecheck
+make check-resources             # declared figures exist next to the rendered decks
 ```
 
 Open `out/intro/index.html` in a browser. `make spike` builds the R0 spike (`plan/HTML.md`).

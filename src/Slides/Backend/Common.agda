@@ -99,6 +99,7 @@ mutual
   piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
   piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
   piece (link u is)    = inj₂ (rich "a" (("href" , u) ∷ []) is) ∷ []
+  piece (cite k)       = inj₂ (hText "span" (("class" , "cite") ∷ []) ("[" ++ˢ k ++ˢ "]")) ∷ []
 
   -- An element whose content is running text.
   rich : String → Attrs → List Inline → XMLDoc
@@ -149,6 +150,7 @@ renderContent (figure src cap)    =
     plain (text s ∷ is)      = s ++ˢ plain is
     plain (inlineMath s ∷ is) = s ++ˢ plain is
     plain (codeSpan s ∷ is)  = s ++ˢ plain is
+    plain (cite k ∷ is)      = "[" ++ˢ k ++ˢ "]" ++ˢ plain is
     plain (_ ∷ is)           = plain is
 renderContent (notes t)           = rich "aside" (("class" , "notes") ∷ []) t ∷ []
 renderContent (table header rows) =
@@ -160,6 +162,10 @@ renderContent (table header rows) =
   where
     row : String → List Text → XMLDoc
     row cell cs = hElement "tr" [] (map (rich cell []) cs)
+renderContent (references refs)   =
+  hElement "ol" (("class" , "references") ∷ [])
+    (map (λ { (k , t) → rich "li" (("id" , "ref-" ++ˢ k) ∷ []) t }) refs)
+  ∷ []
 
 module A = Alg 0ℓ 0ℓ ContentC
 module L = Alg 0ℓ 0ℓ LayoutC
