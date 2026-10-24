@@ -138,9 +138,12 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-1. ~~R0 spike~~ — done: a hand-built deck printed by parsnip runs in reveal.js; empty non-void elements must be padded (`plan/HTML.md`).
-2. ~~Sketch `Slides.Core`~~ — done: `Slides.Core` (stratified containers), `Slides.DSL` (`do`-notation), `Slides.Examples.Intro`; nested bodies chosen.
-3. ~~Sum isomorphism and algebra copairing~~ — done (`Container.Sum`).
-4. ~~Bridge lemma~~ — done: `Slides.Backend.XML` proves `XMLEq t u ↔ t ≈ₓ u` (`≈ₓ-from-Eq`, `Eq-from-≈ₓ`); validity evidence is handled by proof irrelevance of `T b`.
-5. ~~reveal.js algebra and driver~~ — done for the minimal vocabulary: content and deck algebras with a forest carrier, `renderReveal`, `initScript` (options via parsnip's JSON printer), `renderDeck-length` (one `<section>` per slide command), `make example` / `make test` (golden) / `make test-browser` (headless Chrome: reveal.js ready, fragments, stack, notes, KaTeX, highlight).
-6. Optionally finish the Eilenberg–Moore comparison.
+Done so far: R0 spike, `Slides.Core`/`Slides.DSL`, `Container.Sum`, the `Eq`/`≈ₓ` bridge, and the first reveal.js backend with tests (see the status notes above and `plan/HTML.md`). Next:
+
+1. **Grow the vocabulary**: a `LayoutC` stratum (`columns`, boxes) combined with `ContentC` via `Container.Sum.copair`; slide options (backgrounds, transitions, `data-*`); inline markup (emphasis, inline math) instead of raw strings.
+2. **Theming and configuration**: a `Theme` record feeding both the stylesheet link and CSS classes, plus our own `slides.css`; more reveal.js options in the JSON.
+3. **Components**: reusable slides as Kleisli arrows (title slide, two-column, results table) in a `Slides.Components` module.
+4. **Structural lemmas**: per-slide properties of `renderBody` (e.g. fragments appear exactly for `incremental` bullets), and a hom lemma for restyling backends using `Container.Interpret.fold-hom`.
+5. **`pause`** (beamer-style incremental reveal) via a stateful algebra, once the stratified vocabulary is stable.
+6. **Plain HTML backend** (Phase 4): share the content algebra's vocabulary mapping with the reveal.js one.
+7. Optionally finish the Eilenberg–Moore comparison (Phase 1 stretch).

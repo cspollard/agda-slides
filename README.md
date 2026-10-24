@@ -27,6 +27,17 @@ make check
 
 typechecks every module under `src/`.
 
+## Rendering the example deck
+
+```
+npm install reveal.js            # or point REVEAL at any reveal.js distribution
+make example                     # writes out/intro/index.html and init.js
+make test                        # golden-file diff
+make test-browser                # headless Chrome check (set CHROME to override)
+```
+
+Open `out/intro/index.html` in a browser. `make spike` builds the R0 spike (`plan/HTML.md`).
+
 ## Layout
 
 - `src/Container/` — generic, slide-independent development: containers as polynomial functors on `Setoids`, the free monad, its algebraic description, and interpretation/fusion. Nothing here imports `Slides.*`.
