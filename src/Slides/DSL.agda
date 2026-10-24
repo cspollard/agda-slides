@@ -23,35 +23,31 @@ open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Container.Core using (_⇒_; Container)
 open import Data.String using (String)
 open import Data.Unit using (⊤; tt) public
+open import Data.Container.Core using (Container)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM
-open import Effect.Monad using (RawMonad)
 
 open import Slides.Literals public
 open import Slides.Math using (Math)
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause)
+open import Slides.Diagram using (Diagram)
+open import Slides.Core using ()
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram)
 import Slides.Core as Core
--- instances needed to render decks are in scope wherever the DSL is
-open import Slides.Core using (NoCap; steppable-⊥; steppable-⊕) public
 import Container.Interpret as Interpret
+open import Container.Sum using (inl)
 
 ------------------------------------------------------------------------
 -- `do`-notation (the overloaded literals are in `Slides.Literals`)
 
-instance
-  contentMonad : RawMonad {f = 0ℓ} (ContentC ⋆_)
-  contentMonad = FM.monad
+-- Sequencing is the free monad's bind, which works for every container
+-- (content, body and deck programs alike), so `do` needs no instances.
+open import Data.Container.FreeMonad using (_>>=_) public
 
-  bodyMonad : ∀ {K} → RawMonad {f = 0ℓ} (BlockOf K ⋆_)
-  bodyMonad = FM.monad
-
-  deckMonad : ∀ {K} → RawMonad {f = 0ℓ} (DeckC K ⋆_)
-  deckMonad = FM.monad
-
-open RawMonad {{...}} public using (_>>_; _>>=_)
+infixl 1 _>>_
+_>>_ : ∀ {s p} {C : Container s p} {X Y : Set} → C ⋆ X → C ⋆ Y → C ⋆ Y
+m >> n = m >>= λ _ → n
 
 plain : String → Text
 plain s = text s ∷ []
@@ -95,83 +91,82 @@ module Content where
   references rs = cmd (Core.references rs)
 
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
-injContent : ∀ K → ContentC ⇒ BlockOf K
-injContent K = record { shape = λ s → inj₁ (inj₁ s) ; position = λ x → x }
+open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
 
-liftContent : Content → Body K
-liftContent {K} = translate
-  where open Interpret.Translate 0ℓ 0ℓ ContentC (BlockOf K) (injContent K) using (translate)
-
--- Layout and capability commands.
-layoutCmd : LayoutShape → Body K
-layoutCmd l = impure (inj₁ (inj₂ l) , λ _ → pure tt)
-
-capCmd : K → Body K
-capCmd s = impure (inj₂ s , λ _ → pure tt)
+liftContent : Content → Body
+liftContent = translate
 
 ------------------------------------------------------------------------
 -- Body commands
 
-heading : ℕ → Text → Body K
+heading : ℕ → Text → Body
 heading n t = liftContent (Content.heading n t)
 
-paragraph : Text → Body K
+paragraph : Text → Body
 paragraph t = liftContent (Content.paragraph t)
 
-bullets : List Text → Body K
+bullets : List Text → Body
 bullets xs = liftContent (Content.bullets xs)
 
-incremental : List Text → Body K
+incremental : List Text → Body
 incremental xs = liftContent (Content.incremental xs)
 
-code : (language source : String) → Body K
+code : (language source : String) → Body
 code l s = liftContent (Content.code l s)
 
-displayMath : Math → Body K
+displayMath : Math → Body
 displayMath m = liftContent (Content.displayMath m)
 
-figureUnchecked : (src : String) → Text → Body K
+figureUnchecked : (src : String) → Text → Body
 figureUnchecked s c = liftContent (Content.figureUnchecked s c)
 
-notes : Text → Body K
+notes : Text → Body
 notes t = liftContent (Content.notes t)
 
-table : (header : List Text) (rows : List (List Text)) → Body K
+table : (header : List Text) (rows : List (List Text)) → Body
 table h r = liftContent (Content.table h r)
 
-columns : List Content → Body K
-columns cs = layoutCmd (Core.columns cs)
+columns : List Content → Body
+columns cs = impure (inj₂ (Core.columns cs) , λ _ → pure tt)
 
 -- Content that appears on a later step.
-fragment : Content → Body K
-fragment c = layoutCmd (Core.fragment nothing c)
+fragment : Content → Body
+fragment c = impure (inj₂ (Core.fragment nothing c) , λ _ → pure tt)
 
-fragmentWith : String → Content → Body K
-fragmentWith style c = layoutCmd (Core.fragment (just style) c)
+fragmentWith : String → Content → Body
+fragmentWith style c = impure (inj₂ (Core.fragment (just style) c) , λ _ → pure tt)
 
 -- Everything after a `pause` in the same body appears step by step.
-pause : Body K
-pause = layoutCmd Core.pause
+pause : Body
+pause = impure (inj₂ Core.pause , λ _ → pure tt)
 
-box : Text → Content → Body K
-box t c = layoutCmd (Core.box t c)
+box : Text → Content → Body
+box t c = impure (inj₂ (Core.box t c) , λ _ → pure tt)
+
+-- Content in a box at (x, y) of size w × h, in percent of the slide.
+placed : (x y w h : ℕ) → Content → Body
+placed x y w h c = impure (inj₂ (Core.placed x y w h c) , λ _ → pure tt)
+
+-- An inline vector diagram (see `Slides.Diagram`).
+diagram : Diagram → Body
+diagram d = impure (inj₂ (Core.diagram d) , λ _ → pure tt)
 
 ------------------------------------------------------------------------
 -- Deck commands
 
-deck-cmd : DeckShape (Body K) → Deck K
+deck-cmd : DeckShape → Deck
 deck-cmd c = impure (c , λ _ → pure tt)
 
-slideWith : SlideOptions → Body K → Deck K
+slideWith : SlideOptions → Body → Deck
 slideWith o b = deck-cmd (Core.slide o b)
 
-slide : Body K → Deck K
+slide : Body → Deck
 slide = slideWith defaultSlide
 
-stackWith : SlideOptions → List (Body K) → Deck K
+stackWith : SlideOptions → List Body → Deck
 stackWith o bs = deck-cmd (Core.stack o bs)
 
-stack : List (Body K) → Deck K
+stack : List Body → Deck
 stack = stackWith defaultSlide
 
 -- Options.

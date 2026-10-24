@@ -41,14 +41,14 @@ open import Slides.Steps using (steps)
 open import Slides.Backend.HTML
 open import Slides.Backend.Common
 
-module D (K : Set) = Alg 0ℓ 0ℓ (DeckC K)
+module D = Alg 0ℓ 0ℓ DeckC
 
 -- A slide: a section of class `slide` (plus the slide options).
 slideSection : SlideOptions → Forest → XMLDoc
 slideSection o = hElement "section" (("class" , "slide") ∷ slideAttrs o)
 
-deckAlg : ∀ K {{_ : HTMLCap K}} {{_ : Steppable K}} → F-Algebra (D.F K)
-deckAlg K = record
+deckAlg : F-Algebra D.F
+deckAlg = record
   { A = ForestSetoid
   ; α = record
       { to   = λ { (slide o b , k)  → slideSection o (renderBody (steps b)) ∷ k tt
@@ -60,8 +60,8 @@ deckAlg K = record
       }
   }
 
-renderDeck : {{_ : HTMLCap K}} {{_ : Steppable K}} → Deck K → Forest
-renderDeck {K} = D.fold K (deckAlg K) {⊤ˢ} nil
+renderDeck : Deck → Forest
+renderDeck = D.fold deckAlg {⊤ˢ} nil
 
 ------------------------------------------------------------------------
 -- The page
@@ -112,20 +112,20 @@ page cfg slides =
                      ∷ script (k ++ˢ "contrib/auto-render.min.js") ∷ []
 
 -- `index.html`, with the (unverified, constant) doctype prefix.
-renderPlain : PlainConfig → {{_ : HTMLCap K}} {{_ : Steppable K}} → Deck K → String
+renderPlain : PlainConfig → Deck → String
 renderPlain cfg d = doctype ++ˢ renderXML (page cfg (renderDeck d))
 
 ------------------------------------------------------------------------
 -- Structural properties
 
 -- The number of slides: a stack contributes one slide per body.
-countSlides : Deck K → ℕ
+countSlides : Deck → ℕ
 countSlides (pure _)                  = 0
 countSlides (impure (slide _ _ , k))  = suc (countSlides (k tt))
 countSlides (impure (stack _ bs , k)) = length bs + countSlides (k tt)
 
 -- One `<section class="slide">` per slide, with stacks flattened.
-renderDeck-length : {{_ : HTMLCap K}} {{_ : Steppable K}} → ∀ (d : Deck K) → length (renderDeck d) ≡ countSlides d
+renderDeck-length : ∀ d → length (renderDeck d) ≡ countSlides d
 renderDeck-length (pure tt)                  = refl
 renderDeck-length (impure (slide _ _ , k))   = cong suc (renderDeck-length (k tt))
 renderDeck-length (impure (stack o bs , k))  =

@@ -2,10 +2,22 @@ AGDA ?= agda
 
 .PHONY: check clean
 
-# Typecheck every module under src/ and examples/.
+# Typecheck every module under src/ in a single Agda process (interfaces of
+# the libraries are loaded once).  Executables (`*Main`, the spike) import IO
+# and need `--guardedness`, so they are checked on their own.
 check:
-	$(AGDA) src/Slides.agda
-	@for f in $$(find src -name '*.agda' ! -name Slides.agda); do $(AGDA) $$f || exit 1; done
+	@mkdir -p _build
+	@(echo "module Everything where"; for f in $$(find src -name '*.agda' ! -name '*Main.agda' ! -name Driver.agda ! -path '*/Spike/*' | sort); do \
+	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.agda$$##')"; done) > _build/Everything.agda
+	$(AGDA) -i _build _build/Everything.agda
+	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda -o -path '*/Spike/*.agda'); do $(AGDA) $$f || exit 1; done
+
+# All executables share one compile directory: MAlonzo output is per module,
+# so the (large) library part is translated and compiled by GHC once.
+# GHCFLAGS=-O1 for optimised builds.
+GHCFLAGS ?= -O0
+BUILD_DIR = _build/ghc
+COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS)
 
 clean:
 	find . -name '*.agdai' -delete
@@ -17,36 +29,35 @@ REVEAL ?= $(CURDIR)/node_modules/reveal.js
 
 .PHONY: spike
 spike:
-	mkdir -p out/spike _build/spike
+	mkdir -p out/spike $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/spike/reveal
-	$(AGDA) --compile --compile-dir=_build/spike src/Slides/Spike/Reveal.agda
-	mv Reveal _build/spike/Reveal 2>/dev/null || true
-	_build/spike/Reveal
+	$(COMPILE) src/Slides/Spike/Reveal.agda
+	mv Reveal $(BUILD_DIR)/Reveal 2>/dev/null || true
+	$(BUILD_DIR)/Reveal
 	cp assets/slides.css out/spike/slides.css
 
 # Render any deck: `make deck MAIN=src/MyTalkMain.agda NAME=mytalk`, where the
 # main module writes to out/$(NAME).  Puts reveal.js and the stylesheet next to
 # the output and runs the compiled program.
 NAME ?= mytalk
-BUILD ?= $(NAME)
 .PHONY: deck
 deck:
-	mkdir -p out/$(NAME) _build/$(BUILD)
+	mkdir -p out/$(NAME) $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/$(NAME)/reveal
 	cp assets/slides.css assets/plot.svg out/$(NAME)/
-	$(AGDA) --compile --compile-dir=_build/$(BUILD) $(MAIN)
-	mv $(basename $(notdir $(MAIN))) _build/$(BUILD)/ 2>/dev/null || true
-	_build/$(BUILD)/$(basename $(notdir $(MAIN)))
+	$(COMPILE) $(MAIN)
+	mv $(basename $(notdir $(MAIN))) $(BUILD_DIR)/ 2>/dev/null || true
+	$(BUILD_DIR)/$(basename $(notdir $(MAIN)))
 
 # Render the example deck to out/intro/.
 .PHONY: example
 example:
-	mkdir -p out/intro _build/example
+	mkdir -p out/intro $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/intro/reveal
 	cp assets/slides.css out/intro/slides.css
-	$(AGDA) --compile --compile-dir=_build/example src/Slides/Examples/IntroMain.agda
-	mv IntroMain _build/example/IntroMain 2>/dev/null || true
-	_build/example/IntroMain
+	$(COMPILE) src/Slides/Examples/IntroMain.agda
+	mv IntroMain $(BUILD_DIR)/IntroMain 2>/dev/null || true
+	$(BUILD_DIR)/IntroMain
 
 # Golden-file tests for the example decks (run `make example talk plain showcase` first).
 .PHONY: test test-browser
@@ -73,21 +84,21 @@ test-browser:
 # Render the component-based example deck to out/talk/.
 .PHONY: talk
 talk:
-	mkdir -p out/talk _build/talk
+	mkdir -p out/talk $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/talk/reveal
 	cp assets/slides.css assets/plot.svg out/talk/
-	$(AGDA) --compile --compile-dir=_build/talk src/Slides/Examples/TalkMain.agda
-	mv TalkMain _build/talk/TalkMain 2>/dev/null || true
-	_build/talk/TalkMain
+	$(COMPILE) src/Slides/Examples/TalkMain.agda
+	mv TalkMain $(BUILD_DIR)/TalkMain 2>/dev/null || true
+	$(BUILD_DIR)/TalkMain
 
 # Render the component-based deck as standalone HTML to out/plain/.
 .PHONY: plain
 plain:
-	mkdir -p out/plain _build/plain
+	mkdir -p out/plain $(BUILD_DIR)
 	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/plain/
-	$(AGDA) --compile --compile-dir=_build/plain src/Slides/Examples/PlainMain.agda
-	mv PlainMain _build/plain/PlainMain 2>/dev/null || true
-	_build/plain/PlainMain
+	$(COMPILE) src/Slides/Examples/PlainMain.agda
+	mv PlainMain $(BUILD_DIR)/PlainMain 2>/dev/null || true
+	$(BUILD_DIR)/PlainMain
 
 # Decks that refer to a resource they did not declare must not typecheck.
 .PHONY: test-negative check-resources
@@ -107,13 +118,13 @@ check-resources:
 # Render the showcase deck with both backends to out/showcase/ and out/showcase-plain/.
 .PHONY: showcase
 showcase:
-	mkdir -p out/showcase out/showcase-plain _build/showcase
+	mkdir -p out/showcase out/showcase-plain $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/showcase/reveal
 	cp assets/slides.css assets/plot.svg out/showcase/
 	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-plain/
-	$(AGDA) --compile --compile-dir=_build/showcase src/Slides/Examples/ShowcaseMain.agda
-	mv ShowcaseMain _build/showcase/ShowcaseMain 2>/dev/null || true
-	_build/showcase/ShowcaseMain
+	$(COMPILE) src/Slides/Examples/ShowcaseMain.agda
+	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
+	$(BUILD_DIR)/ShowcaseMain
 
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.

@@ -7,3 +7,5 @@
 .reveal figure { margin: 0.5rem 0; }
 .reveal figcaption { font-size: 0.7em; opacity: 0.8; }
 .reveal .placed { position: fixed; overflow: hidden; box-sizing: border-box; }
+.reveal .diagram { margin: 0.5rem 0; }
+.reveal .diagram svg { display: block; margin: 0 auto; }

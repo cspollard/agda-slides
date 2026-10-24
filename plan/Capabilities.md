@@ -1,77 +1,74 @@
-# Capabilities: backends with different feature sets
+# Optional features and backends with different feature sets
 
-Goal: slide features beyond the core vocabulary (positioned elements, inline
-diagrams, later animation, TikZ, …) are *optional*. A deck declares which it
-uses, a backend declares which it supports, and a mismatch is a type error.
+Goal: features beyond the core vocabulary (positioned boxes, inline diagrams,
+later animation, TikZ, …) must be usable in decks even though not every backend
+can render every feature, and a mismatch must be detected rather than silently
+dropped.
 
-## Design
+## Decision: ordinary vocabulary, no instances
 
-A **capability** is just the type of its command shapes (`K : Set`), with
-container `capC K = K ▷ λ _ → ⊤`. (It is not a record: Agda cannot infer `K`
-from `Body K` if `K` is hidden behind a projection such as `Shape K`.) How a
-command appears on a later step (after a `pause`) is the `Steppable K`
-instance (`later : K → K`); how an HTML backend renders it is the `HTMLCap K`
-instance (`render : K → Forest`). Capabilities compose by `_⊕_` (the
-disjoint sum, with componentwise instances); `NoCap = ⊥`.
+Features are ordinary commands of `LayoutShape` (`placed`, `diagram`), the same
+way `columns` and `box` are. Decks have the single type `Deck`; there is no
+index of "required capabilities" and no instance search anywhere in the
+capability machinery.
 
-The core vocabulary is unchanged (`BlockC = ContentC ⊎ LayoutC`). What a
-deck may use is indexed by a capability `K`:
+This replaces a first design, tried and abandoned (commits `15c968f` and
+`516d33d`), in which decks were indexed by a capability type `K`
+(`Deck (Placed ⊕ Diagram)`) with the injection `S ⊑ K` and the backend duties
+(`Steppable K`, `HTMLCap K`) supplied by instance arguments. It worked with a
+single capability, but:
 
-    BlockOf K = BlockC ⊎ capC K          Body K = BlockOf K ⋆ ⊤
-    DeckC K   = DeckShape (Body K) ▷ ⊤   Deck K = DeckC K ⋆ ⊤
+- finding `Placed ⊑ (Placed ⊕ Diagram)` needs overlapping instances, which
+  Agda only accepts with `--backtracking-instance-search`;
+- with that flag, `do`-notation's `RawMonad` instance search interacts with the
+  pending injection goals and typechecking becomes exponential: two `placed`
+  commands in one `do` block took more than two minutes instead of a few
+  seconds, and checking the showcase deck took over 14 minutes;
+- every example needed a `NoCap` annotation and every instance had to be in
+  scope by name.
 
-`DeckShape` becomes parametric in the type of bodies; nothing is recursive, so
-the stratification (and strict positivity) is preserved. Content inside
-`columns`/`box`/`placed` stays the plain `Content`.
+`do`-notation itself now needs no instances either: sequencing is the free
+monad's own `_>>=_`, which is generic in the container, so content, body and
+deck programs all use it.
 
-Authoring: core commands are polymorphic in `K` (they inject along
-`ContentC ⇒ BlockOf K`). A capability command takes an instance argument
-`{{S ⊑ K}}` (data types à la carte): `placed : {{Placed ⊑ K}} → … → Body K`.
-Instances: reflexivity, left and right injection into `⊕`; each capability may
-appear once in a sum.
+## Backends and unsupported features
 
-Backends: an HTML backend needs `HTMLCap K`, i.e. a function
-`Shape K → Forest`, which determines an algebra for `capC K` (all positions
-are `⊤`). The algebra for `BlockOf K` is `copair` of the core block algebra
-and the capability algebra, exactly as `BlockC` is built today. Instances of
-`HTMLCap` exist for `NoCap`, `⊕`, and each capability; render functions take
-`{{HTMLCap K}}`, so a deck that uses a capability the backend does not
-implement does not typecheck (`No instance of type HTMLCap …`).
+A backend interprets every command (an algebra, as before). For a feature a
+backend cannot render natively it chooses one of:
 
-**Degradation.** A backend without native support for a capability `S` may
-instead give a shape map `S → S′` into capabilities it has (a container
-morphism `capC S ⇒ capC S′`); `Container.Interpret.Translate.fusion` already
-proves that translating and then folding equals folding with the pulled-back
-algebra. Not built until a backend needs it (Beamer).
+1. render it natively (reveal.js and plain HTML render `placed` and `diagram`);
+2. **lower** it into commands it does support, a plain function on shapes
+   (for example a Beamer backend lowering `placed` to a flowed box). If the
+   lowering is a container morphism, `Container.Interpret.Translate.fusion`
+   already proves that translating then folding equals folding with the
+   pulled-back algebra;
+3. refuse. For this a backend will export `supports : Feature → Bool`, and a
+   function `uses : Deck → List Feature` (a fold over the deck) tells which
+   features a deck needs; `Slides.Driver` checks `uses ⊆ supports` and aborts
+   with the names of the unsupported features. Not built until a backend lacks
+   a feature (Beamer).
 
-Non-goals: type-level capability lists, row polymorphism, subtyping inference.
+## Stages
 
-## Stages (each committed separately; all tests green)
-
-1. **Refactor, no new features (done).** `NoCap`, `Steppable`, `Body K`, `Deck K`,
-   `HTMLCap`; thread `K` through DSL, Steps (`go`/`after`/`go-bind` get a
-   capability case: apply `later` in step mode, mode unchanged), Common
-   (`renderBody-bind` gets a third case), Reveal, Plain, Resources, Components,
-   Driver, examples. Outputs byte-identical (golden tests unchanged).
-2. **`placed` (done).** `Placed` capability: `placed x y w h Content` renders a
-   `<div class="placed" style="left:…%; top:…%; …">` in slide-canvas
-   coordinates, with `later` producing a fragment variant. Coordinates are
-   whole percentages of the slide; the stylesheets use `position: fixed`, whose
+1. ~~Index decks by capabilities~~ (abandoned, see above).
+2. **`placed`** (done): `placed x y w h content`, coordinates are whole
+   percentages of the slide; the stylesheets use `position: fixed`, whose
    containing block is the transformed reveal.js canvas (or the window for the
-   plain backend). Tests: golden, Playwright (position, fragment step).
-3. **`Diagram`.** `rawSVG` (a string of SVG child markup validated by the XML
-   parser at render time, or `XMLM` built with `Data.SVG`), then a small typed
-   AST (rect, circle, path, text, arrow, group) printed with `Data.SVG`.
-4. **Captions and numbering** for tables/figures, together with citation
-   numbering (needs state threaded through the fold).
-5. **Beamer backend**, with its capability instances and the first
-   degradation (placed → flow box).
+   plain backend). After a `pause` it appears on a later step through the
+   existing `stepped` wrapper.
+3. **`diagram`** (done): typed AST `Slides.Diagram` (rect, circle, line, arrow,
+   label, group; styles), printed as inline SVG with parsnip's `Data.SVG`
+   (`Slides.Backend.Diagram`). Arrowhead ids are derived from the diagram's
+   name, which must be unique in the deck.
+4. Captions and numbering for tables/figures, with citation numbering (needs
+   state threaded through the fold).
+5. Beamer backend, with `supports`/`uses` and the first lowering
+   (`placed` → flowed box, `diagram` → TikZ).
 
-## Risks
+## Build time
 
-- Instance search for `_∈_` with metas in `do` blocks: test in stage 2.
-- Instances are only visible when their names are in scope, so `Slides.DSL` and
-  `Slides.Driver` re-export the `Steppable`/`HTMLCap` instances.
-- `go-bind`/`renderBody-bind` need one extra case each; same shape as the
-  content case.
-- Every example annotation `Deck`/`Body` becomes `Deck NoCap`/`Body NoCap`.
+Typechecking time matters: the instance-heavy design above was the main cause
+of a 14-minute check. Other measures: `make check` runs one Agda process over
+all library modules (`_build/Everything.agda`), and all executables share one
+compile directory (`_build/ghc`, `-O0` by default; `GHCFLAGS=-O1` to optimise),
+so the translated and GHC-compiled library is built once.

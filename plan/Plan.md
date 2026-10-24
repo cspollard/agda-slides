@@ -139,7 +139,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-In progress: capability-indexed decks (positioned elements, diagrams, backends with different feature sets) — see `plan/Capabilities.md`.
+Done: `placed` and `diagram` as ordinary layout commands, and the decision on backends with different feature sets (`plan/Capabilities.md`; the type-indexed capability design was tried and dropped). Next there: captions/numbering, then Beamer.
 
 Infrastructure for writing decks is in place: `docs/Authoring.md`, `Slides.Driver` (one-line `Main` modules), the `Showcase` deck, and the full test suite (`make check test test-browser test-playwright test-negative`). What remains is mostly optional:
 

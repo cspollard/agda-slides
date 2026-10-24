@@ -5,6 +5,8 @@ html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; backgr
 .slide.active { display: block; }
 .slide h1, .slide h2, .slide h3 { margin-top: 0; }
 .placed { position: fixed; overflow: hidden; box-sizing: border-box; }
+.diagram { margin: 0.5rem 0; }
+.diagram svg { display: block; margin: 0 auto; }
 .fragment { opacity: 0; transition: opacity 0.3s; }
 .fragment.visible { opacity: 1; }
 .notes { display: none; }

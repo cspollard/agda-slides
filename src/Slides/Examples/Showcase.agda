@@ -10,7 +10,7 @@ open import Data.Product using (_,_)
 open import Slides.Core using (Deck; emph; strong; codeSpan; inlineMath; link)
 open import Slides.DSL
 open import Slides.Components
-open import Slides.Capability.Placed
+open import Slides.Diagram
 open import Slides.Resources
 import Slides.Math as M
 
@@ -33,7 +33,7 @@ gauss = M.sum (M.var "i" M.≡ 0) "n" "i" M.≡ M.frac ("n" M.* M.paren ("n" M.+
 euler : M.Math
 euler = (M.var "e" M.^ ("i" M.* M.greek M.pi)) M.+ 1 M.≡ 0
 
-showcase : Deck Placed
+showcase : Deck
 showcase = do
   titleSlide "Showcase" "every feature of the DSL" "A. Speaker"
 
@@ -80,3 +80,23 @@ showcase = do
             placed 10 50 30 20 (Content.paragraph "a box at 10%, 50%")
             pause
             placed 60 50 30 20 (Content.paragraph "appears on the first step"))
+
+  slide (do heading 2 "A diagram"
+            diagram (record
+              { name = "pipeline" ; width = 400 ; height = 100 ; percent = 70
+              ; elements =
+                  rect 10 25 110 50 defaultStyle
+                ∷ label 65 50 16 "parse" defaultStyle
+                ∷ arrow 120 50 190 50 defaultStyle
+                ∷ rect 190 25 110 50 (filled "#355" defaultStyle)
+                ∷ label 245 50 16 "render" defaultStyle
+                ∷ [] })
+            pause
+            diagram (record
+              { name = "result" ; width = 400 ; height = 60 ; percent = 40
+              ; elements =
+                  group (circle 30 30 20 (stroked "#e55" defaultStyle)
+                       ∷ circle 80 30 20 (stroked "#5e5" defaultStyle)
+                       ∷ [])
+                ∷ label 200 30 16 "two circles" defaultStyle
+                ∷ [] }))

@@ -11,7 +11,7 @@ module MyTalk where
 open import Data.List using (_∷_; [])
 open import Data.Product using (_,_)
 
-open import Slides.Core using (NoCap; Deck; emph; strong; codeSpan; inlineMath; link)
+open import Slides.Core using (Deck; emph; strong; codeSpan; inlineMath; link)
 open import Slides.DSL
 open import Slides.Components
 open import Slides.Resources
@@ -24,7 +24,7 @@ resources = record
 
 open Checked resources
 
-talk : Deck NoCap
+talk : Deck
 talk = do
   titleSlide "Title" "Subtitle" "Author"
   slide (do heading 2 "A slide"
@@ -40,7 +40,7 @@ Place it under `src/` (or add a directory to `include:` in `agda-slides.agda-lib
 | Level | Commands |
 | --- | --- |
 | Deck (`Deck`) | `slide body`, `slideWith options body`, `stack bodies`, `stackWith options bodies`; options: `background "#hex"`, `transition "zoom"` |
-| Body (`Body`, a `do` block) | `heading n text`, `paragraph text`, `bullets texts`, `incremental texts`, `code language source`, `displayMath math`, `figure path caption` (checked), `notes text`, `table header rows`, `columns [contents]`, `box title content`, `fragment content`, `fragmentWith style content`, `pause`, `bibliography` |
+| Body (`Body`, a `do` block) | `placed x y w h content`, `diagram d`, `heading n text`, `paragraph text`, `bullets texts`, `incremental texts`, `code language source`, `displayMath math`, `figure path caption` (checked), `notes text`, `table header rows`, `columns [contents]`, `box title content`, `fragment content`, `fragmentWith style content`, `pause`, `bibliography` |
 | Content (inside `columns`, `box`, `fragment`) | the same commands under `Content.`, for example `Content.paragraph` |
 | Text | a string literal, or a list of `Inline`s: `text`, `emph`, `strong`, `codeSpan`, `link url text`, `inlineMath math`, `cite key` (checked) |
 | Math (`Slides.Math`, imported qualified as `M`) | `M.var`, `M.num`, `M.greek`, `M.frac`, `M.sqrt`, `M.sum`, `M.integral`, `M.fn`, `M.paren`, `M.vec`, `M.text`, `M.raw`; operators `M.+ M.- M.* M./ M.^ M.≡ M.≤ …`; literals: `2` is a number and `"x"` an identifier |
@@ -52,26 +52,34 @@ Notes:
 - To use a `String` variable as text, write `plain s`.
 - Literals need `Slides.DSL` (which re-exports `Slides.Literals`) in scope in the module that writes them.
 
-## Optional features (capabilities)
+## Positioned boxes and diagrams
 
-A deck has type `Deck K`, where `K` lists the optional features it uses:
-`NoCap` for none, `Placed` for positioned boxes, and `K ⊕ L` for several. The
-core commands work at any `K`. A capability command carries an instance
-argument `Placed ⊑ K`, so it only typechecks in a deck whose type provides it:
+`placed x y w h content` puts a content program in a box at a fixed position;
+the numbers are whole percentages of the slide (left, top, width, height).
+After a `pause` it appears on the next step.
+
+`diagram d` draws a small vector diagram (`Slides.Diagram`): a record with a
+`name` (unique in the deck), a canvas `width` and `height`, the displayed
+`percent` of the slide width, and a list of elements: `rect`, `circle`, `line`,
+`arrow`, `label x y size text style` and `group`. Styles are built from
+`defaultStyle` with `stroked`, `filled` and `thick`.
 
 ```agda
-open import Slides.Capability.Placed
+open import Slides.Diagram
 
-talk : Deck Placed
-talk = slide (do heading 2 "Placed"
-                 placed 10 50 30 20 (Content.paragraph "at 10%, 50%")   -- x y w h, percent of the slide
-                 pause
-                 placed 60 50 30 20 (Content.paragraph "on the next step"))
+slide (do heading 2 "Pipeline"
+          diagram (record
+            { name = "pipeline" ; width = 300 ; height = 100 ; percent = 60
+            ; elements = rect 10 25 100 50 defaultStyle
+                       ∷ label 60 50 16 "parse" defaultStyle
+                       ∷ arrow 110 50 190 50 defaultStyle
+                       ∷ rect 190 25 100 50 (filled "#355" defaultStyle)
+                       ∷ label 240 50 16 "render" defaultStyle ∷ [] })
+          placed 60 70 35 20 (Content.paragraph "a note at 60%, 70%"))
 ```
 
-A backend must support `K` (`HTMLCap K`); both HTML backends support `Placed`.
-Rendering a deck with a capability the backend lacks fails with `No instance
-of type HTMLCap …`. See `plan/Capabilities.md`.
+Both backends render these. A future backend that cannot render a feature
+lowers it or refuses the deck; see `plan/Capabilities.md`.
 
 ## Rendering
 

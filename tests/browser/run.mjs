@@ -44,8 +44,8 @@ async function open(dir, ready) {
   eq('height from JSON number', await ev(() => Reveal.getConfig().height), 700);
   eq('transition option', await ev(() => Reveal.getConfig().transition), 'fade');
   eq('slideNumber option', await ev(() => Reveal.getConfig().slideNumber), true);
-  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 11);
-  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 12);
+  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 12);
+  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 13);
 
   // `pause`: three blocks become fragments; notes do not.
   await ev(() => Reveal.slide(1));
@@ -88,7 +88,7 @@ async function open(dir, ready) {
   await ev(() => Reveal.slide(10));
   eq('placed: two boxes, one on a later step', await ev(() => {
     const s = Reveal.getCurrentSlide();
-    return [s.querySelectorAll('.placed').length, s.querySelectorAll('.placed.fragment').length].join(',');
+    return [s.querySelectorAll('.placed').length, s.querySelectorAll('.fragment > .placed').length].join(',');
   }), '2,1');
   check('placed: box is at 10% / 50% of the slide canvas', await ev(() => {
     const c = document.querySelector('.slides').getBoundingClientRect();
@@ -96,7 +96,32 @@ async function open(dir, ready) {
     return Math.abs((b.left - c.left) / c.width - 0.10) < 0.01 && Math.abs((b.top - c.top) / c.height - 0.50) < 0.01;
   }));
   await key('ArrowRight');
-  eq('placed: fragment appears on the first step', await ev(() => Reveal.getCurrentSlide().querySelectorAll('.placed.fragment.visible').length), 1);
+  eq('placed: fragment appears on the first step', await ev(() => Reveal.getCurrentSlide().querySelectorAll('.fragment.visible > .placed').length), 1);
+
+  // diagrams: inline SVG, the second one on a later step
+  await ev(() => Reveal.slide(11));
+  eq('diagram: two svgs, one on a later step', await ev(() => {
+    const s = Reveal.getCurrentSlide();
+    return [s.querySelectorAll('.diagram svg').length, s.querySelectorAll('.fragment > .diagram').length].join(',');
+  }), '2,1');
+  eq('diagram: elements of the first svg', await ev(() => {
+    const v = Reveal.getCurrentSlide().querySelector('.diagram svg');
+    return ['rect', 'line', 'text', 'marker'].map(t => v.querySelectorAll(t).length).join(',');
+  }), '2,1,2,1');
+  check('diagram: arrow refers to its marker and the marker exists', await ev(() => {
+    const v = Reveal.getCurrentSlide().querySelector('.diagram svg');
+    return v.querySelector('line').getAttribute('marker-end') === 'url(#pipeline-arrow)' && !!v.querySelector('#pipeline-arrow');
+  }));
+  check('diagram: svg is scaled to its percentage of the slide', await ev(() => {
+    const s = Reveal.getCurrentSlide().getBoundingClientRect();
+    const v = Reveal.getCurrentSlide().querySelector('.diagram svg').getBoundingClientRect();
+    return Math.abs(v.width / s.width - 0.70) < 0.02 && v.height > 0;
+  }));
+  check('diagram: label text is rendered', await ev(() => Reveal.getCurrentSlide().querySelector('text').textContent === 'parse'));
+  check('diagram: marker ids are unique in the page', await ev(() => {
+    const ids = Array.from(document.querySelectorAll('[id]')).map(e => e.id);
+    return new Set(ids).size === ids.length;
+  }));
 
   // background
   await ev(() => Reveal.slide(7));
@@ -124,7 +149,7 @@ async function open(dir, ready) {
   const key = k => page.keyboard.press(k);
 
   console.log('-- standalone HTML');
-  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 12);
+  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 13);
   eq('exactly one active slide', await ev(() => document.querySelectorAll('.slide.active').length), 1);
   eq('starts on the first slide', await active(), 0);
   await key('ArrowRight'); eq('right: next slide', await active(), 1);
@@ -136,6 +161,11 @@ async function open(dir, ready) {
   await key('ArrowRight'); eq('pause: then the next slide', await active(), 2);
   await key('ArrowLeft');  eq('back: previous slide with all fragments shown', [await active(), await visible()].join(','), '1,3');
   await key('ArrowLeft');  eq('back: unreveals the last fragment', await visible(), 2);
+  await page.evaluate(() => { location.hash = '#13'; });
+  await page.reload(); await page.waitForSelector('.slide.active');
+  check('diagram: svg with a marker, fragment hidden then shown', await ev(() =>
+    document.querySelectorAll('.slide.active .diagram svg').length === 2 &&
+    document.querySelectorAll('.slide.active .fragment.visible > .diagram').length === 0));
   await page.evaluate(() => { location.hash = '#12'; });
   await page.reload(); await page.waitForSelector('.slide.active');
   check('placed: box is at 10% / 50% of the window', await ev(() => {
@@ -144,7 +174,7 @@ async function open(dir, ready) {
   }));
   eq('placed: fragment hidden then shown', [await visible(), (await key('Space'), await visible())].join(','), '0,1');
   await key('Home');
-  await key('End');        eq('End: last slide', await active(), 11);
+  await key('End');        eq('End: last slide', await active(), 12);
   await key('Home');       eq('Home: first slide', await active(), 0);
   check('background applied by the script', await (async () => {
     await page.evaluate(() => { location.hash = '#8'; });

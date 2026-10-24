@@ -15,12 +15,12 @@ Write the deck, `src/MyTalk.agda`:
 module MyTalk where
 
 open import Data.List using (_∷_; [])
-open import Slides.Core using (NoCap; Deck; emph)
+open import Slides.Core using (Deck; emph)
 open import Slides.DSL
 open import Slides.Components using (titleSlide)
 import Slides.Math as M
 
-talk : Deck NoCap
+talk : Deck
 talk = do
   titleSlide "Hello" "a deck in Agda" "A. Speaker"
   slide (do heading 2 "Why?"
@@ -58,7 +58,7 @@ open out/mytalk/index.html
 - **Decks are free-monad programs.** Each slide command is an operation of a container (`Slides.Core`: `ContentC`, `LayoutC`, `DeckC`), so `do`-notation sequences commands and ordinary functions are components (`Slides.Components`). Nothing in `src/Container/` knows about slides.
 - **Backends are algebras.** A backend interprets every command by giving an algebra for the container's polynomial functor on `Setoids`; the interpretation of a deck is the unique fold. Rendering therefore respects sequencing (`renderBody-bind`), algebra homomorphisms commute with it (`fold-hom`, used for restyling), and translating a program along a container morphism then folding equals folding with the pulled-back algebra (`fusion`).
 - **Nesting is stratified.** A slide's shape contains its body and `columns` contain content programs, so no container mentions itself and strict positivity is never an issue. Combined vocabularies are container sums, with algebras combined by `copair`.
-- **Optional features are capabilities.** A deck has type `Deck K`; `K` names the optional commands it uses (`NoCap`, `Placed`, `Placed ⊕ …`). A backend must provide the matching instances to render it, so using a feature a backend lacks is a type error naming the missing instance. See `plan/Capabilities.md`.
+- **No instance search in the core.** `do`-notation is the free monad's own bind, features such as `placed` and `diagram` are ordinary layout commands, and a backend that cannot render a feature will lower it or refuse the deck (`plan/Capabilities.md` explains why an earlier capability-indexed design was dropped: overlapping instances made typechecking exponential). Instances remain only where Agda requires them (overloaded literals) and for the resource checks.
 - **Resources are checked when the deck typechecks.** A deck declares its figure files and bibliography keys (`Slides.Resources`); `figure` and `cite` take an instance argument that only resolves for declared names.
 - **Verified HTML where it is cheap.** Output is built as parsnip XML values and printed by its XML printer, with the (unverified) doctype as a constant prefix; empty non-void elements are padded so browsers do not misparse them. The tree-equality and `≈ₓ` bridge to parsnip's equality is proved.
 - **Everything is `--safe --without-K`** except the executables, which use IO.
@@ -71,18 +71,19 @@ open out/mytalk/index.html
 | Content | headings, paragraphs, bullet lists (optionally incremental), code, tables, figures with captions, bibliography |
 | Text | plain, emphasis, strong, code spans, links, citations, inline math |
 | Math | typed formula AST (fractions, sums, integrals, Greek, relations, accents, …) printed to LaTeX and rendered by KaTeX; overloaded literals (`2`, `"x"`) |
-| Layout | columns, boxes, `Placed` boxes at fixed percentages of the slide |
+| Layout | columns, boxes, `placed` boxes at fixed percentages of the slide |
+| Diagrams | typed vector diagrams (rectangles, circles, lines, arrows, labels, groups) printed as inline SVG |
 | Steps | `pause` (everything after appears step by step), explicit `fragment`s with reveal.js styles |
 | Components | title and section slides, decorators, bullet/two-column/table bodies |
 | Backends | reveal.js (themes, size, slide numbers, controls) and standalone HTML (own navigation script and print stylesheet) |
 | Checks | undeclared figure/citation rejected; `make check-resources` checks figure files exist |
 
-Not yet: inline diagrams (next: the `Diagram` capability), figure/table numbering, Beamer/LaTeX and Markdown backends.
+Not yet: figure/table numbering, Beamer/LaTeX and Markdown backends.
 
 ## Repository layout
 
 - `src/Container/` — generic: containers as polynomial functors on `Setoids`, the free monad, its algebraic description (`Free ⊣ Forget`, monadic), interpretation and fusion, container sums. Nothing here imports `Slides.*`.
-- `src/Slides/` — the DSL: `Core` (vocabulary), `DSL` (commands and `do`-notation), `Math`, `Literals`, `Steps` (`pause`), `Resources`, `Components`, `Capability/*`, `Backend/*` (`Common`, `Reveal`, `Plain`, `Placed`, `Restyle`, `HTML`, `XML`), `Driver`, `Examples/*`.
+- `src/Slides/` — the DSL: `Core` (vocabulary), `DSL` (commands and `do`-notation), `Math`, `Literals`, `Steps` (`pause`), `Resources`, `Components`, `Diagram`, `Backend/*` (`Common`, `Reveal`, `Plain`, `Diagram`, `Restyle`, `HTML`, `XML`), `Driver`, `Examples/*`.
 - `parsnip/` — submodule: verified XML/JSON/SVG printers and parsers with proved round trips.
 - `assets/` — stylesheets, navigation script, sample figure. `tests/` — golden files, browser checks, negative tests. `plan/`, `docs/`.
 
