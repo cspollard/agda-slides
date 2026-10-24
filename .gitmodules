@@ -1,0 +1,3 @@
+[submodule "parsnip"]
+	path = parsnip
+	url = git@github.com:cspollard/parsnip.git
