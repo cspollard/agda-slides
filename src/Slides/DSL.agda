@@ -20,7 +20,7 @@ module Slides.DSL where
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; true; false)
 open import Data.List using (List; []; _∷_; map)
-open import Data.Maybe using (just)
+open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
@@ -30,7 +30,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM
 open import Effect.Monad using (RawMonad)
 
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; slide; stack; columns; box)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; slide; stack; columns; box; fragment)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -161,6 +161,13 @@ table h r = liftContent (Content.table h r)
 
 columns : List Content → Body
 columns cs = impure (inj₂ (Core.columns cs) , λ _ → pure tt)
+
+-- Content that appears on a later step.
+fragment : Content → Body
+fragment c = impure (inj₂ (Core.fragment nothing c) , λ _ → pure tt)
+
+fragmentWith : String → Content → Body
+fragmentWith style c = impure (inj₂ (Core.fragment (just style) c) , λ _ → pure tt)
 
 box′ : Text → Content → Body
 box′ t c = impure (inj₂ (Core.box t c) , λ _ → pure tt)

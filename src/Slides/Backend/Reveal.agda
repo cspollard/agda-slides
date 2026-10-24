@@ -194,6 +194,13 @@ renderLayout (box t c) =
     (rich "div" (("class" , "box-title") ∷ []) t ∷ renderContentProgram c)
   ∷ []
 
+renderLayout (fragment style c) =
+  hElement "div" (("class" , cls style) ∷ []) (renderContentProgram c) ∷ []
+  where
+    cls : Maybe String → String
+    cls nothing  = "fragment"
+    cls (just s) = "fragment " ++ˢ s
+
 layoutα : Func (Poly₀ LayoutC ForestSetoid) ForestSetoid
 layoutα = record
   { to   = λ { (c , k) → renderLayout c ++ k tt }

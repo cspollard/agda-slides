@@ -67,6 +67,9 @@ Content = ContentC ⋆ ⊤
 data LayoutShape : Set where
   columns : List Content → LayoutShape
   box     : (title : Text) → Content → LayoutShape
+  -- the content appears on a later step; the style is a reveal.js fragment
+  -- class (fade-up, grow, highlight-red, …)
+  fragment : (style : Maybe String) → Content → LayoutShape
 
 LayoutC : Container 0ℓ 0ℓ
 LayoutC = LayoutShape ▷ λ _ → ⊤

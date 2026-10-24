@@ -18,4 +18,7 @@ talk = do
           ("types for structure" ∷ "proofs for export" ∷ [])))
   slide (resultsTable "Results" ("backend" ∷ "slides" ∷ [])
           (("reveal.js" ∷ "10" ∷ []) ∷ ("plain html" ∷ "0" ∷ []) ∷ []))
+  slide (do heading 2 "Reveal step by step"
+            fragment (Content.paragraph "first, a fragment")
+            fragmentWith "fade-up" (Content.paragraph "then one that fades up"))
   slide (twoColumn "Compare" (Content.paragraph "left") (Content.paragraph "right"))
