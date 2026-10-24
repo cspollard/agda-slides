@@ -7,7 +7,7 @@ module Slides.Examples.Showcase where
 open import Data.List using (_∷_; [])
 open import Data.Product using (_,_)
 
-open import Slides.Core using (Deck; emph; strong; codeSpan; inlineMath; link)
+open import Slides.Core using (NoCap; Deck; emph; strong; codeSpan; inlineMath; link)
 open import Slides.DSL
 open import Slides.Components
 open import Slides.Resources
@@ -32,7 +32,7 @@ gauss = M.sum (M.var "i" M.≡ 0) "n" "i" M.≡ M.frac ("n" M.* M.paren ("n" M.+
 euler : M.Math
 euler = (M.var "e" M.^ ("i" M.* M.greek M.pi)) M.+ 1 M.≡ 0
 
-showcase : Deck
+showcase : Deck NoCap
 showcase = do
   titleSlide "Showcase" "every feature of the DSL" "A. Speaker"
 

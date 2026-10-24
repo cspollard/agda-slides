@@ -4,24 +4,24 @@
 
 module Slides.Examples.Intro where
 
-open import Slides.Core using (Body; Deck; Content; emph; codeSpan; link; inlineMath)
+open import Slides.Core using (NoCap; Body; Deck; Content; emph; codeSpan; link; inlineMath)
 open import Slides.DSL
 open import Data.List using (_∷_; [])
 open import Slides.Math using (_≡_; _*_; _^_; _+_)
 
-titleSlide : Body
+titleSlide : Body NoCap
 titleSlide = do
   heading 1 "Slides in Agda"
   paragraph ("a " ∷ emph "free-monad" ∷ " DSL, checked by " ∷ codeSpan "agda" ∷ [])
   notes "Welcome everyone."
 
-why : Body
+why : Body NoCap
 why = do
   heading 2 "Why?"
   incremental ("typed decks" ∷ "verified export" ∷ "reusable components" ∷ [])
   displayMath ("E" ≡ "m" * "c" ^ 2)
 
-compare : Body
+compare : Body NoCap
 compare = do
   heading 2 "Two columns"
   columns
@@ -30,7 +30,7 @@ compare = do
     ∷ [] )
   box "Remark" (do Content.paragraph "Boxes hold content programs, too.")
 
-demo : Deck
+demo : Deck NoCap
 demo = do
   slide titleSlide
   slide why

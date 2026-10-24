@@ -19,6 +19,7 @@ open import Data.Nat.Show using (show)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Empty using (⊥)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
 open import Function using (_∘_)
@@ -220,12 +221,45 @@ layoutα = record
 layoutAlg : F-Algebra L.F
 layoutAlg = record { A = ForestSetoid ; α = layoutα }
 
--- The algebra for slide bodies is the copairing of the two.
+-- The algebra for the core block is the copairing of the two.
 blockAlg : F-Algebra B.F
 blockAlg = record { A = ForestSetoid ; α = copair ContentC LayoutC ForestSetoid contentα layoutα }
 
-renderBody : Body → Forest
-renderBody = B.fold blockAlg {⊤ˢ} nil
+------------------------------------------------------------------------
+-- Capabilities
+
+-- A backend supports the capability `K` by rendering its commands.
+record HTMLCap (K : Set) : Set where
+  field
+    render : K → Forest
+
+open HTMLCap {{...}} public
+
+instance
+  htmlcap-⊥ : HTMLCap ⊥
+  htmlcap-⊥ = record { render = λ () }
+
+  htmlcap-⊕ : ∀ {K L} {{_ : HTMLCap K}} {{_ : HTMLCap L}} → HTMLCap (K ⊕ L)
+  htmlcap-⊕ = record { render = λ { (inj₁ k) → render k ; (inj₂ l) → render l } }
+
+module BK (K : Set) = Alg 0ℓ 0ℓ (BlockOf K)
+module CK (K : Set) = Alg 0ℓ 0ℓ (capC K)
+
+capα : ∀ {K} → HTMLCap K → Func (Poly₀ (capC K) ForestSetoid) ForestSetoid
+capα h = record
+  { to   = λ { (c , k) → HTMLCap.render h c ++ k tt }
+  ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → PW.++⁺ (forest-refl _) (k≈ tt) }
+  }
+
+-- The algebra for slide bodies: the core block algebra and the capability's.
+bodyAlg : ∀ K → HTMLCap K → F-Algebra (BK.F K)
+bodyAlg K h = record
+  { A = ForestSetoid
+  ; α = copair BlockC (capC K) ForestSetoid (F-Algebra.α blockAlg) (capα h)
+  }
+
+renderBody : {{_ : HTMLCap K}} → Body K → Forest
+renderBody {K} {{h}} = BK.fold K (bodyAlg K h) {⊤ˢ} nil
 
 -- Slide options become `data-*` attributes.
 slideAttrs : SlideOptions → Attrs
@@ -243,12 +277,15 @@ slideAttrs o = opt "data-background-color" (SlideOptions.background o)
 -- Rendering is a monoid homomorphism: sequencing programs concatenates the
 -- markup.  (The fold of a program is the markup of its first command followed
 -- by the fold of the rest, and the leaf contributes nothing.)
-renderBody-bind : ∀ (b₁ b₂ : Body) →
+renderBody-bind : {{h : HTMLCap K}} (b₁ b₂ : Body K) →
                   renderBody (b₁ FM.>>= λ _ → b₂) ≡ renderBody b₁ ++ renderBody b₂
-renderBody-bind (pure tt)             b₂ = refl
-renderBody-bind (impure (inj₁ c , k)) b₂ =
+renderBody-bind (pure tt)                   b₂ = refl
+renderBody-bind (impure (inj₁ (inj₁ c) , k)) b₂ =
   trans (cong (renderContent c ++_) (renderBody-bind (k tt) b₂))
         (sym (++-assoc (renderContent c) (renderBody (k tt)) (renderBody b₂)))
-renderBody-bind (impure (inj₂ c , k)) b₂ =
+renderBody-bind (impure (inj₁ (inj₂ c) , k)) b₂ =
   trans (cong (renderLayout c ++_) (renderBody-bind (k tt) b₂))
         (sym (++-assoc (renderLayout c) (renderBody (k tt)) (renderBody b₂)))
+renderBody-bind (impure (inj₂ c , k))        b₂ =
+  trans (cong (render c ++_) (renderBody-bind (k tt) b₂))
+        (sym (++-assoc (render c) (renderBody (k tt)) (renderBody b₂)))

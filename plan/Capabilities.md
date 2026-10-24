@@ -6,15 +6,13 @@ uses, a backend declares which it supports, and a mismatch is a type error.
 
 ## Design
 
-A **capability** is a set of command shapes plus one operation, packaged as
-
-    record Capability : Set₁ where
-      Shape   : Set
-      stepped : Shape → Shape        -- how a command appears on a later step (`pause`)
-
-with a container `capC K = Shape K ▷ λ _ → ⊤`. Capabilities compose by `_⊕_`
-(shapes are the disjoint sum, `stepped` acts componentwise); `NoCap` has no
-shapes.
+A **capability** is just the type of its command shapes (`K : Set`), with
+container `capC K = K ▷ λ _ → ⊤`. (It is not a record: Agda cannot infer `K`
+from `Body K` if `K` is hidden behind a projection such as `Shape K`.) How a
+command appears on a later step (after a `pause`) is the `Steppable K`
+instance (`later : K → K`); how an HTML backend renders it is the `HTMLCap K`
+instance (`render : K → Forest`). Capabilities compose by `_⊕_` (the
+disjoint sum, with componentwise instances); `NoCap = ⊥`.
 
 The core vocabulary is unchanged (`BlockC = ContentC ⊎ LayoutC`). What a
 deck may use is indexed by a capability `K`:
@@ -29,8 +27,8 @@ the stratification (and strict positivity) is preserved. Content inside
 Authoring: core commands are polymorphic in `K` (they inject along
 `ContentC ⇒ BlockOf K`). A capability command takes an instance argument
 `{{S ∈ K}}` (data types à la carte): `placed : {{Placed ∈ K}} → … → Body K`.
-Instances: `S ∈ S`, `S ∈ (S ⊕ T)`, `S ∈ T → S ∈ (R ⊕ T)`-style, one per position,
-so each capability may appear once in a sum.
+Instances: reflexivity, left and right injection into `⊕`; each capability may
+appear once in a sum.
 
 Backends: an HTML backend needs `HTMLCap K`, i.e. a function
 `Shape K → Forest`, which determines an algebra for `capC K` (all positions
@@ -50,14 +48,14 @@ Non-goals: type-level capability lists, row polymorphism, subtyping inference.
 
 ## Stages (each committed separately; all tests green)
 
-1. **Refactor, no new features.** `Capability`, `NoCap`, `Body K`, `Deck K`,
+1. **Refactor, no new features (done).** `NoCap`, `Steppable`, `Body K`, `Deck K`,
    `HTMLCap`; thread `K` through DSL, Steps (`go`/`after`/`go-bind` get a
-   capability case: apply `stepped` in step mode, mode unchanged), Common
+   capability case: apply `later` in step mode, mode unchanged), Common
    (`renderBody-bind` gets a third case), Reveal, Plain, Resources, Components,
    Driver, examples. Outputs byte-identical (golden tests unchanged).
 2. **`placed`.** `Placed` capability: `placed x y w h Content` renders a
    `<div class="placed" style="position:absolute; …">` in slide-canvas
-   coordinates, with `stepped` producing a fragment variant. Plain backend
+   coordinates, with `later` producing a fragment variant. Plain backend
    uses the same canvas. Tests: golden, Playwright (position, fragment step).
 3. **`Diagram`.** `rawSVG` (a string of SVG child markup validated by the XML
    parser at render time, or `XMLM` built with `Data.SVG`), then a small typed
@@ -69,7 +67,9 @@ Non-goals: type-level capability lists, row polymorphism, subtyping inference.
 
 ## Risks
 
-- Instance search for `_∈_` with metas in `do` blocks: test early in stage 1.
+- Instance search for `_∈_` with metas in `do` blocks: test in stage 2.
+- Instances are only visible when their names are in scope, so `Slides.DSL` and
+  `Slides.Driver` re-export the `Steppable`/`HTMLCap` instances.
 - `go-bind`/`renderBody-bind` need one extra case each; same shape as the
   content case.
 - Every example annotation `Deck`/`Body` becomes `Deck NoCap`/`Body NoCap`.

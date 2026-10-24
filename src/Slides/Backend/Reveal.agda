@@ -55,12 +55,12 @@ open import Slides.Steps using (steps)
 open import Slides.Backend.HTML
 open import Slides.Backend.Common public
 
-module D = Alg 0ℓ 0ℓ DeckC
+module D (K : Set) = Alg 0ℓ 0ℓ (DeckC K)
 
 -- The deck algebra: each slide is a `<section>`; a stack is a `<section>`
 -- of `<section>`s.
-deckAlg : F-Algebra D.F
-deckAlg = record
+deckAlg : ∀ K {{_ : HTMLCap K}} {{_ : Steppable K}} → F-Algebra (D.F K)
+deckAlg K = record
   { A = ForestSetoid
   ; α = record
       { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody (steps b)) ∷ k tt
@@ -73,8 +73,8 @@ deckAlg = record
       }
   }
 
-renderDeck : Deck → Forest
-renderDeck = D.fold deckAlg {⊤ˢ} nil
+renderDeck : {{_ : HTMLCap K}} {{_ : Steppable K}} → Deck K → Forest
+renderDeck {K} = D.fold K (deckAlg K) {⊤ˢ} nil
 
 ------------------------------------------------------------------------
 -- The page
@@ -181,24 +181,24 @@ initScript cfg =
   ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n"
 
 -- `index.html`, with the (unverified, constant) doctype prefix.
-renderReveal : RevealConfig → Deck → String
+renderReveal : RevealConfig → {{_ : HTMLCap K}} {{_ : Steppable K}} → Deck K → String
 renderReveal cfg d = doctype ++ˢ renderXML (page cfg (renderDeck d))
 
 ------------------------------------------------------------------------
 -- Structural properties of the rendering
 
 -- The number of slide commands (slides and stacks) in a deck.
-count : Deck → ℕ
+count : Deck K → ℕ
 count (pure _)         = 0
 count (impure (_ , k)) = suc (count (k tt))
 
 -- One top-level `<section>` per slide command, in order.
-renderDeck-length : ∀ d → length (renderDeck d) ≡ count d
+renderDeck-length : {{_ : HTMLCap K}} {{_ : Steppable K}} → ∀ (d : Deck K) → length (renderDeck d) ≡ count d
 renderDeck-length (pure tt)                = refl
 renderDeck-length (impure (slide _ _ , k)) = cong suc (renderDeck-length (k tt))
 renderDeck-length (impure (stack _ _ , k)) = cong suc (renderDeck-length (k tt))
 
-renderDeck-bind : ∀ (d₁ d₂ : Deck) →
+renderDeck-bind : {{_ : HTMLCap K}} {{_ : Steppable K}} (d₁ d₂ : Deck K) →
                   renderDeck (d₁ FM.>>= λ _ → d₂) ≡ renderDeck d₁ ++ renderDeck d₂
 renderDeck-bind (pure tt)                 d₂ = refl
 renderDeck-bind (impure (slide o b , k))  d₂ =

@@ -26,7 +26,7 @@ open import Data.Product using (_×_; proj₁)
 open import Data.String using (String; _==_)
 open import Data.Unit using (⊤)
 
-open import Slides.Core using (Text; Inline; Body; Content)
+open import Slides.Core using (Text; Inline; Body; Content; K)
 import Slides.Core as Core
 open import Slides.DSL using (liftContent)
 import Slides.DSL as DSL
@@ -68,10 +68,10 @@ module Checked (R : Resources) where
     bibliography = DSL.Content.references (references R)
 
   figure : (src : String) {{ok : Found (figureDeclared src) "figure" src}} →
-           Text → Body
+           Text → Body K
   figure src {{ok}} c = liftContent (Content.figure src {{ok}} c)
 
-  bibliography : Body
+  bibliography : Body K
   bibliography = liftContent Content.bibliography
 
   cite : (key : String) {{ok : Found (referenceDeclared key) "reference" key}} → Inline

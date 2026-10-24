@@ -17,6 +17,8 @@ module Slides.Core where
 
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; false)
+open import Data.Empty using (⊥)
+open import Data.Sum using (_⊎_) renaming (map to map⊎)
 open import Data.List using (List)
 open import Data.Maybe using (Maybe; nothing)
 open import Data.Nat using (ℕ)
@@ -24,7 +26,7 @@ open import Data.Product using (_×_)
 open import Data.String using (String)
 open import Data.Unit using (⊤)
 open import Data.Container.Core using (Container; _▷_)
-open import Data.Container.Combinator using (_⊎_)
+import Data.Container.Combinator as CB
 open import Data.Container.FreeMonad using (_⋆_)
 
 open import Slides.Math using (Math)
@@ -88,11 +90,51 @@ LayoutC = LayoutShape ▷ λ _ → ⊤
 
 -- Everything that can appear directly in a slide.
 BlockC : Container 0ℓ 0ℓ
-BlockC = ContentC ⊎ LayoutC
+BlockC = ContentC CB.⊎ LayoutC
+
+------------------------------------------------------------------------
+-- Capabilities (see `plan/Capabilities.md`)
+--
+-- Optional features are capabilities.  A capability is just the type of its
+-- command shapes (so that `Body K` determines `K` by unification); how a
+-- command appears on a later step (after a `pause`) is the `Steppable`
+-- instance.  A deck is indexed by the capability `K` it may use; a backend
+-- must support `K` to render it.
+
+-- No optional features.
+NoCap : Set
+NoCap = ⊥
+
+infixr 5 _⊕_
+_⊕_ : Set → Set → Set
+K ⊕ L = K ⊎ L
+
+record Steppable (K : Set) : Set where
+  field
+    later : K → K
+
+open Steppable {{...}} public
+
+instance
+  steppable-⊥ : Steppable ⊥
+  steppable-⊥ = record { later = λ () }
+
+  steppable-⊕ : ∀ {K L} {{_ : Steppable K}} {{_ : Steppable L}} → Steppable (K ⊕ L)
+  steppable-⊕ = record { later = map⊎ later later }
+
+capC : Set → Container 0ℓ 0ℓ
+capC K = K ▷ λ _ → ⊤
+
+variable
+  K L : Set
+
+-- Everything that can appear directly in a slide using the capability `K`.
+BlockOf : Set → Container 0ℓ 0ℓ
+BlockOf K = BlockC CB.⊎ capC K
 
 -- The body of a slide.
-Body : Set
-Body = BlockC ⋆ ⊤
+Body : Set → Set
+Body K = BlockOf K ⋆ ⊤
 
 ------------------------------------------------------------------------
 -- The deck
@@ -105,14 +147,15 @@ record SlideOptions : Set where
 defaultSlide : SlideOptions
 defaultSlide = record { background = nothing ; transition = nothing }
 
-data DeckShape : Set where
+-- parametric in the type of slide bodies
+data DeckShape (B : Set) : Set where
   -- a horizontal slide
-  slide : SlideOptions → Body → DeckShape
+  slide : SlideOptions → B → DeckShape B
   -- a vertical stack of slides (reveal.js nested sections)
-  stack : SlideOptions → List Body → DeckShape
+  stack : SlideOptions → List B → DeckShape B
 
-DeckC : Container 0ℓ 0ℓ
-DeckC = DeckShape ▷ λ _ → ⊤
+DeckC : Set → Container 0ℓ 0ℓ
+DeckC K = DeckShape (Body K) ▷ λ _ → ⊤
 
-Deck : Set
-Deck = DeckC ⋆ ⊤
+Deck : Set → Set
+Deck K = DeckC K ⋆ ⊤

@@ -6,7 +6,7 @@ module MissingFigure where
 
 open import Data.List using (_∷_; [])
 
-open import Slides.Core using (Body)
+open import Slides.Core using (Body; NoCap)
 open import Slides.DSL
 open import Slides.Resources
 
@@ -15,5 +15,5 @@ resources = record { figures = "plot.svg" ∷ [] ; references = [] }
 
 open Checked resources
 
-typo : Body
+typo : Body NoCap
 typo = figure "plto.svg" "oops"

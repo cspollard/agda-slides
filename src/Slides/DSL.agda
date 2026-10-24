@@ -23,6 +23,7 @@ open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
 open import Data.Sum using (inj₁; inj₂)
+open import Data.Container.Core using (_⇒_; Container)
 open import Data.String using (String)
 open import Data.Unit using (⊤; tt) public
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
@@ -33,8 +34,9 @@ open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause)
 import Slides.Core as Core
+-- instances needed to render decks are in scope wherever the DSL is
+open import Slides.Core using (NoCap; steppable-⊥; steppable-⊕) public
 import Container.Interpret as Interpret
-open import Container.Sum using (inl)
 
 ------------------------------------------------------------------------
 -- `do`-notation (the overloaded literals are in `Slides.Literals`)
@@ -43,10 +45,10 @@ instance
   contentMonad : RawMonad {f = 0ℓ} (ContentC ⋆_)
   contentMonad = FM.monad
 
-  bodyMonad : RawMonad {f = 0ℓ} (BlockC ⋆_)
+  bodyMonad : ∀ {K} → RawMonad {f = 0ℓ} (BlockOf K ⋆_)
   bodyMonad = FM.monad
 
-  deckMonad : RawMonad {f = 0ℓ} (DeckC ⋆_)
+  deckMonad : ∀ {K} → RawMonad {f = 0ℓ} (DeckC K ⋆_)
   deckMonad = FM.monad
 
 open RawMonad {{...}} public using (_>>_; _>>=_)
@@ -93,74 +95,83 @@ module Content where
   references rs = cmd (Core.references rs)
 
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
-open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
+injContent : ∀ K → ContentC ⇒ BlockOf K
+injContent K = record { shape = λ s → inj₁ (inj₁ s) ; position = λ x → x }
 
-liftContent : Content → Body
-liftContent = translate
+liftContent : Content → Body K
+liftContent {K} = translate
+  where open Interpret.Translate 0ℓ 0ℓ ContentC (BlockOf K) (injContent K) using (translate)
+
+-- Layout and capability commands.
+layoutCmd : LayoutShape → Body K
+layoutCmd l = impure (inj₁ (inj₂ l) , λ _ → pure tt)
+
+capCmd : K → Body K
+capCmd s = impure (inj₂ s , λ _ → pure tt)
 
 ------------------------------------------------------------------------
 -- Body commands
 
-heading : ℕ → Text → Body
+heading : ℕ → Text → Body K
 heading n t = liftContent (Content.heading n t)
 
-paragraph : Text → Body
+paragraph : Text → Body K
 paragraph t = liftContent (Content.paragraph t)
 
-bullets : List Text → Body
+bullets : List Text → Body K
 bullets xs = liftContent (Content.bullets xs)
 
-incremental : List Text → Body
+incremental : List Text → Body K
 incremental xs = liftContent (Content.incremental xs)
 
-code : (language source : String) → Body
+code : (language source : String) → Body K
 code l s = liftContent (Content.code l s)
 
-displayMath : Math → Body
+displayMath : Math → Body K
 displayMath m = liftContent (Content.displayMath m)
 
-figureUnchecked : (src : String) → Text → Body
+figureUnchecked : (src : String) → Text → Body K
 figureUnchecked s c = liftContent (Content.figureUnchecked s c)
 
-notes : Text → Body
+notes : Text → Body K
 notes t = liftContent (Content.notes t)
 
-table : (header : List Text) (rows : List (List Text)) → Body
+table : (header : List Text) (rows : List (List Text)) → Body K
 table h r = liftContent (Content.table h r)
 
-columns : List Content → Body
-columns cs = impure (inj₂ (Core.columns cs) , λ _ → pure tt)
+columns : List Content → Body K
+columns cs = layoutCmd (Core.columns cs)
 
 -- Content that appears on a later step.
-fragment : Content → Body
-fragment c = impure (inj₂ (Core.fragment nothing c) , λ _ → pure tt)
+fragment : Content → Body K
+fragment c = layoutCmd (Core.fragment nothing c)
 
-fragmentWith : String → Content → Body
-fragmentWith style c = impure (inj₂ (Core.fragment (just style) c) , λ _ → pure tt)
+fragmentWith : String → Content → Body K
+fragmentWith style c = layoutCmd (Core.fragment (just style) c)
 
 -- Everything after a `pause` in the same body appears step by step.
-pause : Body
-pause = impure (inj₂ Core.pause , λ _ → pure tt)
+pause : Body K
+pause = layoutCmd Core.pause
 
-box : Text → Content → Body
-box t c = impure (inj₂ (Core.box t c) , λ _ → pure tt)
+box : Text → Content → Body K
+box t c = layoutCmd (Core.box t c)
 
 ------------------------------------------------------------------------
 -- Deck commands
 
-deck-cmd : DeckShape → Deck
+deck-cmd : DeckShape (Body K) → Deck K
 deck-cmd c = impure (c , λ _ → pure tt)
 
-slideWith : SlideOptions → Body → Deck
+slideWith : SlideOptions → Body K → Deck K
 slideWith o b = deck-cmd (Core.slide o b)
 
-slide : Body → Deck
+slide : Body K → Deck K
 slide = slideWith defaultSlide
 
-stackWith : SlideOptions → List Body → Deck
+stackWith : SlideOptions → List (Body K) → Deck K
 stackWith o bs = deck-cmd (Core.stack o bs)
 
-stack : List Body → Deck
+stack : List (Body K) → Deck K
 stack = stackWith defaultSlide
 
 -- Options.

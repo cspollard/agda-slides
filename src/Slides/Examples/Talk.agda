@@ -7,7 +7,7 @@ module Slides.Examples.Talk where
 open import Data.List using (_∷_; [])
 open import Data.Product using (_,_)
 
-open import Slides.Core using (Deck)
+open import Slides.Core using (NoCap; Deck)
 open import Slides.DSL
 open import Slides.Components
 open import Slides.Resources
@@ -24,7 +24,7 @@ resources = record
 
 open Checked resources
 
-talk : Deck
+talk : Deck NoCap
 talk = do
   titleSlide "Verified slides" "free monads over containers" "A. Speaker"
   sectionSlide "Motivation"
