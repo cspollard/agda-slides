@@ -44,8 +44,8 @@ async function open(dir, ready) {
   eq('height from JSON number', await ev(() => Reveal.getConfig().height), 700);
   eq('transition option', await ev(() => Reveal.getConfig().transition), 'fade');
   eq('slideNumber option', await ev(() => Reveal.getConfig().slideNumber), true);
-  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 12);
-  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 13);
+  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 13);
+  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 14);
 
   // `pause`: three blocks become fragments; notes do not.
   await ev(() => Reveal.slide(1));
@@ -123,6 +123,13 @@ async function open(dir, ready) {
     return new Set(ids).size === ids.length;
   }));
 
+  // scripts: the deck's own (init.js) and a slide's, run when it is first shown
+  check('scripts: deck-level script ran', await ev(() => window.deckLoaded === true));
+  eq('scripts: slide script not run before its slide is shown', await ev(() => document.getElementById('scripted').textContent.trim()), '');
+  await ev(() => Reveal.slide(12));
+  eq('scripts: slide script ran on its slide', await ev(() => document.getElementById('scripted').textContent), 'script ran: 1 heading');
+  check('scripts: the carrier element is hidden', await ev(() => getComputedStyle(document.querySelector('.js')).display === 'none'));
+
   // background
   await ev(() => Reveal.slide(7));
   eq('slide background colour', await ev(() => getComputedStyle(document.querySelector('.slide-background.present')).backgroundColor), 'rgb(27, 58, 75)');
@@ -149,7 +156,7 @@ async function open(dir, ready) {
   const key = k => page.keyboard.press(k);
 
   console.log('-- standalone HTML');
-  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 13);
+  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 14);
   eq('exactly one active slide', await ev(() => document.querySelectorAll('.slide.active').length), 1);
   eq('starts on the first slide', await active(), 0);
   await key('ArrowRight'); eq('right: next slide', await active(), 1);
@@ -174,7 +181,8 @@ async function open(dir, ready) {
   }));
   eq('placed: fragment hidden then shown', [await visible(), (await key('Space'), await visible())].join(','), '0,1');
   await key('Home');
-  await key('End');        eq('End: last slide', await active(), 12);
+  await key('End');        eq('End: last slide', await active(), 13);
+  eq('scripts: slide script ran in the standalone page', await ev(() => document.getElementById('scripted').textContent), 'script ran: 1 heading');
   await key('Home');       eq('Home: first slide', await active(), 0);
   check('background applied by the script', await (async () => {
     await page.evaluate(() => { location.hash = '#8'; });
@@ -190,7 +198,7 @@ async function open(dir, ready) {
   const { page, errors } = await open('showcase-lowered', '.slide.active');
   const ev = f => page.evaluate(f);
   console.log('-- lowered deck');
-  eq('lowering: same slides', await ev(() => document.querySelectorAll('.slide').length), 13);
+  eq('lowering: same slides', await ev(() => document.querySelectorAll('.slide').length), 14);
   eq('lowering: no notes remain', await ev(() => document.querySelectorAll('aside.notes').length), 0);
   eq('lowering: no svg remains', await ev(() => document.querySelectorAll('.diagram, svg').length), 0);
   check('lowering: placeholders replace the diagrams', await ev(() =>

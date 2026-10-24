@@ -23,7 +23,7 @@ open import Data.Nat.Show using (show)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
 open import Function using (_∘_)
 open import Function.Bundles using (Func; _⟨$⟩_)
@@ -107,6 +107,8 @@ record RevealConfig : Set where
     -- the size reveal.js lays slides out in (it scales to the window)
     width       : Maybe ℕ
     height      : Maybe ℕ
+    -- JavaScript appended to `init.js`, after `Reveal.initialize`
+    scripts     : List String
 
 defaultConfig : RevealConfig
 defaultConfig = record
@@ -119,11 +121,12 @@ defaultConfig = record
   ; progress    = true
   ; width       = nothing
   ; height      = nothing
+  ; scripts     = []
   }
 
 private
-  script : String → XMLDoc
-  script src = hText "script" (("src" , src) ∷ []) " "
+  scriptTag : String → XMLDoc
+  scriptTag src = hText "script" (("src" , src) ∷ []) " "
 
   stylesheet : String → XMLDoc
   stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
@@ -144,11 +147,11 @@ page cfg slides =
         ∷ map stylesheet (Theme.stylesheets theme) ++ [] )
     ∷ hElement "body" []
         ( div "reveal" (div "slides" slides ∷ [])
-        ∷ script (dist ++ˢ "reveal.js")
-        ∷ script (dist ++ˢ "plugin/notes.js")
-        ∷ script (dist ++ˢ "plugin/highlight.js")
-        ∷ script (dist ++ˢ "plugin/math.js")
-        ∷ script "init.js"
+        ∷ scriptTag (dist ++ˢ "reveal.js")
+        ∷ scriptTag (dist ++ˢ "plugin/notes.js")
+        ∷ scriptTag (dist ++ˢ "plugin/highlight.js")
+        ∷ scriptTag (dist ++ˢ "plugin/math.js")
+        ∷ scriptTag "init.js"
         ∷ [] )
     ∷ [] )
   where
@@ -173,12 +176,33 @@ options cfg = objectFromList
     optNat k nothing  = []
     optNat k (just n) = (k , natⱼ n) ∷ []
 
+-- Runs the `script` commands of a slide (`.js` elements carrying their code
+-- in `data-js`) once, the first time the slide is shown.
+scriptLoader : String
+scriptLoader =
+  "(function () {\n" ++ˢ
+  "  var done = new WeakSet();\n" ++ˢ
+  "  function run(slide) {\n" ++ˢ
+  "    if (!slide) return;\n" ++ˢ
+  "    slide.querySelectorAll('.js[data-js]').forEach(function (e) {\n" ++ˢ
+  "      if (done.has(e)) return;\n" ++ˢ
+  "      done.add(e);\n" ++ˢ
+  "      try { new Function('slide', e.getAttribute('data-js'))(slide); }\n" ++ˢ
+  "      catch (x) { console.error(x); }\n" ++ˢ
+  "    });\n" ++ˢ
+  "  }\n" ++ˢ
+  "  Reveal.on('ready', function (e) { run(e.currentSlide); });\n" ++ˢ
+  "  Reveal.on('slidechanged', function (e) { run(e.currentSlide); });\n" ++ˢ
+  "})();\n"
+
 -- `init.js`: the options plus the plugins (which are JavaScript values, not
--- JSON).
+-- JSON), the script loader, and the deck's own scripts.
 initScript : RevealConfig → String
 initScript cfg =
   "Reveal.initialize(Object.assign(" ++ˢ renderJSON (options cfg) ++ˢ
-  ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n"
+  ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n" ++ˢ
+  scriptLoader ++ˢ
+  concat (map (_++ˢ "\n") (RevealConfig.scripts cfg))
 
 -- `index.html`, with the (unverified, constant) doctype prefix.
 renderReveal : RevealConfig → Deck → String

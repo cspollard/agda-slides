@@ -74,3 +74,10 @@ lowerBody l = lower (block l)
 
 lowerDeck : Lowering ContentC ContentC → Deck → Deck
 lowerDeck l = lower (deck l)
+
+-- Drop the scripts and the elements they draw into, for a backend without
+-- JavaScript.
+stripScripts : Lowering ContentC ContentC
+stripScripts (script _) = pure tt
+stripScripts (mount _)  = pure tt
+stripScripts a          = ret a

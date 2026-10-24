@@ -103,3 +103,8 @@ showcase = do
             placed 60 62 30 25 (Content.diagram (record
               { name = "inset" ; width = 100 ; height = 50 ; percent = 100
               ; elements = rect 5 5 90 40 (stroked "#e5e" defaultStyle) ∷ [] })))
+
+  slide (do heading 2 "Scripting"
+            paragraph "The next line is written by JavaScript."
+            mount "scripted"
+            script "document.getElementById('scripted').textContent = 'script ran: ' + slide.querySelectorAll('h2').length + ' heading';")

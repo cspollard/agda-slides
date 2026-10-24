@@ -77,10 +77,11 @@ open out/mytalk/index.html
 | Steps | `pause` (everything after appears step by step), explicit `fragment`s with reveal.js styles |
 | Components | title and section slides, decorators, bullet/two-column/table bodies |
 | Backends | reveal.js (themes, size, slide numbers, controls) and standalone HTML (own navigation script and print stylesheet) |
+| JavaScript | `script` (run when its slide is first shown), `mount` (an element to draw into), deck-level `RevealConfig.scripts` |
 | Rewriting | `lowerDeck` with composable lowerings (`stripNotes`, `diagramPlaceholder`), Kleisli composition `_>=>_` |
 | Checks | undeclared figure/citation rejected; `make check-resources` checks figure files exist |
 
-Not yet: figure/table numbering, Beamer/LaTeX and Markdown backends.
+Scripts are not type checked. Not yet: figure/table numbering, Beamer/LaTeX and Markdown backends.
 
 ## Repository layout
 

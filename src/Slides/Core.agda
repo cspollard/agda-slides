@@ -63,6 +63,11 @@ data ContentShape : Set where
   references  : List (String × Text) → ContentShape
   -- an inline vector diagram
   diagram     : Diagram → ContentShape
+  -- JavaScript run once, when the slide holding it is first shown, with the
+  -- slide element as `slide` (unchecked; carried in a `data-js` attribute)
+  script      : String → ContentShape
+  -- an empty element with the given id, for scripts to draw into
+  mount       : String → ContentShape
 
 ContentC : Container 0ℓ 0ℓ
 ContentC = ContentShape ▷ λ _ → ⊤

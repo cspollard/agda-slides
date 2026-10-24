@@ -36,6 +36,7 @@ private
   wrapC : Bool → ContentShape → Body
   wrapC false c         = content c
   wrapC true  (notes t) = content (notes t)
+  wrapC true  (script j) = content (script j)
   wrapC true  c         = layout (fragment nothing (impure (c , λ _ → pure tt)))
 
   wrapL : Bool → LayoutShape → Body

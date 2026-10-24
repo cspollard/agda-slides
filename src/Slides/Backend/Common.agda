@@ -170,6 +170,10 @@ renderContent (references refs)   =
   ∷ []
 
 renderContent (diagram d)         = renderDiagram d ∷ []
+renderContent (script js)         =
+  hElement "div" (("class" , "js") ∷ ("hidden" , "") ∷ ("data-js" , js) ∷ []) [] ∷ []
+renderContent (mount i)           =
+  hElement "div" (("id" , i) ∷ ("class" , "mount") ∷ []) [] ∷ []
 
 module A = Alg 0ℓ 0ℓ ContentC
 module L = Alg 0ℓ 0ℓ LayoutC

@@ -83,6 +83,27 @@ slide (do heading 2 "Pipeline"
 Both backends render these. A future backend that cannot render a feature
 lowers it or refuses the deck; see `plan/Capabilities.md`.
 
+## JavaScript
+
+`script js` runs a piece of JavaScript once, the first time its slide is shown,
+with the slide element bound to `slide`; `mount id` adds an empty element with
+that id for the script to draw into. Both work in the reveal.js and standalone
+backends (and inside `placed`, `columns` and `box`, as `Content.script` and
+`Content.mount`).
+
+```agda
+slide (do heading 2 "Live"
+          mount "counter"
+          script "document.getElementById('counter').textContent = 'hello';")
+```
+
+The code is not checked: it is carried in a `data-js` attribute (so the verified
+printer escapes it correctly) and a small loader in `init.js` / `plain.js` runs
+it. To run code for the whole deck, put strings in `RevealConfig.scripts`; they
+are appended to `init.js` after `Reveal.initialize`, where `Reveal` is in scope.
+A backend with no JavaScript would drop these commands with a lowering
+(`Slides.Lower`).
+
 ## Composing and lowering
 
 Components that take arguments compose with Kleisli composition,

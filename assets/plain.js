@@ -9,6 +9,17 @@
     return Array.prototype.slice.call(slide.querySelectorAll('.fragment'));
   }
 
+  // `script` commands: run once, the first time their slide is shown
+  var ran = [];
+  function runScripts(slide) {
+    Array.prototype.forEach.call(slide.querySelectorAll('.js[data-js]'), function (e) {
+      if (ran.indexOf(e) >= 0) return;
+      ran.push(e);
+      try { new Function('slide', e.getAttribute('data-js'))(slide); }
+      catch (x) { console.error(x); }
+    });
+  }
+
   function show(i, revealAll) {
     current = Math.max(0, Math.min(slides.length - 1, i));
     slides.forEach(function (s, j) { s.classList.toggle('active', j === current); });
@@ -19,6 +30,7 @@
     document.body.style.background = bg || '';
     if (bar) bar.style.width = (100 * (current + 1) / slides.length) + '%';
     history.replaceState(null, '', '#' + (current + 1));
+    runScripts(slides[current]);
   }
 
   function next() {

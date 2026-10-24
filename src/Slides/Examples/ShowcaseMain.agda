@@ -8,6 +8,7 @@
 module Slides.Examples.ShowcaseMain where
 
 open import Data.Bool using (true)
+open import Data.List using (_∷_; [])
 open import Data.Maybe using (just)
 open import IO using (Main; run; writeFile; _>>_)
 
@@ -26,6 +27,7 @@ revealConfig = record Reveal.defaultConfig
   ; slideNumber = true
   ; width       = just 960
   ; height      = just 700
+  ; scripts     = "window.deckLoaded = true;" ∷ []
   }
 
 plainConfig : Plain.PlainConfig

@@ -33,7 +33,7 @@ open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
 open import Slides.Core using ()
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; script; mount)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -102,6 +102,12 @@ module Content where
   diagram : Diagram → Content
   diagram d = cmd (Core.diagram d)
 
+  script : String → Content
+  script js = cmd (Core.script js)
+
+  mount : String → Content
+  mount i = cmd (Core.mount i)
+
 -- A content program as a slide body, along the injection `ContentC ⇒ BlockC`.
 open Interpret.Translate 0ℓ 0ℓ ContentC BlockC inl using (translate)
 
@@ -162,6 +168,15 @@ placed x y w h c = impure (inj₂ (Core.placed x y w h c) , λ _ → pure tt)
 -- An inline vector diagram (see `Slides.Diagram`).
 diagram : Diagram → Body
 diagram d = liftContent (Content.diagram d)
+
+-- JavaScript for the reveal.js and standalone backends, run once when its
+-- slide is first shown (`slide` is the slide element); and an empty element
+-- with an id for it to draw into.
+script : String → Body
+script js = liftContent (Content.script js)
+
+mount : String → Body
+mount i = liftContent (Content.mount i)
 
 ------------------------------------------------------------------------
 -- Deck commands

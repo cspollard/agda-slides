@@ -81,8 +81,8 @@ defaultConfig = record
   }
 
 private
-  script : String → XMLDoc
-  script src = hText "script" (("src" , src) ∷ []) " "
+  scriptTag : String → XMLDoc
+  scriptTag src = hText "script" (("src" , src) ∷ []) " "
 
   stylesheet : String → XMLDoc
   stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
@@ -99,7 +99,7 @@ page cfg slides =
         ( hElement "div" (("class" , "deck") ∷ []) slides
         ∷ hElement "div" (("class" , "progress") ∷ []) []
         ∷ katexJs (PlainConfig.katex cfg)
-        ++ script "plain.js" ∷ [] )
+        ++ scriptTag "plain.js" ∷ [] )
     ∷ [] )
   where
     katexCss : Maybe String → List XMLDoc
@@ -108,8 +108,8 @@ page cfg slides =
 
     katexJs : Maybe String → List XMLDoc
     katexJs nothing  = []
-    katexJs (just k) = script (k ++ˢ "katex.min.js")
-                     ∷ script (k ++ˢ "contrib/auto-render.min.js") ∷ []
+    katexJs (just k) = scriptTag (k ++ˢ "katex.min.js")
+                     ∷ scriptTag (k ++ˢ "contrib/auto-render.min.js") ∷ []
 
 -- `index.html`, with the (unverified, constant) doctype prefix.
 renderPlain : PlainConfig → Deck → String
