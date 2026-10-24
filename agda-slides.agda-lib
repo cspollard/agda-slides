@@ -1,0 +1,4 @@
+name: agda-slides
+depend: standard-library agda-categories
+include: src
+flags: --safe --without-K
