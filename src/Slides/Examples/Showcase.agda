@@ -7,9 +7,10 @@ module Slides.Examples.Showcase where
 open import Data.List using (_∷_; [])
 open import Data.Product using (_,_)
 
-open import Slides.Core using (NoCap; Deck; emph; strong; codeSpan; inlineMath; link)
+open import Slides.Core using (Deck; emph; strong; codeSpan; inlineMath; link)
 open import Slides.DSL
 open import Slides.Components
+open import Slides.Capability.Placed
 open import Slides.Resources
 import Slides.Math as M
 
@@ -32,7 +33,7 @@ gauss = M.sum (M.var "i" M.≡ 0) "n" "i" M.≡ M.frac ("n" M.* M.paren ("n" M.+
 euler : M.Math
 euler = (M.var "e" M.^ ("i" M.* M.greek M.pi)) M.+ 1 M.≡ 0
 
-showcase : Deck NoCap
+showcase : Deck Placed
 showcase = do
   titleSlide "Showcase" "every feature of the DSL" "A. Speaker"
 
@@ -74,3 +75,8 @@ showcase = do
 
   slide (do heading 2 "References"
             bibliography)
+
+  slide (do heading 2 "Placed boxes"
+            placed 10 50 30 20 (Content.paragraph "a box at 10%, 50%")
+            pause
+            placed 60 50 30 20 (Content.paragraph "appears on the first step"))

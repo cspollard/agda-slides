@@ -26,7 +26,7 @@ the stratification (and strict positivity) is preserved. Content inside
 
 Authoring: core commands are polymorphic in `K` (they inject along
 `ContentC ⇒ BlockOf K`). A capability command takes an instance argument
-`{{S ∈ K}}` (data types à la carte): `placed : {{Placed ∈ K}} → … → Body K`.
+`{{S ⊑ K}}` (data types à la carte): `placed : {{Placed ⊑ K}} → … → Body K`.
 Instances: reflexivity, left and right injection into `⊕`; each capability may
 appear once in a sum.
 
@@ -53,10 +53,12 @@ Non-goals: type-level capability lists, row polymorphism, subtyping inference.
    capability case: apply `later` in step mode, mode unchanged), Common
    (`renderBody-bind` gets a third case), Reveal, Plain, Resources, Components,
    Driver, examples. Outputs byte-identical (golden tests unchanged).
-2. **`placed`.** `Placed` capability: `placed x y w h Content` renders a
-   `<div class="placed" style="position:absolute; …">` in slide-canvas
-   coordinates, with `later` producing a fragment variant. Plain backend
-   uses the same canvas. Tests: golden, Playwright (position, fragment step).
+2. **`placed` (done).** `Placed` capability: `placed x y w h Content` renders a
+   `<div class="placed" style="left:…%; top:…%; …">` in slide-canvas
+   coordinates, with `later` producing a fragment variant. Coordinates are
+   whole percentages of the slide; the stylesheets use `position: fixed`, whose
+   containing block is the transformed reveal.js canvas (or the window for the
+   plain backend). Tests: golden, Playwright (position, fragment step).
 3. **`Diagram`.** `rawSVG` (a string of SVG child markup validated by the XML
    parser at render time, or `XMLM` built with `Data.SVG`), then a small typed
    AST (rect, circle, path, text, arrow, group) printed with `Data.SVG`.

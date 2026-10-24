@@ -18,7 +18,7 @@ module Slides.Core where
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; false)
 open import Data.Empty using (⊥)
-open import Data.Sum using (_⊎_) renaming (map to map⊎)
+open import Data.Sum using (_⊎_; inj₁; inj₂) renaming (map to map⊎)
 open import Data.List using (List)
 open import Data.Maybe using (Maybe; nothing)
 open import Data.Nat using (ℕ)
@@ -121,6 +121,24 @@ instance
 
   steppable-⊕ : ∀ {K L} {{_ : Steppable K}} {{_ : Steppable L}} → Steppable (K ⊕ L)
   steppable-⊕ = record { later = map⊎ later later }
+
+-- `S ⊑ K`: the capability `K` provides the commands `S` (data types à la
+-- carte).  Instances for reflexivity and for each side of `⊕`.
+record _⊑_ (S K : Set) : Set where
+  field
+    inj : S → K
+
+open _⊑_ {{...}} public
+
+instance
+  ⊑-refl : ∀ {S} → S ⊑ S
+  ⊑-refl = record { inj = λ s → s }
+
+  ⊑-left : ∀ {S K L} {{_ : S ⊑ K}} → S ⊑ (K ⊕ L)
+  ⊑-left = record { inj = λ s → inj₁ (inj s) }
+
+  ⊑-right : ∀ {S K L} {{_ : S ⊑ L}} → S ⊑ (K ⊕ L)
+  ⊑-right = record { inj = λ s → inj₂ (inj s) }
 
 capC : Set → Container 0ℓ 0ℓ
 capC K = K ▷ λ _ → ⊤

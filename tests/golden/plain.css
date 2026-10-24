@@ -4,6 +4,7 @@ html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; backgr
 .slide { display: none; box-sizing: border-box; height: 100%; padding: 3rem 4rem; font-size: 2rem; overflow: auto; }
 .slide.active { display: block; }
 .slide h1, .slide h2, .slide h3 { margin-top: 0; }
+.placed { position: fixed; overflow: hidden; box-sizing: border-box; }
 .fragment { opacity: 0; transition: opacity 0.3s; }
 .fragment.visible { opacity: 1; }
 .notes { display: none; }
@@ -15,5 +16,6 @@ pre { background: #f4f4f4; padding: 0.5rem 1rem; overflow: auto; }
   .deck { overflow: visible; height: auto; }
   .slide { display: block; height: auto; page-break-after: always; }
   .fragment { opacity: 1; }
+  .placed { position: absolute; }
   .progress { display: none; }
 }

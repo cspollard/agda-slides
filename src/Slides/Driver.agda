@@ -19,6 +19,8 @@ open import Data.Unit.Polymorphic.Base using (⊤)
 open import Slides.Core using (Deck; Steppable; K)
 open import Slides.Backend.Common using (htmlcap-⊥; htmlcap-⊕) public
 open import Slides.Core using (steppable-⊥; steppable-⊕) public
+open import Slides.Capability.Placed using (steppable-Placed) public
+open import Slides.Backend.Placed using (htmlcap-Placed) public
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
 

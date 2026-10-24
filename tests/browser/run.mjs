@@ -44,8 +44,8 @@ async function open(dir, ready) {
   eq('height from JSON number', await ev(() => Reveal.getConfig().height), 700);
   eq('transition option', await ev(() => Reveal.getConfig().transition), 'fade');
   eq('slideNumber option', await ev(() => Reveal.getConfig().slideNumber), true);
-  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 10);
-  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 11);
+  eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 11);
+  eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 12);
 
   // `pause`: three blocks become fragments; notes do not.
   await ev(() => Reveal.slide(1));
@@ -84,6 +84,20 @@ async function open(dir, ready) {
   }));
   check('figure file loads', await ev(() => document.querySelector('figure img').complete && document.querySelector('figure img').naturalWidth > 0));
 
+  // placed boxes (percent coordinates relative to the slide canvas)
+  await ev(() => Reveal.slide(10));
+  eq('placed: two boxes, one on a later step', await ev(() => {
+    const s = Reveal.getCurrentSlide();
+    return [s.querySelectorAll('.placed').length, s.querySelectorAll('.placed.fragment').length].join(',');
+  }), '2,1');
+  check('placed: box is at 10% / 50% of the slide canvas', await ev(() => {
+    const c = document.querySelector('.slides').getBoundingClientRect();
+    const b = Reveal.getCurrentSlide().querySelector('.placed').getBoundingClientRect();
+    return Math.abs((b.left - c.left) / c.width - 0.10) < 0.01 && Math.abs((b.top - c.top) / c.height - 0.50) < 0.01;
+  }));
+  await key('ArrowRight');
+  eq('placed: fragment appears on the first step', await ev(() => Reveal.getCurrentSlide().querySelectorAll('.placed.fragment.visible').length), 1);
+
   // background
   await ev(() => Reveal.slide(7));
   eq('slide background colour', await ev(() => getComputedStyle(document.querySelector('.slide-background.present')).backgroundColor), 'rgb(27, 58, 75)');
@@ -110,7 +124,7 @@ async function open(dir, ready) {
   const key = k => page.keyboard.press(k);
 
   console.log('-- standalone HTML');
-  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 11);
+  eq('slides (stack flattened)', await ev(() => document.querySelectorAll('.slide').length), 12);
   eq('exactly one active slide', await ev(() => document.querySelectorAll('.slide.active').length), 1);
   eq('starts on the first slide', await active(), 0);
   await key('ArrowRight'); eq('right: next slide', await active(), 1);
@@ -122,7 +136,15 @@ async function open(dir, ready) {
   await key('ArrowRight'); eq('pause: then the next slide', await active(), 2);
   await key('ArrowLeft');  eq('back: previous slide with all fragments shown', [await active(), await visible()].join(','), '1,3');
   await key('ArrowLeft');  eq('back: unreveals the last fragment', await visible(), 2);
-  await key('End');        eq('End: last slide', await active(), 10);
+  await page.evaluate(() => { location.hash = '#12'; });
+  await page.reload(); await page.waitForSelector('.slide.active');
+  check('placed: box is at 10% / 50% of the window', await ev(() => {
+    const b = document.querySelector('.slide.active .placed').getBoundingClientRect();
+    return Math.abs(b.left / innerWidth - 0.10) < 0.01 && Math.abs(b.top / innerHeight - 0.50) < 0.01;
+  }));
+  eq('placed: fragment hidden then shown', [await visible(), (await key('Space'), await visible())].join(','), '0,1');
+  await key('Home');
+  await key('End');        eq('End: last slide', await active(), 11);
   await key('Home');       eq('Home: first slide', await active(), 0);
   check('background applied by the script', await (async () => {
     await page.evaluate(() => { location.hash = '#8'; });
