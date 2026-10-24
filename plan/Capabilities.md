@@ -1,0 +1,75 @@
+# Capabilities: backends with different feature sets
+
+Goal: slide features beyond the core vocabulary (positioned elements, inline
+diagrams, later animation, TikZ, …) are *optional*. A deck declares which it
+uses, a backend declares which it supports, and a mismatch is a type error.
+
+## Design
+
+A **capability** is a set of command shapes plus one operation, packaged as
+
+    record Capability : Set₁ where
+      Shape   : Set
+      stepped : Shape → Shape        -- how a command appears on a later step (`pause`)
+
+with a container `capC K = Shape K ▷ λ _ → ⊤`. Capabilities compose by `_⊕_`
+(shapes are the disjoint sum, `stepped` acts componentwise); `NoCap` has no
+shapes.
+
+The core vocabulary is unchanged (`BlockC = ContentC ⊎ LayoutC`). What a
+deck may use is indexed by a capability `K`:
+
+    BlockOf K = BlockC ⊎ capC K          Body K = BlockOf K ⋆ ⊤
+    DeckC K   = DeckShape (Body K) ▷ ⊤   Deck K = DeckC K ⋆ ⊤
+
+`DeckShape` becomes parametric in the type of bodies; nothing is recursive, so
+the stratification (and strict positivity) is preserved. Content inside
+`columns`/`box`/`placed` stays the plain `Content`.
+
+Authoring: core commands are polymorphic in `K` (they inject along
+`ContentC ⇒ BlockOf K`). A capability command takes an instance argument
+`{{S ∈ K}}` (data types à la carte): `placed : {{Placed ∈ K}} → … → Body K`.
+Instances: `S ∈ S`, `S ∈ (S ⊕ T)`, `S ∈ T → S ∈ (R ⊕ T)`-style, one per position,
+so each capability may appear once in a sum.
+
+Backends: an HTML backend needs `HTMLCap K`, i.e. a function
+`Shape K → Forest`, which determines an algebra for `capC K` (all positions
+are `⊤`). The algebra for `BlockOf K` is `copair` of the core block algebra
+and the capability algebra, exactly as `BlockC` is built today. Instances of
+`HTMLCap` exist for `NoCap`, `⊕`, and each capability; render functions take
+`{{HTMLCap K}}`, so a deck that uses a capability the backend does not
+implement does not typecheck (`No instance of type HTMLCap …`).
+
+**Degradation.** A backend without native support for a capability `S` may
+instead give a shape map `S → S′` into capabilities it has (a container
+morphism `capC S ⇒ capC S′`); `Container.Interpret.Translate.fusion` already
+proves that translating and then folding equals folding with the pulled-back
+algebra. Not built until a backend needs it (Beamer).
+
+Non-goals: type-level capability lists, row polymorphism, subtyping inference.
+
+## Stages (each committed separately; all tests green)
+
+1. **Refactor, no new features.** `Capability`, `NoCap`, `Body K`, `Deck K`,
+   `HTMLCap`; thread `K` through DSL, Steps (`go`/`after`/`go-bind` get a
+   capability case: apply `stepped` in step mode, mode unchanged), Common
+   (`renderBody-bind` gets a third case), Reveal, Plain, Resources, Components,
+   Driver, examples. Outputs byte-identical (golden tests unchanged).
+2. **`placed`.** `Placed` capability: `placed x y w h Content` renders a
+   `<div class="placed" style="position:absolute; …">` in slide-canvas
+   coordinates, with `stepped` producing a fragment variant. Plain backend
+   uses the same canvas. Tests: golden, Playwright (position, fragment step).
+3. **`Diagram`.** `rawSVG` (a string of SVG child markup validated by the XML
+   parser at render time, or `XMLM` built with `Data.SVG`), then a small typed
+   AST (rect, circle, path, text, arrow, group) printed with `Data.SVG`.
+4. **Captions and numbering** for tables/figures, together with citation
+   numbering (needs state threaded through the fold).
+5. **Beamer backend**, with its capability instances and the first
+   degradation (placed → flow box).
+
+## Risks
+
+- Instance search for `_∈_` with metas in `do` blocks: test early in stage 1.
+- `go-bind`/`renderBody-bind` need one extra case each; same shape as the
+  content case.
+- Every example annotation `Deck`/`Body` becomes `Deck NoCap`/`Body NoCap`.

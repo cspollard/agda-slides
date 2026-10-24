@@ -139,6 +139,8 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
+In progress: capability-indexed decks (positioned elements, diagrams, backends with different feature sets) — see `plan/Capabilities.md`.
+
 Infrastructure for writing decks is in place: `docs/Authoring.md`, `Slides.Driver` (one-line `Main` modules), the `Showcase` deck, and the full test suite (`make check test test-browser test-playwright test-negative`). What remains is mostly optional:
 
 Steps 1–6 of the previous list are done (vocabulary, theming, components, restyling lemma, explicit fragments, plain HTML backend); see the status notes above and `plan/HTML.md`. What remains, roughly in order of value:
