@@ -1,0 +1,201 @@
+{-# OPTIONS --safe --without-K #-}
+
+-- The free monad on a container, as a monad on Setoids.
+--
+-- The carrier of `Free₀ C X` is stdlib's `C ⋆ X` (trees of `C`-operations
+-- with leaves in `X`).  Two trees are equal when they have the same shape
+-- at every node (propositionally) and equal leaves in `X`.  Since the
+-- equality is defined structurally, no function extensionality is needed
+-- for the monad laws.
+
+module Container.FreeMonad where
+
+open import Level using (Level; _⊔_; Lift; lift)
+open import Data.Empty using (⊥)
+open import Data.Product.Base using (_,_; Σ-syntax)
+open import Data.Container.Core using (Container; Position)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
+open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Base using (id)
+open import Relation.Binary.Bundles using (Setoid)
+open import Relation.Binary.Structures using (IsEquivalence)
+open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; subst)
+
+open import Categories.Category.Instance.Setoids using (Setoids)
+open import Categories.Functor using (Functor; Endofunctor)
+open import Categories.Monad using (Monad)
+open import Categories.NaturalTransformation using (NaturalTransformation)
+import Categories.NaturalTransformation.Core as NT
+
+private
+  variable
+    s p c ℓ : Level
+
+------------------------------------------------------------------------
+-- Equality of trees
+
+module _ {C : Container s p} (X : Setoid c ℓ) where
+  private module X = Setoid X
+
+  -- Defined by recursion rather than as an inductive family so that its
+  -- universe level does not depend on the level of the carrier of `X`.
+  Eq : C ⋆ X.Carrier → C ⋆ X.Carrier → Set (ℓ ⊔ s ⊔ p)
+  Eq (pure x)          (pure y)          = Lift (s ⊔ p) (x X.≈ y)
+  Eq (pure _)          (impure _)        = Lift (ℓ ⊔ s ⊔ p) ⊥
+  Eq (impure _)        (pure _)          = Lift (ℓ ⊔ s ⊔ p) ⊥
+  Eq (impure (s₁ , k)) (impure (s₂ , k′)) =
+    Σ[ e ∈ s₁ ≡ s₂ ] (∀ q → Eq (k q) (k′ (subst (Position C) e q))) 
+
+  refl⋆ : ∀ t → Eq t t
+  refl⋆ (pure x)         = lift X.refl
+  refl⋆ (impure (_ , k)) = refl , λ q → refl⋆ (k q)
+
+  sym⋆ : ∀ {t u} → Eq t u → Eq u t
+  sym⋆ {pure _}          {pure _}          (lift e) = lift (X.sym e)
+  sym⋆ {pure _}          {impure _}        ()
+  sym⋆ {impure _}        {pure _}          ()
+  sym⋆ {impure (_ , _)}  {impure (_ , _)}  (refl , f) = refl , λ q → sym⋆ (f q)
+
+  trans⋆ : ∀ {t u v} → Eq t u → Eq u v → Eq t v
+  trans⋆ {pure _} {pure _} {pure _} (lift e) (lift e′) = lift (X.trans e e′)
+  trans⋆ {pure _}   {pure _}   {impure _} _  ()
+  trans⋆ {pure _}   {impure _} {_}        () _
+  trans⋆ {impure _} {pure _}   {_}        () _
+  trans⋆ {impure _} {impure _} {pure _}   _  ()
+  trans⋆ {impure (_ , _)} {impure (_ , _)} {impure (_ , _)}
+         (refl , f) (refl , g) = refl , λ q → trans⋆ (f q) (g q)
+
+  Eq-isEquivalence : IsEquivalence Eq
+  Eq-isEquivalence = record { refl = refl⋆ _ ; sym = sym⋆ ; trans = trans⋆ }
+
+Free₀ : (C : Container s p) → Setoid c ℓ → Setoid (c ⊔ s ⊔ p) (ℓ ⊔ s ⊔ p)
+Free₀ C X = record
+  { Carrier       = C ⋆ Setoid.Carrier X
+  ; _≈_           = Eq X
+  ; isEquivalence = Eq-isEquivalence X
+  }
+
+------------------------------------------------------------------------
+-- Properties of bind
+
+module _ {C : Container s p}
+         {a ℓa b ℓb} {A : Setoid a ℓa} {B : Setoid b ℓb} where
+  private
+    module A = Setoid A
+    module B = Setoid B
+
+  bind-cong : ∀ {t u : C ⋆ A.Carrier} {f g : A.Carrier → C ⋆ B.Carrier} →
+              Eq A t u → (∀ {x y} → x A.≈ y → Eq B (f x) (g y)) →
+              Eq B (t >>= f) (u >>= g)
+  bind-cong {pure _}         {pure _}         (lift e)    h = h e
+  bind-cong {pure _}         {impure _}       ()
+  bind-cong {impure _}       {pure _}         ()
+  bind-cong {impure (_ , _)} {impure (_ , _)} (refl , k≈) h =
+    refl , λ q → bind-cong (k≈ q) h
+
+bind-pure : ∀ {C : Container s p} {a ℓa} (A : Setoid a ℓa)
+            (t : C ⋆ Setoid.Carrier A) → Eq A (t >>= pure) t
+bind-pure A (pure _)         = lift (Setoid.refl A)
+bind-pure A (impure (_ , k)) = refl , λ q → bind-pure A (k q)
+
+bind-assoc : ∀ {C : Container s p} {a ℓa b ℓb d ℓd}
+             (A : Setoid a ℓa) (B : Setoid b ℓb) (D : Setoid d ℓd)
+             (t : C ⋆ Setoid.Carrier A)
+             (f : Setoid.Carrier A → C ⋆ Setoid.Carrier B)
+             (g : Setoid.Carrier B → C ⋆ Setoid.Carrier D) →
+             Eq D ((t >>= f) >>= g) (t >>= λ x → f x >>= g)
+bind-assoc A B D (pure _)         f g = refl⋆ D (f _ >>= g)
+bind-assoc A B D (impure (_ , k)) f g = refl , λ q → bind-assoc A B D (k q) f g
+
+------------------------------------------------------------------------
+-- The free monad as a functor on Setoids
+
+Free₁ : ∀ (C : Container s p) {X Y : Setoid c ℓ} →
+        Func X Y → Func (Free₀ C X) (Free₀ C Y)
+Free₁ C {X} {Y} g = record
+  { to   = λ t → t >>= λ x → pure {C = C} (g ⟨$⟩ x)
+  ; cong = λ {t} {u} e →
+      bind-cong {C = C} {A = X} {B = Y} e (λ x≈y → lift (Func.cong g x≈y))
+  }
+
+Free : (C : Container s p) →
+       Functor (Setoids c ℓ) (Setoids (c ⊔ s ⊔ p) (ℓ ⊔ s ⊔ p))
+Free C = record
+  { F₀           = Free₀ C
+  ; F₁           = Free₁ C
+  ; identity     = λ {A} {t} → bind-pure A t
+  ; homomorphism = λ {X} {Y} {Z} {f} {g} {t} →
+      sym⋆ Z (bind-assoc {C = C} X Y Z t (λ x → pure {C = C} (f ⟨$⟩ x))
+                                     (λ y → pure {C = C} (g ⟨$⟩ y)))
+  ; F-resp-≈     = λ {X} {Y} {f} {g} f≈g {t} →
+      bind-cong {C = C} {A = X} {B = Y} (refl⋆ X t)
+        (λ {x} {y} x≈y → lift (Setoid.trans Y (f≈g {x}) (Func.cong g x≈y)))
+  }
+
+------------------------------------------------------------------------
+-- The monad structure
+
+-- Operations on carriers.
+
+module _ {C : Container s p} where
+
+  fmap : ∀ {a b} {A : Set a} {B : Set b} → (A → B) → C ⋆ A → C ⋆ B
+  fmap f t = t >>= λ x → pure (f x)
+
+  join : ∀ {a} {A : Set a} → C ⋆ (C ⋆ A) → C ⋆ A
+  join t = t >>= id
+
+-- Laws, as statements about equality of trees.
+
+module _ {C : Container s p} {a ℓa b ℓb} (X : Setoid a ℓa) (Y : Setoid b ℓb) where
+  private
+    module X = Setoid X
+    module Y = Setoid Y
+    FX = Free₀ C X
+    FY = Free₀ C Y
+
+  join-natural : (f : Func X Y) (tt : C ⋆ (C ⋆ X.Carrier)) →
+                 Eq Y (join (fmap (fmap (f ⟨$⟩_)) tt)) (fmap (f ⟨$⟩_) (join tt))
+  join-natural f tt =
+    trans⋆ Y (bind-assoc FX FY Y tt (λ t → pure (fmap (f ⟨$⟩_) t)) id)
+             (sym⋆ Y (bind-assoc FX X Y tt id (λ x → pure (f ⟨$⟩ x))))
+
+module _ {C : Container s p} {a ℓa} (X : Setoid a ℓa) where
+  private FX = Free₀ C X
+
+  join-assoc : (ttt : C ⋆ (C ⋆ (C ⋆ Setoid.Carrier X))) →
+               Eq X (join (fmap join ttt)) (join (join ttt))
+  join-assoc ttt =
+    trans⋆ X (bind-assoc (Free₀ C FX) FX X ttt (λ tt → pure (join tt)) id)
+             (sym⋆ X (bind-assoc (Free₀ C FX) FX X ttt id id))
+
+  join-fmap-pure : (t : C ⋆ Setoid.Carrier X) →
+                   Eq X (join (fmap pure t)) t
+  join-fmap-pure t =
+    trans⋆ X (bind-assoc X FX X t (λ x → pure (pure x)) id) (bind-pure X t)
+
+-- `Free C` is an endofunctor on `Setoids c′ ℓ′` once the levels of the
+-- container are absorbed: `c′ = c ⊔ s ⊔ p`, `ℓ′ = ℓ ⊔ s ⊔ p`.
+
+FreeMonad : ∀ {s p} c ℓ (C : Container s p) →
+            Monad (Setoids (c ⊔ s ⊔ p) (ℓ ⊔ s ⊔ p))
+FreeMonad c ℓ C = record
+  { F         = Free C
+  ; η         = record
+      { η           = λ X → record { to = pure ; cong = lift }
+      ; commute     = λ {_} {Y} _ {_} → lift (Setoid.refl Y)
+      ; sym-commute = λ {_} {Y} _ {_} → lift (Setoid.refl Y)
+      }
+  ; μ         = record
+      { η           = λ X → record
+          { to   = join
+          ; cong = λ {t} {u} e → bind-cong {C = C} {A = Free₀ C X} {B = X} e id
+          }
+      ; commute     = λ {X} {Y} f {tt} → join-natural X Y f tt
+      ; sym-commute = λ {X} {Y} f {tt} → sym⋆ Y (join-natural X Y f tt)
+      }
+  ; assoc     = λ {X} {ttt} → join-assoc X ttt
+  ; sym-assoc = λ {X} {ttt} → sym⋆ X (join-assoc X ttt)
+  ; identityˡ = λ {X} {t} → join-fmap-pure X t
+  ; identityʳ = λ {X} {t} → refl⋆ X t
+  }
