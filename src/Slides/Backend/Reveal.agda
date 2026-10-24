@@ -72,9 +72,9 @@ private
   forest-refl : ∀ (xs : Forest) → Setoid._≈_ ForestSetoid xs xs
   forest-refl xs = Setoid.refl ForestSetoid {xs}
 
-  -- A program ends by contributing no output.
-  nil : Func ⊤ˢ ForestSetoid
-  nil = record { to = λ _ → [] ; cong = λ _ → PW.[] }
+-- A program ends by contributing no output.
+nil : Func ⊤ˢ ForestSetoid
+nil = record { to = λ _ → [] ; cong = λ _ → PW.[] }
 
 ------------------------------------------------------------------------
 -- Inline markup
