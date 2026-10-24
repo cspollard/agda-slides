@@ -105,7 +105,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 ### Phase 5 — Authoring quality
 - Theming (`Theme` record passed to backends); reusable components as Kleisli arrows.
 - Typecheck-time resource checks (figures, citations) using indexed or proof-carrying commands.
-- Plot/figure support (external images; inline SVG via parsnip's `Data.SVG`, `plan/HTML.md` H6).
+- Plot/figure support (external images; inline SVG via parsnip's `Data.SVG`, `plan/HTML.md` R6).
 
 ### Phase 6 — Stretch
 - Indexed containers/monads for typed slide state.
