@@ -70,6 +70,7 @@ test:
 	diff -u tests/golden/showcase.index.html out/showcase/index.html
 	diff -u tests/golden/showcase.init.js out/showcase/init.js
 	diff -u tests/golden/showcase-plain.index.html out/showcase-plain/index.html
+	diff -u tests/golden/showcase-lowered.index.html out/showcase-lowered/index.html
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 
@@ -115,13 +116,15 @@ check-resources:
 	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/talk
 	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/plain
 
-# Render the showcase deck with both backends to out/showcase/ and out/showcase-plain/.
+# Render the showcase deck with both backends to out/showcase/ and out/showcase-plain/,
+# and lowered (no notes, no diagrams) to out/showcase-lowered/.
 .PHONY: showcase
 showcase:
-	mkdir -p out/showcase out/showcase-plain $(BUILD_DIR)
+	mkdir -p out/showcase out/showcase-plain out/showcase-lowered $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/showcase/reveal
 	cp assets/slides.css assets/plot.svg out/showcase/
 	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-plain/
+	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-lowered/
 	$(COMPILE) src/Slides/Examples/ShowcaseMain.agda
 	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
 	$(BUILD_DIR)/ShowcaseMain

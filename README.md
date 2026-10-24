@@ -60,6 +60,7 @@ open out/mytalk/index.html
 - **Nesting is stratified.** A slide's shape contains its body and `columns` contain content programs, so no container mentions itself and strict positivity is never an issue. Combined vocabularies are container sums, with algebras combined by `copair`.
 - **No instance search in the core.** `do`-notation is the free monad's own bind, features such as `placed` and `diagram` are ordinary layout commands, and a backend that cannot render a feature will lower it or refuse the deck (`plan/Capabilities.md` explains why an earlier capability-indexed design was dropped: overlapping instances made typechecking exponential). Instances remain only where Agda requires them (overloaded literals) and for the resource checks.
 - **Resources are checked when the deck typechecks.** A deck declares its figure files and bibliography keys (`Slides.Resources`); `figure` and `cite` take an instance argument that only resolves for declared names.
+- **Rewrites are lowerings.** A lowering sends each command to a program (a Kleisli arrow, `Container.Lowering`); `lower` extends it to whole programs, lowerings compose and form a category, and folding a lowered program equals folding the original with a pulled-back algebra (proved). `Slides.Lower` lifts content lowerings to decks, and components compose with `_>=>_`.
 - **Verified HTML where it is cheap.** Output is built as parsnip XML values and printed by its XML printer, with the (unverified) doctype as a constant prefix; empty non-void elements are padded so browsers do not misparse them. The tree-equality and `≈ₓ` bridge to parsnip's equality is proved.
 - **Everything is `--safe --without-K`** except the executables, which use IO.
 
@@ -76,6 +77,7 @@ open out/mytalk/index.html
 | Steps | `pause` (everything after appears step by step), explicit `fragment`s with reveal.js styles |
 | Components | title and section slides, decorators, bullet/two-column/table bodies |
 | Backends | reveal.js (themes, size, slide numbers, controls) and standalone HTML (own navigation script and print stylesheet) |
+| Rewriting | `lowerDeck` with composable lowerings (`stripNotes`, `diagramPlaceholder`), Kleisli composition `_>=>_` |
 | Checks | undeclared figure/citation rejected; `make check-resources` checks figure files exist |
 
 Not yet: figure/table numbering, Beamer/LaTeX and Markdown backends.

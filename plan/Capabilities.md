@@ -41,7 +41,10 @@ backend cannot render natively it chooses one of:
    (for example a Beamer backend lowering `placed` to a flowed box). If the
    lowering is a container morphism, `Container.Interpret.Translate.fusion`
    already proves that translating then folding equals folding with the
-   pulled-back algebra;
+   pulled-back algebra. The general form is a `Lowering` (a command to a
+   *program*, `Container.Lowering`), with `lower-fusion` for the same
+   statement; `Slides.Lower` has `stripNotes` and `diagramPlaceholder` and
+   lifts a content lowering to whole decks (`lowerDeck`);
 3. refuse. For this a backend will export `supports : Feature → Bool`, and a
    function `uses : Deck → List Feature` (a fold over the deck) tells which
    features a deck needs; `Slides.Driver` checks `uses ⊆ supports` and aborts

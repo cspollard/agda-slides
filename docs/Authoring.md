@@ -83,6 +83,28 @@ slide (do heading 2 "Pipeline"
 Both backends render these. A future backend that cannot render a feature
 lowers it or refuses the deck; see `plan/Capabilities.md`.
 
+## Composing and lowering
+
+Components that take arguments compose with Kleisli composition,
+`f >=> g = λ x → f x >>= g` (`Slides.DSL`). Rewriting a deck is a *lowering*
+(`Container.Lowering`): a map from each command to a program, extended to whole
+programs by `lower`. Lowerings compose with `_⋙_`, and containers with
+lowerings form a category (`Container.Lowering.Category`).
+
+```agda
+open import Container.Lowering using (_⋙_)
+open import Slides.Lower using (lowerDeck; stripNotes; diagramPlaceholder)
+
+plainer : Deck → Deck
+plainer = lowerDeck (stripNotes ⋙ diagramPlaceholder)
+```
+
+`lowerDeck` rewrites content wherever it occurs (slide bodies, columns, boxes,
+fragments, placed boxes). Rendering the lowered deck equals rendering the
+original with a pulled-back algebra (`lower-fusion`). Write your own lowering as
+a function from a content command to a content program, for example
+`stripNotes (notes _) = pure tt; stripNotes a = ret a`.
+
 ## Rendering
 
 ```agda

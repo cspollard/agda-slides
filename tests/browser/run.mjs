@@ -185,6 +185,21 @@ async function open(dir, ready) {
   await page.close();
 }
 
+// ---------------------------------------------------------------- lowered
+{
+  const { page, errors } = await open('showcase-lowered', '.slide.active');
+  const ev = f => page.evaluate(f);
+  console.log('-- lowered deck');
+  eq('lowering: same slides', await ev(() => document.querySelectorAll('.slide').length), 13);
+  eq('lowering: no notes remain', await ev(() => document.querySelectorAll('aside.notes').length), 0);
+  eq('lowering: no svg remains', await ev(() => document.querySelectorAll('.diagram, svg').length), 0);
+  check('lowering: placeholders replace the diagrams', await ev(() =>
+    Array.from(document.querySelectorAll('p')).filter(p => p.textContent === '[diagram]').length === 3));
+  eq('lowering: placed boxes are kept', await ev(() => document.querySelectorAll('.placed').length), 3);
+  eq('no page errors', errors.length, 0);
+  await page.close();
+}
+
 await browser.close();
 console.log(failures === 0 ? 'all browser tests passed' : `${failures} failure(s)`);
 process.exit(failures === 0 ? 0 : 1);

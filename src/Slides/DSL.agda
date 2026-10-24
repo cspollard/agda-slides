@@ -49,6 +49,15 @@ infixl 1 _>>_
 _>>_ : ∀ {s p} {C : Container s p} {X Y : Set} → C ⋆ X → C ⋆ Y → C ⋆ Y
 m >> n = m >>= λ _ → n
 
+-- Kleisli composition: components that take an argument and return a
+-- program compose, `f >=> g = λ x → f x >>= g`.  The programs of a container
+-- and these arrows form the Kleisli category of its free monad; the laws
+-- hold up to `Container.Lowering._≈⋆_` (`bind-assoc≈`, `bind-pure≈`).
+infixr 1 _>=>_
+_>=>_ : ∀ {s p} {C : Container s p} {A B X : Set} →
+        (A → C ⋆ B) → (B → C ⋆ X) → A → C ⋆ X
+(f >=> g) x = f x >>= g
+
 plain : String → Text
 plain s = text s ∷ []
 
