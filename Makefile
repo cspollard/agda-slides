@@ -24,6 +24,20 @@ spike:
 	_build/spike/Reveal
 	cp assets/slides.css out/spike/slides.css
 
+# Render any deck: `make deck MAIN=src/MyTalkMain.agda NAME=mytalk`, where the
+# main module writes to out/$(NAME).  Puts reveal.js and the stylesheet next to
+# the output and runs the compiled program.
+NAME ?= mytalk
+BUILD ?= $(NAME)
+.PHONY: deck
+deck:
+	mkdir -p out/$(NAME) _build/$(BUILD)
+	ln -sfn $(REVEAL) out/$(NAME)/reveal
+	cp assets/slides.css assets/plot.svg out/$(NAME)/
+	$(AGDA) --compile --compile-dir=_build/$(BUILD) $(MAIN)
+	mv $(basename $(notdir $(MAIN))) _build/$(BUILD)/ 2>/dev/null || true
+	_build/$(BUILD)/$(basename $(notdir $(MAIN)))
+
 # Render the example deck to out/intro/.
 .PHONY: example
 example:

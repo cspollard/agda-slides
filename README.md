@@ -1,51 +1,100 @@
 # agda-slides
 
-A DSL, written in Agda, for producing scientific slide decks. A deck is a program in the free monad over a container of slide commands. Backends (HTML, reveal.js, …) are algebras for the container's polynomial functor, and the interpreter is the unique fold out of the free algebra. Proofs use [agda-categories](https://github.com/agda/agda-categories).
+A DSL, written in Agda, for scientific slide decks. A deck is a program in the free monad over a container of slide commands. Backends (reveal.js, plain HTML, …) are algebras for the container's polynomial functor, and rendering is the unique fold out of the free algebra. The generic part is proved with [agda-categories](https://github.com/agda/agda-categories); the HTML is printed by [parsnip](https://github.com/cspollard/parsnip) (a submodule) whose XML printer is verified.
 
-See `Goals.md` for the goals, `docs/Authoring.md` for how to write a deck, and `plan/Plan.md` for the roadmap.
+Docs: `docs/Authoring.md` (command reference), `plan/Plan.md` (roadmap), `plan/Capabilities.md` (optional features and backends), `Goals.md`.
 
-## Requirements
+## A first deck
 
-- Agda 2.7.0.1
-- `standard-library` and `agda-categories`, both registered in `~/.config/agda/libraries` (developed against agda-categories commit `c2e7c13e`)
+Requirements: Agda 2.7.0.1, `standard-library` and `agda-categories` registered in `~/.config/agda/libraries` (developed against agda-categories commit `c2e7c13e`), GHC (for `--compile`), and a reveal.js distribution (`npm install reveal.js`, then `REVEAL=…/node_modules/reveal.js`). Clone with `git clone --recurse-submodules` (or `git submodule update --init`).
 
-## Getting the sources
+Write the deck, `src/MyTalk.agda`:
 
-`parsnip/` is a git submodule:
+```agda
+{-# OPTIONS --safe --without-K #-}
+module MyTalk where
 
-```
-git clone --recurse-submodules <url>
-# or, in an existing clone:
-git submodule update --init
-```
+open import Data.List using (_∷_; [])
+open import Slides.Core using (NoCap; Deck; emph)
+open import Slides.DSL
+open import Slides.Components using (titleSlide)
+import Slides.Math as M
 
-## Building
-
-```
-make check
-```
-
-typechecks every module under `src/`.
-
-## Rendering the example deck
-
-```
-npm install reveal.js            # or point REVEAL at any reveal.js distribution
-make example                     # writes out/intro/index.html and init.js
-make talk plain                  # component-based deck: reveal.js (out/talk) and standalone HTML (out/plain)
-make test                        # golden-file diffs
-make test-browser                # headless Chrome check (set CHROME to override)
-make showcase                   # every feature, with both backends (out/showcase, out/showcase-plain)
-make test-playwright             # drive the showcase in a real browser (needs `npm install` in tests/browser, done by the target)
-make test-negative               # decks citing undeclared resources must not typecheck
-make check-resources             # declared figures exist next to the rendered decks
+talk : Deck NoCap
+talk = do
+  titleSlide "Hello" "a deck in Agda" "A. Speaker"
+  slide (do heading 2 "Why?"
+            bullets ("typed" ∷ "composable" ∷ ("checked by " ∷ emph "Agda" ∷ []) ∷ [])
+            pause
+            displayMath (M.frac "a" "b" M.≡ 2))
 ```
 
-Open `out/intro/index.html` in a browser. `make spike` builds the R0 spike (`plan/HTML.md`).
+and a main module that renders it, `src/MyTalkMain.agda`:
 
-## Layout
+```agda
+{-# OPTIONS --without-K --guardedness #-}
+module MyTalkMain where
 
-- `src/Container/` — generic, slide-independent development: containers as polynomial functors on `Setoids`, the free monad, its algebraic description, and interpretation/fusion. Nothing here imports `Slides.*`.
-- `src/Slides/` — the slide DSL (to come).
-- `parsnip/` — submodule: verified XML/JSON/SVG printers and parsers with proved round trips, used for HTML output (`plan/HTML.md`).
-- `plan/` — roadmap and detailed plans.
+open import IO using (Main; run)
+open import Slides.Backend.Reveal using (defaultConfig)
+open import Slides.Driver
+open import MyTalk using (talk)
+
+main : Main
+main = run (writeRevealDeck "out/mytalk" defaultConfig talk)
+```
+
+Then build and open it:
+
+```
+make deck MAIN=src/MyTalkMain.agda NAME=mytalk REVEAL=/path/to/node_modules/reveal.js
+open out/mytalk/index.html
+```
+
+`make deck` compiles the main module, links reveal.js and the stylesheet next to the output, and runs it. Use `writePlainDeck` and `Slides.Backend.Plain` instead for a single self-contained page with its own navigation script. A mistake in the deck (an undeclared figure or citation, a wrong argument) is an Agda type error.
+
+## Design choices
+
+- **Decks are free-monad programs.** Each slide command is an operation of a container (`Slides.Core`: `ContentC`, `LayoutC`, `DeckC`), so `do`-notation sequences commands and ordinary functions are components (`Slides.Components`). Nothing in `src/Container/` knows about slides.
+- **Backends are algebras.** A backend interprets every command by giving an algebra for the container's polynomial functor on `Setoids`; the interpretation of a deck is the unique fold. Rendering therefore respects sequencing (`renderBody-bind`), algebra homomorphisms commute with it (`fold-hom`, used for restyling), and translating a program along a container morphism then folding equals folding with the pulled-back algebra (`fusion`).
+- **Nesting is stratified.** A slide's shape contains its body and `columns` contain content programs, so no container mentions itself and strict positivity is never an issue. Combined vocabularies are container sums, with algebras combined by `copair`.
+- **Optional features are capabilities.** A deck has type `Deck K`; `K` names the optional commands it uses (`NoCap`, `Placed`, `Placed ⊕ …`). A backend must provide the matching instances to render it, so using a feature a backend lacks is a type error naming the missing instance. See `plan/Capabilities.md`.
+- **Resources are checked when the deck typechecks.** A deck declares its figure files and bibliography keys (`Slides.Resources`); `figure` and `cite` take an instance argument that only resolves for declared names.
+- **Verified HTML where it is cheap.** Output is built as parsnip XML values and printed by its XML printer, with the (unverified) doctype as a constant prefix; empty non-void elements are padded so browsers do not misparse them. The tree-equality and `≈ₓ` bridge to parsnip's equality is proved.
+- **Everything is `--safe --without-K`** except the executables, which use IO.
+
+## Available functionality
+
+| Area | What there is |
+| --- | --- |
+| Slide structure | slides, vertical stacks, backgrounds, per-slide transitions, speaker notes |
+| Content | headings, paragraphs, bullet lists (optionally incremental), code, tables, figures with captions, bibliography |
+| Text | plain, emphasis, strong, code spans, links, citations, inline math |
+| Math | typed formula AST (fractions, sums, integrals, Greek, relations, accents, …) printed to LaTeX and rendered by KaTeX; overloaded literals (`2`, `"x"`) |
+| Layout | columns, boxes, `Placed` boxes at fixed percentages of the slide |
+| Steps | `pause` (everything after appears step by step), explicit `fragment`s with reveal.js styles |
+| Components | title and section slides, decorators, bullet/two-column/table bodies |
+| Backends | reveal.js (themes, size, slide numbers, controls) and standalone HTML (own navigation script and print stylesheet) |
+| Checks | undeclared figure/citation rejected; `make check-resources` checks figure files exist |
+
+Not yet: inline diagrams (next: the `Diagram` capability), figure/table numbering, Beamer/LaTeX and Markdown backends.
+
+## Repository layout
+
+- `src/Container/` — generic: containers as polynomial functors on `Setoids`, the free monad, its algebraic description (`Free ⊣ Forget`, monadic), interpretation and fusion, container sums. Nothing here imports `Slides.*`.
+- `src/Slides/` — the DSL: `Core` (vocabulary), `DSL` (commands and `do`-notation), `Math`, `Literals`, `Steps` (`pause`), `Resources`, `Components`, `Capability/*`, `Backend/*` (`Common`, `Reveal`, `Plain`, `Placed`, `Restyle`, `HTML`, `XML`), `Driver`, `Examples/*`.
+- `parsnip/` — submodule: verified XML/JSON/SVG printers and parsers with proved round trips.
+- `assets/` — stylesheets, navigation script, sample figure. `tests/` — golden files, browser checks, negative tests. `plan/`, `docs/`.
+
+## Make targets
+
+```
+make check            # typecheck everything under src/
+make deck MAIN=… NAME=…   # compile and render any deck (see above)
+make example talk plain showcase   # render the example decks (REVEAL=… as above)
+make test             # golden-file diffs
+make test-browser     # headless Chrome checks (CHROME=… to override)
+make test-playwright  # drive the showcase deck in a real browser (42+ checks)
+make test-negative    # decks citing undeclared resources must not typecheck
+make check-resources  # declared figures exist next to the rendered decks
+```
