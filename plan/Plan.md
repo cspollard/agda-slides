@@ -41,7 +41,7 @@ Guiding rules:
 ## Repository layout
 
 ```
-agda-slides.agda-lib      depends: standard-library, agda-categories; include: src, parsnip/src; flags --safe --without-K
+agda-slides.agda-lib      depends: standard-library, agda-categories; include: src, parsnip/src; flags --without-K (each library module carries its own `--safe`)
 parsnip/                  git submodule: verified XML/JSON/SVG printers and parsers
 Makefile                  `make check` typechecks everything under src/
 src/Container/Polynomial.agda            (Phase 1) generic: containers as polynomial functors on Setoids
@@ -134,7 +134,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 ## Immediate next steps
 
-1. **R0 spike** (`plan/HTML.md`): build a minimal reveal.js page as an `XMLM` value, print it with parsnip, and open it with reveal.js in a browser. This de-risks the top-priority backend and settles the HTML5-vs-XML policy.
+1. ~~R0 spike~~ — done: a hand-built deck printed by parsnip runs in reveal.js; empty non-void elements must be padded (`plan/HTML.md`).
 2. Sketch `Slides.Core` with the minimal reveal.js vocabulary (`slide`, `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`) and decide nested vs flat bodies.
 3. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms, needed to compose slide containers.
 4. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (R2).

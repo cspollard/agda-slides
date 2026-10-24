@@ -61,12 +61,21 @@ Delivery layout: `out/index.html`, `out/init.js`, our `slides.css`, and a base U
 
 ## Work items (in priority order)
 
-### R0 — Spike: a hand-built reveal.js deck through parsnip (do first)
+### R0 — Spike: a hand-built reveal.js deck through parsnip (done)
+
+**Result** (`src/Slides/Spike/Reveal.agda`, `make spike REVEAL=<path to reveal.js>`; reveal.js 6.0.2 and headless Google Chrome, DOM inspected after load):
+- reveal.js initialised (`ready`), with the notes and math plugins loaded from `<script src="…"> </script>` tags carrying a single space; `init.js` loaded the same way.
+- Fragments (3), the nested vertical stack, the speaker-notes `aside`, and KaTeX-rendered math (`\( … \)`) all worked.
+- Escaped text (`&lt;`, `&amp;`, `&gt;`) reached the DOM as the original characters.
+- **The self-closing gap is real:** `<div id="unpadded" />` swallowed the following siblings (the paragraph and the next div became its children), while the padded `<div id="padded"> </div>` behaved. So the padding policy in R1 works and is required.
+- `<meta … />` and `<link … />` (void elements) are fine as printed.
+
+Original task:
 - Write a few lines of Agda that build the minimal reveal.js page as an `XMLM` value (using `node`/`leaf`/`parent` and `Data.XML.Sanitize`), print it with `renderXML`, and open it in a browser with reveal.js alongside. No slide DSL needed.
 - This settles the HTML5-vs-XML gaps below with evidence, before any backend design depends on them. Include one fragment, one nested section, one notes aside, and one math expression.
 
-### R1 — HTML5 vs XML gaps (decided by R0)
-- **Self-closing elements.** An element with no content prints as `<div/>`. HTML5 only honours this for void elements; `<script src="…"/>` and `<div/>` are wrong in `text/html`, and the AST cannot distinguish `<div/>` from `<div></div>`. Leading option: an `html` smart-constructor layer that knows the void elements (`meta`, `link`, `img`, `br`, `hr`, `input`) and pads every other empty element with a single-space text slot (`<script src="…"> </script>` is valid; inline content is ignored when `src` is present). Prove the padding changes nothing except that slot. Alternatives: serve XHTML (reveal.js under `application/xhtml+xml` is unverified), or later a custom printer reusing `Data.Stage`.
+### R1 — HTML5 vs XML gaps (policy decided by R0: pad empty non-void elements)
+- **Self-closing elements.** An element with no content prints as `<div/>`. HTML5 only honours this for void elements; `<script src="…"/>` and `<div/>` are wrong in `text/html`, and the AST cannot distinguish `<div/>` from `<div></div>`. Decided policy (confirmed by R0): an `html` smart-constructor layer that knows the void elements (`meta`, `link`, `img`, `br`, `hr`, `input`) and pads every other empty element with a single-space text slot (`<script src="…"> </script>` is valid; inline content is ignored when `src` is present). Prove the padding changes nothing except that slot. Alternatives: serve XHTML (reveal.js under `application/xhtml+xml` is unverified), or later a custom printer reusing `Data.Stage`.
 - **Doctype.** No doctype node in the AST, so `<!DOCTYPE html>` is a constant prefix added in `Main`, outside the verified printer. State this in the docs.
 - **Inline `<script>`/`<style>`.** Text is XML-escaped (`&`, `<`, `>`), which would corrupt inline JavaScript/CSS. Policy: no inline script or style; `init.js` and CSS are separate files (config via the JSON printer).
 - **Entities and names.** Only the five XML entities; write other characters as UTF-8. parsnip names are ASCII `[A-Za-z_:][A-Za-z0-9_:.-]*`, which covers `data-*` and `aria-*`.
