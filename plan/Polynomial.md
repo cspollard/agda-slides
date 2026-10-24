@@ -1,6 +1,6 @@
 # Plan: Containers, polynomial functors, and the free monad (Phase 1)
 
-**Status:** steps 1–5 are implemented except the items listed as deferred in `plan/Plan.md` (Eilenberg–Moore comparison, fullness/faithfulness of `Poly-⇒`, combinator isomorphisms). Notes on how the implementation differs from the sketch below:
+**Status:** steps 1–5 are implemented, including the Eilenberg–Moore comparison (`Container.FreeMonad.Monadic`); deferred items are listed in `plan/Plan.md` (fullness/faithfulness of `Poly-⇒`, naturality of the sum isomorphism, the `×`/`const`/`id` combinator cases). Notes on how the implementation differs from the sketch below:
 
 - Tree equality is defined by recursion (`Container.FreeMonad.Eq`), not as an inductive family: an indexed family would live in a universe depending on the carrier level, which breaks the functor's target levels.
 - Levels: `Free C : Setoids c ℓ ⟶ Setoids (c⊔s⊔p) (ℓ⊔s⊔p)`; the monad and algebra constructions work on `Setoids c′ ℓ′` with `c′ = c⊔s⊔p`, `ℓ′ = ℓ⊔s⊔p`, where `Poly C` is an endofunctor.

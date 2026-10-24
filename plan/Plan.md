@@ -71,7 +71,8 @@ Status (all modules typecheck with `--safe --without-K`, no holes, no postulates
 - [x] `Container.FreeMonad`: `Free C` as a functor and a `Monad` on `Setoids` (structural tree equality, no funext).
 - [x] `Container.FreeMonad.Algebraic`: forgetful functor from `F-Algebras ⟦C⟧`, `Free₀ C X` as a `FreeObject`, the adjunction `Free ⊣ Forget`, and the proof that the monad of that adjunction is isomorphic to `Free C` (two `Monad⇒-id` morphisms, mutually inverse).
 - [x] `Container.Interpret`: initial algebra and Lambek's lemma, `fold-hom` (folds commute with algebra homomorphisms), `fusion` (translate along a container morphism = interpret with the pulled-back algebra).
-- [ ] Deferred (stretch): Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`; faithfulness/fullness of `Poly-⇒`; naturality of the sum isomorphism in the setoid argument, and the `×`/`const`/`id` cases of `Data.Container.Combinator` (not needed so far).
+- [x] `Container.FreeMonad.Monadic`: `Free ⊣ Forget` is a monadic adjunction (`IsMonadicAdjunction`): an inverse `Comparison⁻¹` to agda-categories' comparison functor, and both natural isomorphisms (identity on carriers; the content is `fold-action`: for a module `(A , a)`, folding the induced algebra over the identity is `a`). So `⟦C⟧`-algebras (backends) are the Eilenberg–Moore algebras of the free monad.
+- [ ] Deferred (stretch): faithfulness/fullness of `Poly-⇒`; naturality of the sum isomorphism in the setoid argument, and the `×`/`const`/`id` cases of `Data.Container.Combinator` (not needed so far).
 - [x] `Container.Sum`: `⟦C₁ ⊎ C₂⟧ A ≅ ⟦C₁⟧ A ⊎ ⟦C₂⟧ A` as a stdlib `Inverse` of setoids, and `copair` of algebras with its universal property (`copair-inj₁`, `copair-inj₂`, `copair-unique`); this is how backends for separate vocabularies combine.
 
 ### Phase 2 — Slide vocabulary (minimal subset first)
@@ -149,6 +150,5 @@ Steps 1–6 of the previous list are done (vocabulary, theming, components, rest
    - JSON numbers in `options` (width, height, margin) and per-theme CSS classes.
    - Implicit beamer-style `pause` via a stateful algebra (see the note under step 5 of the previous list in git history: it forces restating `renderBody-bind`).
 3. **Phase 1 stretch**
-   - Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`: the comparison functor exists in agda-categories (`Categories.Adjoint.Construction.EilenbergMoore`); what is missing is a `WeakInverse` for it, i.e. an inverse functor and two natural isomorphisms.
    - Fullness/faithfulness of `Poly-⇒`; naturality of the sum isomorphism in the setoid argument.
 4. **Phase 6 ideas**: indexed containers for typed slide state, layout as a monoidal structure, further backends (Beamer/LaTeX, PDF, Markdown), watch mode.
