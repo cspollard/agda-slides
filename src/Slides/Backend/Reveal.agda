@@ -40,7 +40,7 @@ open import Categories.Functor.Algebra using (F-Algebra)
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
 open import Data.XML.Print using (renderXML)
-open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; stringⱼ)
+open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ)
 open import Data.JSON.Print using (renderJSON)
 
 open import Container.Polynomial using (Poly; Poly₀)
@@ -230,20 +230,41 @@ renderDeck = D.fold deckAlg {⊤ˢ} nil
 ------------------------------------------------------------------------
 -- The page
 
+-- The look of a deck: a reveal.js theme, a highlight.js style, and extra
+-- stylesheets (paths relative to the page).  `slides.css` styles the layout
+-- vocabulary (columns, boxes).
+record Theme : Set where
+  field
+    revealTheme : String   -- a file in reveal.js's dist/theme/ (without .css)
+    highlight   : String   -- a file in dist/plugin/highlight/ (without .css)
+    stylesheets : List String
+
+blackTheme whiteTheme serifTheme solarizedTheme : Theme
+blackTheme     = record { revealTheme = "black"     ; highlight = "monokai" ; stylesheets = "slides.css" ∷ [] }
+whiteTheme     = record { revealTheme = "white"     ; highlight = "github"  ; stylesheets = "slides.css" ∷ [] }
+serifTheme     = record { revealTheme = "serif"     ; highlight = "github"  ; stylesheets = "slides.css" ∷ [] }
+solarizedTheme = record { revealTheme = "solarized" ; highlight = "base16/solarized-light" ; stylesheets = "slides.css" ∷ [] }
+
 record RevealConfig : Set where
   field
-    title      : String
+    title       : String
     -- URL or path of the reveal.js distribution, with a trailing slash
-    base       : String
-    theme      : String
-    transition : String
+    base        : String
+    theme       : Theme
+    transition  : String
+    slideNumber : Bool
+    controls    : Bool
+    progress    : Bool
 
 defaultConfig : RevealConfig
 defaultConfig = record
-  { title      = "Slides"
-  ; base       = "reveal/"
-  ; theme      = "black"
-  ; transition = "slide"
+  { title       = "Slides"
+  ; base        = "reveal/"
+  ; theme       = blackTheme
+  ; transition  = "slide"
+  ; slideNumber = false
+  ; controls    = true
+  ; progress    = true
   }
 
 private
@@ -264,10 +285,9 @@ page cfg slides =
         ∷ hText "title" [] title
         ∷ stylesheet (dist ++ˢ "reset.css")
         ∷ stylesheet (dist ++ˢ "reveal.css")
-        ∷ stylesheet (dist ++ˢ "theme/" ++ˢ theme ++ˢ ".css")
-        ∷ stylesheet (dist ++ˢ "plugin/highlight/monokai.css")
-        ∷ stylesheet "slides.css"
-        ∷ [] )
+        ∷ stylesheet (dist ++ˢ "theme/" ++ˢ Theme.revealTheme theme ++ˢ ".css")
+        ∷ stylesheet (dist ++ˢ "plugin/highlight/" ++ˢ Theme.highlight theme ++ˢ ".css")
+        ∷ map stylesheet (Theme.stylesheets theme) ++ [] )
     ∷ hElement "body" []
         ( div "reveal" (div "slides" slides ∷ [])
         ∷ script (dist ++ˢ "reveal.js")
@@ -286,6 +306,9 @@ options : RevealConfig → JSON
 options cfg = objectFromList
   ( ("hash" , trueⱼ)
   ∷ ("transition" , stringⱼ (RevealConfig.transition cfg))
+  ∷ ("slideNumber" , boolⱼ (RevealConfig.slideNumber cfg))
+  ∷ ("controls" , boolⱼ (RevealConfig.controls cfg))
+  ∷ ("progress" , boolⱼ (RevealConfig.progress cfg))
   ∷ [] )
 
 -- `init.js`: the options plus the plugins (which are JavaScript values, not
