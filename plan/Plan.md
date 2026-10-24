@@ -71,7 +71,8 @@ Status (all modules typecheck with `--safe --without-K`, no holes, no postulates
 - [x] `Container.FreeMonad`: `Free C` as a functor and a `Monad` on `Setoids` (structural tree equality, no funext).
 - [x] `Container.FreeMonad.Algebraic`: forgetful functor from `F-Algebras ⟦C⟧`, `Free₀ C X` as a `FreeObject`, the adjunction `Free ⊣ Forget`, and the proof that the monad of that adjunction is isomorphic to `Free C` (two `Monad⇒-id` morphisms, mutually inverse).
 - [x] `Container.Interpret`: initial algebra and Lambek's lemma, `fold-hom` (folds commute with algebra homomorphisms), `fusion` (translate along a container morphism = interpret with the pulled-back algebra).
-- [ ] Deferred (stretch): Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`; faithfulness/fullness of `Poly-⇒`; natural isomorphisms between `⟦·⟧` and the `Data.Container.Combinator` operations (`⊎`, `×`, `const`, `id`) — needed before Phase 2 relies on `⊎` to compose slide features.
+- [ ] Deferred (stretch): Eilenberg–Moore comparison `Alg ≃ EilenbergMoore (Free C)`; faithfulness/fullness of `Poly-⇒`; naturality of the sum isomorphism in the setoid argument, and the `×`/`const`/`id` cases of `Data.Container.Combinator` (not needed so far).
+- [x] `Container.Sum`: `⟦C₁ ⊎ C₂⟧ A ≅ ⟦C₁⟧ A ⊎ ⟦C₂⟧ A` as a stdlib `Inverse` of setoids, and `copair` of algebras with its universal property (`copair-inj₁`, `copair-inj₂`, `copair-unique`); this is how backends for separate vocabularies combine.
 
 ### Phase 2 — Slide vocabulary (minimal subset first)
 Build only what the reveal.js backend needs first (`slide`, vertical `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`, `code`, math, `figure`, `columns`, backgrounds) and grow from there. One container per concern, combined with container coproduct (`Data.Container.Combinator._⊎_`; its interpretation is proved in Phase 1 step 1):
@@ -139,7 +140,7 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 
 1. ~~R0 spike~~ — done: a hand-built deck printed by parsnip runs in reveal.js; empty non-void elements must be padded (`plan/HTML.md`).
 2. ~~Sketch `Slides.Core`~~ — done: `Slides.Core` (stratified containers), `Slides.DSL` (`do`-notation), `Slides.Examples.Intro`; nested bodies chosen.
-3. Prove `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦C₁⟧ + ⟦C₂⟧` (and the `const`/`id` cases) as natural isomorphisms, needed to compose slide containers.
+3. ~~Sum isomorphism and algebra copairing~~ — done (`Container.Sum`).
 4. Prove the bridge lemma relating `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` to parsnip's `_≈ₓ_` (R2).
 5. Write the reveal.js algebra and driver (R3–R4).
 6. Optionally finish the Eilenberg–Moore comparison.
