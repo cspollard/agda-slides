@@ -22,3 +22,22 @@ spike:
 	$(AGDA) --compile --compile-dir=_build/spike src/Slides/Spike/Reveal.agda
 	mv Reveal _build/spike/Reveal 2>/dev/null || true
 	_build/spike/Reveal
+
+# Render the example deck to out/intro/.
+.PHONY: example
+example:
+	mkdir -p out/intro _build/example
+	ln -sfn $(REVEAL) out/intro/reveal
+	$(AGDA) --compile --compile-dir=_build/example src/Slides/Examples/IntroMain.agda
+	mv IntroMain _build/example/IntroMain 2>/dev/null || true
+	_build/example/IntroMain
+
+# Golden-file test for the example deck (run `make example` first).
+.PHONY: test test-browser
+test:
+	diff -u tests/golden/intro.index.html out/intro/index.html
+	diff -u tests/golden/intro.init.js out/intro/init.js
+
+# Load the rendered deck in headless Chrome (set CHROME to override the binary).
+test-browser:
+	python3 tests/check_reveal.py out/intro/index.html

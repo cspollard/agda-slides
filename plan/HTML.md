@@ -81,18 +81,18 @@ Original task:
 - **Entities and names.** Only the five XML entities; write other characters as UTF-8. parsnip names are ASCII `[A-Za-z_:][A-Za-z0-9_:.-]*`, which covers `data-*` and `aria-*`.
 - **Payload type.** parsnip uses `List Char`; slide text is `String` converted one way at the boundary.
 
-### R2 — Carrier and bridge lemmas (`Slides.Backend.XML`) — bridge lemma done, carrier open
+### R2 — Carrier and bridge lemmas (`Slides.Backend.XML`) — done (forest carrier in `Slides.Backend.Reveal`)
 - Carrier: **forest** `T = List XMLDoc` with pointwise `_≈ₓ_` (recommended), or XML trees with holes (`XMLM X`) if Kleisli-style composition proves more natural.
 - Relate `Container.FreeMonad.Eq` on `Free₀ XMLC ⊥ˢ` with parsnip's `_≈ₓ_` (both require equal shapes with arity transport and pairwise-equal children, so they should be equivalent) so generic fold lemmas apply to parsnip's equality.
 - `wrap : T → XMLDoc` building the page shell.
 
-### R3 — The reveal.js algebra for the core vocabulary
+### R3 — The reveal.js algebra for the core vocabulary (done for the minimal vocabulary: `Slides.Backend.Reveal`, `Slides.Backend.HTML`)
 - Algebra for the minimal vocabulary (`slide`, `section`, `heading`, `paragraph`, `bullets`, `pause`, `notes`, `code`, math, `figure`, `columns`, backgrounds).
 - Literal tags use `node`/`leaf`; runtime strings go through `Data.XML.Sanitize`; empties go through the R1 smart constructors.
 - `renderReveal : Deck → String` and `revealConfig : RevealConfig → JSON`.
 - Structural lemmas: number of top-level `<section>` elements equals the number of top-level slide commands, etc.
 
-### R4 — Driver and tests
+### R4 — Driver and tests (done: `make example`, `make test`, `make test-browser`)
 - `Main.agda` (MAlonzo) writes `out/index.html`, `out/init.js`, and copies or links the stylesheet.
 - Golden-file tests on the example decks; a runtime check that `parseXML` on the output yields a document `≈ₓ` to the rendered one (the specification is `parseXML-printXML`).
 - Optional `make test-browser`: load the deck in headless Chromium and check that reveal.js initialises and the slide count matches.

@@ -142,5 +142,5 @@ Deliverable: `Slides.DSL` with `slide "Title" do …` syntax and one hand-writte
 2. ~~Sketch `Slides.Core`~~ — done: `Slides.Core` (stratified containers), `Slides.DSL` (`do`-notation), `Slides.Examples.Intro`; nested bodies chosen.
 3. ~~Sum isomorphism and algebra copairing~~ — done (`Container.Sum`).
 4. ~~Bridge lemma~~ — done: `Slides.Backend.XML` proves `XMLEq t u ↔ t ≈ₓ u` (`≈ₓ-from-Eq`, `Eq-from-≈ₓ`); validity evidence is handled by proof irrelevance of `T b`.
-5. Write the reveal.js algebra and driver (R3–R4).
+5. ~~reveal.js algebra and driver~~ — done for the minimal vocabulary: content and deck algebras with a forest carrier, `renderReveal`, `initScript` (options via parsnip's JSON printer), `renderDeck-length` (one `<section>` per slide command), `make example` / `make test` (golden) / `make test-browser` (headless Chrome: reveal.js ready, fragments, stack, notes, KaTeX, highlight).
 6. Optionally finish the Eilenberg–Moore comparison.
