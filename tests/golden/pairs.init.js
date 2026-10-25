@@ -14,15 +14,31 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
   Reveal.on('slidechanged', function (e) { run(e.currentSlide); });
 })();
 (function () {
-  function sync(a) {
-    if (!a) return;
+  function target(a) {
     var n = a.querySelectorAll('.anim-step.visible').length;
-    a.querySelectorAll(':scope > .frame').forEach(function (f, i) { f.hidden = (i !== n); });
+    if (n === 0) return 0;
+    var r = a.dataset.rests.split(',');
+    return +r[Math.min(n, r.length) - 1];
   }
-  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(sync); }
+  function show(a, i) {
+    a.dataset.cur = String(i);
+    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });
+  }
+  function sync(a, jump) {
+    if (!a) return;
+    clearInterval(a._timer);
+    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);
+    if (jump || ms === 0 || t === cur) { show(a, t); return; }
+    a._timer = setInterval(function () {
+      cur += (t > cur ? 1 : -1);
+      show(a, cur);
+      if (cur === t) clearInterval(a._timer);
+    }, ms);
+  }
+  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }
   Reveal.on('ready', function (e) { all(e.currentSlide); });
   Reveal.on('slidechanged', function (e) { all(e.currentSlide); });
-  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation')); });
-  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation')); });
+  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation'), false); });
+  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation'), false); });
 })();
 Reveal.configure({center: false});
