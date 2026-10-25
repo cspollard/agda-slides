@@ -5,7 +5,7 @@
 -- `Ops S` is what the layout needs to run: zero, sum, difference, maximum,
 -- conversion from and to the naturals the deck's numbers are written in, and
 -- "p percent of".  ℕ is a scalar (its difference is the monus, which is only
--- applied to a larger minuend; see `Slides.Diagram.Place`), and so is ℤ.
+-- applied to a larger minuend; see `Slides.Diagram.Place`), and so are ℤ and ℚ.
 --
 -- Layouts keep positions in half units (see `Slides.Diagram.Place`), so no
 -- scalar needs a division by two: the "doubling trick".  What a scalar can
@@ -18,6 +18,8 @@ module Slides.Diagram.Scalar where
 open import Data.Nat as ℕ using (ℕ)
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.DivMod as ℤ
+import Data.Rational as ℚ
+import Data.Rational.Properties as ℚP
 
 record Ops (S : Set) : Set where
   infixl 6 _+_ _-_
@@ -48,3 +50,9 @@ intOps = record
   { 0# = ℤ.+ 0 ; _+_ = ℤ._+_ ; _-_ = ℤ._-_ ; _⊔_ = ℤ._⊔_
   ; fromℕ = ℤ.+_ ; toℕ = ℤ.∣_∣
   ; percentOf = λ p x → (ℤ.+ p ℤ.* x) ℤ./ ℤ.+ 100 }
+
+ratOps : Ops ℚ.ℚ
+ratOps = record
+  { 0# = ℚ.0ℚ ; _+_ = ℚ._+_ ; _-_ = ℚ._-_ ; _⊔_ = ℚ._⊔_
+  ; fromℕ = λ n → ℤ.+ n ℚ./ 1 ; toℕ = λ q → ℤ.∣ ℚ.floor q ∣
+  ; percentOf = λ p x → (ℤ.+ p ℚ./ 100) ℚ.* x }

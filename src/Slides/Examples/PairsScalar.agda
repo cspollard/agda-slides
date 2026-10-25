@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Checks on the Pairs diagrams, by evaluation:
---   * they lay out identically in ℕ and in ℤ;
+--   * they lay out identically in ℕ, ℤ and ℚ;
 --   * `dangling` being empty means every connection is drawn (`soundness`);
 --   * `dangling` resolves a connection inside its own diagram: a name declared
 --     next to a `connect`, not under it, is reported.
@@ -17,11 +17,12 @@ open import Slides.Diagram.Layout using (module LayoutWith; compile)
 open import Slides.Diagram.Names using (dangling)
 import Slides.Diagram.NamesSound as Sound
 open import Slides.Diagram.Notation
-open import Slides.Diagram.Scalar using (intOps; natOps)
+open import Slides.Diagram.Scalar using (intOps; natOps; ratOps)
 open import Slides.Examples.Pairs
 
 private
   module Z = LayoutWith intOps
+  module Q = LayoutWith ratOps
 
 _ : Z.compile "d-problem" 100 problemDia ≡ compile "d-problem" 100 problemDia
 _ = refl
@@ -34,6 +35,19 @@ _ = refl
 _ : Z.compile "d-results" 100 resultsDia ≡ compile "d-results" 100 resultsDia
 _ = refl
 _ : Z.compile "d-tiles" 100 tilesDia ≡ compile "d-tiles" 100 tilesDia
+_ = refl
+
+_ : Q.compile "d-problem" 100 problemDia ≡ compile "d-problem" 100 problemDia
+_ = refl
+_ : Q.compile "d-pipeline" 100 pipelineDia ≡ compile "d-pipeline" 100 pipelineDia
+_ = refl
+_ : Q.compile "d-stages" 100 stagesDia ≡ compile "d-stages" 100 stagesDia
+_ = refl
+_ : Q.compile "d-chain" 100 chainDia ≡ compile "d-chain" 100 chainDia
+_ = refl
+_ : Q.compile "d-results" 100 resultsDia ≡ compile "d-results" 100 resultsDia
+_ = refl
+_ : Q.compile "d-tiles" 100 tilesDia ≡ compile "d-tiles" 100 tilesDia
 _ = refl
 
 private

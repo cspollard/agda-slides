@@ -1,34 +1,46 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Laws of the layout operations (`Slides.Diagram.Place`), for any scalar whose
--- `Ops` form a commutative ring under propositional equality, with an
--- associative maximum (`IsLawful`): ℤ is one (`lawfulℤ`), ℕ is not (its
--- difference is the monus), so ℕ runs the layout but is not covered here.
+-- `Ops` form a commutative ring up to some equivalence `_≈_`, with a maximum
+-- that is congruent, commutative and associative (`IsLawful`).  ℤ is one
+-- (`lawfulℤ`, with `_≈_` = `_≡_`); ℕ is not (its difference is the monus), so ℕ
+-- runs the layout but is not covered here.
 --
---   * translation is an action: `shift 0 d ≡ d`, `shift a (shift b d) ≡ shift (b + a) d`
+--   * translation is an action: `shift 0 d ≈ᴸ d`, `shift a (shift b d) ≈ᴸ shift (b + a) d`
 --   * `∥`, `═` and `⊙` (with no gap) are associative
---   * annotations do not change a layout's size
+--   * for a layout of non-negative size, the empty diagram is a unit of each
+--   * annotations do not change a layout's size or anchors
 --   * the size of a layout is a fold of its own, `sizeAlgebra` (fusion)
 --
--- Equality is `_≡_` on `Layout S`: a layout is plain data (sizes, drawing
--- commands, anchors), not a function, so no extensionality is needed.
+-- Equality of layouts is the scalar's equality lifted pointwise
+-- (`Slides.Diagram.Equality`): a layout is plain data, so no function
+-- extensionality is needed, and the scalar's equality need not be `_≡_`.
 
 module Slides.Diagram.Laws where
 
 open import Level using (0ℓ)
 open import Algebra using (CommutativeRing; IsCommutativeRing)
+open import Data.Fin using (Fin; zero; suc)
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.Properties as ℤP
+import Data.Rational as ℚ
+import Data.Rational.Properties as ℚP
 open import Data.List using (List; []; _∷_; map; _++_)
 import Data.List.Properties as L
-open import Data.Nat using (ℕ)
+open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
 open import Data.Maybe using (just; nothing)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Nat using () renaming (_*_ to _*ℕ_; _/_ to _/ℕ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Unit using (tt)
-open import Data.Sum using (inj₁; inj₂)
-open import Data.Container.FreeMonad using (pure; impure)
 open import Data.String using (String)
+open import Data.Sum using (inj₁; inj₂)
+open import Data.Unit using (tt)
+open import Data.Container.FreeMonad using (pure; impure)
+open import Relation.Binary using (Rel; IsEquivalence; Setoid)
+import Relation.Binary.Reasoning.Setoid as Reasoning
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; cong₂)
+
+open import Slides.Diagram.Draw
+open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
   using ( Dia; Algebra; fold; arity; PrimShape; Rectangle; Disc; Segment; Text; Spacer; Raw
         ; Connective; Beside; Above; Atop; Margin; MinWidth; TopAlign; LabelAbove; LabelBelow
@@ -36,35 +48,43 @@ open import Slides.Diagram.Syntax
         ; VAlign; top; middle; bottom; Align; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
 import Slides.Diagram.Layout as Lay
-open import Data.Nat using () renaming (_*_ to _*ℕ_; _/_ to _/ℕ_)
-open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
-
-open import Slides.Diagram.Draw
-open import Slides.Diagram.Scalar
 open import Tactic.RingSolver.Core.AlmostCommutativeRing using (fromCommutativeRing)
 import Tactic.RingSolver.NonReflective as NonReflective
 
 -- What the laws need of a scalar `O`: a commutative ring structure on its sum
--- and zero (under `_≡_`, so a layout's equality is `_≡_` too), a difference
--- that is the ring's, and an associative maximum.  The ring operations that
--- `Ops` does not mention (`*`, `1`, negation) are given here.
-record IsLawful {S : Set} (O : Ops S) : Set where
+-- and zero, up to an equivalence `_≈_`; a difference that is the ring's; and a
+-- maximum that is congruent, commutative and associative.  The ring operations
+-- that `Ops` does not mention (`*`, `1`, negation) are given here.
+record IsLawful {S : Set} (O : Ops S) : Set₁ where
   open Ops O
   field
+    _≈_      : Rel S 0ℓ
     _*_      : S → S → S
     1#       : S
     neg      : S → S
-    isCommutativeRing : IsCommutativeRing _≡_ _+_ _*_ neg 0# 1#
-    sub≡     : ∀ a b → a - b ≡ a + neg b
-    ⊔-assoc  : ∀ x y z → (x ⊔ y) ⊔ z ≡ x ⊔ (y ⊔ z)
+    isCommutativeRing : IsCommutativeRing _≈_ _+_ _*_ neg 0# 1#
+    sub≈     : ∀ a b → (a - b) ≈ (a + neg b)
+    ⊔-cong   : ∀ {x x′ y y′} → x ≈ x′ → y ≈ y′ → (x ⊔ y) ≈ (x′ ⊔ y′)
+    ⊔-comm   : ∀ x y → (x ⊔ y) ≈ (y ⊔ x)
+    ⊔-assoc  : ∀ x y z → ((x ⊔ y) ⊔ z) ≈ (x ⊔ (y ⊔ z))
 
 lawfulℤ : IsLawful intOps
 lawfulℤ = record
-  { _*_ = ℤ._*_ ; 1# = ℤ.+ 1 ; neg = ℤ.-_
+  { _≈_ = _≡_ ; _*_ = ℤ._*_ ; 1# = ℤ.+ 1 ; neg = ℤ.-_
   ; isCommutativeRing = ℤP.+-*-isCommutativeRing
-  ; sub≡ = λ _ _ → refl
+  ; sub≈ = λ _ _ → refl
+  ; ⊔-cong = cong₂ ℤ._⊔_
+  ; ⊔-comm = ℤP.⊔-comm
   ; ⊔-assoc = ℤP.⊔-assoc }
+
+lawfulℚ : IsLawful ratOps
+lawfulℚ = record
+  { _≈_ = _≡_ ; _*_ = ℚ._*_ ; 1# = ℚ.1ℚ ; neg = ℚ.-_
+  ; isCommutativeRing = ℚP.+-*-isCommutativeRing
+  ; sub≈ = λ _ _ → refl
+  ; ⊔-cong = cong₂ ℚ._⊔_
+  ; ⊔-comm = ℚP.⊔-comm
+  ; ⊔-assoc = ℚP.⊔-assoc }
 
 module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   open Ops O
@@ -73,24 +93,40 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
 
   ring : CommutativeRing 0ℓ 0ℓ
   ring = record
-    { Carrier = S ; _≈_ = _≡_ ; _+_ = _+_ ; _*_ = _*_ ; -_ = neg ; 0# = 0# ; 1# = 1#
+    { Carrier = S ; _≈_ = _≈_ ; _+_ = _+_ ; _*_ = _*_ ; -_ = neg ; 0# = 0# ; 1# = 1#
     ; isCommutativeRing = isCommutativeRing }
 
   module R = CommutativeRing ring
+
+  open import Slides.Diagram.Equality R.isEquivalence
+
+  ----------------------------------------------------------------------
+  -- Offsets
 
   -- add the offsets of two shifts
   infixl 6 _⊞_
   _⊞_ : S × S → S × S → S × S
   p ⊞ q = proj₁ p + proj₁ q , proj₂ p + proj₂ q
 
-  +-assoc : ∀ x y z → (x + y) + z ≡ x + (y + z)
-  +-assoc x y z = R.+-assoc x y z
+  -- equal offsets
+  infix 4 _≈ₚ_
+  _≈ₚ_ : S × S → S × S → Set
+  p ≈ₚ q = proj₁ p ≈ proj₁ q × proj₂ p ≈ proj₂ q
 
-  +-identityʳ : ∀ x → x + 0# ≡ x
-  +-identityʳ x = R.+-identityʳ x
+  +-assoc : ∀ x y z → ((x + y) + z) ≈ (x + (y + z))
+  +-assoc = R.+-assoc
+
+  +-identityʳ : ∀ x → (x + 0#) ≈ x
+  +-identityʳ = R.+-identityʳ
+
+  +-identityˡ : ∀ x → (0# + x) ≈ x
+  +-identityˡ = R.+-identityˡ
+
+  +-cong : ∀ {x x′ y y′} → x ≈ x′ → y ≈ y′ → (x + y) ≈ (x′ + y′)
+  +-cong = R.+-cong
 
   ----------------------------------------------------------------------
-  -- Translation is an action
+  -- Shifting
 
   shiftDraw′ : S × S → Draw S → Draw S
   shiftDraw′ p = shiftDraw (proj₁ p) (proj₂ p)
@@ -98,81 +134,146 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   shiftAnchor′ : S × S → String × Box S → String × Box S
   shiftAnchor′ p = shiftAnchor (proj₁ p) (proj₂ p)
 
-  cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {a a′ b b′ c c′} →
-          a ≡ a′ → b ≡ b′ → c ≡ c′ → f a b c ≡ f a′ b′ c′
-  cong₃ f refl refl refl = refl
+  shiftDraw-cong : ∀ {p p′} → p ≈ₚ p′ → ∀ x → shiftDraw′ p x ≈ᵈ shiftDraw′ p′ x
+  shiftDraw-cong (ex , ey) (rect x y w h s) = rect≈ (+-cong R.refl ex) (+-cong R.refl ey) R.refl R.refl
+  shiftDraw-cong (ex , ey) (circle x y r s) = circle≈ (+-cong R.refl ex) (+-cong R.refl ey) R.refl
+  shiftDraw-cong (ex , ey) (line a b c d s) =
+    line≈ (+-cong R.refl ex) (+-cong R.refl ey) (+-cong R.refl ex) (+-cong R.refl ey)
+  shiftDraw-cong (ex , ey) (arrow a b c d s) =
+    arrow≈ (+-cong R.refl ex) (+-cong R.refl ey) (+-cong R.refl ex) (+-cong R.refl ey)
+  shiftDraw-cong (ex , ey) (label x y n t s) = label≈ (+-cong R.refl ex) (+-cong R.refl ey)
+  shiftDraw-cong (ex , ey) (fixed e) = fixed≈
 
-  cong₄ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
-          a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
-  cong₄ f refl refl refl refl = refl
+  shiftAnchor-cong : ∀ {p p′} → p ≈ₚ p′ → ∀ x → shiftAnchor′ p x ≈ᵃ shiftAnchor′ p′ x
+  shiftAnchor-cong (ex , ey) (n , box l t w h) =
+    refl , box≈ (+-cong R.refl ex) (+-cong R.refl ey) R.refl R.refl
 
-  shiftDraw-∘ : ∀ p q x → shiftDraw′ p (shiftDraw′ q x) ≡ shiftDraw′ (q ⊞ p) x
+  shiftDraw-∘ : ∀ p q x → shiftDraw′ p (shiftDraw′ q x) ≈ᵈ shiftDraw′ (q ⊞ p) x
   shiftDraw-∘ p q (rect x y w h s) =
-    cong₂ (λ a b → rect a b w h s) (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p))
+    rect≈ (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p)) R.refl R.refl
   shiftDraw-∘ p q (circle x y r s) =
-    cong₂ (λ a b → circle a b r s) (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p))
+    circle≈ (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p)) R.refl
   shiftDraw-∘ p q (line a b c d s) =
-    cong₄ (λ a b c d → line a b c d s)
-      (+-assoc a (proj₁ q) (proj₁ p)) (+-assoc b (proj₂ q) (proj₂ p))
-      (+-assoc c (proj₁ q) (proj₁ p)) (+-assoc d (proj₂ q) (proj₂ p))
+    line≈ (+-assoc a (proj₁ q) (proj₁ p)) (+-assoc b (proj₂ q) (proj₂ p))
+          (+-assoc c (proj₁ q) (proj₁ p)) (+-assoc d (proj₂ q) (proj₂ p))
   shiftDraw-∘ p q (arrow a b c d s) =
-    cong₄ (λ a b c d → arrow a b c d s)
-      (+-assoc a (proj₁ q) (proj₁ p)) (+-assoc b (proj₂ q) (proj₂ p))
-      (+-assoc c (proj₁ q) (proj₁ p)) (+-assoc d (proj₂ q) (proj₂ p))
+    arrow≈ (+-assoc a (proj₁ q) (proj₁ p)) (+-assoc b (proj₂ q) (proj₂ p))
+           (+-assoc c (proj₁ q) (proj₁ p)) (+-assoc d (proj₂ q) (proj₂ p))
   shiftDraw-∘ p q (label x y n t s) =
-    cong₂ (λ a b → label a b n t s) (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p))
-  shiftDraw-∘ p q (fixed e) = refl
+    label≈ (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p))
+  shiftDraw-∘ p q (fixed e) = fixed≈
 
-  shiftAnchor-∘ : ∀ p q x → shiftAnchor′ p (shiftAnchor′ q x) ≡ shiftAnchor′ (q ⊞ p) x
+  shiftAnchor-∘ : ∀ p q x → shiftAnchor′ p (shiftAnchor′ q x) ≈ᵃ shiftAnchor′ (q ⊞ p) x
   shiftAnchor-∘ p q (n , box l t w h) =
-    cong (λ b → n , b) (cong₂ (λ a b → box a b w h) (+-assoc l (proj₁ q) (proj₁ p)) (+-assoc t (proj₂ q) (proj₂ p)))
+    refl , box≈ (+-assoc l (proj₁ q) (proj₁ p)) (+-assoc t (proj₂ q) (proj₂ p)) R.refl R.refl
 
-  -- shifting a list of things, one after the other, adds the offsets
-  module _ {X : Set} (act : S × S → X → X)
-           (act-∘ : ∀ p q x → act p (act q x) ≡ act (q ⊞ p) x) where
+  shiftDraw-0 : ∀ x → shiftDraw′ (0# , 0#) x ≈ᵈ x
+  shiftDraw-0 (rect x y w h s)  = rect≈ (+-identityʳ x) (+-identityʳ y) R.refl R.refl
+  shiftDraw-0 (circle x y r s)  = circle≈ (+-identityʳ x) (+-identityʳ y) R.refl
+  shiftDraw-0 (line a b c d s)  = line≈ (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
+  shiftDraw-0 (arrow a b c d s) = arrow≈ (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
+  shiftDraw-0 (label x y n t s) = label≈ (+-identityʳ x) (+-identityʳ y)
+  shiftDraw-0 (fixed e)         = fixed≈
 
-    map-act-∘ : ∀ p q xs → map (act p) (map (act q) xs) ≡ map (act (q ⊞ p)) xs
-    map-act-∘ p q xs = trans (sym (L.map-∘ xs)) (L.map-cong (act-∘ p q) xs)
+  shiftAnchor-0 : ∀ x → shiftAnchor′ (0# , 0#) x ≈ᵃ x
+  shiftAnchor-0 (n , box l t w h) = refl , box≈ (+-identityʳ l) (+-identityʳ t) R.refl R.refl
+
+  -- Shifting lists of things: the offsets add, equal offsets agree, shifting by
+  -- nothing does nothing, and three lists nested to the right or to the left
+  -- agree when the positions add up.
+  module Lists {X : Set} {_≈ₓ_ : Rel X 0ℓ} (eqX : IsEquivalence _≈ₓ_)
+               (act : S × S → X → X)
+               (act-cong : ∀ {p p′} → p ≈ₚ p′ → ∀ x → act p x ≈ₓ act p′ x)
+               (act-∘ : ∀ p q x → act p (act q x) ≈ₓ act (q ⊞ p) x)
+               (act-0 : ∀ x → act (0# , 0#) x ≈ₓ x) where
+
+    private
+      module X = IsEquivalence eqX
+      listSetoid : Setoid 0ℓ 0ℓ
+      listSetoid = PW.setoid (record { Carrier = X ; _≈_ = _≈ₓ_ ; isEquivalence = eqX })
+      module LS = Setoid listSetoid
+      infix 4 _≈*_
+      _≈*_ = Pointwise _≈ₓ_
+
+    ≡⇒≈* : ∀ {xs ys : List X} → xs ≡ ys → xs ≈* ys
+    ≡⇒≈* refl = PW.refl X.refl
+
+    trans* : ∀ {xs ys zs : List X} → xs ≈* ys → ys ≈* zs → xs ≈* zs
+    trans* = LS.trans
+
+    map-act-∘ : ∀ p q xs → map (act p) (map (act q) xs) ≈* map (act (q ⊞ p)) xs
+    map-act-∘ p q []       = []
+    map-act-∘ p q (x ∷ xs) = act-∘ p q x ∷ map-act-∘ p q xs
+
+    map-act-cong : ∀ {p p′} → p ≈ₚ p′ → ∀ xs → map (act p) xs ≈* map (act p′) xs
+    map-act-cong e []       = []
+    map-act-cong e (x ∷ xs) = act-cong e x ∷ map-act-cong e xs
+
+    map-act-0 : ∀ xs → map (act (0# , 0#)) xs ≈* xs
+    map-act-0 []       = []
+    map-act-0 (x ∷ xs) = act-0 x ∷ map-act-0 xs
+
+    -- a list shifted by a position that is nothing
+    map-act-zero : ∀ {p} → p ≈ₚ (0# , 0#) → ∀ xs → map (act p) xs ≈* xs
+    map-act-zero e xs = trans* (map-act-cong e xs) (map-act-0 xs)
 
     -- a layout inside a combination inside a combination
-    assoc3 : ∀ p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂ (A B C : List X) →
-      p₁ ≡ s₁ ⊞ r₁ → q₁ ⊞ p₂ ≡ s₂ ⊞ r₁ → q₂ ⊞ p₂ ≡ r₂ →
+    assoc3 : ∀ {p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂} (A B C : List X) →
+      p₁ ≈ₚ s₁ ⊞ r₁ → q₁ ⊞ p₂ ≈ₚ s₂ ⊞ r₁ → q₂ ⊞ p₂ ≈ₚ r₂ →
       map (act p₁) A ++ map (act p₂) (map (act q₁) B ++ map (act q₂) C)
-        ≡ map (act r₁) (map (act s₁) A ++ map (act s₂) B) ++ map (act r₂) C
-    assoc3 p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂ A B C e₁ e₂ e₃ = begin
+        ≈* map (act r₁) (map (act s₁) A ++ map (act s₂) B) ++ map (act r₂) C
+    assoc3 {p₁} {p₂} {q₁} {q₂} {r₁} {r₂} {s₁} {s₂} A B C e₁ e₂ e₃ = begin
       map (act p₁) A ++ map (act p₂) (map (act q₁) B ++ map (act q₂) C)
-        ≡⟨ cong (map (act p₁) A ++_) inner ⟩
+        ≈⟨ PW.++⁺ (PW.refl X.refl) inner ⟩
       map (act p₁) A ++ (map (act (q₁ ⊞ p₂)) B ++ map (act (q₂ ⊞ p₂)) C)
-        ≡⟨ cong₃ (λ x y z → map (act x) A ++ (map (act y) B ++ map (act z) C)) e₁ e₂ e₃ ⟩
+        ≈⟨ PW.++⁺ (map-act-cong e₁ A) (PW.++⁺ (map-act-cong e₂ B) (map-act-cong e₃ C)) ⟩
       map (act (s₁ ⊞ r₁)) A ++ (map (act (s₂ ⊞ r₁)) B ++ map (act r₂) C)
-        ≡⟨ sym (L.++-assoc (map (act (s₁ ⊞ r₁)) A) (map (act (s₂ ⊞ r₁)) B) (map (act r₂) C)) ⟩
+        ≈⟨ ≡⇒≈* (sym (L.++-assoc (map (act (s₁ ⊞ r₁)) A) (map (act (s₂ ⊞ r₁)) B) (map (act r₂) C))) ⟩
       (map (act (s₁ ⊞ r₁)) A ++ map (act (s₂ ⊞ r₁)) B) ++ map (act r₂) C
-        ≡⟨ cong (_++ map (act r₂) C) (sym outer) ⟩
+        ≈⟨ PW.++⁺ (PW.symmetric X.sym outer) (PW.refl X.refl) ⟩
       map (act r₁) (map (act s₁) A ++ map (act s₂) B) ++ map (act r₂) C ∎
       where
+        open Reasoning listSetoid
         inner : map (act p₂) (map (act q₁) B ++ map (act q₂) C)
-                  ≡ map (act (q₁ ⊞ p₂)) B ++ map (act (q₂ ⊞ p₂)) C
-        inner = trans (L.map-++ (act p₂) (map (act q₁) B) (map (act q₂) C))
-                      (cong₂ _++_ (map-act-∘ p₂ q₁ B) (map-act-∘ p₂ q₂ C))
+                  ≈* map (act (q₁ ⊞ p₂)) B ++ map (act (q₂ ⊞ p₂)) C
+        inner = trans* (≡⇒≈* (L.map-++ (act p₂) (map (act q₁) B) (map (act q₂) C)))
+                       (PW.++⁺ (map-act-∘ p₂ q₁ B) (map-act-∘ p₂ q₂ C))
         outer : map (act r₁) (map (act s₁) A ++ map (act s₂) B)
-                  ≡ map (act (s₁ ⊞ r₁)) A ++ map (act (s₂ ⊞ r₁)) B
-        outer = trans (L.map-++ (act r₁) (map (act s₁) A) (map (act s₂) B))
-                      (cong₂ _++_ (map-act-∘ r₁ s₁ A) (map-act-∘ r₁ s₂ B))
+                  ≈* map (act (s₁ ⊞ r₁)) A ++ map (act (s₂ ⊞ r₁)) B
+        outer = trans* (≡⇒≈* (L.map-++ (act r₁) (map (act s₁) A) (map (act s₂) B)))
+                       (PW.++⁺ (map-act-∘ r₁ s₁ A) (map-act-∘ r₁ s₂ B))
+
+  module DL = Lists ≈ᵈ-isEquivalence shiftDraw′ shiftDraw-cong shiftDraw-∘ shiftDraw-0
+  module AL = Lists ≈ᵃ-isEquivalence shiftAnchor′ shiftAnchor-cong shiftAnchor-∘ shiftAnchor-0
 
   -- Combining three layouts, nested to the right or to the left, gives the same
   -- layout when the sizes agree and the positions add up.
   combine-assoc :
     ∀ {w h w′ h′ w₂ h₂ w₃ h₃ : S} {p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂ : S × S} (a b c : Layout S) →
-    w ≡ w₂ → h ≡ h₂ →
-    p₁ ≡ s₁ ⊞ r₁ → q₁ ⊞ p₂ ≡ s₂ ⊞ r₁ → q₂ ⊞ p₂ ≡ r₂ →
+    w ≈ w₂ → h ≈ h₂ →
+    p₁ ≈ₚ s₁ ⊞ r₁ → q₁ ⊞ p₂ ≈ₚ s₂ ⊞ r₁ → q₂ ⊞ p₂ ≈ₚ r₂ →
     combine w h p₁ a p₂ (combine w′ h′ q₁ b q₂ c)
-      ≡ combine w₂ h₂ r₁ (combine w₃ h₃ s₁ a s₂ b) r₂ c
-  combine-assoc {p₁ = p₁} {p₂} {q₁} {q₂} {r₁} {r₂} {s₁} {s₂} a b c refl refl e₁ e₂ e₃ =
-    cong₂ (layout _ _)
-      (assoc3 shiftDraw′ shiftDraw-∘ p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂
-         (Layout.draws a) (Layout.draws b) (Layout.draws c) e₁ e₂ e₃)
-      (assoc3 shiftAnchor′ shiftAnchor-∘ p₁ p₂ q₁ q₂ r₁ r₂ s₁ s₂
-         (Layout.anchors a) (Layout.anchors b) (Layout.anchors c) e₁ e₂ e₃)
+      ≈ᴸ combine w₂ h₂ r₁ (combine w₃ h₃ s₁ a s₂ b) r₂ c
+  combine-assoc a b c ew eh e₁ e₂ e₃ =
+    layout≈ ew eh
+      (DL.assoc3 (Layout.draws a) (Layout.draws b) (Layout.draws c) e₁ e₂ e₃)
+      (AL.assoc3 (Layout.anchors a) (Layout.anchors b) (Layout.anchors c) e₁ e₂ e₃)
+
+  -- A frame holding a layout and an empty spacer is that layout, when the
+  -- sizes agree and the layout sits at the origin.
+  combine-unitˡ : ∀ {w h pe p} (sw sh : S) (a : Layout S) →
+    w ≈ Layout.width a → h ≈ Layout.height a → p ≈ₚ (0# , 0#) →
+    combine w h pe (spacer sw sh) p a ≈ᴸ a
+  combine-unitˡ sw sh a ew eh ep =
+    layout≈ ew eh (DL.map-act-zero ep (Layout.draws a)) (AL.map-act-zero ep (Layout.anchors a))
+
+  combine-unitʳ : ∀ {w h p pe} (a : Layout S) (sw sh : S) →
+    w ≈ Layout.width a → h ≈ Layout.height a → p ≈ₚ (0# , 0#) →
+    combine w h p a pe (spacer sw sh) ≈ᴸ a
+  combine-unitʳ a sw sh ew eh ep =
+    layout≈ ew eh
+      (DL.trans* (DL.≡⇒≈* (L.++-identityʳ _)) (DL.map-act-zero ep (Layout.draws a)))
+      (AL.trans* (AL.≡⇒≈* (L.++-identityʳ _)) (AL.map-act-zero ep (Layout.anchors a)))
 
   ----------------------------------------------------------------------
   -- Translation is an action
@@ -181,31 +282,12 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   shift dx dy d = inFrame (width d) (height d) dx dy d
 
   shift-∘ : ∀ p q d → shift (proj₁ p) (proj₂ p) (shift (proj₁ q) (proj₂ q) d)
-                       ≡ shift (proj₁ (q ⊞ p)) (proj₂ (q ⊞ p)) d
+                       ≈ᴸ shift (proj₁ (q ⊞ p)) (proj₂ (q ⊞ p)) d
   shift-∘ p q d =
-    cong₂ (layout (width d) (height d))
-      (map-act-∘ shiftDraw′ shiftDraw-∘ p q (Layout.draws d))
-      (map-act-∘ shiftAnchor′ shiftAnchor-∘ p q (Layout.anchors d))
+    layout≈ R.refl R.refl (DL.map-act-∘ p q (Layout.draws d)) (AL.map-act-∘ p q (Layout.anchors d))
 
-  shiftDraw-0 : ∀ x → shiftDraw 0# 0# x ≡ x
-  shiftDraw-0 (rect x y w h s)       = cong₂ (λ a b → rect a b w h s) (+-identityʳ x) (+-identityʳ y)
-  shiftDraw-0 (circle x y r s)       = cong₂ (λ a b → circle a b r s) (+-identityʳ x) (+-identityʳ y)
-  shiftDraw-0 (line a b c d s)       =
-    cong₄ (λ a b c d → line a b c d s) (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
-  shiftDraw-0 (arrow a b c d s)      =
-    cong₄ (λ a b c d → arrow a b c d s) (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
-  shiftDraw-0 (label x y n t s)      = cong₂ (λ a b → label a b n t s) (+-identityʳ x) (+-identityʳ y)
-  shiftDraw-0 (fixed e)              = refl
-
-  shiftAnchor-0 : ∀ x → shiftAnchor 0# 0# x ≡ x
-  shiftAnchor-0 (n , box l t w h) =
-    cong (λ b → n , b) (cong₂ (λ a b → box a b w h) (+-identityʳ l) (+-identityʳ t))
-
-  shift-0 : ∀ d → shift 0# 0# d ≡ d
-  shift-0 (layout w h ds as) =
-    cong₂ (layout w h)
-      (trans (L.map-cong shiftDraw-0 ds) (L.map-id ds))
-      (trans (L.map-cong shiftAnchor-0 as) (L.map-id as))
+  shift-0 : ∀ d → shift 0# 0# d ≈ᴸ d
+  shift-0 (layout w h ds as) = layout≈ R.refl R.refl (DL.map-act-0 ds) (AL.map-act-0 as)
 
   ----------------------------------------------------------------------
   -- Ring identities, by the ring solver
@@ -213,42 +295,70 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   private
     ring′ = fromCommutativeRing ring (λ _ → nothing)
 
-  open NonReflective ring′ using (solve; _⊜_; Κ) renaming (_⊕_ to infixl 6 _:+_; ⊝_ to infixr 8 :-_)
-
-  +-identityˡ : ∀ x → 0# + x ≡ x
-  +-identityˡ x = R.+-identityˡ x
+  open NonReflective ring′ using (solve; _⊜_) renaming (_⊕_ to infixl 6 _:+_)
 
   -- (The solver cannot cancel `x + - x` in an abstract ring, so differences are
   -- kept as opaque terms and cancelled by hand.)
-  swap : ∀ o m a b → (m + a) + (o + b) ≡ (o + a) + (m + b)
+  swap : ∀ o m a b → ((m + a) + (o + b)) ≈ ((o + a) + (m + b))
   swap = λ o m a b →
     solve 4 (λ o m a b → ((m :+ a) :+ (o :+ b)) ⊜ ((o :+ a) :+ (m :+ b))) R.refl o m a b
 
-  +-inverseʳ : ∀ x → x + neg x ≡ 0#
-  +-inverseʳ x = R.-‿inverseʳ x
+  +-inverseʳ : ∀ x → (x + neg x) ≈ 0#
+  +-inverseʳ = R.-‿inverseʳ
+
+  sub-self : ∀ x → (x - x) ≈ 0#
+  sub-self x = R.trans (sub≈ x x) (+-inverseʳ x)
+
+  sub-congˡ : ∀ {o o′} i → o ≈ o′ → (o - i) ≈ (o′ - i)
+  sub-congˡ i e = R.trans (sub≈ _ i) (R.trans (+-cong e R.refl) (R.sym (sub≈ _ i)))
 
   -- placing in the middle frame, then that frame in the outer one
-  off-comp : ∀ o m i → (m - i) + (o - m) ≡ o - i
+  off-comp : ∀ o m i → ((m - i) + (o - m)) ≈ (o - i)
   off-comp o m i =
-    trans (cong₂ _+_ (sub≡ m i) (sub≡ o m))
-      (trans (swap o m (neg i) (neg m))
-        (trans (cong (λ t → (o + neg i) + t) (+-inverseʳ m))
-          (trans (+-identityʳ _) (sym (sub≡ o i)))))
+    R.trans (+-cong (sub≈ m i) (sub≈ o m))
+      (R.trans (swap o m (neg i) (neg m))
+        (R.trans (+-cong R.refl (+-inverseʳ m))
+          (R.trans (+-identityʳ _) (R.sym (sub≈ o i)))))
 
-  dbl-off-comp : ∀ o m i → dbl (m - i) + dbl (o - m) ≡ dbl (o - i)
+  dbl-off-comp : ∀ o m i → (dbl (m - i) + dbl (o - m)) ≈ dbl (o - i)
   dbl-off-comp o m i =
-    trans (solve 2 (λ x y → ((x :+ x) :+ (y :+ y)) ⊜ ((x :+ y) :+ (x :+ y))) R.refl (m - i) (o - m))
-          (cong (λ t → t + t) (off-comp o m i))
+    R.trans (solve 2 (λ x y → ((x :+ x) :+ (y :+ y)) ⊜ ((x :+ y) :+ (x :+ y))) R.refl (m - i) (o - m))
+            (+-cong (off-comp o m i) (off-comp o m i))
 
-  vo-comp : ∀ al o m i → valignOffset al m i + valignOffset al o m ≡ valignOffset al o i
+  vo-comp : ∀ al o m i → (valignOffset al m i + valignOffset al o m) ≈ valignOffset al o i
   vo-comp top    o m i = +-identityʳ 0#
   vo-comp middle o m i = off-comp o m i
   vo-comp bottom o m i = dbl-off-comp o m i
 
-  ao-comp : ∀ al o m i → alignOffset al m i + alignOffset al o m ≡ alignOffset al o i
+  ao-comp : ∀ al o m i → (alignOffset al m i + alignOffset al o m) ≈ alignOffset al o i
   ao-comp left    o m i = +-identityʳ 0#
   ao-comp centred o m i = off-comp o m i
   ao-comp right   o m i = dbl-off-comp o m i
+
+  vo-congˡ : ∀ al {o o′} i → o ≈ o′ → valignOffset al o i ≈ valignOffset al o′ i
+  vo-congˡ top    i e = R.refl
+  vo-congˡ middle i e = sub-congˡ i e
+  vo-congˡ bottom i e = +-cong (sub-congˡ i e) (sub-congˡ i e)
+
+  ao-congˡ : ∀ al {o o′} i → o ≈ o′ → alignOffset al o i ≈ alignOffset al o′ i
+  ao-congˡ left    i e = R.refl
+  ao-congˡ centred i e = sub-congˡ i e
+  ao-congˡ right   i e = +-cong (sub-congˡ i e) (sub-congˡ i e)
+
+  -- a layout the size of its frame sits at the origin
+  vo-zero : ∀ al {h} ha → h ≈ ha → valignOffset al h ha ≈ 0#
+  vo-zero top    ha e = R.refl
+  vo-zero middle ha e = R.trans (sub-congˡ ha e) (sub-self ha)
+  vo-zero bottom ha e =
+    R.trans (+-cong (R.trans (sub-congˡ ha e) (sub-self ha)) (R.trans (sub-congˡ ha e) (sub-self ha)))
+            (+-identityʳ 0#)
+
+  ao-zero : ∀ al {w} wa → w ≈ wa → alignOffset al w wa ≈ 0#
+  ao-zero left    wa e = R.refl
+  ao-zero centred wa e = R.trans (sub-congˡ wa e) (sub-self wa)
+  ao-zero right   wa e =
+    R.trans (+-cong (R.trans (sub-congˡ wa e) (sub-self wa)) (R.trans (sub-congˡ wa e) (sub-self wa)))
+            (+-identityʳ 0#)
 
   ----------------------------------------------------------------------
   -- Associativity of ∥, ═ and ⊙
@@ -256,68 +366,137 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   -- Three sizes nested to the right and to the left, and an offset `off outer
   -- inner` that composes (`comp`): the three position conditions of
   -- `combine-assoc` for one coordinate.
-  module Triple (off : S → S → S) (comp : ∀ o m i → off m i + off o m ≡ off o i) (a b c : S) where
-    W≡ : a ⊔ (b ⊔ c) ≡ (a ⊔ b) ⊔ c
-    W≡ = sym (⊔-assoc a b c)
+  module Triple (off : S → S → S) (comp : ∀ o m i → (off m i + off o m) ≈ off o i)
+                (off-cong : ∀ {o o′} i → o ≈ o′ → off o i ≈ off o′ i) (a b c : S) where
+    W≡ : (a ⊔ (b ⊔ c)) ≈ ((a ⊔ b) ⊔ c)
+    W≡ = R.sym (⊔-assoc a b c)
 
-    t₁ : off (a ⊔ (b ⊔ c)) a ≡ off (a ⊔ b) a + off ((a ⊔ b) ⊔ c) (a ⊔ b)
-    t₁ = trans (cong (λ t → off t a) W≡) (sym (comp ((a ⊔ b) ⊔ c) (a ⊔ b) a))
+    t₁ : off (a ⊔ (b ⊔ c)) a ≈ (off (a ⊔ b) a + off ((a ⊔ b) ⊔ c) (a ⊔ b))
+    t₁ = R.trans (off-cong a W≡) (R.sym (comp ((a ⊔ b) ⊔ c) (a ⊔ b) a))
 
-    t₂ : off (b ⊔ c) b + off (a ⊔ (b ⊔ c)) (b ⊔ c) ≡ off (a ⊔ b) b + off ((a ⊔ b) ⊔ c) (a ⊔ b)
-    t₂ = trans (comp (a ⊔ (b ⊔ c)) (b ⊔ c) b)
-           (trans (cong (λ t → off t b) W≡) (sym (comp ((a ⊔ b) ⊔ c) (a ⊔ b) b)))
+    t₂ : (off (b ⊔ c) b + off (a ⊔ (b ⊔ c)) (b ⊔ c)) ≈ (off (a ⊔ b) b + off ((a ⊔ b) ⊔ c) (a ⊔ b))
+    t₂ = R.trans (comp (a ⊔ (b ⊔ c)) (b ⊔ c) b)
+           (R.trans (off-cong b W≡) (R.sym (comp ((a ⊔ b) ⊔ c) (a ⊔ b) b)))
 
-    t₃ : off (b ⊔ c) c + off (a ⊔ (b ⊔ c)) (b ⊔ c) ≡ off ((a ⊔ b) ⊔ c) c
-    t₃ = trans (comp (a ⊔ (b ⊔ c)) (b ⊔ c) c) (cong (λ t → off t c) W≡)
+    t₃ : (off (b ⊔ c) c + off (a ⊔ (b ⊔ c)) (b ⊔ c)) ≈ off ((a ⊔ b) ⊔ c) c
+    t₃ = R.trans (comp (a ⊔ (b ⊔ c)) (b ⊔ c) c) (off-cong c W≡)
 
   -- sizes that add: `(a + z) + ((b + z) + c)` and the like, with `z` the zero
-  sum3 : ∀ a b c z → (a + z) + ((b + z) + c) ≡ (((a + z) + b) + z) + c
+  sum3 : ∀ a b c z → ((a + z) + ((b + z) + c)) ≈ ((((a + z) + b) + z) + c)
   sum3 = λ a b c z →
     solve 4 (λ a b c z → ((a :+ z) :+ ((b :+ z) :+ c)) ⊜ ((((a :+ z) :+ b) :+ z) :+ c)) R.refl a b c z
 
-  dbl3 : ∀ a b z → dbl (b + z) + dbl (a + z) ≡ dbl (((a + z) + b) + z)
+  dbl3 : ∀ a b z → (dbl (b + z) + dbl (a + z)) ≈ dbl (((a + z) + b) + z)
   dbl3 = λ a b z →
     solve 3 (λ a b z → (((b :+ z) :+ (b :+ z)) :+ ((a :+ z) :+ (a :+ z)))
                          ⊜ ((((a :+ z) :+ b) :+ z) :+ (((a :+ z) :+ b) :+ z))) R.refl a b z
 
-  comm0 : ∀ x → 0# + x ≡ x + 0#
-  comm0 x = trans (+-identityˡ x) (sym (+-identityʳ x))
+  comm0 : ∀ x → (0# + x) ≈ (x + 0#)
+  comm0 x = R.trans (+-identityˡ x) (R.sym (+-identityʳ x))
 
   ∥-assoc : ∀ al a b c →
-    besideA al 0# a (besideA al 0# b c) ≡ besideA al 0# (besideA al 0# a b) c
+    besideA al 0# a (besideA al 0# b c) ≈ᴸ besideA al 0# (besideA al 0# a b) c
   ∥-assoc al a b c =
     combine-assoc {w′ = width b + 0# + width c} {h′ = height b ⊔ height c}
                   {w₃ = width a + 0# + width b} {h₃ = height a ⊔ height b} a b c
       (sum3 (width a) (width b) (width c) 0#)
-      (sym (⊔-assoc (height a) (height b) (height c)))
-      (cong₂ _,_ (sym (+-identityʳ 0#)) t₁)
-      (cong₂ _,_ (comm0 _) t₂)
-      (cong₂ _,_ (dbl3 (width a) (width b) 0#) t₃)
-    where open Triple (valignOffset al) (vo-comp al) (height a) (height b) (height c)
+      (R.sym (⊔-assoc (height a) (height b) (height c)))
+      (R.sym (+-identityʳ 0#) , t₁)
+      (comm0 _ , t₂)
+      (dbl3 (width a) (width b) 0# , t₃)
+    where open Triple (valignOffset al) (vo-comp al) (vo-congˡ al) (height a) (height b) (height c)
 
   ═-assoc : ∀ al a b c →
-    aboveA al 0# a (aboveA al 0# b c) ≡ aboveA al 0# (aboveA al 0# a b) c
+    aboveA al 0# a (aboveA al 0# b c) ≈ᴸ aboveA al 0# (aboveA al 0# a b) c
   ═-assoc al a b c =
     combine-assoc {w′ = width b ⊔ width c} {h′ = height b + 0# + height c}
                   {w₃ = width a ⊔ width b} {h₃ = height a + 0# + height b} a b c
-      (sym (⊔-assoc (width a) (width b) (width c)))
+      (R.sym (⊔-assoc (width a) (width b) (width c)))
       (sum3 (height a) (height b) (height c) 0#)
-      (cong₂ _,_ t₁ (sym (+-identityʳ 0#)))
-      (cong₂ _,_ t₂ (comm0 _))
-      (cong₂ _,_ t₃ (dbl3 (height a) (height b) 0#))
-    where open Triple (alignOffset al) (ao-comp al) (width a) (width b) (width c)
+      (t₁ , R.sym (+-identityʳ 0#))
+      (t₂ , comm0 _)
+      (t₃ , dbl3 (height a) (height b) 0#)
+    where open Triple (alignOffset al) (ao-comp al) (ao-congˡ al) (width a) (width b) (width c)
 
-  ⊙-assoc : ∀ a b c → atop a (atop b c) ≡ atop (atop a b) c
+  ⊙-assoc : ∀ a b c → atop a (atop b c) ≈ᴸ atop (atop a b) c
   ⊙-assoc a b c =
     combine-assoc {w′ = width b ⊔ width c} {h′ = height b ⊔ height c}
                   {w₃ = width a ⊔ width b} {h₃ = height a ⊔ height b} a b c
-      (sym (⊔-assoc (width a) (width b) (width c)))
-      (sym (⊔-assoc (height a) (height b) (height c)))
-      (cong₂ _,_ (X.t₁) (Y.t₁))
-      (cong₂ _,_ (X.t₂) (Y.t₂))
-      (cong₂ _,_ (X.t₃) (Y.t₃))
-    where module X = Triple _-_ off-comp (width a) (width b) (width c)
-          module Y = Triple _-_ off-comp (height a) (height b) (height c)
+      (R.sym (⊔-assoc (width a) (width b) (width c)))
+      (R.sym (⊔-assoc (height a) (height b) (height c)))
+      (X.t₁ , Y.t₁)
+      (X.t₂ , Y.t₂)
+      (X.t₃ , Y.t₃)
+    where module X = Triple _-_ off-comp sub-congˡ (width a) (width b) (width c)
+          module Y = Triple _-_ off-comp sub-congˡ (height a) (height b) (height c)
+
+  ----------------------------------------------------------------------
+  -- The empty diagram is a unit, for layouts of non-negative size
+
+  Nonneg : S → Set
+  Nonneg x = (0# ⊔ x) ≈ x
+
+  nonneg-flip : ∀ {x} → Nonneg x → (x ⊔ 0#) ≈ x
+  nonneg-flip n = R.trans (⊔-comm _ 0#) n
+
+  Valid : Layout S → Set
+  Valid l = Nonneg (width l) × Nonneg (height l)
+
+  empty : Layout S
+  empty = spacer 0# 0#
+
+  -- `0 + 0 + x`, `x + 0 + 0` and `0 + 0` are `x` and `0`
+  zeros : ∀ x → ((0# + 0#) + x) ≈ x
+  zeros x = R.trans (+-cong (+-identityʳ 0#) R.refl) (+-identityˡ x)
+
+  ∥-unitˡ : ∀ al a → Valid a → besideA al 0# empty a ≈ᴸ a
+  ∥-unitˡ al a (nw , nh) =
+    combine-unitˡ {w = (0# + 0#) + width a} {h = 0# ⊔ height a}
+      {pe = 0# , valignOffset al (0# ⊔ height a) 0#}
+      {p = dbl (0# + 0#) , valignOffset al (0# ⊔ height a) (height a)} 0# 0# a
+      (zeros (width a)) nh
+      (R.trans (+-cong (+-identityʳ 0#) (+-identityʳ 0#)) (+-identityʳ 0#) , vo-zero al (height a) nh)
+
+  ∥-unitʳ : ∀ al a → Valid a → besideA al 0# a empty ≈ᴸ a
+  ∥-unitʳ al a (nw , nh) =
+    combine-unitʳ {w = (width a + 0#) + 0#} {h = height a ⊔ 0#}
+      {p = 0# , valignOffset al (height a ⊔ 0#) (height a)}
+      {pe = dbl (width a + 0#) , valignOffset al (height a ⊔ 0#) 0#} a 0# 0#
+      (R.trans (+-cong (+-identityʳ _) R.refl) (+-identityʳ _)) (nonneg-flip nh)
+      (R.refl , vo-zero al (height a) (nonneg-flip nh))
+
+  ═-unitˡ : ∀ al a → Valid a → aboveA al 0# empty a ≈ᴸ a
+  ═-unitˡ al a (nw , nh) =
+    combine-unitˡ {w = 0# ⊔ width a} {h = (0# + 0#) + height a}
+      {pe = alignOffset al (0# ⊔ width a) 0# , 0#}
+      {p = alignOffset al (0# ⊔ width a) (width a) , dbl (0# + 0#)} 0# 0# a
+      nw (zeros (height a))
+      (ao-zero al (width a) nw , R.trans (+-cong (+-identityʳ 0#) (+-identityʳ 0#)) (+-identityʳ 0#))
+
+  ═-unitʳ : ∀ al a → Valid a → aboveA al 0# a empty ≈ᴸ a
+  ═-unitʳ al a (nw , nh) =
+    combine-unitʳ {w = width a ⊔ 0#} {h = (height a + 0#) + 0#}
+      {p = alignOffset al (width a ⊔ 0#) (width a) , 0#}
+      {pe = alignOffset al (width a ⊔ 0#) 0# , dbl (height a + 0#)} a 0# 0#
+      (nonneg-flip nw) (R.trans (+-cong (+-identityʳ _) R.refl) (+-identityʳ _))
+      (ao-zero al (width a) (nonneg-flip nw) , R.refl)
+
+  ⊙-unitˡ : ∀ a → Valid a → atop empty a ≈ᴸ a
+  ⊙-unitˡ a (nw , nh) =
+    combine-unitˡ {w = 0# ⊔ width a} {h = 0# ⊔ height a}
+      {pe = (0# ⊔ width a) - 0# , (0# ⊔ height a) - 0#}
+      {p = (0# ⊔ width a) - width a , (0# ⊔ height a) - height a} 0# 0# a nw nh
+      (R.trans (sub-congˡ (width a) nw) (sub-self (width a))
+      , R.trans (sub-congˡ (height a) nh) (sub-self (height a)))
+
+  ⊙-unitʳ : ∀ a → Valid a → atop a empty ≈ᴸ a
+  ⊙-unitʳ a (nw , nh) =
+    combine-unitʳ {w = width a ⊔ 0#} {h = height a ⊔ 0#}
+      {p = (width a ⊔ 0#) - width a , (height a ⊔ 0#) - height a}
+      {pe = (width a ⊔ 0#) - 0# , (height a ⊔ 0#) - 0#} a 0# 0#
+      (nonneg-flip nw) (nonneg-flip nh)
+      (R.trans (sub-congˡ (width a) (nonneg-flip nw)) (sub-self (width a))
+      , R.trans (sub-congˡ (height a) (nonneg-flip nh)) (sub-self (height a)))
 
   ----------------------------------------------------------------------
   -- Annotations do not change a layout's size or anchors
@@ -371,77 +550,72 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   size : Layout S → S × S
   size l = width l , height l
 
-  size-fusion : ∀ d → size (LW.layout d) ≡ fold sizeAlgebra d
+  size-fusion : ∀ d → size (LW.layout d) ≈ₚ fold sizeAlgebra d
   size-fusion (pure ())
-  size-fusion (impure (inj₁ p , _)) = prim p
-    where
-    prim : ∀ p → size (LW.layoutAlgebra .Algebra.prim p) ≡ sizeAlgebra .Algebra.prim p
-    prim (Rectangle _ _ _) = refl
-    prim (Disc _ _)        = refl
-    prim (Segment _ _ _)   = refl
-    prim (Text _ _ _ _)    = refl
-    prim (Spacer _ _)      = refl
-    prim (Raw _ _ _)       = refl
+  size-fusion (impure (inj₁ (Rectangle _ _ _) , _)) = R.refl , R.refl
+  size-fusion (impure (inj₁ (Disc _ _) , _))        = R.refl , R.refl
+  size-fusion (impure (inj₁ (Segment _ _ _) , _))   = R.refl , R.refl
+  size-fusion (impure (inj₁ (Text _ _ _ _) , _))    = R.refl , R.refl
+  size-fusion (impure (inj₁ (Spacer _ _) , _))      = R.refl , R.refl
+  size-fusion (impure (inj₁ (Raw _ _ _) , _))       = R.refl , R.refl
   size-fusion (impure (inj₂ (inj₁ (Beside _ g)) , k)) =
-    cong₂ _,_ (cong₂ (λ x y → x + fromℕ g + y) w₀ w₁) (cong₂ _⊔_ h₀ h₁)
+    +-cong (+-cong w₀ R.refl) w₁ , ⊔-cong h₀ h₁
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
-    w₁ = cong proj₁ (size-fusion (k (suc zero)))
-    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
+    w₁ = proj₁ (size-fusion (k (suc zero)))
+    h₁ = proj₂ (size-fusion (k (suc zero)))
   size-fusion (impure (inj₂ (inj₁ (Above _ g)) , k)) =
-    cong₂ _,_ (cong₂ _⊔_ w₀ w₁) (cong₂ (λ x y → x + fromℕ g + y) h₀ h₁)
+    ⊔-cong w₀ w₁ , +-cong (+-cong h₀ R.refl) h₁
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
-    w₁ = cong proj₁ (size-fusion (k (suc zero)))
-    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
+    w₁ = proj₁ (size-fusion (k (suc zero)))
+    h₁ = proj₂ (size-fusion (k (suc zero)))
   size-fusion (impure (inj₂ (inj₁ Atop) , k)) =
-    cong₂ _,_ (cong₂ _⊔_ w₀ w₁) (cong₂ _⊔_ h₀ h₁)
+    ⊔-cong w₀ w₁ , ⊔-cong h₀ h₁
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
-    w₁ = cong proj₁ (size-fusion (k (suc zero)))
-    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
+    w₁ = proj₁ (size-fusion (k (suc zero)))
+    h₁ = proj₂ (size-fusion (k (suc zero)))
   size-fusion (impure (inj₂ (inj₁ (Margin l t r b)) , k)) =
-    cong₂ _,_ (cong (λ x → fromℕ l + x + fromℕ r) w₀) (cong (λ y → fromℕ t + y + fromℕ b) h₀)
+    +-cong (+-cong R.refl w₀) R.refl , +-cong (+-cong R.refl h₀) R.refl
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
   size-fusion (impure (inj₂ (inj₁ (MinWidth w)) , k)) =
-    cong₂ _,_ (cong (λ x → fromℕ w ⊔ x) w₀) h₀
+    ⊔-cong R.refl w₀ , h₀
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
   size-fusion (impure (inj₂ (inj₁ (TopAlign h)) , k)) =
-    cong₂ _,_ w₀ (cong (λ y → fromℕ h ⊔ y) h₀)
+    w₀ , ⊔-cong R.refl h₀
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
   size-fusion (impure (inj₂ (inj₁ (LabelAbove g)) , k)) =
-    cong₂ _,_ (cong₂ (λ x y → x ⊔ (y ⊔ 0#)) w₀ w₁)
-              (cong₂ (λ x y → x + fromℕ g + (y + fromℕ g + x)) h₀ h₁)
+    ⊔-cong w₀ (⊔-cong w₁ R.refl)
+      , +-cong (+-cong h₀ R.refl) (+-cong (+-cong h₁ R.refl) h₀)
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
-    w₁ = cong proj₁ (size-fusion (k (suc zero)))
-    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
+    w₁ = proj₁ (size-fusion (k (suc zero)))
+    h₁ = proj₂ (size-fusion (k (suc zero)))
   size-fusion (impure (inj₂ (inj₁ (LabelBelow g)) , k)) =
-    cong₂ _,_ (cong₂ (λ x y → 0# ⊔ (y ⊔ x)) w₀ w₁)
-              (cong₂ (λ x y → x + fromℕ g + (y + fromℕ g + x)) h₀ h₁)
+    ⊔-cong R.refl (⊔-cong w₁ w₀)
+      , +-cong (+-cong h₀ R.refl) (+-cong (+-cong h₁ R.refl) h₀)
     where
-    w₀ = cong proj₁ (size-fusion (k zero))
-    h₀ = cong proj₂ (size-fusion (k zero))
-    w₁ = cong proj₁ (size-fusion (k (suc zero)))
-    h₁ = cong proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₂ a) , k)) = ann a
-    where
-    ih = size-fusion (k tt)
-    ann : ∀ a → size (LW.layoutAlgebra .Algebra.annotation a (LW.layout (k tt)))
-                  ≡ sizeAlgebra .Algebra.annotation a (fold sizeAlgebra (k tt))
-    ann (Named n)           = ih
-    ann (Connect a pa b pb s) = trans (cong₂ _,_ (proj₁ sz) (proj₁ (proj₂ sz))) ih
-      where sz = connectP-size a pa b pb s (LW.layout (k tt))
+    w₀ = proj₁ (size-fusion (k zero))
+    h₀ = proj₂ (size-fusion (k zero))
+    w₁ = proj₁ (size-fusion (k (suc zero)))
+    h₁ = proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₂ (Named n)) , k)) = size-fusion (k tt)
+  size-fusion (impure (inj₂ (inj₂ (Connect a pa b pb s)) , k)) =
+    R.trans (R.reflexive (proj₁ sz)) (proj₁ ih) , R.trans (R.reflexive (proj₁ (proj₂ sz))) (proj₂ ih)
+    where ih = size-fusion (k tt)
+          sz = connectP-size a pa b pb s (LW.layout (k tt))
 
--- the laws, for ℤ
+-- the laws, for ℤ and ℚ
 module ForInts = Proofs intOps lawfulℤ
+module ForRats = Proofs ratOps lawfulℚ

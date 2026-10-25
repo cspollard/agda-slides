@@ -235,21 +235,28 @@ or right aligned.
 ### Scalars, half units and laws
 
 The layout is computed in a scalar (`Slides.Diagram.Scalar.Ops`): `LayoutWith O`
-for any `Ops S`, and, for decks, the same names at ℕ. ℤ is also provided, and
-`Slides.Examples.PairsScalar` checks that the Pairs diagrams lay out identically
-in both. Sizes are in diagram units, but positions are kept in *half* units, so
-centring is `outer - inner` with no division and never rounds; the positions are
-halved once, when the layout becomes a `Diagram`. A layout is plain data (sizes,
-drawing commands, named anchors), not a function.
+for any `Ops S`, and, for decks, the same names at ℕ. ℤ and ℚ are also provided,
+and `Slides.Examples.PairsScalar` checks that the Pairs diagrams lay out
+identically in all three. Sizes are in diagram units, but positions are kept in
+*half* units, so centring is `outer - inner` with no division and never rounds;
+the positions are halved once, when the layout becomes a `Diagram`. A layout is
+plain data (sizes, drawing commands, named anchors), not a function.
 
-`Slides.Diagram.Laws` proves, for any scalar whose `Ops` are a commutative ring
-under `_≡_` with an associative maximum (`IsLawful`; ℤ is one, ℕ is not, since
-its difference is the monus):
+`Slides.Diagram.Laws` proves, for any scalar whose `Ops` form a commutative ring
+up to an equivalence `_≈_` with a congruent, commutative, associative maximum
+(`IsLawful`; ℤ and ℚ are, with `_≈_` = `_≡_`; ℕ is not, since its difference is
+the monus), that, up to `_≈ᴸ_` (`Slides.Diagram.Equality`, the scalar's `_≈_`
+lifted pointwise to sizes, drawing commands and anchors):
 
 - translation is an action (`shift-0`, `shift-∘`);
 - `∥`, `═` and `⊙`, with no gap, are associative (`∥-assoc`, `═-assoc`, `⊙-assoc`);
+- the empty diagram is a unit of each, for a layout of non-negative size
+  (`∥-unitˡ`, `∥-unitʳ`, …; `Valid`);
 - `named` and `connect` leave a layout's size and anchors alone;
 - size fusion: the width and height of `layout d` are the fold of `sizeAlgebra`.
+
+`Raw` is outside the translation law: its elements are in the final diagram's
+coordinates, so shifting a layout does not move them.
 
 `Slides.Diagram.NamesSound` proves that `dangling d ≡ []` implies every `connect`
 draws an arrow. `dangling` resolves a connection against the names declared
