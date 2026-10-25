@@ -4,7 +4,7 @@
 -- Sets" (Wehenkel, Kagan, Heinrich, Pollard; arXiv:2605.07972) in eleven
 -- slides.  It uses typed math, SVG diagrams, cards and callouts styled by
 -- `assets/pairs/pairs.css`, and the animations of `assets/pairs/pairs.js`
--- (point pairs and pulses along arrows).  Lit stages, the filling histogram, the
+-- (the point pairs); the flow arrows are a loop.  Lit stages, the filling histogram, the
 -- growing bars and the counters are `Slides.Anim` animations: a parameter
 -- follows a track and the diagram is a function of it, one reveal step per act.
 -- See `docs/PairsDeck.md`.
