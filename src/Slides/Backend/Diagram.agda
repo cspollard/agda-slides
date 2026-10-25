@@ -9,12 +9,13 @@
 
 module Slides.Backend.Diagram where
 
-open import Data.List using (List; []; _∷_; _++_)
+open import Data.Char using (Char)
+open import Data.List using (List; []; _∷_; _++_; reverse; [_])
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
 
 open import Data.XML.AST using (XMLM)
 open import Data.XML.Sanitize using (element; textElement)
@@ -75,6 +76,49 @@ private
     element "line"
       ( ("x1" , num x₁) ∷ ("y1" , num y₁) ∷ ("x2" , num x₂) ∷ ("y2" , num y₂) ∷ extra ) []
 
+  -- Label markup: `_x` or `_{xyz}` is a subscript, `^x` or `^{xyz}` a
+  -- superscript, and a backslash quotes the next character.
+  data Seg : Set where
+    flat sub sup : String → Seg
+
+  mutual
+    segs : List Char → List Char → List Seg
+    segs acc []               = flush acc []
+    segs acc ('\\' ∷ c ∷ cs) = segs (c ∷ acc) cs
+    segs acc ('_' ∷ cs)       = flush acc (scripted sub cs)
+    segs acc ('^' ∷ cs)       = flush acc (scripted sup cs)
+    segs acc (c ∷ cs)         = segs (c ∷ acc) cs
+
+    scripted : (String → Seg) → List Char → List Seg
+    scripted k []          = []
+    scripted k ('{' ∷ cs)  = braced k [] cs
+    scripted k (c ∷ cs)    = k (fromList [ c ]) ∷ segs [] cs
+
+    braced : (String → Seg) → List Char → List Char → List Seg
+    braced k acc []          = k (fromList (reverse acc)) ∷ []
+    braced k acc ('}' ∷ cs)  = k (fromList (reverse acc)) ∷ segs [] cs
+    braced k acc (c ∷ cs)    = braced k (c ∷ acc) cs
+
+    flush : List Char → List Seg → List Seg
+    flush [] rest = rest
+    flush acc rest = flat (fromList (reverse acc)) ∷ rest
+
+  -- A label is one `<text>`; markup becomes `<tspan>`s shifted by whole
+  -- user units (portable, unlike `baseline-shift`), shrunk for scripts.
+  -- `pending` is the shift to undo at the next segment.
+  tspans : ℕ → String → List Seg → List (XMLM A)
+  tspans sz pending []             = []
+  tspans sz pending (flat t ∷ ss)  = textElement "tspan" (opt "dy" (undo pending)) (padText t) ∷ tspans sz "" ss
+    where undo : String → Maybe String
+          undo "" = nothing
+          undo d  = just d
+  tspans sz pending (sub t ∷ ss)   =
+    textElement "tspan" (("font-size" , num (sz * 7 / 10)) ∷ ("dy" , num (sz / 4)) ∷ []) (padText t)
+      ∷ tspans sz ("-" ++ˢ num (sz / 4)) ss
+  tspans sz pending (sup t ∷ ss)   =
+    textElement "tspan" (("font-size" , num (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ num (sz / 3)) ∷ []) (padText t)
+      ∷ tspans sz (num (sz / 3)) ss
+
   mutual
     renderElement : String → Element → XMLM A
     renderElement n (rect x y w h s)   =
@@ -84,11 +128,7 @@ private
     renderElement n (arrow a b c d s)  =
       lineEl a b c d (shapeAttrs s ++ (("marker-end" , "url(#" ++ˢ markerId n ++ˢ ")") ∷ []))
     renderElement n (label x y sz t s) =
-      textElement "text"
-        ( ("x" , num x) ∷ ("y" , num y) ∷ ("font-size" , num sz)
-        ∷ ("text-anchor" , maybeAnchor (Style.anchor s)) ∷ ("dominant-baseline" , "central")
-        ∷ ("fill" , maybeOr (Style.fill s)) ∷ commonAttrs s)
-        (padText t)
+      body (segs [] (toList t))
       where
         maybeOr : Maybe String → String
         maybeOr nothing  = "currentColor"
@@ -96,6 +136,14 @@ private
         maybeAnchor : Maybe String → String
         maybeAnchor nothing  = "middle"
         maybeAnchor (just v) = v
+        attrs : Attrs
+        attrs = ("x" , num x) ∷ ("y" , num y) ∷ ("font-size" , num sz)
+              ∷ ("text-anchor" , maybeAnchor (Style.anchor s)) ∷ ("dominant-baseline" , "central")
+              ∷ ("fill" , maybeOr (Style.fill s)) ∷ commonAttrs s
+        body : List Seg → XMLM A
+        body (flat u ∷ []) = textElement "text" attrs (padText u)
+        body []            = textElement "text" attrs " "
+        body ss            = element "text" attrs (tspans sz "" ss)
     renderElement n (group es)         = SVG.g (commonAttrs defaultStyle) (renderElements n es)
     renderElement n (path d s)         = SVG.path d (shapeAttrs s)
 
