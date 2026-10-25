@@ -33,7 +33,7 @@ open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
 open import Slides.Anim.Syntax using (Anim; Seg)
-open import Slides.Anim.Render using (render)
+open import Slides.Anim.Render using (render; renderLoop)
 open import Slides.Core using ()
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; animation; script; mount; classed)
 import Slides.Core as Core
@@ -104,7 +104,7 @@ module Content where
   diagram : Diagram → Content
   diagram d = cmd (Core.diagram d)
 
-  animation : Diagram → List Diagram → ℕ → List ℕ → Content
+  animation : Diagram → List Diagram → ℕ → Play → Content
   animation d ds ms rs = cmd (Core.animation d ds ms rs)
 
   script : String → Content
@@ -180,7 +180,7 @@ diagram : Diagram → Body
 diagram d = liftContent (Content.diagram d)
 
 -- Frames of an animation (see `Slides.Anim.Render` for building them).
-animation : Diagram → List Diagram → ℕ → List ℕ → Body
+animation : Diagram → List Diagram → ℕ → Play → Body
 animation d ds ms rs = liftContent (Content.animation d ds ms rs)
 
 -- Animations (`Slides.Anim.Syntax`): `animate name width ms acts`.  Each act is
@@ -189,6 +189,12 @@ animation d ds ms rs = liftContent (Content.animation d ds ms rs)
 -- deck and `width` the displayed percent.
 animate : String → ℕ → ℕ → List (Anim ℕ (Seg ℕ)) → Body
 animate n pct ms acts = liftContent (Content.cmd (render n pct ms acts))
+
+-- `animateLoop name width ms a`: the frames of `a` repeat, one every `ms` milliseconds,
+-- while the slide is shown (a track that never rests: marching dashes, a
+-- heartbeat).  `name` is unique in the deck.
+animateLoop : String → ℕ → ℕ → Anim ℕ (Seg ℕ) → Body
+animateLoop n pct ms a = liftContent (Content.cmd (renderLoop n pct ms a))
 
 -- JavaScript for the reveal.js and standalone backends, run once when its
 -- slide is first shown (`slide` is the slide element); and an empty element

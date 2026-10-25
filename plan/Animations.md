@@ -289,7 +289,7 @@ Each step ends with `make check`, `make test`, and the browser run.
    one empty `.anim-step` fragment per further step), `animationSync` in `init.js`,
    golden test and `tests/browser/anim.mjs` (`make test-anim`, forward and backward).
    Pairs deck: lit stages, the filling histogram, the growing bars and the counters are
-   `animate` (`grow`, `part`); the point pairs and pulses stay JavaScript (they free-run).
+   `animate` (`grow`, `part`); the flow arrows are a `loop` (`Play = looping`, `Slides.Anim.Loop`); only the random point pairs stay JavaScript.
    Original plan: An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.

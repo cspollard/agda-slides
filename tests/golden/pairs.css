@@ -1,7 +1,7 @@
 /* Look of the "It Just Takes Two" deck: a classic light theme over reveal.js's `white`.
    Grayscale by default; a restrained set of accents is kept for the things the
    eye should land on.  Classes used by the deck: .card .callout .tag .subtitle
-   .hero (layout); .node .on .lbl .dim .flow .pulse .tile (diagram elements);
+   .hero (layout); .node .on .lbl .dim .flow .ph0–ph7 .tile (diagram elements);
    colour roles .blue .crimson .plum .rust. */
 
 :root {
@@ -89,7 +89,15 @@
 .reveal svg .cy { stroke: var(--blue); }
 .reveal svg .am { stroke: var(--crimson); }
 .reveal svg .flow { stroke-width: 2; stroke-dasharray: 5 6; opacity: .75; }
-.reveal svg .pulse { fill: var(--crimson); }
+/* the dashes of a flowing arrow march forward: phase k of 8 is k/8 of the 11px dash period */
+.reveal svg .flow.ph0 { stroke-dashoffset: 0; }
+.reveal svg .flow.ph1 { stroke-dashoffset: -1.375; }
+.reveal svg .flow.ph2 { stroke-dashoffset: -2.75; }
+.reveal svg .flow.ph3 { stroke-dashoffset: -4.125; }
+.reveal svg .flow.ph4 { stroke-dashoffset: -5.5; }
+.reveal svg .flow.ph5 { stroke-dashoffset: -6.875; }
+.reveal svg .flow.ph6 { stroke-dashoffset: -8.25; }
+.reveal svg .flow.ph7 { stroke-dashoffset: -9.625; }
 .reveal svg .axis { stroke: var(--muted); stroke-width: 2; }
 .reveal svg .b1 { fill: #b9b9b9; }
 .reveal svg .b2 { fill: var(--blue); }

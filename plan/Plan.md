@@ -8,9 +8,8 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 1. **Animations** (built: syntax, `dur`, timelines, footprints, tracks and easings,
    playback in reveal; see `plan/Animations.md`). Left: the optional CSS-transition
    emitter, the semantic reverse theorem for `Bezier` and `Step`, other backends for
-   `animation`, and the Pairs deck's two free-running animations (point pairs,
-   pulses), which need an autoplaying loop; the rest of the deck's animation is
-   `animate`).
+   `animation`, the Pairs deck's random point-pairs canvas, combining a step animation
+   with a loop on one diagram).
 2. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
    (`fold-agrees`). Left: the lemma that folding after `mapDia` is folding with a

@@ -167,7 +167,10 @@ the swap law and `merge` on lists of frames (`Timeline`), `footprint` up to perm
 `atop` commutative up to permutation of draws (`Slides.Diagram.Commute`), laid-out `Par`
 associative and padding invisible on valid frames (`Slides.Anim.Laws`), tracks
 associative, reversible and sampled exactly for `Linear` (`Track`). Time is whole ticks;
-the backend plays frames on a timer, an act per reveal step. Design and open items:
+the backend plays frames on a timer, an act per reveal step, or, for `Play = looping`,
+cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
+`Slides.Anim.Loop`; the player's `i ↦ (i+1) mod n` is proved to track it). Looping is a play
+mode of a finished timeline, not a term constructor: a loop has no `dur` in `(ℕ, +, max)`. Design and open items:
 `plan/Animations.md`.
 
 ## Tests and build time

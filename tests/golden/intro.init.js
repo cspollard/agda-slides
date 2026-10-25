@@ -25,7 +25,7 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
     a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });
   }
   function sync(a, jump) {
-    if (!a) return;
+    if (!a || a.hasAttribute('data-loop')) return;
     clearInterval(a._timer);
     var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);
     if (jump || ms === 0 || t === cur) { show(a, t); return; }
@@ -35,6 +35,14 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
       if (cur === t) clearInterval(a._timer);
     }, ms);
   }
+  function spin(a) {
+    var n = a.querySelectorAll(':scope > .frame').length, ms = Math.max(+a.dataset.ms, 16);
+    setInterval(function () {
+      if (n > 1 && a.closest('section').classList.contains('present'))
+        show(a, ((+(a.dataset.cur || 0)) + 1) % n);
+    }, ms);
+  }
+  document.querySelectorAll('.animation[data-loop]').forEach(spin);
   function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }
   Reveal.on('ready', function (e) { all(e.currentSlide); });
   Reveal.on('slidechanged', function (e) { all(e.currentSlide); });

@@ -21,7 +21,7 @@ make test-pairs                                      # drives it in headless Chr
 | 2 | Inference from a set of observations | SVG diagram of θ, the shared nuisance ψ and the observations; the hierarchical model as typed math |
 | 3 | A bump hunt, event by event | a histogram of 2500 simulated events (background and signal) that fills on the first step |
 | 4 | Two ways to scale, both costly | two cards; the question appears on the next step (`pause`) |
-| 5 | Building blocks: NPE with a Deep Set | pipeline diagram with pulses along the arrows; mean pooling and the NPE objective |
+| 5 | Building blocks: NPE with a Deep Set | pipeline diagram with dashes marching along the arrows; mean pooling and the NPE objective |
 | 6 | PAIRS: train on pairs, finetune on aggregates | the three stages, one lit up per step |
 | 7 | Why two is enough | the theorem in words; the chain N = 1, N = 2, Cauchy, every N lit up one link per step |
 | 8 | Does it work? Five test beds | cards for the four benchmarks and the Gaussian check |
@@ -60,6 +60,11 @@ numbers the text gives, not the full figure.
       (`part q v` is `q` of `v` in whole units; `fixed2` and `fixed3` print
       decimals). The histogram's bins are one baked-in realisation of the
       simulation (`backgroundBins`, `signalBins`).
+  - Slides 2 and 5: the flow arrows' dashes march along them, a `loop`
+    (`marching f` runs the phase `0 … 7` once through; `flow ph` puts the class `ph<k>`
+    on the arrow and the stylesheet offsets the dashes by `k/8` of a period).
+    Slides 6 and 7 keep static dashes: a step animation and a loop do not combine in
+    one animation.
   - Free-running decoration is `assets/pairs/pairs.js`, loaded with
     `RevealConfig.scriptFiles`. Each slide calls one function from a `script`
     command; it runs once, when the slide is first shown, and only advances while
@@ -68,10 +73,8 @@ numbers the text gives, not the full figure.
     | Call | Effect |
     | --- | --- |
     | `PAIRS.title(slide, id)` | point pairs drifting on a canvas in the `mount` with that id |
-    | `PAIRS.flow(slide)` | pulses travelling along every diagram line with class `flow` |
 
-    They stay in JavaScript because an `animate` plays a finite track on reveal
-    steps; a loop that never ends, or a random drift, is not one.
+    It stays in JavaScript because a random drift is not a track.
 
 - **Configuration** is in `PairsMain.agda`. Where reveal.js comes from is an option
   (`Reveal.Source`): `cdn "6.0.2"` loads the pinned version from jsDelivr, so the

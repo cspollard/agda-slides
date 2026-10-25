@@ -1,5 +1,5 @@
 // Drives the rendered "It Just Takes Two" deck (`make pairs`): structure,
-// the SVG diagrams, the `Slides.Anim` animations and the two JavaScript ones.
+
 //
 // usage: node pairs.mjs [outdir [deck]]   (default: ../../out, deck `pairs`;
 // `pairs-local` is the build with a local copy of reveal.js)
@@ -60,13 +60,17 @@ check('canvas has painted pixels', await ev(() => {
   return false;
 }));
 
-console.log('-- pulses along arrows');
-await go(1); await wait(500);
-check('slide 2: pulses were added', await ev(() => document.querySelectorAll('#d-problem .pulse').length >= 8));
-const p0 = await ev(() => document.querySelector('#d-problem .pulse').getAttribute('cx'));
-await wait(400);
-const p1 = await ev(() => document.querySelector('#d-problem .pulse').getAttribute('cx'));
-check('slide 2: pulses move', p0 !== p1, `${p0} = ${p1}`);
+console.log('-- marching arrows (loops)');
+const cur = id => page.evaluate(id => +document.getElementById(id).dataset.cur, id);
+for (const [i, id] of [[1, 'd-problem-0-frames'], [4, 'd-pipeline-0-frames']]) {
+  await go(i); await wait(300);
+  const seen = new Set();
+  for (let k = 0; k < 16; k++) { seen.add(await cur(id)); await wait(60); }
+  check(`slide ${i + 1}: the loop visits several of its 8 frames`, seen.size >= 4 && [...seen].every(f => f >= 0 && f < 8), [...seen].join(','));
+  await go(0); await wait(100);
+  const frozen = await cur(id); await wait(400);
+  eq(`slide ${i + 1}: it stands still while the slide is not shown`, await cur(id), frozen);
+}
 
 // Animations of `Slides.Anim` are frames, shown one at a time; a reveal step
 // plays one act.

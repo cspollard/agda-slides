@@ -30,9 +30,9 @@ private
   module Z = LayoutWith intOps
   module Q = LayoutWith ratOps
 
-_ : Z.compile "d-problem" 100 (mapDia (Ops.fromℕ intOps) problemDia) ≡ compile "d-problem" 100 problemDia
+_ : Z.compile "d-problem" 100 (mapDia (Ops.fromℕ intOps) (problemDia 0)) ≡ compile "d-problem" 100 (problemDia 0)
 _ = refl
-_ : Z.compile "d-pipeline" 100 (mapDia (Ops.fromℕ intOps) pipelineDia) ≡ compile "d-pipeline" 100 pipelineDia
+_ : Z.compile "d-pipeline" 100 (mapDia (Ops.fromℕ intOps) (pipelineDia 0)) ≡ compile "d-pipeline" 100 (pipelineDia 0)
 _ = refl
 _ : Z.compile "d-stages" 100 (mapDia (Ops.fromℕ intOps) (stagesDia (_≡ᵇ 2))) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2))
 _ = refl
@@ -43,9 +43,9 @@ _ = refl
 _ : Z.compile "d-tiles" 100 (mapDia (Ops.fromℕ intOps) (tilesDia one)) ≡ compile "d-tiles" 100 (tilesDia one)
 _ = refl
 
-_ : Q.compile "d-problem" 100 (mapDia (Ops.fromℕ ratOps) problemDia) ≡ compile "d-problem" 100 problemDia
+_ : Q.compile "d-problem" 100 (mapDia (Ops.fromℕ ratOps) (problemDia 0)) ≡ compile "d-problem" 100 (problemDia 0)
 _ = refl
-_ : Q.compile "d-pipeline" 100 (mapDia (Ops.fromℕ ratOps) pipelineDia) ≡ compile "d-pipeline" 100 pipelineDia
+_ : Q.compile "d-pipeline" 100 (mapDia (Ops.fromℕ ratOps) (pipelineDia 0)) ≡ compile "d-pipeline" 100 (pipelineDia 0)
 _ = refl
 _ : Q.compile "d-stages" 100 (mapDia (Ops.fromℕ ratOps) (stagesDia (_≡ᵇ 2))) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2))
 _ = refl
@@ -59,10 +59,10 @@ _ = refl
 private
   module N = Sound natOps
 
-_ : N.Draws problemDia
-_ = N.soundness problemDia refl
-_ : N.Draws pipelineDia
-_ = N.soundness pipelineDia refl
+_ : N.Draws (problemDia 0)
+_ = N.soundness (problemDia 0) refl
+_ : N.Draws (pipelineDia 0)
+_ = N.soundness (pipelineDia 0) refl
 _ : N.Draws (stagesDia (_≡ᵇ 2))
 _ = N.soundness (stagesDia (_≡ᵇ 2)) refl
 _ : N.Draws (chainDia 4)

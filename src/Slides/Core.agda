@@ -50,6 +50,13 @@ Text = List Inline
 ------------------------------------------------------------------------
 -- Content inside a slide
 
+-- How an animation's frames are played: one act per reveal step, resting on the
+-- given frames (nondecreasing; one reveal fragment per entry), or forever in a
+-- cycle (`looping`) while the slide is shown (frame `t mod n`, see `Slides.Anim.Loop`).
+data Play : Set where
+  onSteps : List ℕ → Play
+  looping : Play
+
 data ContentShape : Set where
   heading     : (level : ℕ) → Text → ContentShape
   paragraph   : Text → ContentShape
@@ -64,12 +71,12 @@ data ContentShape : Set where
   -- an inline vector diagram
   diagram     : Diagram → ContentShape
   -- an animation: the first frame and the others (they share one `viewBox`), the
-  -- time one frame is shown in milliseconds, and the frame each step comes to rest
-  -- on.  Showing step `k` plays the frames from where step `k-1` rested to
-  -- `rests !! (k-1)`, one every `ms`; going back plays them in reverse.  Step 0
-  -- rests on the first frame.  `rests` is nondecreasing, and there is one
-  -- reveal fragment per entry.
-  animation   : Diagram → List Diagram → (ms : ℕ) → (rests : List ℕ) → ContentShape
+  -- time one frame is shown in milliseconds, and how they are played.  With
+  -- `onSteps rests`, showing step `k` plays the frames from where step `k-1` rested
+  -- to `rests !! (k-1)`, one every `ms`; going back plays them in reverse.  Step 0
+  -- rests on the first frame.  With `looping` the frames repeat in order, one every
+  -- `ms`, from the moment the slide is shown.
+  animation   : Diagram → List Diagram → (ms : ℕ) → Play → ContentShape
   -- JavaScript run once, when the slide holding it is first shown, with the
   -- slide element as `slide` (unchecked; carried in a `data-js` attribute)
   script      : String → ContentShape

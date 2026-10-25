@@ -3,15 +3,12 @@
 // slide element (the loader runs a slide's scripts once, when first shown).
 //
 //   PAIRS.title(slide, id)         drifting point pairs on a canvas in #id
-//   PAIRS.flow(slide)              pulses travelling along every .flow line
 //
-// These two are free-running decoration.  Everything that follows the slide's
-// steps (lit stages, the growing bars, the histogram) is an `animate` of
-// `Slides.Anim` and needs no script.  Animations only advance while their slide
-// is the current one.
+// Free-running random decoration.  Everything else is `Slides.Anim`: what follows
+// the slide's steps (lit stages, growing bars, the histogram) is an `animate`, and
+// the marching arrows are a `loop`; neither needs a script.  Animations only advance while their slide is the
+// current one.
 (function () {
-  var NS = 'http://www.w3.org/2000/svg';
-
   function mulberry(seed) {
     return function () {
       seed |= 0; seed = seed + 0x6D2B79F5 | 0;
@@ -31,12 +28,6 @@
       last = now;
       requestAnimationFrame(tick);
     })(last);
-  }
-
-  function svgEl(name, attrs) {
-    var e = document.createElementNS(NS, name);
-    for (var k in attrs) e.setAttribute(k, attrs[k]);
-    return e;
   }
 
   // ------------------------------------------------------------ title
@@ -82,29 +73,5 @@
     });
   }
 
-  // ------------------------------------------------------------ flow
-  function flow(slide) {
-    Array.prototype.forEach.call(slide.querySelectorAll('.diagram svg'), function (svg) {
-      var pulses = [];
-      Array.prototype.forEach.call(svg.querySelectorAll('line.flow'), function (ln, i) {
-        var a = [+ln.getAttribute('x1'), +ln.getAttribute('y1')];
-        var b = [+ln.getAttribute('x2'), +ln.getAttribute('y2')];
-        for (var k = 0; k < 2; k++) {
-          var c = svgEl('circle', { r: 5, class: 'pulse' });
-          svg.appendChild(c);
-          pulses.push({ c: c, a: a, b: b, t: (i * .13 + k * .5) % 1 });
-        }
-      });
-      if (!pulses.length) return;
-      loop(slide, function (now, dt) {
-        pulses.forEach(function (p) {
-          p.t = (p.t + dt * .45) % 1;
-          p.c.setAttribute('cx', p.a[0] + (p.b[0] - p.a[0]) * p.t);
-          p.c.setAttribute('cy', p.a[1] + (p.b[1] - p.a[1]) * p.t);
-        });
-      });
-    });
-  }
-
-  window.PAIRS = { title: title, flow: flow };
+  window.PAIRS = { title: title };
 })();

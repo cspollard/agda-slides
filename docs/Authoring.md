@@ -295,7 +295,10 @@ animate "mover" 60 400 (parI natOps mover counter ∷ [])
 emits every tick as a frame (all the same size). The list holds the *acts*: each act
 is one reveal step, which plays its frames, one every 400 ms, when it is reached and
 waits on its last frame; stepping back plays them in reverse. Without JavaScript the
-first frame stays. `dur a` is the number of ticks. A tween
+first frame stays. `animateLoop name width ms a` instead repeats the frames of one
+animation forever, one every `ms`, while its slide is shown (marching dashes, a
+heartbeat): frame `t mod n` at tick `t`. A looping animation has no steps, and a slide
+can hold both kinds but not one animation that is both. `dur a` is the number of ticks. A tween
 `tween n from to easing body` moves a parameter along an easing (`Linear`, `Step`,
 `StepStart`, `Bezier x₁ y₁ x₂ y₂` in hundredths, as CSS) and shows `body` of it on each
 tick, so a motion, a growing box or a fade is one `body`. Laws (`Seq` associative, the

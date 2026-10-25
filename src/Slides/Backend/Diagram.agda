@@ -22,6 +22,7 @@ open import Data.XML.Sanitize using (element; textElement)
 import Data.SVG as SVG
 
 open import Slides.Diagram
+open import Slides.Core using (Play; onSteps; looping)
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 
@@ -151,16 +152,22 @@ renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name
 -- (`animationSync` in `Slides.Backend.Reveal`) plays the frames between the
 -- resting frames `data-rests`, one every `data-ms` milliseconds.  Without the
 -- script the first frame stays.
-renderAnimation : Diagram → List Diagram → ℕ → List ℕ → XMLM A
-renderAnimation d ds ms rs =
+renderAnimation : Diagram → List Diagram → ℕ → Play → XMLM A
+renderAnimation d ds ms play =
   hElement "div"
     ( ("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames")
-    ∷ ("data-ms" , num ms) ∷ ("data-rests" , commas rs) ∷ [] )
+    ∷ ("data-ms" , num ms) ∷ playAttr play )
     ( hElement "div" (("class" , "frame") ∷ []) (renderDiagram d ∷ [])
     ∷ map (λ f → hElement "div" (("class" , "frame") ∷ ("hidden" , "") ∷ []) (renderDiagram f ∷ [])) ds
-    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs )
+    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) (stepsOf play) )
   where
     commas : List ℕ → String
     commas []       = ""
     commas (n ∷ []) = num n
     commas (n ∷ ns) = num n ++ˢ "," ++ˢ commas ns
+    playAttr : Play → List (String × String)
+    playAttr (onSteps rs) = ("data-rests" , commas rs) ∷ []
+    playAttr looping       = ("data-loop" , "") ∷ []
+    stepsOf : Play → List ℕ
+    stepsOf (onSteps rs) = rs
+    stepsOf looping       = []

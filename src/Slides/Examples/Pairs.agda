@@ -15,7 +15,7 @@ open import Data.List using (List; _∷_; []; map; zipWith)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
-open import Slides.Anim.Render using (render)
+open import Slides.Anim.Render using (render; renderLoop)
 import Slides.Anim.Track as T
 import Data.Rational as ℚ
 open import Data.Integer using (+_)
@@ -88,9 +88,14 @@ big  size t = bold size t (cls "big")
 card : String → String → ℕ → ℕ → ℕ → Dia ℕ → Dia ℕ
 card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 
--- a flowing arrow: pulses travel along it (`am` crimson, `cy` blue)
-flow : String → Style
-flow col = cls ("flow " ++ˢ col)
+-- a flowing arrow: its dashes march along it (`am` crimson, `cy` blue)
+-- at phase `ph` of the march (see `marching`)
+flow : ℕ → String → Style
+flow ph col = cls ("flow " ++ˢ col ++ˢ " ph" ++ˢ show ph)
+
+-- one period of a march: the phase `0 … 7` runs once through the loop
+marching : (ℕ → Dia ℕ) → Anim ℕ (Seg ℕ)
+marching f = tween 8 (+ 0 ℚ./ 1) (+ 8 ℚ./ 1) T.Linear (λ q → f (units q))
 
 -- arrows from `src`, spread along its south edge, to the north edge of each
 -- target (at `endPct` percent along it)
@@ -104,9 +109,9 @@ fan src endPct = go 40
 ------------------------------------------------------------------------
 -- Slide 2: the problem
 
-problemDia : Dia ℕ
-problemDia =
-  margin 30 0 30 0 (body ▹[ flow "cy" ] fan "th" 40 targets ▹[ flow "am" ] fan "psi" 60 targets)
+problemDia : ℕ → Dia ℕ
+problemDia ph =
+  margin 30 0 30 0 (body ▹[ flow ph "cy" ] fan "th" 40 targets ▹[ flow ph "am" ] fan "psi" 60 targets)
   where
     targets = "o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []
     params =
@@ -121,20 +126,20 @@ problemDia =
       ∷ [] ⟩ₕ 20
     body = (params ═ ↕ 142 ═ observed) ═ ↕ 30 ═ dim 18 "one set X = {x₁, …, x_N} sharing the same ψ"
 
-problem : Diagram
-problem = compile "d-problem" 100 problemDia
+problem : Slides.Core.Content
+problem = Content.cmd (renderLoop "d-problem" 100 90 (marching problemDia))
 
 ------------------------------------------------------------------------
 -- Slide 5: the building blocks
 
-pipelineDia : Dia ℕ
-pipelineDia =
+pipelineDia : ℕ → Dia ℕ
+pipelineDia ph =
   margin 10 0 10 0
-    (body ▹[ flow "cy" ] ( "p1" ⟶ "t1" ∷ "p2" ⟶ "t2" ∷ "pn" ⟶ "tn"
+    (body ▹[ flow ph "cy" ] ( "p1" ⟶ "t1" ∷ "p2" ⟶ "t2" ∷ "pn" ⟶ "tn"
                          ∷ "t1" ⊢ side east ⇒ "mean" ⊢ at west 38
                          ∷ "t2" ⊢ side east ⇒ "mean" ⊢ side west
                          ∷ "tn" ⊢ side east ⇒ "mean" ⊢ at west 62 ∷ [] )
-          ▹[ flow "am" ] ( "mean" ⟶ "T" ∷ "T" ⟶ "q" ∷ "N" ⟱ "q" ∷ [] ))
+          ▹[ flow ph "am" ] ( "mean" ⟶ "T" ∷ "T" ⟶ "q" ∷ "N" ⟱ "q" ∷ [] ))
   where
     elements =
       ⟨ card "p1" "node" 14 80 50 (txt 20 "x₁")
@@ -153,8 +158,8 @@ pipelineDia =
       ∥ ↔ 68 ∥ card "T" "node on" 14 130 66 (txt 22 "T_ω(X)")
       ∥ ↔ 60 ∥ ("N" ⦂ txt 20 "N") ⌃[ 56 ] posterior
 
-pipeline : Diagram
-pipeline = compile "d-pipeline" 100 pipelineDia
+pipeline : Slides.Core.Content
+pipeline = Content.cmd (renderLoop "d-pipeline" 100 90 (marching pipelineDia))
 
 ------------------------------------------------------------------------
 -- Slide 6: PAIRS
@@ -315,9 +320,9 @@ tiles = Content.cmd (render "d-tiles" 100 130 (grow 10 tilesDia ∷ []))
 
 -- Every `connect` refers to a name that is declared; a misspelling stops the
 -- deck from typechecking (see `Slides.Diagram.Names`).
-_ : dangling problemDia ≡ []
+_ : dangling (problemDia 0) ≡ []
 _ = refl
-_ : dangling pipelineDia ≡ []
+_ : dangling (pipelineDia 0) ≡ []
 _ = refl
 _ : dangling (stagesDia (λ _ → false)) ≡ []
 _ = refl
@@ -359,7 +364,7 @@ pairs = do
   slide (do
     heading 2 "Inference from a set of observations"
     columns
-      ( Content.diagram problem
+      ( problem
       ∷ (do Content.bullets
               ( ("a target " ∷ inlineMath θ ∷ ", say a signal fraction" ∷ [])
               ∷ ("a nuisance " ∷ inlineMath ψ ∷ " shared by every observation" ∷ [])
@@ -370,7 +375,6 @@ pairs = do
     classed "callout blue"
       (p■ ("Goal: one amortized " ∷ inlineMath (M.call "q" (M.rel M.mid θ X ∷ []))
                           ∷ " for any set size " ∷ inlineMath N ∷ []))
-    script "PAIRS.flow(slide)"
     notes "The posterior does not factorise over observations because they share the nuisance parameter.")
 
   -- 3 ------------------------------------------------------------------
@@ -407,10 +411,9 @@ pairs = do
   -- 5 ------------------------------------------------------------------
   slide (do
     heading 2 "Building blocks: NPE with a Deep Set"
-    diagram pipeline
+    liftContent pipeline
     displayMath meanPool
     displayMath objective
-    script "PAIRS.flow(slide)"
     notes "t_omega is applied to each element; the mean-pooled embedding and N go to the head, a normalising flow or flow-matching model.")
 
   -- 6 ------------------------------------------------------------------

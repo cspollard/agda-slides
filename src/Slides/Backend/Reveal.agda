@@ -232,7 +232,7 @@ animationSync =
   "    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });\n" ++ˢ
   "  }\n" ++ˢ
   "  function sync(a, jump) {\n" ++ˢ
-  "    if (!a) return;\n" ++ˢ
+  "    if (!a || a.hasAttribute('data-loop')) return;\n" ++ˢ
   "    clearInterval(a._timer);\n" ++ˢ
   "    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);\n" ++ˢ
   "    if (jump || ms === 0 || t === cur) { show(a, t); return; }\n" ++ˢ
@@ -242,6 +242,14 @@ animationSync =
   "      if (cur === t) clearInterval(a._timer);\n" ++ˢ
   "    }, ms);\n" ++ˢ
   "  }\n" ++ˢ
+  "  function spin(a) {\n" ++ˢ
+  "    var n = a.querySelectorAll(':scope > .frame').length, ms = Math.max(+a.dataset.ms, 16);\n" ++ˢ
+  "    setInterval(function () {\n" ++ˢ
+  "      if (n > 1 && a.closest('section').classList.contains('present'))\n" ++ˢ
+  "        show(a, ((+(a.dataset.cur || 0)) + 1) % n);\n" ++ˢ
+  "    }, ms);\n" ++ˢ
+  "  }\n" ++ˢ
+  "  document.querySelectorAll('.animation[data-loop]').forEach(spin);\n" ++ˢ
   "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }\n" ++ˢ
   "  Reveal.on('ready', function (e) { all(e.currentSlide); });\n" ++ˢ
   "  Reveal.on('slidechanged', function (e) { all(e.currentSlide); });\n" ++ˢ
