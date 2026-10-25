@@ -10,12 +10,13 @@
 module Slides.Examples.Pairs where
 
 open import Data.List using (List; _∷_; [])
-open import Data.Nat using (ℕ)
+open import Data.Nat using (ℕ; _+_; _∸_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
 open import Slides.Core using (Deck; emph; strong; inlineMath; link; codeSpan)
 open import Slides.DSL
 open import Slides.Diagram
+open import Slides.Diagram.Layout
 import Slides.Math as M
 
 ------------------------------------------------------------------------
@@ -61,192 +62,163 @@ cauchy =
 cls : String → Style
 cls c = withClass c defaultStyle
 
--- a rounded card; the id lets scripts light it up
-card : String → String → ℕ → ℕ → ℕ → ℕ → Element
-card i c x y w h = rect x y w h (rounded 18 (withId i (withClass c defaultStyle)))
+-- text in the slide colour; `dim` is a muted caption, `big` a heavier title
+txt dim big : ℕ → String → Dia
+txt  size t = text size t defaultStyle
+dim  size t = text size t (cls "dim")
+big  size t = bold size t (cls "big")
 
-boxEl : ℕ → ℕ → ℕ → ℕ → String → Element
-boxEl x y w h c = rect x y w h (rounded 14 (cls c))
+-- a rounded box of a CSS class with a diagram centred on it; the name is for
+-- `connect`, and doubles as the element id that scripts light up
+card : String → String → ℕ → ℕ → ℕ → Dia → Dia
+card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 
-txt : ℕ → ℕ → ℕ → String → Element
-txt x y s t = label x y s t defaultStyle
+-- a flowing arrow: pulses travel along it (`am` crimson, `cy` blue)
+flow : String → Style
+flow col = cls ("flow " ++ˢ col)
 
-dim : ℕ → ℕ → ℕ → String → Element
-dim x y s t = label x y s t (cls "dim")
-
-big : ℕ → ℕ → ℕ → String → Element
-big x y s t = label x y s t (cls "big")
-
--- an arrow that pulses travel along
-flow : ℕ → ℕ → ℕ → ℕ → String → Element
-flow a b c d col = arrow a b c d (cls ("flow " ++ˢ col))
+-- arrows from `src`, spread along its south edge, to the north edge of each
+-- target (at `endPct` percent along it)
+fan : String → ℕ → List String → Style → Dia → Dia
+fan src endPct ts s = go 40 ts
+  where
+    go : ℕ → List String → Dia → Dia
+    go p []       d = d
+    go p (t ∷ ts) d = go (p + 7) ts (connectP src (at south p) t (at north endPct) s d)
 
 ------------------------------------------------------------------------
 -- Slide 2: the problem
 
 problem : Diagram
-problem = record
-  { name = "d-problem" ; width = 520 ; height = 400 ; percent = 100
-  ; elements =
-      dim 160 14 16 "parameter of interest"
-    ∷ dim 370 14 16 "shared nuisance"
-    ∷ circle 160 66 36 (withClass "node blue" defaultStyle)
-    ∷ big 160 66 30 "θ"
-    ∷ circle 370 66 36 (withClass "node crimson" defaultStyle)
-    ∷ big 370 66 30 "ψ"
-    ∷ flow 150 100 62 270 "cy"
-    ∷ flow 160 102 182 270 "cy"
-    ∷ flow 170 100 300 270 "cy"
-    ∷ flow 180 98 424 270 "cy"
-    ∷ flow 360 102 70 270 "am"
-    ∷ flow 366 102 190 270 "am"
-    ∷ flow 372 102 310 270 "am"
-    ∷ flow 380 98 430 270 "am"
-    ∷ boxEl 12 274 100 54 "node"
-    ∷ txt 62 301 22 "x₁"
-    ∷ boxEl 132 274 100 54 "node"
-    ∷ txt 182 301 22 "x₂"
-    ∷ boxEl 252 274 100 54 "node"
-    ∷ txt 302 301 22 "x₃"
-    ∷ boxEl 372 274 100 54 "node"
-    ∷ txt 422 301 22 "x_N"
-    ∷ dim 260 372 18 "one set X = {x₁, …, x_N} sharing the same ψ"
-    ∷ [] }
+problem = compile "d-problem" 100 (margin 30 0 30 0 (
+    fan "th" 40 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "cy")
+      (fan "psi" 60 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "am")
+        (vcat 30
+          ( above 142
+              (hcat 85
+                ( labelAbove 6 (dim 16 "parameter of interest") (named "th" (atop (disc 36 (cls "node blue")) (big 30 "θ")))
+                ∷ labelAbove 6 (dim 16 "shared nuisance") (named "psi" (atop (disc 36 (cls "node crimson")) (big 30 "ψ")))
+                ∷ []))
+              (hcat 20
+                ( card "o1" "node" 14 100 54 (txt 22 "x₁")
+                ∷ card "o2" "node" 14 100 54 (txt 22 "x₂")
+                ∷ card "o3" "node" 14 100 54 (txt 22 "x₃")
+                ∷ card "oN" "node" 14 100 54 (txt 22 "x_N")
+                ∷ []))
+          ∷ dim 18 "one set X = {x₁, …, x_N} sharing the same ψ"
+          ∷ [])))))
 
 ------------------------------------------------------------------------
 -- Slide 5: the building blocks
 
 pipeline : Diagram
-pipeline = record
-  { name = "d-pipeline" ; width = 1000 ; height = 290 ; percent = 100
-  ; elements =
-      boxEl 10 30 80 50 "node" ∷ txt 50 55 20 "x₁"
-    ∷ boxEl 10 120 80 50 "node" ∷ txt 50 145 20 "x₂"
-    ∷ boxEl 10 210 80 50 "node" ∷ txt 50 235 20 "x_N"
-    ∷ flow 90 55 190 55 "cy" ∷ flow 90 145 190 145 "cy" ∷ flow 90 235 190 235 "cy"
-    ∷ boxEl 190 30 100 50 "node blue" ∷ txt 240 55 20 "t_ω"
-    ∷ boxEl 190 120 100 50 "node blue" ∷ txt 240 145 20 "t_ω"
-    ∷ boxEl 190 210 100 50 "node blue" ∷ txt 240 235 20 "t_ω"
-    ∷ flow 290 55 460 135 "cy" ∷ flow 290 145 458 145 "cy" ∷ flow 290 235 460 155 "cy"
-    ∷ circle 500 145 42 (cls "node crimson")
-    ∷ big 500 145 20 "mean"
-    ∷ flow 542 145 610 145 "am"
-    ∷ boxEl 610 112 130 66 "node on"
-    ∷ txt 675 145 22 "T_ω(X)"
-    ∷ flow 740 145 800 145 "am"
-    ∷ boxEl 800 112 190 66 "node plum"
-    ∷ txt 895 135 22 "q_φ"
-    ∷ dim 895 160 15 "posterior over θ"
-    ∷ txt 895 24 20 "N"
-    ∷ flow 895 40 895 108 "am"
-    ∷ dim 50 275 15 "set elements"
-    ∷ dim 240 275 15 "same network"
-    ∷ dim 500 205 15 "any set size"
-    ∷ [] }
+pipeline = compile "d-pipeline" 100 (margin 10 0 10 0 (
+    connectEW "p1" "t1" (flow "cy") (connectEW "p2" "t2" (flow "cy")
+    (connectEW "pn" "tn" (flow "cy")
+    (connectP "t1" (side east) "mean" (at west 38) (flow "cy")
+    (connectP "t2" (side east) "mean" (side west) (flow "cy")
+    (connectP "tn" (side east) "mean" (at west 62) (flow "cy")
+    (connectEW "mean" "T" (flow "am") (connectEW "T" "q" (flow "am")
+    (connect "N" south "q" north (flow "am")
+      (beside 100
+        (labelBelow 15 (dim 15 "set elements")
+          (vcat 40 ( card "p1" "node" 14 80 50 (txt 20 "x₁")
+                   ∷ card "p2" "node" 14 80 50 (txt 20 "x₂")
+                   ∷ card "pn" "node" 14 80 50 (txt 20 "x_N") ∷ [])))
+        (beside 168
+          (labelBelow 15 (dim 15 "same network")
+            (vcat 40 ( card "t1" "node blue" 14 100 50 (txt 20 "t_ω")
+                     ∷ card "t2" "node blue" 14 100 50 (txt 20 "t_ω")
+                     ∷ card "tn" "node blue" 14 100 50 (txt 20 "t_ω") ∷ [])))
+          (beside 68
+            (labelBelow 15 (dim 15 "any set size")
+              (named "mean" (atop (disc 42 (cls "node crimson")) (big 20 "mean"))))
+            (beside 60
+              (card "T" "node on" 14 130 66 (txt 22 "T_ω(X)"))
+              (labelAbove 56 (named "N" (txt 20 "N"))
+                (card "q" "node plum" 14 190 66
+                  (vcat 0 (txt 22 "q_φ" ∷ dim 15 "posterior over θ" ∷ []))))))))))))))))))
 
 ------------------------------------------------------------------------
 -- Slide 6: PAIRS
 
+-- A card of centred text lines: a title, body lines and a small note.
+-- The id lets scripts light the card up; it is also the name `connect` uses.
+infoCard : (id : String) → ℕ → ℕ → ℕ → ℕ → String → List String → List String → Dia
+infoCard i w h tsize bsize title body note =
+  named i (framed w h (rounded 18 (withId i (cls "node")))
+    (topAligned (h ∸ 50)
+      (vcat 6 ( text tsize title (cls "big")
+              ∷ lines bsize body defaultStyle
+              ∷ lines 17 note (cls "dim")
+              ∷ []))))
+
+arrowAm : Style
+arrowAm = cls "flow am"
+
 stages : Diagram
-stages = record
-  { name = "d-stages" ; width = 1100 ; height = 250 ; percent = 100
-  ; elements =
-      card "st1" "node" 10 20 330 200
-    ∷ big 175 62 28 "1  Pretrain"
-    ∷ txt 175 112 22 "train (ω, φ) jointly"
-    ∷ txt 175 146 22 "on sets of size 1 and 2"
-    ∷ dim 175 190 17 "cheap: tiny sets"
-    ∷ flow 340 120 385 120 "am"
-    ∷ card "st2" "node" 385 20 330 200
-    ∷ big 550 62 28 "2  Cache"
-    ∷ txt 550 112 22 "freeze t_ω, embed every set"
-    ∷ txt 550 146 22 "store the mean T̄ once"
-    ∷ dim 550 190 17 "one pass, parallel"
-    ∷ flow 715 120 760 120 "am"
-    ∷ card "st3" "node" 760 20 330 200
-    ∷ big 925 62 28 "3  Finetune"
-    ∷ txt 925 112 22 "update the head φ only"
-    ∷ txt 925 146 22 "on cached T̄, any N"
-    ∷ dim 925 190 17 "cost ≈ independent of N"
-    ∷ [] }
+stages = compile "d-stages" 100 (margin 10 20 10 30 (
+    connectEW "st1" "st2" arrowAm (connectEW "st2" "st3" arrowAm (
+      hcat 45
+        ( infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
+        ∷ infoCard "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
+        ∷ infoCard "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
+        ∷ [])))))
 
 ------------------------------------------------------------------------
 -- Slide 7: why pairs are enough
 
 chain : Diagram
-chain = record
-  { name = "d-chain" ; width = 1100 ; height = 190 ; percent = 100
-  ; elements =
-      card "c1" "node" 10 20 235 150
-    ∷ big 127 55 24 "N = 1"
-    ∷ txt 127 105 21 "t* = g ∘ t_ω"
-    ∷ flow 245 95 290 95 "am"
-    ∷ card "c2" "node" 290 20 235 150
-    ∷ big 407 55 24 "N = 2"
-    ∷ txt 407 98 19 "g(y₁) + g(y₂)"
-    ∷ txt 407 126 19 "= h(y₁ + y₂)"
-    ∷ flow 525 95 570 95 "am"
-    ∷ card "c3" "node" 570 20 235 150
-    ∷ big 687 55 24 "Cauchy"
-    ∷ txt 687 105 21 "g is affine"
-    ∷ flow 805 95 850 95 "am"
-    ∷ card "c4" "node" 850 20 235 150
-    ∷ big 967 55 24 "every N"
-    ∷ txt 967 98 19 "mean-pool is"
-    ∷ txt 967 126 19 "sufficient"
-    ∷ [] }
+chain = compile "d-chain" 100 (margin 10 20 15 20 (
+    connectEW "c1" "c2" arrowAm (connectEW "c2" "c3" arrowAm (connectEW "c3" "c4" arrowAm (
+      hcat 45
+        ( infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
+        ∷ infoCard "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
+        ∷ infoCard "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
+        ∷ infoCard "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
+        ∷ []))))))
 
 ------------------------------------------------------------------------
 -- Slide 9: a result
 
 results : Diagram
-results = record
-  { name = "d-results" ; width = 560 ; height = 380 ; percent = 100
-  ; elements =
-      line 30 300 540 300 (cls "axis")
-    ∷ rect 60  66 120 234 (cls "bar b1")
-    ∷ rect 220 230 120 70 (cls "bar b2")
-    ∷ rect 380 290 120 10 (cls "bar b3")
-    ∷ label 120 46 24 "1.17" (cls "stat plum count")
-    ∷ label 280 210 24 "0.35" (cls "stat count")
-    ∷ label 440 270 24 "0.05" (cls "stat rust count")
-    ∷ big 120 325 19 "N = 1"
-    ∷ big 280 325 19 "PAIRS"
-    ∷ big 440 325 19 "N = 1–10"
-    ∷ dim 120 350 14 "per observation"
-    ∷ dim 280 350 14 "pretrained at N ≤ 2"
-    ∷ dim 440 350 14 "3–4× the pretraining"
-    ∷ dim 285 14 15 "test NLL, Circle Radius, N = 1000 (lower is better)"
-    ∷ [] }
+results = compile "d-results" 100 (margin 30 0 30 0 (
+  above 14 (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)")
+    (above 12
+      (above 0
+        (hcatA bottom 0
+          ( boxWidth 160 (vcat 2 (text 24 "1.17" (cls "stat plum count") ∷ rectangle 120 234 (cls "bar b1") ∷ []))
+          ∷ boxWidth 160 (vcat 2 (text 24 "0.35" (cls "stat count") ∷ rectangle 120 70 (cls "bar b2") ∷ []))
+          ∷ boxWidth 160 (vcat 2 (text 24 "0.05" (cls "stat rust count") ∷ rectangle 120 10 (cls "bar b3") ∷ []))
+          ∷ []))
+        (segment 510 0 (cls "axis")))
+      (hcat 0
+        ( boxWidth 160 (vcat 4 (big 19 "N = 1" ∷ dim 14 "per observation" ∷ []))
+        ∷ boxWidth 160 (vcat 4 (big 19 "PAIRS" ∷ dim 14 "pretrained at N ≤ 2" ∷ []))
+        ∷ boxWidth 160 (vcat 4 (big 19 "N = 1–10" ∷ dim 14 "3–4× the pretraining" ∷ []))
+        ∷ [])))))
 
 ------------------------------------------------------------------------
 -- Slide 10: cost and scale
 
+-- a tile: a big number (styled by its class), two lines of text and a note
+tile : String → String → List String → String → Dia
+tile c n body note =
+  framed 255 240 (rounded 20 (cls "tile"))
+    (topAligned 170
+      (vcat 14 ( bold 54 n (cls c)
+               ∷ lines 19 body defaultStyle
+               ∷ dim 16 note
+               ∷ [])))
+
 tiles : Diagram
-tiles = record
-  { name = "d-tiles" ; width = 1100 ; height = 270 ; percent = 100
-  ; elements =
-      rect 10  10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 137 85 54 "≈100×" (cls "stat count")
-    ∷ txt 137 150 19 "less compute than"
-    ∷ txt 137 176 19 "end-to-end training"
-    ∷ dim 137 214 16 "at N = 1000"
-    ∷ rect 285 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 412 85 54 "3–4×" (cls "stat crimson")
-    ∷ txt 412 150 19 "cheaper than a larger"
-    ∷ txt 412 176 19 "pretraining, N = 1–10"
-    ∷ dim 412 214 16 "and no better on 3 of 4 tasks"
-    ∷ rect 560 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 687 85 54 "128" (cls "stat rust count")
-    ∷ txt 687 150 19 "scenes per batch at N = 2"
-    ∷ txt 687 176 19 "(≈ 2 at N = 100)"
-    ∷ dim 687 214 16 "one H100-80GB, novel views"
-    ∷ rect 835 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 962 85 54 "0.004" (cls "stat plum count")
-    ∷ txt 962 150 19 "novel-view MSE at N = 100"
-    ∷ txt 962 176 19 "(0.011 at N = 1)"
-    ∷ dim 962 214 16 "error falls as the set grows"
-    ∷ [] }
+tiles = compile "d-tiles" 100 (margin 10 10 10 20 (
+  hcat 20
+    ( tile "stat count" "≈100×" ("less compute than" ∷ "end-to-end training" ∷ []) "at N = 1000"
+    ∷ tile "stat crimson" "3–4×" ("cheaper than a larger" ∷ "pretraining, N = 1–10" ∷ []) "and no better on 3 of 4 tasks"
+    ∷ tile "stat rust count" "128" ("scenes per batch at N = 2" ∷ "(≈ 2 at N = 100)" ∷ []) "one H100-80GB, novel views"
+    ∷ tile "stat plum count" "0.004" ("novel-view MSE at N = 100" ∷ "(0.011 at N = 1)" ∷ []) "error falls as the set grows"
+    ∷ [])))
 
 ------------------------------------------------------------------------
 -- The deck

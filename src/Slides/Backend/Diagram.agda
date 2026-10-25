@@ -22,6 +22,7 @@ open import Data.XML.Sanitize using (element; textElement)
 import Data.SVG as SVG
 
 open import Slides.Diagram
+open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 
 private
@@ -76,33 +77,6 @@ private
     element "line"
       ( ("x1" , num x₁) ∷ ("y1" , num y₁) ∷ ("x2" , num x₂) ∷ ("y2" , num y₂) ∷ extra ) []
 
-  -- Label markup: `_x` or `_{xyz}` is a subscript, `^x` or `^{xyz}` a
-  -- superscript, and a backslash quotes the next character.
-  data Seg : Set where
-    flat sub sup : String → Seg
-
-  mutual
-    segs : List Char → List Char → List Seg
-    segs acc []               = flush acc []
-    segs acc ('\\' ∷ c ∷ cs) = segs (c ∷ acc) cs
-    segs acc ('_' ∷ cs)       = flush acc (scripted sub cs)
-    segs acc ('^' ∷ cs)       = flush acc (scripted sup cs)
-    segs acc (c ∷ cs)         = segs (c ∷ acc) cs
-
-    scripted : (String → Seg) → List Char → List Seg
-    scripted k []          = []
-    scripted k ('{' ∷ cs)  = braced k [] cs
-    scripted k (c ∷ cs)    = k (fromList [ c ]) ∷ segs [] cs
-
-    braced : (String → Seg) → List Char → List Char → List Seg
-    braced k acc []          = k (fromList (reverse acc)) ∷ []
-    braced k acc ('}' ∷ cs)  = k (fromList (reverse acc)) ∷ segs [] cs
-    braced k acc (c ∷ cs)    = braced k (c ∷ acc) cs
-
-    flush : List Char → List Seg → List Seg
-    flush [] rest = rest
-    flush acc rest = flat (fromList (reverse acc)) ∷ rest
-
   -- A label is one `<text>`; markup becomes `<tspan>`s shifted by whole
   -- user units (portable, unlike `baseline-shift`), shrunk for scripts.
   -- `pending` is the shift to undo at the next segment.
@@ -128,7 +102,7 @@ private
     renderElement n (arrow a b c d s)  =
       lineEl a b c d (shapeAttrs s ++ (("marker-end" , "url(#" ++ˢ markerId n ++ˢ ")") ∷ []))
     renderElement n (label x y sz t s) =
-      body (segs [] (toList t))
+      body (parse t)
       where
         maybeOr : Maybe String → String
         maybeOr nothing  = "currentColor"

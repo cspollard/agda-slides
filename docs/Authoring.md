@@ -109,6 +109,57 @@ around the SVG has the diagram's `name` as its `id`, so a script can find it.
 Classes override the default colours (a stylesheet rule beats the SVG
 attributes), which is how `assets/pairs/pairs.css` themes a whole deck.
 
+### Laying diagrams out: `Slides.Diagram.Layout`
+
+Writing absolute coordinates gets tedious. `Slides.Diagram.Layout` is a small
+layout language, in the spirit of Haskell's `diagrams`, that compiles to the same
+`Diagram`. A `Dia` is a rectangle of known size plus named sub-boxes; combinators
+put diagrams next to each other and `connect` draws arrows between named boxes.
+
+```agda
+open import Slides.Diagram.Layout
+
+step : String → String → Dia
+step i t = named i (framed 330 200 (rounded 18 (withId i (cls "node")))
+                      (text 28 t (cls "big")))
+
+stages : Diagram
+stages = compile "d-stages" 100 (margin 10 20 10 30
+  (connectEW "a" "b" (cls "flow am")
+    (hcat 45 (step "a" "Pretrain" ∷ step "b" "Cache" ∷ []))))
+```
+
+| Combinator | Effect |
+|---|---|
+| `rectangle w h style`, `disc r style`, `segment w h style`, `spacer w h` | leaves (`segment` is a line across a `w × h` box; `segment w 0` is a rule) |
+| `text size s style`, `bold size s style`, `lines size ss style`, `paragraph align size maxWidth s style` | text (see below) |
+| `hcat gap ds`, `vcat gap ds` | a row or column, centred on the other axis; `hcatA` / `vcatA` take an alignment (`top middle bottom`, `left centred right`) |
+| `beside gap a b`, `above gap a b`, `atop a b` | binary forms (`besideA`, `aboveA` with an alignment); `atop` centres `b` on `a` |
+| `framed w h style d` | a rectangle with `d` centred on it |
+| `margin l t r b d`, `padded n d`, `boxWidth w d`, `topAligned h d` | extra space around, a minimum width, or top-aligning inside a frame |
+| `labelAbove gap lbl d`, `labelBelow gap lbl d` | a caption a gap away; empty space of the same size goes on the other side, so `d` stays at the centre |
+| `named n d` | remember the extent of `d` under the name `n` |
+| `connect a side b side style d`, `connectEW a b style d` | an arrow between two named boxes (`north south east west middle`); an unknown name draws nothing |
+| `connectP a port b port style d` | the same, from a `side s` or `at s pct` (percent along the edge: `at north 40`), to spread arrows over an edge |
+| `raw w h elements` | the escape hatch: `Element`s with the diagram's own coordinates (paths, curves) |
+| `compile name percent d` | the `Diagram` the rest of the library takes |
+
+Coordinates are natural numbers, so a diagram always grows to the right and
+down; there is no rotation or scaling. Styles and CSS classes work exactly as
+for raw elements. `Slides.Examples.Pairs` builds all its diagrams this way.
+
+**Text.** There is no browser at layout time, so text is measured from a table:
+`Slides.Diagram.TextMetrics` holds the advance of every printable ASCII character
+in a humanist sans (Helvetica's widths scaled by 92%, close to reveal.js's Source
+Sans), in thousandths of an em; other characters count 0.6 em. `_`/`^` markup is
+measured at 70% size, as it is drawn. A `text` is `size × 3/2` high and as wide
+as its characters, `bold` is 8% wider, and a size is a number in the diagram's
+own units. This is good to a few percent, which is what centring, gaps and
+wrapping need; give a box an explicit width where a fit has to be exact.
+`paragraph align size maxWidth s style` breaks running text into lines of at most
+`maxWidth` by words (keep markup inside one word) and stacks them left, centred
+or right aligned.
+
 ## Styling slides: `classed`
 
 `classed "card pink" content` wraps content in `<div class="card pink">`. It is the
