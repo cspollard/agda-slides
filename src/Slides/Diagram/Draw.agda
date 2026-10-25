@@ -17,7 +17,7 @@ open import Data.Nat using (ℕ)
 open import Data.Product using (_×_)
 open import Data.String using (String)
 
-open import Slides.Diagram using (Style; Element)
+open import Slides.Diagram using (Style)
 
 -- left, top (half units), width, height
 record Box (S : Set) : Set where
@@ -32,8 +32,6 @@ data Draw (S : Set) : Set where
   arrow  : (x₁ y₁ x₂ y₂ : S) → Style → Draw S
   -- text centred at a point: the font size is a plain number
   label  : (x y : S) (size : ℕ) → String → Style → Draw S
-  -- an element in the final diagram's own coordinates: it does not move
-  fixed  : Element → Draw S
 
 record Layout (S : Set) : Set where
   constructor layout

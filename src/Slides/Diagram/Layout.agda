@@ -42,7 +42,6 @@ module LayoutWith {S : Set} (O : Ops S) where
   layoutAlgebra (Segment w h s)     _ = P.segment w h s
   layoutAlgebra (Text pct size t s) _ = P.text pct size t s
   layoutAlgebra (Spacer w h)        _ = P.spacer w h
-  layoutAlgebra (Raw w h es)        _ = P.raw w h es
   layoutAlgebra (Beside al)         k = P.besideA al (k zero) (k (suc zero))
   layoutAlgebra (Above al)          k = P.aboveA al (k zero) (k (suc zero))
   layoutAlgebra Atop                k = P.atop (k zero) (k (suc zero))

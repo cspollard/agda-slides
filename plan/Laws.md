@@ -97,7 +97,7 @@ Done (see `Slides.Diagram.{Scalar,Draw,Equality,Place,Layout,Laws,Names,NamesSou
 - half-unit positions, so centring is exact; `Layout` as plain data;
 - layout equality up to the scalar's own equivalence (`Equality`): `IsLawful` takes
   a stdlib `IsCommutativeRing _≈_`, not `_≡_` (ℤ and ℚ instantiate it with `_≡_`);
-- translation action, associativity of `∥ ═ ⊙`, unit laws for layouts of
+- translation action (now for every operation: the escape hatch `Raw` was unused and is gone), associativity of `∥ ═ ⊙`, unit laws for layouts of
   non-negative size, annotation neutrality, size fusion;
 - `Names` scoped to each `connect`'s own diagram, with its soundness proof.
 
@@ -106,8 +106,6 @@ Not done:
 - **A scalar whose equality is not `_≡_`.** The proofs are written for any `_≈_`,
   but only `_≡_` instances (ℤ, ℚ) exist. A constructive real, or ℚ as unreduced
   pairs, would be the first real test.
-- **`Raw`** ignores positions (its elements are in the final coordinates), so it is
-  outside the translation law.
 - **Unit law for `Valid` composites:** `Valid` is a hypothesis; that every
   combinator preserves it (needs `+` and `⊔` to respect non-negativity) is not
   proved.

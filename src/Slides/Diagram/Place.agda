@@ -44,7 +44,6 @@ shiftDraw dx dy (circle x y r s)       = circle (x + dx) (y + dy) r s
 shiftDraw dx dy (line a b c d s)       = line (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (arrow a b c d s)      = arrow (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (label x y n t s)      = label (x + dx) (y + dy) n t s
-shiftDraw dx dy (fixed e)              = fixed e
 
 shiftBox : S → S → Box S → Box S
 shiftBox dx dy (box l t w h) = box (l + dx) (t + dy) w h
@@ -89,9 +88,6 @@ text pct size t s = layout w h (label w h size t s ∷ []) []
   where w = fromℕ ((textWidth size t * pct) / 100)
         h = fromℕ ((size * 3) / 2)
 
--- elements in the diagram's own coordinates
-raw : S → S → List Element → Layout S
-raw w h es = layout w h (map fixed es) []
 
 ------------------------------------------------------------------------
 -- Combining
@@ -181,4 +177,3 @@ toElement (circle x y r s)  = D.circle (toℕ x / 2) (toℕ y / 2) (toℕ r) s
 toElement (line a b c d s)  = D.line (toℕ a / 2) (toℕ b / 2) (toℕ c / 2) (toℕ d / 2) s
 toElement (arrow a b c d s) = D.arrow (toℕ a / 2) (toℕ b / 2) (toℕ c / 2) (toℕ d / 2) s
 toElement (label x y n t s) = D.label (toℕ x / 2) (toℕ y / 2) n t s
-toElement (fixed e)         = e

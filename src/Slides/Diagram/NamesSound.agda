@@ -38,7 +38,7 @@ open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry using (Port; centred)
 open import Slides.Diagram.Names
 open import Slides.Diagram.Syntax
-  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer; Raw
+  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Named; Connect )
 import Slides.Diagram.Layout as Lay
 open import Slides.Diagram.Place O
@@ -106,7 +106,6 @@ names-fusion (impure (Disc _ _ , _))        = refl
 names-fusion (impure (Segment _ _ _ , _))   = refl
 names-fusion (impure (Text _ _ _ _ , _))    = refl
 names-fusion (impure (Spacer _ _ , _))      = refl
-names-fusion (impure (Raw _ _ _ , _))       = refl
 names-fusion (impure (Beside al , k)) =
   trans (names-besideA al (LW.layout (k zero)) (LW.layout (k (suc zero)))) (cong₂ _++_ (names-fusion (k zero)) (names-fusion (k (suc zero))))
 names-fusion (impure (Above al , k)) =
@@ -159,7 +158,6 @@ Draws (impure (Disc _ _ , _))        = ⊤
 Draws (impure (Segment _ _ _ , _))   = ⊤
 Draws (impure (Text _ _ _ _ , _))    = ⊤
 Draws (impure (Spacer _ _ , _))      = ⊤
-Draws (impure (Raw _ _ _ , _))       = ⊤
 Draws (impure (Beside _ , k))        = (i : Fin 2) → Draws (k i)
 Draws (impure (Above _ , k))         = (i : Fin 2) → Draws (k i)
 Draws (impure (Atop , k))            = (i : Fin 2) → Draws (k i)
@@ -210,7 +208,6 @@ soundness (impure (Disc _ _ , _)) _        = tt
 soundness (impure (Segment _ _ _ , _)) _   = tt
 soundness (impure (Text _ _ _ _ , _)) _    = tt
 soundness (impure (Spacer _ _ , _)) _      = tt
-soundness (impure (Raw _ _ _ , _)) _       = tt
 soundness (impure (Beside _ , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))
 soundness (impure (Above _ , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))
 soundness (impure (Atop , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))

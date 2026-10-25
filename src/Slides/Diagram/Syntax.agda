@@ -36,7 +36,7 @@ open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 
-open import Slides.Diagram using (Style; Element)
+open import Slides.Diagram using (Style)
 open import Slides.Diagram.TextMetrics using (textWidth; spaceWidth)
 open import Slides.Diagram.Geometry public
   using (Side; north; south; east; west; middle; Port; side; at; VAlign; top; bottom; Align; left; centred; right)
@@ -56,8 +56,6 @@ data Op (S : Set) : Set where
   Text      : (widthPct size : ℕ) → String → Style → Op S
   -- empty space of a given size
   Spacer    : (w h : S) → Op S
-  -- elements in the diagram's own coordinates (paths, curves, …)
-  Raw       : (w h : S) → List Element → Op S
   -- two children: the second to the right of / below the first, aligned
   Beside    : VAlign → Op S
   Above     : Align → Op S
@@ -79,7 +77,6 @@ arity (Disc _ _)        = ⊥
 arity (Segment _ _ _)   = ⊥
 arity (Text _ _ _ _)    = ⊥
 arity (Spacer _ _)      = ⊥
-arity (Raw _ _ _)       = ⊥
 arity (Beside _)        = Fin 2
 arity (Above _)         = Fin 2
 arity Atop              = Fin 2
@@ -131,9 +128,6 @@ bold size t s = impure (Text 108 size t s , λ ())
 spacer : ∀ {S} → S → S → Dia S
 spacer w h = impure (Spacer w h , λ ())
 
--- the escape hatch: elements with the diagram's own coordinates
-raw : ∀ {S} → S → S → List Element → Dia S
-raw w h es = impure (Raw w h es , λ ())
 
 -- `a` then `b` to its right / below it
 besideA : ∀ {S} → VAlign → Dia S → Dia S → Dia S
@@ -185,7 +179,6 @@ rescale f (Disc r s)              _ = disc (f r) s
 rescale f (Segment w h s)         _ = segment (f w) (f h) s
 rescale f (Text pct size t s)     _ = impure (Text pct size t s , λ ())
 rescale f (Spacer w h)            _ = spacer (f w) (f h)
-rescale f (Raw w h es)            _ = raw (f w) (f h) es
 rescale f (Beside al)             k = besideA al (k zero) (k (suc zero))
 rescale f (Above al)              k = aboveA al (k zero) (k (suc zero))
 rescale f Atop                    k = atop (k zero) (k (suc zero))

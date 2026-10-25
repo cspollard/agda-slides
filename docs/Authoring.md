@@ -154,7 +154,6 @@ stages = compile "d-stages" 100 (margin 10 20 10 30
 | `named n d` | remember the extent of `d` under the name `n` |
 | `connect a side b side style d`, `connectEW a b style d` | an arrow between two named boxes (`north south east west middle`); an unknown name draws nothing |
 | `connectP a port b port style d` | the same, from a `side s` or `at s pct` (percent along the edge: `at north 40`), to spread arrows over an edge |
-| `raw w h elements` | the escape hatch: `Element`s with the diagram's own coordinates (paths, curves) |
 | `compile name percent d` | the `Diagram` the rest of the library takes |
 
 **Operators.** `Slides.Diagram.Notation` (it re-exports `Layout`'s vocabulary)
@@ -258,9 +257,6 @@ lifted pointwise to sizes, drawing commands and anchors):
   (`∥-unitˡ`, `∥-unitʳ`, …; `Valid`);
 - `named` and `connect` leave a layout's size and anchors alone;
 - size fusion: the width and height of `layout d` are the fold of `sizeAlgebra`.
-
-`Raw` is outside the translation law: its elements are in the final diagram's
-coordinates, so shifting a layout does not move them.
 
 `Slides.Diagram.NamesSound` proves that `dangling d ≡ []` implies every `connect`
 draws an arrow. `dangling` resolves a connection against the names declared

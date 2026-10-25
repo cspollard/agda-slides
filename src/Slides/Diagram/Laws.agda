@@ -41,7 +41,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong;
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
-  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer; Raw
+  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Named; Connect
         ; VAlign; top; middle; bottom; Align; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
@@ -140,7 +140,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   shiftDraw-cong (ex , ey) (arrow a b c d s) =
     arrow≈ (+-cong R.refl ex) (+-cong R.refl ey) (+-cong R.refl ex) (+-cong R.refl ey)
   shiftDraw-cong (ex , ey) (label x y n t s) = label≈ (+-cong R.refl ex) (+-cong R.refl ey)
-  shiftDraw-cong (ex , ey) (fixed e) = fixed≈
 
   shiftAnchor-cong : ∀ {p p′} → p ≈ₚ p′ → ∀ x → shiftAnchor′ p x ≈ᵃ shiftAnchor′ p′ x
   shiftAnchor-cong (ex , ey) (n , box l t w h) =
@@ -159,7 +158,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
            (+-assoc c (proj₁ q) (proj₁ p)) (+-assoc d (proj₂ q) (proj₂ p))
   shiftDraw-∘ p q (label x y n t s) =
     label≈ (+-assoc x (proj₁ q) (proj₁ p)) (+-assoc y (proj₂ q) (proj₂ p))
-  shiftDraw-∘ p q (fixed e) = fixed≈
 
   shiftAnchor-∘ : ∀ p q x → shiftAnchor′ p (shiftAnchor′ q x) ≈ᵃ shiftAnchor′ (q ⊞ p) x
   shiftAnchor-∘ p q (n , box l t w h) =
@@ -171,7 +169,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   shiftDraw-0 (line a b c d s)  = line≈ (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
   shiftDraw-0 (arrow a b c d s) = arrow≈ (+-identityʳ a) (+-identityʳ b) (+-identityʳ c) (+-identityʳ d)
   shiftDraw-0 (label x y n t s) = label≈ (+-identityʳ x) (+-identityʳ y)
-  shiftDraw-0 (fixed e)         = fixed≈
 
   shiftAnchor-0 : ∀ x → shiftAnchor′ (0# , 0#) x ≈ᵃ x
   shiftAnchor-0 (n , box l t w h) = refl , box≈ (+-identityʳ l) (+-identityʳ t) R.refl R.refl
@@ -510,7 +507,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   sizeAlgebra (Segment w h _)     _ = w , h
   sizeAlgebra (Text pct size t _) _ = fromℕ ((textWidth size t *ℕ pct) /ℕ 100) , fromℕ ((size *ℕ 3) /ℕ 2)
   sizeAlgebra (Spacer w h)        _ = w , h
-  sizeAlgebra (Raw w h _)         _ = w , h
   sizeAlgebra (Beside _) k =
     proj₁ (k zero) + proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
   sizeAlgebra (Above _) k =
@@ -538,7 +534,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   size-fusion (impure (Segment _ _ _ , _))   = R.refl , R.refl
   size-fusion (impure (Text _ _ _ _ , _))    = R.refl , R.refl
   size-fusion (impure (Spacer _ _ , _))      = R.refl , R.refl
-  size-fusion (impure (Raw _ _ _ , _))       = R.refl , R.refl
   size-fusion (impure (Beside _ , k)) = +-cong w₀ w₁ , ⊔-cong h₀ h₁
     where
     w₀ = proj₁ (size-fusion (k zero))

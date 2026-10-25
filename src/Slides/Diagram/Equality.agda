@@ -4,8 +4,8 @@
 --
 -- A layout is plain data over the scalar, so its equality is the scalar's
 -- equality `_≈_` lifted pointwise: sizes, every coordinate and length of every
--- drawing command, and every anchor box.  Labels, styles, names and fixed
--- elements are compared with `_≡_`.  The lifted relation is an equivalence
+-- drawing command, and every anchor box.  Labels, styles and names are compared
+-- with `_≡_`.  The lifted relation is an equivalence
 -- (`≈ᴸ-isEquivalence`).
 
 open import Level using (0ℓ)
@@ -35,7 +35,6 @@ data _≈ᵈ_ : Draw S → Draw S → Set where
   arrow≈  : ∀ {a a′ b b′ c c′ d d′ s} →
             a ≈ a′ → b ≈ b′ → c ≈ c′ → d ≈ d′ → arrow a b c d s ≈ᵈ arrow a′ b′ c′ d′ s
   label≈  : ∀ {x x′ y y′ n t s} → x ≈ x′ → y ≈ y′ → label x y n t s ≈ᵈ label x′ y′ n t s
-  fixed≈  : ∀ {e} → fixed e ≈ᵈ fixed e
 
 ≈ᵈ-refl : ∀ {x} → x ≈ᵈ x
 ≈ᵈ-refl {rect _ _ _ _ _}   = rect≈ E.refl E.refl E.refl E.refl
@@ -43,7 +42,6 @@ data _≈ᵈ_ : Draw S → Draw S → Set where
 ≈ᵈ-refl {line _ _ _ _ _}   = line≈ E.refl E.refl E.refl E.refl
 ≈ᵈ-refl {arrow _ _ _ _ _}  = arrow≈ E.refl E.refl E.refl E.refl
 ≈ᵈ-refl {label _ _ _ _ _}  = label≈ E.refl E.refl
-≈ᵈ-refl {fixed _}          = fixed≈
 
 ≈ᵈ-sym : ∀ {x y} → x ≈ᵈ y → y ≈ᵈ x
 ≈ᵈ-sym (rect≈ a b c d) = rect≈ (E.sym a) (E.sym b) (E.sym c) (E.sym d)
@@ -51,7 +49,6 @@ data _≈ᵈ_ : Draw S → Draw S → Set where
 ≈ᵈ-sym (line≈ a b c d) = line≈ (E.sym a) (E.sym b) (E.sym c) (E.sym d)
 ≈ᵈ-sym (arrow≈ a b c d) = arrow≈ (E.sym a) (E.sym b) (E.sym c) (E.sym d)
 ≈ᵈ-sym (label≈ a b)    = label≈ (E.sym a) (E.sym b)
-≈ᵈ-sym fixed≈          = fixed≈
 
 ≈ᵈ-trans : ∀ {x y z} → x ≈ᵈ y → y ≈ᵈ z → x ≈ᵈ z
 ≈ᵈ-trans (rect≈ a b c d) (rect≈ a′ b′ c′ d′) = rect≈ (E.trans a a′) (E.trans b b′) (E.trans c c′) (E.trans d d′)
@@ -59,7 +56,6 @@ data _≈ᵈ_ : Draw S → Draw S → Set where
 ≈ᵈ-trans (line≈ a b c d) (line≈ a′ b′ c′ d′) = line≈ (E.trans a a′) (E.trans b b′) (E.trans c c′) (E.trans d d′)
 ≈ᵈ-trans (arrow≈ a b c d) (arrow≈ a′ b′ c′ d′) = arrow≈ (E.trans a a′) (E.trans b b′) (E.trans c c′) (E.trans d d′)
 ≈ᵈ-trans (label≈ a b) (label≈ a′ b′) = label≈ (E.trans a a′) (E.trans b b′)
-≈ᵈ-trans fixed≈ fixed≈ = fixed≈
 
 ≈ᵈ-isEquivalence : IsEquivalence _≈ᵈ_
 ≈ᵈ-isEquivalence = record { refl = ≈ᵈ-refl ; sym = ≈ᵈ-sym ; trans = ≈ᵈ-trans }
