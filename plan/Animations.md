@@ -289,7 +289,11 @@ Each step ends with `make check`, `make test`, and the browser run.
    Original plan: An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.
-5. **Tracks.** `Track`, `Easing`, `eval` and its laws, the paint annotations with
+5. **Tracks** (`Slides.Anim.Track` done: `Easing` with `StepStart`, `progress`, `Lerp` with
+   endpoint laws, `Track` = free monad on `Seq` over `Piece`, `sample` as an algebra into
+   `(length, tick ↦ value)`, `piece-start`/`piece-end`, `seqS-assoc`, `reverseT` and its
+   involution, `reverseE` involution; open: the paint annotations below).
+   Original plan: `Track`, `Easing`, `eval` and its laws, the paint annotations with
    their size-neutrality proofs, the CSS/SMIL emitter, then `footprint` checks,
    reversal, `tween` by bind, `trackable`.
 
