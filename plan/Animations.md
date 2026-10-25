@@ -231,17 +231,34 @@ Dense sampling is then just a `tween` that expands to many frames. Interpolating
 a layout needs only `percentOf` from `Ops` (`a + percentOf p (b - a)`), so ℚ makes it
 exact.
 
-Risks to settle in the spike: CSS `transform` on SVG children (works, but check
-`transform-box`/`transform-origin`), and reveal fragment events for a diagram that is not
-itself a fragment.
+**Spike result** (`tests/spike/anim/`, driven by `node tests/spike/anim.mjs`, 18 checks,
+Chrome and reveal.js 6.0.2). Both forms work in reveal:
+- Empty fragment markers next to the `<svg>` carry the steps; a few lines of script
+  copy the number of visible fragments to `data-step` on the `<svg>`
+  (`fragmentshown`, `fragmenthidden`, `slidechanged`, `ready` events).
+- Flipbook: showing the frame whose index equals `data-step` works forward and
+  backward.
+- Tracks: CSS `transform: translate(…)` on an SVG `<rect>`, `opacity` on a `<circle>` and
+  `fill` on a `<text>` all transition; `linear`, `cubic-bezier(.4, 0, .2, 1)` and
+  `step-end` behave as specified (mid-transition values in range, the step colour
+  jumps only at the end of its segment); stepping backwards runs the transition in
+  reverse.
+- **Direction.** A CSS transition uses the transition declared by the *destination*
+  state, so going back from step 2 to step 1 uses step 1's easing, not the mirror of
+  step 2's. To mirror it the script should also set a direction attribute and the
+  emitter should give each backward state its own rule. The time-reverse of
+  `cubic-bezier(x₁, y₁, x₂, y₂)` is `cubic-bezier(1-x₂, 1-y₂, 1-x₁, 1-y₁)`, an
+  involution; this is the base case of the `reverse` fold's involution law (Hudak's
+  Thm 3.3) and is provable by arithmetic.
+- Not yet tried: `rotate` and `scale` (they need `transform-box: fill-box` for the
+  origin), SMIL, the plain HTML backend, and slides with several animated diagrams.
 
 ## Order
 
 Each step ends with `make check`, `make test`, and the browser run.
 
-1. **Spike.** A hand-written reveal page: an inline SVG with three frames, driven by
-   fragment events, as a flipbook and as tracks (CSS transitions), forward and
-   backward. Record what works in reveal and plain HTML.
+1. **Spike** (done for reveal; see "Spike result"): an inline SVG with three frames,
+   driven by fragment events, as flipbook and as tracks, forward and backward.
 2. **Syntax and `dur`.** `AnimC`, `Anim`, smart constructors, `dur`, `par` with
    padding; an operator table with Emacs input sequences in the docs.
 3. **`Timeline` and laws.** The `Combine` instance and its laws; the swap law;
