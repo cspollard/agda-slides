@@ -147,13 +147,20 @@ renderDiagram : Diagram → XMLM A
 renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name d) ∷ []) (svgOf d ∷ [])
 
 -- An animation is a flipbook: every frame is emitted, the first shown and the
--- others `hidden`, followed by one empty fragment per further step.  The page
--- script (`animationSync` in `Slides.Backend.Reveal`) shows the frame whose index
--- is the number of visible steps.  Without the script, the first frame stays.
-renderAnimation : Diagram → List Diagram → XMLM A
-renderAnimation d ds =
+-- others `hidden`, followed by one empty fragment per step.  The page script
+-- (`animationSync` in `Slides.Backend.Reveal`) plays the frames between the
+-- resting frames `data-rests`, one every `data-ms` milliseconds.  Without the
+-- script the first frame stays.
+renderAnimation : Diagram → List Diagram → ℕ → List ℕ → XMLM A
+renderAnimation d ds ms rs =
   hElement "div"
-    (("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames") ∷ ("data-frames" , num (suc (length ds))) ∷ [])
+    ( ("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames")
+    ∷ ("data-ms" , num ms) ∷ ("data-rests" , commas rs) ∷ [] )
     ( hElement "div" (("class" , "frame") ∷ []) (renderDiagram d ∷ [])
     ∷ map (λ f → hElement "div" (("class" , "frame") ∷ ("hidden" , "") ∷ []) (renderDiagram f ∷ [])) ds
-    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) ds )
+    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs )
+  where
+    commas : List ℕ → String
+    commas []       = ""
+    commas (n ∷ []) = num n
+    commas (n ∷ ns) = num n ++ˢ "," ++ˢ commas ns

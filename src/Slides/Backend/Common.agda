@@ -170,7 +170,7 @@ renderContent (references refs)   =
   ∷ []
 
 renderContent (diagram d)         = renderDiagram d ∷ []
-renderContent (animation d ds)    = renderAnimation d ds ∷ []
+renderContent (animation d ds ms rs) = renderAnimation d ds ms rs ∷ []
 renderContent (script js)         =
   hElement "div" (("class" , "js") ∷ ("hidden" , "") ∷ ("data-js" , js) ∷ []) [] ∷ []
 renderContent (mount i)           =

@@ -11,8 +11,9 @@
 
 module Slides.Anim.Render where
 
-open import Data.List using (List; []; _∷_; map; foldr)
-open import Data.Nat using (ℕ; _⊔_; suc)
+open import Data.List using (List; []; _∷_; map; foldr; concat; length)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
+open import Data.Nat using (ℕ; _⊔_; _+_; _∸_; suc)
 open import Data.Nat.Show using (show)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
@@ -36,11 +37,22 @@ private
   resize : ℕ → ℕ → Diagram → Diagram
   resize w h d = record d { width = w ; height = h }
 
--- the `animation` command for an animation: `name-i` is the id of frame `i`
--- and `percent` the displayed width
-render : (name : String) (percent : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-render name pct a with compileFrames name pct 0 (timeline atop frames a)
-... | []       = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) []
-... | d ∷ ds   = animation (resize w h d) (map (resize w h) ds)
+-- the frame each act comes to rest on: act `j` ends at the total length so far
+-- minus one (the last frame of the act)
+restsOf : ℕ → List ℕ → List ℕ
+restsOf acc []       = []
+restsOf acc (l ∷ ls) = (acc + l ∸ 1) ∷ restsOf (acc + l) ls
+
+length-restsOf : ∀ acc ls → length (restsOf acc ls) ≡ length ls
+length-restsOf acc []       = refl
+length-restsOf acc (l ∷ ls) = cong suc (length-restsOf (acc + l) ls)
+
+-- the `animation` command for a list of acts: `name-i` is the id of frame `i`,
+-- `percent` the displayed width, `ms` the time per frame.  The frames are the acts
+-- one after the other; each act is one step.
+render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
+render name pct ms acts with compileFrames name pct 0 (concat (map (timeline atop frames) acts))
+... | []       = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) [] ms []
+... | d ∷ ds   = animation (resize w h d) (map (resize w h) ds) ms (restsOf 0 (map (λ a → length (timeline atop frames a)) acts))
   where w = maxWidth (d ∷ ds)
         h = maxHeight (d ∷ ds)

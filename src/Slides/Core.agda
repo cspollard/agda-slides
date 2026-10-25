@@ -63,9 +63,13 @@ data ContentShape : Set where
   references  : List (String × Text) → ContentShape
   -- an inline vector diagram
   diagram     : Diagram → ContentShape
-  -- an animation: the frame shown first, then one frame per further step.  Each
-  -- step is a reveal fragment; the frames share one `viewBox`
-  animation   : Diagram → List Diagram → ContentShape
+  -- an animation: the first frame and the others (they share one `viewBox`), the
+  -- time one frame is shown in milliseconds, and the frame each step comes to rest
+  -- on.  Showing step `k` plays the frames from where step `k-1` rested to
+  -- `rests !! (k-1)`, one every `ms`; going back plays them in reverse.  Step 0
+  -- rests on the first frame.  `rests` is nondecreasing, and there is one
+  -- reveal fragment per entry.
+  animation   : Diagram → List Diagram → (ms : ℕ) → (rests : List ℕ) → ContentShape
   -- JavaScript run once, when the slide holding it is first shown, with the
   -- slide element as `slide` (unchecked; carried in a `data-js` attribute)
   script      : String → ContentShape

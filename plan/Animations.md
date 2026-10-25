@@ -301,6 +301,9 @@ Each step ends with `make check`, `make test`, and the browser run.
    Time dependence stays inspectable (the track is data; `sample` is its algebra);
    discontinuity is `Step`/`StepStart` or pieces that do not meet. The CSS-transition
    emitter (smooth sub-tick interpolation, element matching by id) remains optional.
+   **Playback (replaces stepping per tick):** `animate name width ms acts`; an act is one
+   reveal step and plays its frames at `ms` per frame (`restsOf` gives the resting frame
+   per step; `animationSync` moves one frame towards the target, backward too).
    Original plan: `Track`, `Easing`, `eval` and its laws, the paint annotations with
    their size-neutrality proofs, the CSS/SMIL emitter, then `footprint` checks,
    reversal, `tween` by bind, `trackable`.

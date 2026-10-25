@@ -42,7 +42,7 @@ stripNotes a         = ret a
 diagramPlaceholder : Lowering ContentC ContentC
 diagramPlaceholder (diagram d) =
   impure (paragraph (text "[diagram]" ∷ []) , pure)
-diagramPlaceholder (animation d ds) =
+diagramPlaceholder (animation d ds _ _) =
   impure (paragraph (text "[animation]" ∷ []) , pure)
 diagramPlaceholder a = ret a
 

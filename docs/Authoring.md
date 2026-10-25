@@ -289,16 +289,20 @@ an empty pause; `parI natOps a b` additionally requires that the two sides decla
 common `named` name, and is a type error otherwise (`Slides.Anim.Footprint`). In a deck,
 
 ```agda
-animate "mover" 60 (parI natOps mover counter)
+animate "mover" 60 400 (parI natOps mover counter ∷ [])
 ```
 
-emits every tick as a frame (all the same size) and one reveal fragment per further
-tick: each fragment press shows the next frame, and going back shows the previous one.
-Without JavaScript the first frame stays. `dur a` is the number of ticks. Laws (`Seq`
-associative, the swap `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)`, `Par` commutative up to
-a permutation of drawing order) are in `Slides.Anim.Timeline`, `Footprint` and
-`Slides.Diagram.Commute`; `plan/Animations.md` has the design and what is open (paint
-tracks with easing).
+emits every tick as a frame (all the same size). The list holds the *acts*: each act
+is one reveal step, which plays its frames, one every 400 ms, when it is reached and
+waits on its last frame; stepping back plays them in reverse. Without JavaScript the
+first frame stays. `dur a` is the number of ticks. A tween
+`tween n from to easing body` moves a parameter along an easing (`Linear`, `Step`,
+`StepStart`, `Bezier x₁ y₁ x₂ y₂` in hundredths, as CSS) and shows `body` of it on each
+tick, so a motion, a growing box or a fade is one `body`. Laws (`Seq` associative, the
+swap `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)`, `Par` commutative up to a permutation of
+drawing order, tracks associative and reversible) are in `Slides.Anim.Timeline`,
+`Footprint`, `Track` and `Slides.Diagram.Commute`; `plan/Animations.md` has the design
+and what is open.
 
 ## JavaScript
 

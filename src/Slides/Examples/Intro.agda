@@ -54,7 +54,7 @@ counter = say "one" ⨾ say "two" ⨾ say "three"
 animated : Body
 animated = do
   heading 2 "Animation"
-  animate "mover" 60 (parI natOps mover counter)
+  animate "mover" 60 400 (parI natOps mover counter ∷ [])
   notes "A free monad of Seq and Par over frames; each tick is a fragment."
 
 -- a box sliding right with an ease-in-out curve: the position is a parameter
@@ -66,7 +66,16 @@ slide′ = tween 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
 eased : Body
 eased = do
   heading 2 "Easing"
-  animate "slider" 60 slide′
+  animate "slider" 60 150 (slide′ ∷ [])
+
+-- two acts: each press plays one of them
+acts : Body
+acts = do
+  heading 2 "Two acts"
+  animate "acts" 40 100
+    ( (hold 2 (text 24 "a" defaultStyle) ⨾ hold 1 (text 24 "b" defaultStyle))
+    ∷ hold 2 (text 24 "c" defaultStyle)
+    ∷ [] )
 
 demo : Deck
 demo = do
@@ -75,6 +84,7 @@ demo = do
   slideWith (background "#2a2a40") compare
   slide animated
   slide eased
+  slide acts
   stack ( (do heading 2 "Details A"; paragraph "first")
         ∷ (do heading 2 "Details B"; code "agda" "id x = x")
         ∷ [] )

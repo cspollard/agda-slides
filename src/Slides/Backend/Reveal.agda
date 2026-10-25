@@ -214,21 +214,39 @@ scriptLoader =
   "  Reveal.on('slidechanged', function (e) { run(e.currentSlide); });\n" ++ˢ
   "})();\n"
 
--- The frame of an animation (`.animation`, see `renderAnimation`) is the number
--- of its visible `.anim-step` fragments.
+-- Plays animations (`.animation`, see `renderAnimation`).  The step is the number
+-- of visible `.anim-step` fragments; it rests on frame 0 at step 0 and on
+-- `rests[step-1]` after, and the page moves one frame towards the target every
+-- `data-ms` milliseconds (forward or backward).  Changing slide jumps.
 animationSync : String
 animationSync =
   "(function () {\n" ++ˢ
-  "  function sync(a) {\n" ++ˢ
-  "    if (!a) return;\n" ++ˢ
+  "  function target(a) {\n" ++ˢ
   "    var n = a.querySelectorAll('.anim-step.visible').length;\n" ++ˢ
-  "    a.querySelectorAll(':scope > .frame').forEach(function (f, i) { f.hidden = (i !== n); });\n" ++ˢ
+  "    if (n === 0) return 0;\n" ++ˢ
+  "    var r = a.dataset.rests.split(',');\n" ++ˢ
+  "    return +r[Math.min(n, r.length) - 1];\n" ++ˢ
   "  }\n" ++ˢ
-  "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(sync); }\n" ++ˢ
+  "  function show(a, i) {\n" ++ˢ
+  "    a.dataset.cur = String(i);\n" ++ˢ
+  "    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });\n" ++ˢ
+  "  }\n" ++ˢ
+  "  function sync(a, jump) {\n" ++ˢ
+  "    if (!a) return;\n" ++ˢ
+  "    clearInterval(a._timer);\n" ++ˢ
+  "    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);\n" ++ˢ
+  "    if (jump || ms === 0 || t === cur) { show(a, t); return; }\n" ++ˢ
+  "    a._timer = setInterval(function () {\n" ++ˢ
+  "      cur += (t > cur ? 1 : -1);\n" ++ˢ
+  "      show(a, cur);\n" ++ˢ
+  "      if (cur === t) clearInterval(a._timer);\n" ++ˢ
+  "    }, ms);\n" ++ˢ
+  "  }\n" ++ˢ
+  "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }\n" ++ˢ
   "  Reveal.on('ready', function (e) { all(e.currentSlide); });\n" ++ˢ
   "  Reveal.on('slidechanged', function (e) { all(e.currentSlide); });\n" ++ˢ
-  "  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation')); });\n" ++ˢ
-  "  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation')); });\n" ++ˢ
+  "  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
+  "  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
   "})();\n"
 
 -- `init.js`: the options plus the plugins (which are JavaScript values, not

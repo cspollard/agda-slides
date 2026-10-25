@@ -104,8 +104,8 @@ module Content where
   diagram : Diagram → Content
   diagram d = cmd (Core.diagram d)
 
-  animation : Diagram → List Diagram → Content
-  animation d ds = cmd (Core.animation d ds)
+  animation : Diagram → List Diagram → ℕ → List ℕ → Content
+  animation d ds ms rs = cmd (Core.animation d ds ms rs)
 
   script : String → Content
   script js = cmd (Core.script js)
@@ -179,14 +179,16 @@ placed x y w h c = impure (inj₂ (Core.placed x y w h c) , λ _ → pure tt)
 diagram : Diagram → Body
 diagram d = liftContent (Content.diagram d)
 
--- Frames of an animation, one per step (see `Slides.Anim.Render`).
-animation : Diagram → List Diagram → Body
-animation d ds = liftContent (Content.animation d ds)
+-- Frames of an animation (see `Slides.Anim.Render` for building them).
+animation : Diagram → List Diagram → ℕ → List ℕ → Body
+animation d ds ms rs = liftContent (Content.animation d ds ms rs)
 
--- An animation (`Slides.Anim.Syntax`) as one step per tick: `animate name width a`;
--- `name` is unique in the deck and `width` the displayed percent.
-animate : String → ℕ → Anim ℕ (Seg ℕ) → Body
-animate n pct a = liftContent (Content.cmd (render n pct a))
+-- Animations (`Slides.Anim.Syntax`): `animate name width ms acts`.  Each act is
+-- one step of the slide: it plays, a frame every `ms` milliseconds, when the step
+-- is reached, and the slide waits at its last frame.  `name` is unique in the
+-- deck and `width` the displayed percent.
+animate : String → ℕ → ℕ → List (Anim ℕ (Seg ℕ)) → Body
+animate n pct ms acts = liftContent (Content.cmd (render n pct ms acts))
 
 -- JavaScript for the reveal.js and standalone backends, run once when its
 -- slide is first shown (`slide` is the slide element); and an empty element
