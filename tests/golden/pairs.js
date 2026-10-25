@@ -4,11 +4,11 @@
 //
 //   PAIRS.title(slide, id)         drifting point pairs on a canvas in #id
 //   PAIRS.flow(slide)              pulses travelling along every .flow line
-//   PAIRS.cycle(slide, ids, opts)  light up the nodes with these ids in turn
-//   PAIRS.bump(slide, id)          a histogram filling with simulated events
-//   PAIRS.grow(slide)              grow .bar rectangles, count up .stat numbers
 //
-// Animations only advance while their slide is the current one.
+// These two are free-running decoration.  Everything that follows the slide's
+// steps (lit stages, the growing bars, the histogram) is an `animate` of
+// `Slides.Anim` and needs no script.  Animations only advance while their slide
+// is the current one.
 (function () {
   var NS = 'http://www.w3.org/2000/svg';
 
@@ -19,11 +19,6 @@
       t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
       return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
-  }
-
-  function normal(rand) {
-    var u = 1 - rand(), v = rand();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
   function active(slide) { return slide.classList.contains('present'); }
@@ -111,94 +106,5 @@
     });
   }
 
-  // ------------------------------------------------------------ cycle
-  // opts.accumulate: keep earlier nodes lit (a chain builds up, then restarts)
-  function cycle(slide, ids, opts) {
-    var acc = opts && opts.accumulate, step = (opts && opts.seconds) || 1.6;
-    var nodes = ids.map(function (i) { return slide.querySelector('#' + i); }).filter(Boolean);
-    if (!nodes.length) return;
-    var clock = 0, shown = -1;
-    loop(slide, function (now, dt) {
-      clock += dt;
-      var n = Math.floor(clock / step) % (nodes.length + (acc ? 1 : 0));
-      if (n === shown) return;
-      shown = n;
-      nodes.forEach(function (e, j) {
-        e.classList.toggle('on', acc ? j < n : j === n);
-      });
-    });
-  }
-
-  // ------------------------------------------------------------ bump
-  function bump(slide, id) {
-    var host = slide.querySelector('#' + id);
-    if (!host) return;
-    var W = 560, H = 320, L = 40, R = 540, B = 270, T = 30;
-    var lo = -4, hi = 5, nb = 36, bw = (R - L) / nb;
-    var theta = .12, psi = 1.8, total = 2500, rand = mulberry(11);
-    var bkg = [], sig = [], n = 0;
-    for (var i = 0; i < nb; i++) { bkg.push(0); sig.push(0); }
-
-    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H });
-    svg.appendChild(svgEl('line', { x1: L, y1: B, x2: R, y2: B, class: 'axis' }));
-    var bars = [];
-    for (i = 0; i < nb; i++) {
-      var b = svgEl('rect', { x: L + i * bw + 1, y: B, width: bw - 2, height: 0, class: 'hist-bkg' });
-      var s = svgEl('rect', { x: L + i * bw + 1, y: B, width: bw - 2, height: 0, class: 'hist-sig' });
-      svg.appendChild(b); svg.appendChild(s); bars.push([b, s]);
-    }
-    [-4, -2, 0, 2, 4].forEach(function (v) {
-      var x = L + (v - lo) / (hi - lo) * (R - L);
-      var t = svgEl('text', { x: x, y: B + 24, 'text-anchor': 'middle', 'font-size': 16, class: 'dim' });
-      t.textContent = v; svg.appendChild(t);
-    });
-    var cap = svgEl('text', { x: L, y: 18, 'font-size': 18 });
-    svg.appendChild(cap);
-    host.appendChild(svg);
-
-    function add() {
-      var isSig = rand() < theta;
-      var x = isSig ? psi + .1 * normal(rand) : normal(rand);
-      var k = Math.floor((x - lo) / (hi - lo) * nb);
-      if (k < 0 || k >= nb) return;
-      (isSig ? sig : bkg)[k]++;
-    }
-    function draw() {
-      var m = 1;
-      for (var i = 0; i < nb; i++) m = Math.max(m, bkg[i] + sig[i]);
-      var scale = (B - T - 10) / m;
-      for (i = 0; i < nb; i++) {
-        var hb = bkg[i] * scale, hs = sig[i] * scale;
-        bars[i][0].setAttribute('y', B - hb); bars[i][0].setAttribute('height', hb);
-        bars[i][1].setAttribute('y', B - hb - hs); bars[i][1].setAttribute('height', hs);
-      }
-      cap.textContent = 'N = ' + n + ' events';
-    }
-    loop(slide, function () {
-      for (var j = 0; j < 14 && n < total; j++) { add(); n++; }
-      draw();
-    });
-  }
-
-  // ------------------------------------------------------------ grow
-  function countUp(el) {
-    var m = /^([^0-9.]*)([0-9]+(?:\.[0-9]+)?)(.*)$/.exec(el.textContent.trim());
-    if (!m) return;
-    var to = parseFloat(m[2]), dec = (m[2].split('.')[1] || '').length, t0 = performance.now();
-    (function step(now) {
-      var f = Math.min(1, (now - t0) / 1500), e = 1 - Math.pow(1 - f, 3);
-      el.textContent = m[1] + (to * e).toFixed(dec) + m[3];
-      if (f < 1) requestAnimationFrame(step);
-    })(t0);
-  }
-
-  function grow(slide) {
-    Array.prototype.forEach.call(slide.querySelectorAll('.bar'), function (b, i) {
-      b.style.transitionDelay = (i * .25) + 's';
-      requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.add('go'); }); });
-    });
-    Array.prototype.forEach.call(slide.querySelectorAll('.count'), countUp);
-  }
-
-  window.PAIRS = { title: title, flow: flow, cycle: cycle, bump: bump, grow: grow };
+  window.PAIRS = { title: title, flow: flow };
 })();

@@ -4,13 +4,23 @@
 -- Sets" (Wehenkel, Kagan, Heinrich, Pollard; arXiv:2605.07972) in eleven
 -- slides.  It uses typed math, SVG diagrams, cards and callouts styled by
 -- `assets/pairs/pairs.css`, and the animations of `assets/pairs/pairs.js`
--- (point pairs, pulses along arrows, a live histogram, growing bars and
--- counters).  See `docs/PairsDeck.md`.
+-- (point pairs and pulses along arrows).  Lit stages, the filling histogram, the
+-- growing bars and the counters are `Slides.Anim` animations: a parameter
+-- follows a track and the diagram is a function of it, one reveal step per act.
+-- See `docs/PairsDeck.md`.
 
 module Slides.Examples.Pairs where
 
-open import Data.List using (List; _∷_; [])
-open import Data.Nat using (ℕ; _+_; _∸_)
+open import Data.List using (List; _∷_; []; map; zipWith)
+open import Data.Bool using (Bool; true; false; if_then_else_)
+open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
+open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
+open import Slides.Anim.Render using (render)
+import Slides.Anim.Track as T
+import Data.Rational as ℚ
+open import Data.Integer using (+_)
+open import Data.Nat.Show using (show)
+open import Data.Nat.DivMod using (_/_; _%_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
 open import Slides.Core using (Deck; emph; strong; inlineMath; link; codeSpan)
@@ -150,10 +160,10 @@ pipeline = compile "d-pipeline" 100 pipelineDia
 -- Slide 6: PAIRS
 
 -- A card of centred text lines: a title, body lines and a small note.
--- The id lets scripts light the card up; it is also the name `connect` uses.
-infoCard : (id : String) → ℕ → ℕ → ℕ → ℕ → String → List String → List String → Dia ℕ
-infoCard i w h tsize bsize title body note =
-  named i (framed w h (rounded 18 (withId i (cls "node")))
+-- `on` lights the card up (the CSS class `on`); the name is for `connect`.
+infoCard : Bool → (id : String) → ℕ → ℕ → ℕ → ℕ → String → List String → List String → Dia ℕ
+infoCard on i w h tsize bsize title body note =
+  named i (framed w h (rounded 18 (cls (if on then "node on" else "node")))
     (topAligned (h ∸ 50)
       (vcat 6 ( text tsize title (cls "big")
               ∷ lines bsize body defaultStyle
@@ -163,39 +173,99 @@ infoCard i w h tsize bsize title body note =
 arrowAm : Style
 arrowAm = cls "flow am"
 
-stagesDia : Dia ℕ
-stagesDia =
+-- the diagram with the stages `lit` shown highlighted
+stagesDia : (ℕ → Bool) → Dia ℕ
+stagesDia lit =
   margin 10 20 10 30
-    (⟨ infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
-     ∷ infoCard "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
-     ∷ infoCard "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
+    (⟨ infoCard (lit 1) "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
+     ∷ infoCard (lit 2) "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
+     ∷ infoCard (lit 3) "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
      ∷ [] ⟩ₕ 45
      ▹[ arrowAm ] ("st1" ⟶ "st2" ∷ "st2" ⟶ "st3" ∷ []))
 
-stages : Diagram
-stages = compile "d-stages" 100 stagesDia
+-- one reveal step lights up the next stage
+stageActs : List (Anim ℕ (Seg ℕ))
+stageActs = (hold 1 (stagesDia (λ _ → false)) ⨾ hold 1 (stagesDia (_≡ᵇ 1)))
+          ∷ hold 1 (stagesDia (_≡ᵇ 2))
+          ∷ hold 1 (stagesDia (_≡ᵇ 3))
+          ∷ []
 
 ------------------------------------------------------------------------
 -- Slide 7: why pairs are enough
 
-chainDia : Dia ℕ
-chainDia =
+-- the diagram with the first `k` links lit
+chainDia : ℕ → Dia ℕ
+chainDia k =
   margin 10 20 15 20
-    (⟨ infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
-     ∷ infoCard "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
-     ∷ infoCard "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
-     ∷ infoCard "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
+    (⟨ infoCard (1 ≤ᵇ k) "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
+     ∷ infoCard (2 ≤ᵇ k) "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
+     ∷ infoCard (3 ≤ᵇ k) "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
+     ∷ infoCard (4 ≤ᵇ k) "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
      ∷ [] ⟩ₕ 45
      ▹[ arrowAm ] ("c1" ⟶ "c2" ∷ "c2" ⟶ "c3" ∷ "c3" ⟶ "c4" ∷ []))
 
-chain : Diagram
-chain = compile "d-chain" 100 chainDia
+-- one reveal step lights one more link; earlier ones stay lit
+chainActs : List (Anim ℕ (Seg ℕ))
+chainActs = (hold 1 (chainDia 0) ⨾ hold 1 (chainDia 1))
+          ∷ hold 1 (chainDia 2)
+          ∷ hold 1 (chainDia 3)
+          ∷ hold 1 (chainDia 4)
+          ∷ []
+
+------------------------------------------------------------------------
+-- Growing: a parameter `q` runs from 0 to 1 along an ease-out curve, and the
+-- diagram is a function of it (the tracks of `Slides.Anim.Track`)
+
+-- `ticks` frames of the curve, then the end state: one act, one reveal step
+grow : ℕ → (ℚ.ℚ → Dia ℕ) → Anim ℕ (Seg ℕ)
+grow ticks f = tween ticks (+ 0 ℚ./ 1) (+ 1 ℚ./ 1) (T.Bezier (+ 20) (+ 90) (+ 20) (+ 100)) f
+             ⨾ hold 1 (f (+ 1 ℚ./ 1))
+
+-- `q` of a quantity, in whole units
+part : ℚ.ℚ → ℕ → ℕ
+part q v = units (q ℚ.* (+ v ℚ./ 1))
+
+-- a number of hundredths / thousandths as a decimal
+fixed2 fixed3 : ℕ → String
+fixed2 n = show (n / 100) ++ˢ "." ++ˢ pad 10 (n % 100)
+  where pad : ℕ → ℕ → String
+        pad lim k = if k <ᵇ lim then "0" ++ˢ show k else show k
+fixed3 n = show (n / 1000) ++ˢ "." ++ˢ pad (n % 1000)
+  where pad : ℕ → String
+        pad k = if k <ᵇ 10 then "00" ++ˢ show k else if k <ᵇ 100 then "0" ++ˢ show k else show k
+
+------------------------------------------------------------------------
+-- Slide 3: a bump hunt
+
+-- Bin heights (pixels) of 2500 simulated events: a standard-normal background
+-- and a narrow signal bump at ψ = 1.8 with θ = 0.12 (one realisation, 36 bins
+-- over [-4, 5]).  The animation fills the histogram: at parameter `q` each bar
+-- stands `q` of the way up and the caption counts `q` of the events.
+backgroundBins signalBins : List ℕ
+backgroundBins = 1 ∷ 0 ∷ 1 ∷ 3 ∷ 4 ∷ 6 ∷ 15 ∷ 18 ∷ 34 ∷ 49 ∷ 87 ∷ 101 ∷ 137 ∷ 158 ∷ 205 ∷ 230 ∷ 178 ∷ 203 ∷ 169 ∷ 133 ∷ 119 ∷ 85 ∷ 61 ∷ 42 ∷ 22 ∷ 16 ∷ 7 ∷ 3 ∷ 2 ∷ 1 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ []
+signalBins     = 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 93 ∷ 188 ∷ 6 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ 0 ∷ []
+
+-- a bar of the histogram: signal stacked on background, `q` of the way up
+histBar : ℚ.ℚ → ℕ → ℕ → Dia ℕ
+histBar q b s = ↔ 2 ∥ (rectangle 12 (part q s) (cls "hist-sig") ═ rectangle 12 (part q b) (cls "hist-bkg"))
+
+histogram : ℚ.ℚ → Dia ℕ
+histogram q =
+  margin 10 0 10 0
+    (dim 18 ("N = " ++ˢ show (part q 2500) ++ˢ " events") ═ ↕ 10
+     ═ ((↔ 55 ∥ hcatA bottom 0 (zipWith (histBar q) backgroundBins signalBins)) ═ segment 500 0 (cls "axis"))
+     ═ ↕ 6 ═ ticks)
+  where
+    ticks = ↔ 0 ∥ hcat 0 (map (λ t → boxWidth 111 (dim 16 t)) ("-4" ∷ "-2" ∷ "0" ∷ "2" ∷ "4" ∷ []))
+
+bump : Slides.Core.Content
+bump = Content.cmd (render "bump" 100 130 (grow 12 histogram ∷ []))
 
 ------------------------------------------------------------------------
 -- Slide 9: a result
 
-resultsDia : Dia ℕ
-resultsDia =
+resultsDia : ℚ.ℚ → Dia ℕ
+resultsDia q =
   margin 30 0 30 0
     (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)" ═ ↕ 14
      ═ (bars ═ segment 510 0 (cls "axis")) ═ ↕ 12 ═ captions)
@@ -204,9 +274,9 @@ resultsDia =
     column = boxWidth 160
     bars =
       hcatA bottom 0
-        ( column (text 24 "1.17" (cls "stat plum count") ═ ↕ 2 ═ rectangle 120 234 (cls "bar b1"))
-        ∷ column (text 24 "0.35" (cls "stat count") ═ ↕ 2 ═ rectangle 120 70 (cls "bar b2"))
-        ∷ column (text 24 "0.05" (cls "stat rust count") ═ ↕ 2 ═ rectangle 120 10 (cls "bar b3"))
+        ( column (text 24 (fixed2 (part q 117)) (cls "stat plum") ═ ↕ 2 ═ rectangle 120 (part q 234) (cls "b1"))
+        ∷ column (text 24 (fixed2 (part q 35)) (cls "stat") ═ ↕ 2 ═ rectangle 120 (part q 70) (cls "b2"))
+        ∷ column (text 24 (fixed2 (part q 5)) (cls "stat rust") ═ ↕ 2 ═ rectangle 120 (part q 10) (cls "b3"))
         ∷ [])
     captions =
       ⟨ column (big 19 "N = 1" ═ ↕ 4 ═ dim 14 "per observation")
@@ -214,8 +284,8 @@ resultsDia =
       ∷ column (big 19 "N = 1–10" ═ ↕ 4 ═ dim 14 "3–4× the pretraining")
       ∷ [] ⟩ₕ 0
 
-results : Diagram
-results = compile "d-results" 100 resultsDia
+results : Slides.Core.Content
+results = Content.cmd (render "d-results" 100 130 (grow 10 resultsDia ∷ []))
 
 ------------------------------------------------------------------------
 -- Slide 10: cost and scale
@@ -230,18 +300,18 @@ tile c n body note =
                ∷ dim 16 note
                ∷ [])))
 
-tilesDia : Dia ℕ
-tilesDia =
+tilesDia : ℚ.ℚ → Dia ℕ
+tilesDia q =
   margin 10 10 10 20 (
   hcat 20
-    ( tile "stat count" "≈100×" ("less compute than" ∷ "end-to-end training" ∷ []) "at N = 1000"
+    ( tile "stat" ("≈" ++ˢ show (part q 100) ++ˢ "×") ("less compute than" ∷ "end-to-end training" ∷ []) "at N = 1000"
     ∷ tile "stat crimson" "3–4×" ("cheaper than a larger" ∷ "pretraining, N = 1–10" ∷ []) "and no better on 3 of 4 tasks"
-    ∷ tile "stat rust count" "128" ("scenes per batch at N = 2" ∷ "(≈ 2 at N = 100)" ∷ []) "one H100-80GB, novel views"
-    ∷ tile "stat plum count" "0.004" ("novel-view MSE at N = 100" ∷ "(0.011 at N = 1)" ∷ []) "error falls as the set grows"
+    ∷ tile "stat rust" (show (part q 128)) ("scenes per batch at N = 2" ∷ "(≈ 2 at N = 100)" ∷ []) "one H100-80GB, novel views"
+    ∷ tile "stat plum" (fixed3 (part q 4)) ("novel-view MSE at N = 100" ∷ "(0.011 at N = 1)" ∷ []) "error falls as the set grows"
     ∷ []))
 
-tiles : Diagram
-tiles = compile "d-tiles" 100 tilesDia
+tiles : Slides.Core.Content
+tiles = Content.cmd (render "d-tiles" 100 130 (grow 10 tilesDia ∷ []))
 
 -- Every `connect` refers to a name that is declared; a misspelling stops the
 -- deck from typechecking (see `Slides.Diagram.Names`).
@@ -249,9 +319,9 @@ _ : dangling problemDia ≡ []
 _ = refl
 _ : dangling pipelineDia ≡ []
 _ = refl
-_ : dangling stagesDia ≡ []
+_ : dangling (stagesDia (λ _ → false)) ≡ []
 _ = refl
-_ : dangling chainDia ≡ []
+_ : dangling (chainDia 0) ≡ []
 _ = refl
 
 ------------------------------------------------------------------------
@@ -307,8 +377,8 @@ pairs = do
   slide (do
     heading 2 "A bump hunt, event by event"
     columns
-      ( (do Content.mount "bump"
-            p■ "simulated live in your browser: background gray, signal crimson")
+      ( (do bump
+            p■ "simulated events: background gray, signal crimson")
       ∷ (do Content.bullets
               ( ("signal fraction " ∷ inlineMath θ ∷ " in [0, 1]" ∷ [])
               ∷ ("signal location " ∷ inlineMath ψ ∷ " unknown" ∷ [])
@@ -317,8 +387,7 @@ pairs = do
               ∷ []))
       ∷ [])
     classed "callout"
-      (p■ "At N = 100 the PAIRS posterior width tracks MCMC on the full set; the naive product of per-event posteriors is underconfident.")
-    script "PAIRS.bump(slide, 'bump')")
+      (p■ "At N = 100 the PAIRS posterior width tracks MCMC on the full set; the naive product of per-event posteriors is underconfident."))
 
   -- 4 ------------------------------------------------------------------
   slide (do
@@ -348,10 +417,9 @@ pairs = do
   slide (do
     heading 2 "PAIRS: train on pairs, finetune on aggregates"
     classed "small" (p■ "Pretraining Aggregators for Inference at aRbitrary Set-sizes")
-    diagram stages
+    animate "d-stages" 100 0 stageActs
     classed "callout"
-      (p■ "Training memory and compute no longer depend on the largest set size.")
-    script "PAIRS.flow(slide); PAIRS.cycle(slide, ['st1', 'st2', 'st3'])")
+      (p■ "Training memory and compute no longer depend on the largest set size."))
 
   -- 7 ------------------------------------------------------------------
   slide (do
@@ -361,11 +429,10 @@ pairs = do
           p■ ("If a mean-pooled statistic is sufficient at every " ∷ inlineMath N
             ∷ ", a network trained to be sufficient at " ∷ inlineMath (M.rel M.elem N (M.raw "\\{1, 2\\}"))
             ∷ " is sufficient at every " ∷ inlineMath N ∷ ", and the two statistics differ by an affine map." ∷ []))
-    diagram chain
+    animate "d-chain" 100 0 chainActs
     classed "small"
       (p■ ("At N = 2 the constraint is the additive equation " ∷ inlineMath cauchy
-        ∷ ". Mean-pool sufficiency holds exactly when the marginals are an exponential family; errors in pair training degrade gracefully." ∷ []))
-    script "PAIRS.flow(slide); PAIRS.cycle(slide, ['c1', 'c2', 'c3', 'c4'], {accumulate: true, seconds: 1.3})")
+        ∷ ". Mean-pool sufficiency holds exactly when the marginals are an exponential family; errors in pair training degrade gracefully." ∷ [])))
 
   -- 8 ------------------------------------------------------------------
   slide (do
@@ -391,7 +458,7 @@ pairs = do
   slide (do
     heading 2 "Results"
     columns
-      ( Content.diagram results
+      ( results
       ∷ Content.bullets
           ( ("PAIRS " ∷ strong "matches or beats" ∷ " every baseline on nearly all tasks" ∷ [])
           ∷ "improves monotonically with N, though pretrained only at N ≤ 2"
@@ -399,15 +466,15 @@ pairs = do
           ∷ "N = 1 falls behind where nuisance coupling matters"
           ∷ [])
       ∷ [])
-    script "PAIRS.grow(slide)")
+    )
 
   -- 10 -----------------------------------------------------------------
   slide (do
     heading 2 "Cost and scale"
-    diagram tiles
+    liftContent tiles
     classed "callout"
       (p■ "Novel-view synthesis: three coloured spheres, a flow-matching head, one model for N from 1 to 100.")
-    script "PAIRS.grow(slide)")
+    )
 
   -- 11 -----------------------------------------------------------------
   slide (do

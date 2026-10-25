@@ -1,7 +1,7 @@
 /* Look of the "It Just Takes Two" deck: a classic light theme over reveal.js's `white`.
    Grayscale by default; a restrained set of accents is kept for the things the
    eye should land on.  Classes used by the deck: .card .callout .tag .subtitle
-   .hero (layout); .node .on .lbl .dim .flow .pulse .bar .tile (diagram elements);
+   .hero (layout); .node .on .lbl .dim .flow .pulse .tile (diagram elements);
    colour roles .blue .crimson .plum .rust. */
 
 :root {
@@ -91,11 +91,6 @@
 .reveal svg .flow { stroke-width: 2; stroke-dasharray: 5 6; opacity: .75; }
 .reveal svg .pulse { fill: var(--crimson); }
 .reveal svg .axis { stroke: var(--muted); stroke-width: 2; }
-.reveal svg .bar {
-  transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0);
-  transition: transform 1.3s cubic-bezier(.2, .9, .2, 1);
-}
-.reveal svg .bar.go { transform: scaleY(1); }
 .reveal svg .b1 { fill: #b9b9b9; }
 .reveal svg .b2 { fill: var(--blue); }
 .reveal svg .b3 { fill: #8a8a8a; }

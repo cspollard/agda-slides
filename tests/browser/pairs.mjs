@@ -1,5 +1,5 @@
 // Drives the rendered "It Just Takes Two" deck (`make pairs`): structure,
-// the SVG diagrams, and every JavaScript animation.
+// the SVG diagrams, the `Slides.Anim` animations and the two JavaScript ones.
 //
 // usage: node pairs.mjs [outdir [deck]]   (default: ../../out, deck `pairs`;
 // `pairs-local` is the build with a local copy of reveal.js)
@@ -42,8 +42,8 @@ eq('reveal.js came from the expected place', await ev(() => Array.from(document.
 eq('pairs.js loaded', await ev(() => typeof PAIRS.title), 'function');
 check('stylesheet applied', await ev(() => getComputedStyle(document.querySelector('.card')).borderRadius !== '0px'));
 eq('diagram slides', await ev(() =>
-  Reveal.getHorizontalSlides().map(s => s.querySelectorAll('.diagram svg').length).join(',')),
-  '0,1,0,0,1,1,1,0,1,1,0');
+  Reveal.getHorizontalSlides().map(s => Array.from(s.querySelectorAll('.diagram svg')).filter(v => !v.closest('.frame[hidden]')).length).join(',')),
+  '0,1,1,0,1,1,1,0,1,1,0');
 eq('math rendered on slides 2, 5, 7', await ev(() =>
   [1, 4, 6].map(i => Reveal.getHorizontalSlides()[i].querySelectorAll('.katex').length > 0).join(',')), 'true,true,true');
 
@@ -68,48 +68,48 @@ await wait(400);
 const p1 = await ev(() => document.querySelector('#d-problem .pulse').getAttribute('cx'));
 check('slide 2: pulses move', p0 !== p1, `${p0} = ${p1}`);
 
-console.log('-- live histogram');
-await go(2); await wait(1500);
-const hist = () => ev(() => {
-  const h = r => Array.from(document.querySelectorAll('#bump ' + r)).reduce((a, e) => a + +e.getAttribute('height'), 0);
-  return { bkg: h('.hist-bkg'), sig: h('.hist-sig'), cap: document.querySelector('#bump text:not(.dim)').textContent };
-});
-const h1 = await hist();
-check('histogram has background and signal', h1.bkg > 0 && h1.sig > 0, JSON.stringify(h1));
-await wait(1500);
-const h2 = await hist();
-check('histogram keeps filling', +h2.cap.match(/\d+/)[0] > +h1.cap.match(/\d+/)[0], `${h1.cap} -> ${h2.cap}`);
-await wait(3500);
-eq('histogram stops at 2500 events', (await hist()).cap, 'N = 2500 events');
+// Animations of `Slides.Anim` are frames, shown one at a time; a reveal step
+// plays one act.
+const shown = id => page.evaluate(id => {
+  const f = document.querySelector(`#${id} > .frame:not([hidden])`);
+  return { index: Array.from(f.parentNode.querySelectorAll(':scope > .frame')).indexOf(f), text: Array.from(f.querySelectorAll('text')).map(e => e.textContent) };
+}, id);
+const press = async ms => { await ev(() => Reveal.nextFragment()); await wait(ms); };
+
+console.log('-- histogram (an animation)');
+await go(2); await wait(300);
+eq('slide 3: starts empty', (await shown('bump-0-frames')).text[0], 'N = 0 events');
+const heights = r => page.evaluate(r => Array.from(document.querySelectorAll(`#bump-0-frames > .frame:not([hidden]) ${r}`)).reduce((a, e) => a + +e.getAttribute('height'), 0), r);
+eq('slide 3: no bars yet', await heights('.hist-bkg'), 0);
+await press(2500);
+eq('slide 3: one step fills it to 2500 events', (await shown('bump-0-frames')).text[0], 'N = 2500 events');
+check('slide 3: background and signal drawn', (await heights('.hist-bkg')) > 0 && (await heights('.hist-sig')) > 0);
 
 console.log('-- fragments');
 await go(3);
 eq('slide 4: one fragment (the callout)', await ev(() => Reveal.getCurrentSlide().querySelectorAll('.fragment').length), 1);
 
-console.log('-- highlighting cycles');
+console.log('-- highlighting (animations)');
+const lit = id => page.evaluate(id => document.querySelectorAll(`#${id} > .frame:not([hidden]) .node.on`).length, id);
 await go(5); await wait(300);
-const lit = new Set();
-for (let i = 0; i < 12; i++) {
-  lit.add(await ev(() => ['st1', 'st2', 'st3'].filter(i => document.getElementById(i).classList.contains('on')).join('+')));
-  await wait(450);
-}
-check('slide 6: each stage lights up in turn', ['st1', 'st2', 'st3'].every(i => lit.has(i)), [...lit].join(' | '));
-await go(6);
-const chain = new Set();
-for (let i = 0; i < 14; i++) {
-  chain.add(await ev(() => ['c1', 'c2', 'c3', 'c4'].filter(i => document.getElementById(i).classList.contains('on')).length));
-  await wait(450);
-}
-check('slide 7: the chain builds up', [0, 1, 2, 3].every(n => chain.has(n)), [...chain].join(','));
+const stages = [await lit('d-stages-0-frames')];
+for (let i = 0; i < 3; i++) { await press(100); stages.push(await lit('d-stages-0-frames')); }
+eq('slide 6: each step lights the next stage', stages, [0, 1, 1, 1]);
+await go(6); await wait(300);
+const chain = [await lit('d-chain-0-frames')];
+for (let i = 0; i < 4; i++) { await press(100); chain.push(await lit('d-chain-0-frames')); }
+eq('slide 7: the chain builds up', chain, [0, 1, 2, 3, 4]);
 
-console.log('-- bars and counters');
-await go(8); await wait(2800);
-eq('slide 9: bars grown', await ev(() => document.querySelectorAll('#d-results .bar.go').length), 3);
-eq('slide 9: counters reach the paper\'s numbers', await ev(() =>
-  Array.from(document.querySelectorAll('#d-results .count')).map(e => e.textContent)), ['1.17', '0.35', '0.05']);
-await go(9); await wait(2800);
-eq('slide 10: counters reach their targets', await ev(() =>
-  Array.from(document.querySelectorAll('#d-tiles .count')).map(e => e.textContent)), ['≈100×', '128', '0.004']);
+console.log('-- bars and counters (animations)');
+await go(8); await wait(300);
+eq('slide 9: starts at zero', (await shown('d-results-0-frames')).text.slice(1, 4), ['0.00', '0.00', '0.00']);
+await press(2500);
+eq('slide 9: counters reach the paper\'s numbers', (await shown('d-results-0-frames')).text.slice(1, 4), ['1.17', '0.35', '0.05']);
+eq('slide 9: bars grown', await ev(() => Array.from(document.querySelectorAll('#d-results-0-frames > .frame:not([hidden]) :is(rect.b1, rect.b2, rect.b3)')).map(e => +e.getAttribute('height'))), [234, 70, 10]);
+await go(9); await wait(300);
+await press(2500);
+eq('slide 10: counters reach their targets', (await ev(() =>
+  Array.from(document.querySelectorAll('#d-tiles-0-frames > .frame:not([hidden]) text')).map(e => e.textContent))).filter(t => /^[≈0-9]/.test(t) && !/ /.test(t)), ['≈100×', '3–4×', '128', '0.004']);
 
 console.log('-- closing slide');
 await go(10); await wait(600);
