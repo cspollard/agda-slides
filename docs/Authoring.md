@@ -182,6 +182,40 @@ stages = compile "d-stages" 100 (margin 10 20 10 30
      ▹[ cls "flow am" ] ("a" ⟶ "b" ∷ [])))
 ```
 
+**Typing the operators in Emacs.** In `agda2-mode` (or any buffer using the Agda
+input method) each symbol is `\` followed by a key sequence. Most are in the
+standard table:
+
+| Symbol | Keys | Symbol | Keys |
+|---|---|---|---|
+| `∥` | `\\|\|` (two bars) | `⟶` | `\r--` (or `\-->`) |
+| `═` | `\--=` | `⟱` | `\d==` |
+| `⊙` | `\o.` | `⇒` | `\=>` (or `\r=`) |
+| `↔` | `\<->` (or `\lr-`) | `⊢` | `\\|-` |
+| `↕` | `\ud-` | `∶` | `\:` |
+| `⟨` `⟩` | `\<` `\>` | `↑` `↓` | `\u-` `\d-` |
+| `ₕ` `ᵥ` | `\_h` `\_v` | `◂` | `\t` |
+
+`⦂`, `⌄`, `⌃`, `▹` and `▸` have no direct key sequence (`⦂` and `▹` are later
+entries of the `\:` and `\tw` candidate lists; `⌄` and `⌃` are not in the table).
+Add them to your Emacs configuration:
+
+```elisp
+(with-eval-after-load 'agda-input
+  (add-to-list 'agda-input-user-translations '("nm"   . ("⦂")))   ; \nm   named
+  (add-to-list 'agda-input-user-translations '("lbld" . ("⌄")))   ; \lbld caption below
+  (add-to-list 'agda-input-user-translations '("lblu" . ("⌃")))   ; \lblu caption above
+  (add-to-list 'agda-input-user-translations '("t>"   . ("▹")))   ; \t>   edge list
+  (add-to-list 'agda-input-user-translations '("tr"   . ("▸")))   ; \tr   align right
+  (agda-input-setup))
+```
+
+so that `\nm`, `\lbld`, `\lblu`, `\t>` and `\tr` type them. The operators with
+several symbols are typed one symbol at a time: `∥↑` is `\||` then `\u-`, `═◂` is
+`\--=` then `\t`, and `▹[` is `\t>` then `[`. `agda-input-user-translations`
+is the standard hook for this; `M-x describe-char` on a symbol shows its key
+sequence if you want to check one.
+
 Coordinates are natural numbers, so a diagram always grows to the right and
 down; there is no rotation or scaling. Styles and CSS classes work exactly as
 for raw elements. `Slides.Examples.Pairs` builds all its diagrams this way.
