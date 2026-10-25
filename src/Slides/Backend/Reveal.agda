@@ -214,6 +214,23 @@ scriptLoader =
   "  Reveal.on('slidechanged', function (e) { run(e.currentSlide); });\n" ++ˢ
   "})();\n"
 
+-- The frame of an animation (`.animation`, see `renderAnimation`) is the number
+-- of its visible `.anim-step` fragments.
+animationSync : String
+animationSync =
+  "(function () {\n" ++ˢ
+  "  function sync(a) {\n" ++ˢ
+  "    if (!a) return;\n" ++ˢ
+  "    var n = a.querySelectorAll('.anim-step.visible').length;\n" ++ˢ
+  "    a.querySelectorAll(':scope > .frame').forEach(function (f, i) { f.hidden = (i !== n); });\n" ++ˢ
+  "  }\n" ++ˢ
+  "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(sync); }\n" ++ˢ
+  "  Reveal.on('ready', function (e) { all(e.currentSlide); });\n" ++ˢ
+  "  Reveal.on('slidechanged', function (e) { all(e.currentSlide); });\n" ++ˢ
+  "  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation')); });\n" ++ˢ
+  "  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation')); });\n" ++ˢ
+  "})();\n"
+
 -- `init.js`: the options plus the plugins (which are JavaScript values, not
 -- JSON), the script loader, and the deck's own scripts.
 initScript : RevealConfig → String
@@ -221,6 +238,7 @@ initScript cfg =
   "Reveal.initialize(Object.assign(" ++ˢ renderJSON (options cfg) ++ˢ
   ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n" ++ˢ
   scriptLoader ++ˢ
+  animationSync ++ˢ
   concat (map (_++ˢ "\n") (RevealConfig.scripts cfg))
 
 -- `index.html`, with the (unverified, constant) doctype prefix.

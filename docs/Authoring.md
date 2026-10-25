@@ -280,6 +280,26 @@ layout command.
 Both backends render these. A future backend that cannot render a feature
 lowers it or refuses the deck; see `docs/Design.md`.
 
+## Animations
+
+An animation is a term of `Anim ℕ (Seg ℕ)` (`Slides.Anim.Syntax`): a free monad over
+`Seq` (`a ⨾ b`, one after the other) and `Par` (together), whose leaves are
+`hold n d`, the diagram `d` shown for `n` ticks. `par O a b` pads the shorter side with
+an empty pause; `parI natOps a b` additionally requires that the two sides declare no
+common `named` name, and is a type error otherwise (`Slides.Anim.Footprint`). In a deck,
+
+```agda
+animate "mover" 60 (parI natOps mover counter)
+```
+
+emits every tick as a frame (all the same size) and one reveal fragment per further
+tick: each fragment press shows the next frame, and going back shows the previous one.
+Without JavaScript the first frame stays. `dur a` is the number of ticks. Laws (`Seq`
+associative, the swap `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)`, `Par` commutative up to
+a permutation of drawing order) are in `Slides.Anim.Timeline`, `Footprint` and
+`Slides.Diagram.Commute`; `plan/Animations.md` has the design and what is open (paint
+tracks with easing).
+
 ## JavaScript
 
 `script js` runs a piece of JavaScript once, the first time its slide is shown,

@@ -47,7 +47,7 @@ open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Math using (toLaTeX)
 open import Slides.Backend.HTML
-open import Slides.Backend.Diagram using (renderDiagram)
+open import Slides.Backend.Diagram using (renderDiagram; renderAnimation)
 
 ------------------------------------------------------------------------
 -- The carrier
@@ -170,6 +170,7 @@ renderContent (references refs)   =
   ∷ []
 
 renderContent (diagram d)         = renderDiagram d ∷ []
+renderContent (animation d ds)    = renderAnimation d ds ∷ []
 renderContent (script js)         =
   hElement "div" (("class" , "js") ∷ ("hidden" , "") ∷ ("data-js" , js) ∷ []) [] ∷ []
 renderContent (mount i)           =

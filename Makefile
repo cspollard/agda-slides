@@ -161,6 +161,13 @@ test-playwright:
 	cd tests/browser && npm install --silent
 	node tests/browser/run.mjs out
 
+# Step through the animation slide of the intro deck (needs `make example` and a
+# reveal.js copy linked at out/intro/reveal).
+.PHONY: test-anim
+test-anim:
+	cd tests/browser && npm install --silent
+	node tests/browser/anim.mjs out
+
 # Drive the "It Just Takes Two" deck (needs `make pairs` first; also drives the
 # local-copy build if `make pairs-local` has been run).
 .PHONY: test-pairs

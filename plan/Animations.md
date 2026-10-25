@@ -280,7 +280,13 @@ Each step ends with `make check`, `make test`, and the browser run.
    `True (independent? a b)` (found as `tt`), so overlapping operands fail to typecheck
    (`tests/negative/OverlappingPar.agda`).
    Open: transfer of `atop`'s laws through layout (needs `Valid` frames).
-4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
+4. **Backend** (flipbook done; tracks open). `animation` content command (first frame and
+   the rest), `Slides.Anim.Render` (timeline → laid-out, equally sized `Diagram`s), DSL
+   `animate name width anim`, `renderAnimation` (all frames emitted, later ones `hidden`,
+   one empty `.anim-step` fragment per further step), `animationSync` in `init.js`,
+   golden test and `tests/browser/anim.mjs` (`make test-anim`, forward and backward).
+   Not done: the Pairs deck's animations are JavaScript, not replaced.
+   Original plan: An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.
 5. **Tracks.** `Track`, `Easing`, `eval` and its laws, the paint annotations with

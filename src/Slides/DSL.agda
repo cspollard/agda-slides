@@ -32,8 +32,10 @@ import Data.Container.FreeMonad as FM
 open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
+open import Slides.Anim.Syntax using (Anim; Seg)
+open import Slides.Anim.Render using (render)
 open import Slides.Core using ()
-open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; script; mount; classed)
+open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; animation; script; mount; classed)
 import Slides.Core as Core
 import Container.Interpret as Interpret
 open import Container.Sum using (inl)
@@ -101,6 +103,9 @@ module Content where
 
   diagram : Diagram → Content
   diagram d = cmd (Core.diagram d)
+
+  animation : Diagram → List Diagram → Content
+  animation d ds = cmd (Core.animation d ds)
 
   script : String → Content
   script js = cmd (Core.script js)
@@ -173,6 +178,15 @@ placed x y w h c = impure (inj₂ (Core.placed x y w h c) , λ _ → pure tt)
 -- An inline vector diagram (see `Slides.Diagram`).
 diagram : Diagram → Body
 diagram d = liftContent (Content.diagram d)
+
+-- Frames of an animation, one per step (see `Slides.Anim.Render`).
+animation : Diagram → List Diagram → Body
+animation d ds = liftContent (Content.animation d ds)
+
+-- An animation (`Slides.Anim.Syntax`) as one step per tick: `animate name width a`;
+-- `name` is unique in the deck and `width` the displayed percent.
+animate : String → ℕ → Anim ℕ (Seg ℕ) → Body
+animate n pct a = liftContent (Content.cmd (render n pct a))
 
 -- JavaScript for the reveal.js and standalone backends, run once when its
 -- slide is first shown (`slide` is the slide element); and an empty element

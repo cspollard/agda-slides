@@ -10,9 +10,9 @@
 module Slides.Backend.Diagram where
 
 open import Data.Char using (Char)
-open import Data.List using (List; []; _∷_; _++_; reverse; [_])
+open import Data.List using (List; []; _∷_; _++_; reverse; [_]; map; length)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _*_; _/_)
+open import Data.Nat using (ℕ; _*_; _/_; suc)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
@@ -145,3 +145,15 @@ private
 
 renderDiagram : Diagram → XMLM A
 renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name d) ∷ []) (svgOf d ∷ [])
+
+-- An animation is a flipbook: every frame is emitted, the first shown and the
+-- others `hidden`, followed by one empty fragment per further step.  The page
+-- script (`animationSync` in `Slides.Backend.Reveal`) shows the frame whose index
+-- is the number of visible steps.  Without the script, the first frame stays.
+renderAnimation : Diagram → List Diagram → XMLM A
+renderAnimation d ds =
+  hElement "div"
+    (("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames") ∷ ("data-frames" , num (suc (length ds))) ∷ [])
+    ( hElement "div" (("class" , "frame") ∷ []) (renderDiagram d ∷ [])
+    ∷ map (λ f → hElement "div" (("class" , "frame") ∷ ("hidden" , "") ∷ []) (renderDiagram f ∷ [])) ds
+    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) ds )
