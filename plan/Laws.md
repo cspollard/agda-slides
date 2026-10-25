@@ -88,3 +88,21 @@ Each step ends with `make check`, `make test` and the browser run.
   check that diagrams still look right.
 - Proof obligations for `0 ≤ width` multiply with the number of connectives;
   keep them in one lemma per operator next to its definition.
+
+## Status
+
+Done (see `Slides.Diagram.{Scalar,Draw,Place,Layout,Laws,Names,NamesSound}`):
+the scalar interface (`Ops`, ℕ and ℤ), half-unit positions, `Layout` as plain data,
+translation action, associativity of `∥ ═ ⊙`, annotation neutrality, size fusion,
+scoped `Names` with its soundness proof.
+
+Not done:
+
+- **Setoid equality.** The laws take `IsCommutativeRing _≡_` and compare layouts
+  with `_≡_`. A pointwise `_≈_` on `Draw`, `Box` and `Layout`, with a congruence
+  lemma per operator, would let any stdlib `CommutativeRing` in.
+- **Unit laws** (`a ∥ empty ≡ a`): they need `0 ≤ size`, i.e. an order on the scalar
+  and a validity predicate on layouts.
+- **`Raw`** ignores positions (its elements are in the final coordinates), so it is
+  outside the translation law.
+- **Rational and square-root scalars** (tiers 2 and 3 above), and shapes on anchors.

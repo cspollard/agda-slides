@@ -232,6 +232,30 @@ wrapping need; give a box an explicit width where a fit has to be exact.
 `maxWidth` by words (keep markup inside one word) and stacks them left, centred
 or right aligned.
 
+### Scalars, half units and laws
+
+The layout is computed in a scalar (`Slides.Diagram.Scalar.Ops`): `LayoutWith O`
+for any `Ops S`, and, for decks, the same names at ℕ. ℤ is also provided, and
+`Slides.Examples.PairsScalar` checks that the Pairs diagrams lay out identically
+in both. Sizes are in diagram units, but positions are kept in *half* units, so
+centring is `outer - inner` with no division and never rounds; the positions are
+halved once, when the layout becomes a `Diagram`. A layout is plain data (sizes,
+drawing commands, named anchors), not a function.
+
+`Slides.Diagram.Laws` proves, for any scalar whose `Ops` are a commutative ring
+under `_≡_` with an associative maximum (`IsLawful`; ℤ is one, ℕ is not, since
+its difference is the monus):
+
+- translation is an action (`shift-0`, `shift-∘`);
+- `∥`, `═` and `⊙`, with no gap, are associative (`∥-assoc`, `═-assoc`, `⊙-assoc`);
+- `named` and `connect` leave a layout's size and anchors alone;
+- size fusion: the width and height of `layout d` are the fold of `sizeAlgebra`.
+
+`Slides.Diagram.NamesSound` proves that `dangling d ≡ []` implies every `connect`
+draws an arrow. `dangling` resolves a connection against the names declared
+*inside that connect's own diagram*, since that is all `connect` can see: a name
+declared next to the `connect` is reported.
+
 ## Styling slides: `classed`
 
 `classed "card pink" content` wraps content in `<div class="card pink">`. It is the
