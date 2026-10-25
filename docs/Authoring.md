@@ -113,8 +113,18 @@ attributes), which is how `assets/pairs/pairs.css` themes a whole deck.
 
 Writing absolute coordinates gets tedious. `Slides.Diagram.Layout` is a small
 layout language, in the spirit of Haskell's `diagrams`, that compiles to the same
-`Diagram`. A `Dia` is a rectangle of known size plus named sub-boxes; combinators
-put diagrams next to each other and `connect` draws arrows between named boxes.
+`Diagram`. Like the rest of the library it is a free monad on a container:
+`DiagramC = PrimC ⊎ (ConnectiveC ⊎ AnnotationC)`, with `PrimShape` (rectangles,
+text, …), `Connective` (beside, above, atop, margin, …) and `Annotation`
+(`named`, `connect`) as the three layers (`Slides.Diagram.Syntax`). A `Dia` is a
+closed program `DiagramC ⋆ ⊥`, a tree of operations; the combinators below are
+smart constructors that build it. Nothing is laid out until it is interpreted: an
+interpretation is an `Algebra` and `fold` is the catamorphism. `layout` folds
+into `Slides.Diagram.Place.Layout` (a sized rectangle that draws itself at an
+offset and carries named anchors), `compile` turns that into a `Diagram`, and
+`Slides.Diagram.Names.dangling` is a second algebra that lists the names a
+`connect` refers to but nothing declares, so a deck can state
+`dangling d ≡ []` and have a misspelled name fail to typecheck.
 
 ```agda
 open import Slides.Diagram.Layout

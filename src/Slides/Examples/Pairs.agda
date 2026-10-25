@@ -17,6 +17,8 @@ open import Slides.Core using (Deck; emph; strong; inlineMath; link; codeSpan)
 open import Slides.DSL
 open import Slides.Diagram
 open import Slides.Diagram.Layout
+open import Slides.Diagram.Names using (dangling)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import Slides.Math as M
 
 ------------------------------------------------------------------------
@@ -89,8 +91,9 @@ fan src endPct ts s = go 40 ts
 ------------------------------------------------------------------------
 -- Slide 2: the problem
 
-problem : Diagram
-problem = compile "d-problem" 100 (margin 30 0 30 0 (
+problemDia : Dia
+problemDia =
+  margin 30 0 30 0 (
     fan "th" 40 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "cy")
       (fan "psi" 60 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "am")
         (vcat 30
@@ -106,13 +109,17 @@ problem = compile "d-problem" 100 (margin 30 0 30 0 (
                 ∷ card "oN" "node" 14 100 54 (txt 22 "x_N")
                 ∷ []))
           ∷ dim 18 "one set X = {x₁, …, x_N} sharing the same ψ"
-          ∷ [])))))
+          ∷ []))))
+
+problem : Diagram
+problem = compile "d-problem" 100 problemDia
 
 ------------------------------------------------------------------------
 -- Slide 5: the building blocks
 
-pipeline : Diagram
-pipeline = compile "d-pipeline" 100 (margin 10 0 10 0 (
+pipelineDia : Dia
+pipelineDia =
+  margin 10 0 10 0 (
     connectEW "p1" "t1" (flow "cy") (connectEW "p2" "t2" (flow "cy")
     (connectEW "pn" "tn" (flow "cy")
     (connectP "t1" (side east) "mean" (at west 38) (flow "cy")
@@ -137,7 +144,10 @@ pipeline = compile "d-pipeline" 100 (margin 10 0 10 0 (
               (card "T" "node on" 14 130 66 (txt 22 "T_ω(X)"))
               (labelAbove 56 (named "N" (txt 20 "N"))
                 (card "q" "node plum" 14 190 66
-                  (vcat 0 (txt 22 "q_φ" ∷ dim 15 "posterior over θ" ∷ []))))))))))))))))))
+                  (vcat 0 (txt 22 "q_φ" ∷ dim 15 "posterior over θ" ∷ [])))))))))))))))))
+
+pipeline : Diagram
+pipeline = compile "d-pipeline" 100 pipelineDia
 
 ------------------------------------------------------------------------
 -- Slide 6: PAIRS
@@ -156,33 +166,42 @@ infoCard i w h tsize bsize title body note =
 arrowAm : Style
 arrowAm = cls "flow am"
 
-stages : Diagram
-stages = compile "d-stages" 100 (margin 10 20 10 30 (
+stagesDia : Dia
+stagesDia =
+  margin 10 20 10 30 (
     connectEW "st1" "st2" arrowAm (connectEW "st2" "st3" arrowAm (
       hcat 45
         ( infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
         ∷ infoCard "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
         ∷ infoCard "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
-        ∷ [])))))
+        ∷ []))))
+
+stages : Diagram
+stages = compile "d-stages" 100 stagesDia
 
 ------------------------------------------------------------------------
 -- Slide 7: why pairs are enough
 
-chain : Diagram
-chain = compile "d-chain" 100 (margin 10 20 15 20 (
+chainDia : Dia
+chainDia =
+  margin 10 20 15 20 (
     connectEW "c1" "c2" arrowAm (connectEW "c2" "c3" arrowAm (connectEW "c3" "c4" arrowAm (
       hcat 45
         ( infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
         ∷ infoCard "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
         ∷ infoCard "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
         ∷ infoCard "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
-        ∷ []))))))
+        ∷ [])))))
+
+chain : Diagram
+chain = compile "d-chain" 100 chainDia
 
 ------------------------------------------------------------------------
 -- Slide 9: a result
 
-results : Diagram
-results = compile "d-results" 100 (margin 30 0 30 0 (
+resultsDia : Dia
+resultsDia =
+  margin 30 0 30 0 (
   above 14 (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)")
     (above 12
       (above 0
@@ -196,7 +215,10 @@ results = compile "d-results" 100 (margin 30 0 30 0 (
         ( boxWidth 160 (vcat 4 (big 19 "N = 1" ∷ dim 14 "per observation" ∷ []))
         ∷ boxWidth 160 (vcat 4 (big 19 "PAIRS" ∷ dim 14 "pretrained at N ≤ 2" ∷ []))
         ∷ boxWidth 160 (vcat 4 (big 19 "N = 1–10" ∷ dim 14 "3–4× the pretraining" ∷ []))
-        ∷ [])))))
+        ∷ []))))
+
+results : Diagram
+results = compile "d-results" 100 resultsDia
 
 ------------------------------------------------------------------------
 -- Slide 10: cost and scale
@@ -211,14 +233,29 @@ tile c n body note =
                ∷ dim 16 note
                ∷ [])))
 
-tiles : Diagram
-tiles = compile "d-tiles" 100 (margin 10 10 10 20 (
+tilesDia : Dia
+tilesDia =
+  margin 10 10 10 20 (
   hcat 20
     ( tile "stat count" "≈100×" ("less compute than" ∷ "end-to-end training" ∷ []) "at N = 1000"
     ∷ tile "stat crimson" "3–4×" ("cheaper than a larger" ∷ "pretraining, N = 1–10" ∷ []) "and no better on 3 of 4 tasks"
     ∷ tile "stat rust count" "128" ("scenes per batch at N = 2" ∷ "(≈ 2 at N = 100)" ∷ []) "one H100-80GB, novel views"
     ∷ tile "stat plum count" "0.004" ("novel-view MSE at N = 100" ∷ "(0.011 at N = 1)" ∷ []) "error falls as the set grows"
-    ∷ [])))
+    ∷ []))
+
+tiles : Diagram
+tiles = compile "d-tiles" 100 tilesDia
+
+-- Every `connect` refers to a name that is declared; a misspelling stops the
+-- deck from typechecking (see `Slides.Diagram.Names`).
+_ : dangling problemDia ≡ []
+_ = refl
+_ : dangling pipelineDia ≡ []
+_ = refl
+_ : dangling stagesDia ≡ []
+_ = refl
+_ : dangling chainDia ≡ []
+_ = refl
 
 ------------------------------------------------------------------------
 -- The deck
