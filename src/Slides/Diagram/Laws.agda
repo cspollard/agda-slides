@@ -22,15 +22,25 @@ import Data.Integer.Properties as ℤP
 open import Data.List using (List; []; _∷_; map; _++_)
 import Data.List.Properties as L
 open import Data.Nat using (ℕ)
-open import Data.Maybe using (nothing)
+open import Data.Maybe using (just; nothing)
+open import Data.Fin using (Fin; zero; suc)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Unit using (tt)
+open import Data.Sum using (inj₁; inj₂)
+open import Data.Container.FreeMonad using (pure; impure)
 open import Data.String using (String)
-open import Slides.Diagram.Syntax using (VAlign; top; middle; bottom; Align; left; centred; right)
+open import Slides.Diagram.Syntax
+  using ( Dia; Algebra; fold; arity; PrimShape; Rectangle; Disc; Segment; Text; Spacer; Raw
+        ; Connective; Beside; Above; Atop; Margin; MinWidth; TopAlign; LabelAbove; LabelBelow
+        ; Annotation; Named; Connect
+        ; VAlign; top; middle; bottom; Align; left; centred; right )
+open import Slides.Diagram.TextMetrics using (textWidth)
+import Slides.Diagram.Layout as Lay
+open import Data.Nat using () renaming (_*_ to _*ℕ_; _/_ to _/ℕ_)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 
 open import Slides.Diagram.Draw
-open import Slides.Diagram.Geometry
 open import Slides.Diagram.Scalar
 open import Tactic.RingSolver.Core.AlmostCommutativeRing using (fromCommutativeRing)
 import Tactic.RingSolver.NonReflective as NonReflective
@@ -200,8 +210,6 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   ----------------------------------------------------------------------
   -- Ring identities, by the ring solver
 
-  open import Slides.Diagram.Geometry using (VAlign; top; middle; bottom; Align; left; centred; right)
-
   private
     ring′ = fromCommutativeRing ring (λ _ → nothing)
 
@@ -310,6 +318,130 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
       (cong₂ _,_ (X.t₃) (Y.t₃))
     where module X = Triple _-_ off-comp (width a) (width b) (width c)
           module Y = Triple _-_ off-comp (height a) (height b) (height c)
+
+  ----------------------------------------------------------------------
+  -- Annotations do not change a layout's size or anchors
+
+  named-size : ∀ n d → (width (named n d) ≡ width d) × (height (named n d) ≡ height d)
+  named-size n d = refl , refl
+
+  connectP-size : ∀ a pa b pb s d →
+    (width (connectP a pa b pb s d) ≡ width d) × (height (connectP a pa b pb s d) ≡ height d)
+    × (Layout.anchors (connectP a pa b pb s d) ≡ Layout.anchors d)
+  connectP-size a pa b pb s d with findAnchor a (Layout.anchors d) | findAnchor b (Layout.anchors d)
+  ... | just _  | just _  = refl , refl , refl
+  ... | just _  | nothing = refl , refl , refl
+  ... | nothing | _       = refl , refl , refl
+
+  ----------------------------------------------------------------------
+  -- Size fusion: the size of a layout is computed from the sizes of its parts
+
+  -- the size algebra: what `layoutAlgebra` does to (width , height), alone
+  sizeAlgebra : Algebra (S × S)
+  sizeAlgebra = record { prim = sizePrim ; connective = sizeConnective ; annotation = λ _ sz → sz }
+    where
+    sizePrim : PrimShape → S × S
+    sizePrim (Rectangle w h _)   = fromℕ w , fromℕ h
+    sizePrim (Disc r _)          = dbl (fromℕ r) , dbl (fromℕ r)
+    sizePrim (Segment w h _)     = fromℕ w , fromℕ h
+    sizePrim (Text pct size t _) = fromℕ ((textWidth size t *ℕ pct) /ℕ 100) , fromℕ ((size *ℕ 3) /ℕ 2)
+    sizePrim (Spacer w h)        = fromℕ w , fromℕ h
+    sizePrim (Raw w h _)         = fromℕ w , fromℕ h
+
+    sizeConnective : (c : Connective) → (Fin (arity c) → S × S) → S × S
+    sizeConnective (Beside _ g) k =
+      proj₁ (k zero) + fromℕ g + proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
+    sizeConnective (Above _ g) k =
+      proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + fromℕ g + proj₂ (k (suc zero))
+    sizeConnective Atop k =
+      proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
+    sizeConnective (Margin l t r b) k =
+      fromℕ l + proj₁ (k zero) + fromℕ r , fromℕ t + proj₂ (k zero) + fromℕ b
+    sizeConnective (MinWidth w) k = fromℕ w ⊔ proj₁ (k zero) , proj₂ (k zero)
+    sizeConnective (TopAlign h) k = proj₁ (k zero) , fromℕ h ⊔ proj₂ (k zero)
+    sizeConnective (LabelAbove g) k =
+      proj₁ (k zero) ⊔ (proj₁ (k (suc zero)) ⊔ 0#)
+        , proj₂ (k zero) + fromℕ g + (proj₂ (k (suc zero)) + fromℕ g + proj₂ (k zero))
+    sizeConnective (LabelBelow g) k =
+      0# ⊔ (proj₁ (k (suc zero)) ⊔ proj₁ (k zero))
+        , proj₂ (k zero) + fromℕ g + (proj₂ (k (suc zero)) + fromℕ g + proj₂ (k zero))
+
+  module LW = Lay.LayoutWith O
+
+  size : Layout S → S × S
+  size l = width l , height l
+
+  size-fusion : ∀ d → size (LW.layout d) ≡ fold sizeAlgebra d
+  size-fusion (pure ())
+  size-fusion (impure (inj₁ p , _)) = prim p
+    where
+    prim : ∀ p → size (LW.layoutAlgebra .Algebra.prim p) ≡ sizeAlgebra .Algebra.prim p
+    prim (Rectangle _ _ _) = refl
+    prim (Disc _ _)        = refl
+    prim (Segment _ _ _)   = refl
+    prim (Text _ _ _ _)    = refl
+    prim (Spacer _ _)      = refl
+    prim (Raw _ _ _)       = refl
+  size-fusion (impure (inj₂ (inj₁ (Beside _ g)) , k)) =
+    cong₂ _,_ (cong₂ (λ x y → x + fromℕ g + y) w₀ w₁) (cong₂ _⊔_ h₀ h₁)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+    w₁ = cong proj₁ (size-fusion (k (suc zero)))
+    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₁ (Above _ g)) , k)) =
+    cong₂ _,_ (cong₂ _⊔_ w₀ w₁) (cong₂ (λ x y → x + fromℕ g + y) h₀ h₁)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+    w₁ = cong proj₁ (size-fusion (k (suc zero)))
+    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₁ Atop) , k)) =
+    cong₂ _,_ (cong₂ _⊔_ w₀ w₁) (cong₂ _⊔_ h₀ h₁)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+    w₁ = cong proj₁ (size-fusion (k (suc zero)))
+    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₁ (Margin l t r b)) , k)) =
+    cong₂ _,_ (cong (λ x → fromℕ l + x + fromℕ r) w₀) (cong (λ y → fromℕ t + y + fromℕ b) h₀)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+  size-fusion (impure (inj₂ (inj₁ (MinWidth w)) , k)) =
+    cong₂ _,_ (cong (λ x → fromℕ w ⊔ x) w₀) h₀
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+  size-fusion (impure (inj₂ (inj₁ (TopAlign h)) , k)) =
+    cong₂ _,_ w₀ (cong (λ y → fromℕ h ⊔ y) h₀)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+  size-fusion (impure (inj₂ (inj₁ (LabelAbove g)) , k)) =
+    cong₂ _,_ (cong₂ (λ x y → x ⊔ (y ⊔ 0#)) w₀ w₁)
+              (cong₂ (λ x y → x + fromℕ g + (y + fromℕ g + x)) h₀ h₁)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+    w₁ = cong proj₁ (size-fusion (k (suc zero)))
+    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₁ (LabelBelow g)) , k)) =
+    cong₂ _,_ (cong₂ (λ x y → 0# ⊔ (y ⊔ x)) w₀ w₁)
+              (cong₂ (λ x y → x + fromℕ g + (y + fromℕ g + x)) h₀ h₁)
+    where
+    w₀ = cong proj₁ (size-fusion (k zero))
+    h₀ = cong proj₂ (size-fusion (k zero))
+    w₁ = cong proj₁ (size-fusion (k (suc zero)))
+    h₁ = cong proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (inj₂ (inj₂ a) , k)) = ann a
+    where
+    ih = size-fusion (k tt)
+    ann : ∀ a → size (LW.layoutAlgebra .Algebra.annotation a (LW.layout (k tt)))
+                  ≡ sizeAlgebra .Algebra.annotation a (fold sizeAlgebra (k tt))
+    ann (Named n)           = ih
+    ann (Connect a pa b pb s) = trans (cong₂ _,_ (proj₁ sz) (proj₁ (proj₂ sz))) ih
+      where sz = connectP-size a pa b pb s (LW.layout (k tt))
 
 -- the laws, for ℤ
 module ForInts = Proofs intOps lawfulℤ

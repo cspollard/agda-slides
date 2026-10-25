@@ -22,6 +22,8 @@ open import Slides.Diagram.Names using (dangling)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import Slides.Math as M
 
+open Content using () renaming (p■; h■)
+
 ------------------------------------------------------------------------
 -- Mathematics
 
