@@ -65,7 +65,7 @@
       var cx = rand() * W, cy = rand() * H;
       pairs.push({ cx: cx, cy: cy, vx: (rand() - .5) * 18, vy: (rand() - .5) * 18,
                    r: 26 + rand() * 60, a: rand() * 6.28, w: (rand() - .5) * 1.4,
-                   hue: rand() < .5 ? 187 : 340 });
+                   hue: rand() < .5 ? 212 : 350 });
     }
 
     loop(slide, function (now, dt) {
@@ -76,8 +76,8 @@
         if (p.cy < -80) p.cy = H + 80; if (p.cy > H + 80) p.cy = -80;
         var x1 = p.cx + Math.cos(p.a) * p.r, y1 = p.cy + Math.sin(p.a) * p.r;
         var x2 = p.cx - Math.cos(p.a) * p.r, y2 = p.cy - Math.sin(p.a) * p.r;
-        var col = 'hsl(' + p.hue + ',80%,65%)';
-        ctx.strokeStyle = 'hsla(' + p.hue + ',80%,65%,.35)'; ctx.lineWidth = 1.5;
+        var col = 'hsl(' + p.hue + ',48%,40%)';
+        ctx.strokeStyle = 'hsla(' + p.hue + ',48%,40%,.3)'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
         ctx.fillStyle = col;
         [[x1, y1], [x2, y2]].forEach(function (q) {

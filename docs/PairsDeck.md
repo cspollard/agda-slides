@@ -44,9 +44,11 @@ numbers the text gives, not the full figure.
   with `withClass`; the helpers `card`, `boxEl`, `txt`, `dim`, `big` and `flow`
   at the top of the module keep the coordinates readable. Each diagram's `name`
   is the `id` of its `<div>`, and nodes that are animated carry a `withId`.
-- **Styling** is `assets/pairs/pairs.css`: a dark gradient over reveal.js's
-  `black` theme, cards, callouts and the diagram classes (`node`, `on`, `flow`,
-  `bar`, `stat`, …). It is added through the theme's `stylesheets`.
+- **Styling** is `assets/pairs/pairs.css`: a light, grayscale look over reveal.js's
+  `white` theme, cards, callouts and the diagram classes (`node`, `on`, `flow`,
+  `bar`, `stat`, …). The palette is the `:root` block: neutrals plus four muted
+  accents (`blue`, `crimson`, `plum`, `rust`; no yellows or greens) used by the
+  colour-role classes, kept for what should catch the eye. It is added through the theme's `stylesheets`.
 - **Animation** is `assets/pairs/pairs.js`, loaded with `RevealConfig.scriptFiles`.
   Each slide calls one function from a `script` command; it runs once, when the
   slide is first shown, and only advances while that slide is current:

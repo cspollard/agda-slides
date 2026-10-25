@@ -20,7 +20,7 @@ open import Slides.Driver
 open import Slides.Examples.Pairs using (pairs)
 
 theme : Reveal.Theme
-theme = record Reveal.blackTheme { stylesheets = "slides.css" ∷ "pairs.css" ∷ [] }
+theme = record Reveal.whiteTheme { stylesheets = "slides.css" ∷ "pairs.css" ∷ [] }
 
 config : Reveal.RevealConfig
 config = record Reveal.defaultConfig

@@ -90,9 +90,9 @@ problem = record
   ; elements =
       dim 160 14 16 "parameter of interest"
     ∷ dim 370 14 16 "shared nuisance"
-    ∷ circle 160 66 36 (withClass "node cyan" defaultStyle)
+    ∷ circle 160 66 36 (withClass "node blue" defaultStyle)
     ∷ big 160 66 30 "θ"
-    ∷ circle 370 66 36 (withClass "node amber" defaultStyle)
+    ∷ circle 370 66 36 (withClass "node crimson" defaultStyle)
     ∷ big 370 66 30 "ψ"
     ∷ flow 150 100 62 270 "cy"
     ∷ flow 160 102 182 270 "cy"
@@ -124,17 +124,17 @@ pipeline = record
     ∷ boxEl 10 120 80 50 "node" ∷ txt 50 145 20 "x₂"
     ∷ boxEl 10 210 80 50 "node" ∷ txt 50 235 20 "x_N"
     ∷ flow 90 55 190 55 "cy" ∷ flow 90 145 190 145 "cy" ∷ flow 90 235 190 235 "cy"
-    ∷ boxEl 190 30 100 50 "node cyan" ∷ txt 240 55 20 "t_ω"
-    ∷ boxEl 190 120 100 50 "node cyan" ∷ txt 240 145 20 "t_ω"
-    ∷ boxEl 190 210 100 50 "node cyan" ∷ txt 240 235 20 "t_ω"
+    ∷ boxEl 190 30 100 50 "node blue" ∷ txt 240 55 20 "t_ω"
+    ∷ boxEl 190 120 100 50 "node blue" ∷ txt 240 145 20 "t_ω"
+    ∷ boxEl 190 210 100 50 "node blue" ∷ txt 240 235 20 "t_ω"
     ∷ flow 290 55 460 135 "cy" ∷ flow 290 145 458 145 "cy" ∷ flow 290 235 460 155 "cy"
-    ∷ circle 500 145 42 (cls "node amber")
+    ∷ circle 500 145 42 (cls "node crimson")
     ∷ big 500 145 20 "mean"
     ∷ flow 542 145 610 145 "am"
     ∷ boxEl 610 112 130 66 "node on"
     ∷ txt 675 145 22 "T_ω(X)"
     ∷ flow 740 145 800 145 "am"
-    ∷ boxEl 800 112 190 66 "node pink"
+    ∷ boxEl 800 112 190 66 "node plum"
     ∷ txt 895 135 22 "q_φ"
     ∷ dim 895 160 15 "posterior over θ"
     ∷ txt 895 24 20 "N"
@@ -207,9 +207,9 @@ results = record
     ∷ rect 60  66 120 234 (cls "bar b1")
     ∷ rect 220 230 120 70 (cls "bar b2")
     ∷ rect 380 290 120 10 (cls "bar b3")
-    ∷ label 120 46 24 "1.17" (cls "stat pink count")
+    ∷ label 120 46 24 "1.17" (cls "stat plum count")
     ∷ label 280 210 24 "0.35" (cls "stat count")
-    ∷ label 440 270 24 "0.05" (cls "stat green count")
+    ∷ label 440 270 24 "0.05" (cls "stat rust count")
     ∷ big 120 325 19 "N = 1"
     ∷ big 280 325 19 "PAIRS"
     ∷ big 440 325 19 "N = 1–10"
@@ -232,17 +232,17 @@ tiles = record
     ∷ txt 137 176 19 "end-to-end training"
     ∷ dim 137 214 16 "at N = 1000"
     ∷ rect 285 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 412 85 54 "3–4×" (cls "stat amber")
+    ∷ label 412 85 54 "3–4×" (cls "stat crimson")
     ∷ txt 412 150 19 "cheaper than a larger"
     ∷ txt 412 176 19 "pretraining, N = 1–10"
     ∷ dim 412 214 16 "and no better on 3 of 4 tasks"
     ∷ rect 560 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 687 85 54 "128" (cls "stat green count")
+    ∷ label 687 85 54 "128" (cls "stat rust count")
     ∷ txt 687 150 19 "scenes per batch at N = 2"
     ∷ txt 687 176 19 "(≈ 2 at N = 100)"
     ∷ dim 687 214 16 "one H100-80GB, novel views"
     ∷ rect 835 10 255 240 (rounded 20 (cls "tile"))
-    ∷ label 962 85 54 "0.004" (cls "stat pink count")
+    ∷ label 962 85 54 "0.004" (cls "stat plum count")
     ∷ txt 962 150 19 "novel-view MSE at N = 100"
     ∷ txt 962 176 19 "(0.011 at N = 1)"
     ∷ dim 962 214 16 "error falls as the set grows"
@@ -291,7 +291,7 @@ pairs = do
               ∷ [])
             Content.displayMath joint)
       ∷ [])
-    classed "callout cyan"
+    classed "callout blue"
       (Content.paragraph ("Goal: one amortized " ∷ inlineMath (M.call "q" (M.rel M.mid θ X ∷ []))
                           ∷ " for any set size " ∷ inlineMath N ∷ []))
     script "PAIRS.flow(slide)"
@@ -302,7 +302,7 @@ pairs = do
     heading 2 "A bump hunt, event by event"
     columns
       ( (do Content.mount "bump"
-            Content.paragraph "simulated live in your browser: background cyan, signal amber")
+            Content.paragraph "simulated live in your browser: background gray, signal crimson")
       ∷ (do Content.bullets
               ( ("signal fraction " ∷ inlineMath θ ∷ " in [0, 1]" ∷ [])
               ∷ ("signal location " ∷ inlineMath ψ ∷ " unknown" ∷ [])
@@ -317,16 +317,16 @@ pairs = do
   -- 4 ------------------------------------------------------------------
   slide (do
     heading 2 "Two ways to scale, both costly"
-    classed "card pink"
+    classed "card plum"
       (do Content.heading 3 "Combine per-observation posteriors"
           Content.paragraph "✓ scales to any set size"
           Content.paragraph ("✗ misses what the observations share through " ∷ inlineMath ψ ∷ []))
-    classed "card amber"
+    classed "card crimson"
       (do Content.heading 3 "Encode the whole set at deployment size"
           Content.paragraph "✓ principled: the set is seen jointly"
           Content.paragraph ("✗ per step, memory grows as " ∷ inlineMath memory ∷ " and compute with the mean set size" ∷ []))
     pause
-    classed "callout cyan"
+    classed "callout blue"
       (Content.paragraph "Can we train small, and still deploy on sets of thousands?"))
 
   -- 5 ------------------------------------------------------------------
@@ -364,18 +364,18 @@ pairs = do
   -- 8 ------------------------------------------------------------------
   slide (do
     heading 2 "Does it work? Five test beds"
-    classed "callout cyan"
+    classed "callout blue"
       (Content.paragraph "Bivariate Gaussian: trained at N ≤ 2, PAIRS tracks the analytic posterior up to N = 10⁵.")
-    classed "card pink"
+    classed "card plum"
       (do Content.heading 3 "Circle Radius"
           Content.paragraph "Radius of a circle in 64×64 images with distractors; N up to 1000.")
     classed "card"
       (do Content.heading 3 "Digit Expectation"
           Content.paragraph "Expected digit from rotated MNIST images sharing one angle; N up to 1000.")
-    classed "card amber"
+    classed "card crimson"
       (do Content.heading 3 "3D Object Properties"
           Content.paragraph "Volume and aspect ratio from partial ModelNet40 views.")
-    classed "card green"
+    classed "card rust"
       (do Content.heading 3 "Molecular Lipophilicity"
           Content.paragraph "logP from sets of GEOM 3D conformers.")
     classed "small"
