@@ -5,14 +5,16 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 
 ## Next
 
-1. **Animations.** A DSL for animations in the style of `Dia` (a container, its
-   free monad, algebras), with a Reveal backend. Design and order in
-   `plan/Animations.md`; the first step is a reveal.js spike.
-2. **Use the generic `Container.*` theory for `Dia`.** `Slides.Diagram.Syntax` has
-   its own concrete `fold`. State that it agrees with `Container.Interpret`'s
-   initial-algebra fold, and obtain from `Container.Lowering` (fusion) the lemma
-   that folding after `mapDia` is folding with a pulled-back algebra. Then the
-   free-monad laws for `Dia` are instances of what is already proved, not new work.
+1. **Animations** (built: syntax, `dur`, timelines, footprints, tracks and easings,
+   playback in reveal; see `plan/Animations.md`). Left: the optional CSS-transition
+   emitter, the semantic reverse theorem for `Bezier` and `Step`, other backends for
+   `animation`, replacing the Pairs deck's JavaScript animations.
+2. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
+   `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
+   (`fold-agrees`). Left: the lemma that folding after `mapDia` is folding with a
+   pulled-back algebra, from `Container.Lowering`/`Interpret` fusion (`mapDia` is a
+   translation along a container morphism only up to the scalar), and monad laws for
+   `Dia`-with-holes if templates are wanted.
 3. **Laws left over for diagrams** (`Slides.Diagram.Laws`):
    - `Valid` (non-negative size) is a hypothesis of the unit laws; prove that every
      operation preserves it. This needs an ordered-ring record built on stdlib's

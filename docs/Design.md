@@ -155,6 +155,21 @@ Decisions that shaped it:
 - **Stdlib has no ordered ring** (checked at `8326c7475`): no `IsOrderedRing`,
   ordered field or `sqrt` for ℕ. `Nonneg x` is `0# ⊔ x ≈ x`, the join-semilattice order.
 
+## Animations: `Slides.Anim.*`
+
+The same pattern again. `AnimC = Seq | Par` (two children each) is a container and
+`Anim S T = AnimC ⋆ T` its free monad, with leaves `Seg S`: a track of a parameter
+(`Slides.Anim.Track`, itself the free monad on `Seq` over pieces with easings) and a
+diagram as a function of that parameter. `dur`, `footprint` and `timeline` are algebras
+(`foldA`); `foldA` is the generic fold (`Slides.Anim.Generic`), and `foldA-bind` is its
+fusion with `>>=` (a tween is a bind). Laws are proved at the level they are true at:
+the swap law and `merge` on lists of frames (`Timeline`), `footprint` up to permutation,
+`atop` commutative up to permutation of draws (`Slides.Diagram.Commute`), laid-out `Par`
+associative and padding invisible on valid frames (`Slides.Anim.Laws`), tracks
+associative, reversible and sampled exactly for `Linear` (`Track`). Time is whole ticks;
+the backend plays frames on a timer, an act per reveal step. Design and open items:
+`plan/Animations.md`.
+
 ## Tests and build time
 
 `make check` typechecks every library module in one Agda process
