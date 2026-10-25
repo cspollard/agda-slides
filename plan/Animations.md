@@ -10,7 +10,8 @@ Read for this plan: Hudak, *An Algebraic Theory of Polymorphic Temporal Media*
 (RR-1259, 2003; text extracted from the PDF, so quotes are approximate); Di Lavore and
 Román, *Timing via Pinwheel Double Categories* (arXiv 2504.12846, read through an HTML
 rendering); the PaSe paper (arXiv 2002.02171, HTML); reveal.js's auto-animate page.
-Only abstracts of Hudak and Janin's *Tiled PTM* were available.
+Elliott's *Push-pull FRP* was read in full. Only the abstract of Hudak and Janin's
+*Tiled PTM* was available.
 
 **Hudak's `Media a` is a free monad.** `Media a = Prim a | m :+: m | m :=: m` is
 `C ⋆ a` for the container `C` with two binary operations (`Seq`, `Par`), and the
@@ -37,9 +38,8 @@ frame. That matches reveal's discrete steps, so durations should be ℕ ticks.
 additive; and the *serial/parallel swap*
 `(m1 :+: m2) :=: (m3 :+: m4) = (m1 :=: m3) :+: (m2 :=: m4)` when `dur m1 = dur m3` and
 `dur m2 = dur m4`. Soundness is by the homomorphism; completeness is by normal forms
-(`norm`, flattened to a parallel of `none · Prim · none` rows). Of these, the
-commutativity of `:=:` will not hold for us: it needs a commutative `combineImage`,
-and our `⊙` is z-ordered.
+(`norm`, flattened to a parallel of `none · Prim · none` rows). Commutativity of `:=:` needs a commutative frame merge, and our `⊙` is z-ordered; see
+"Commutativity of `Par`" below.
 
 **Grading.** Di Lavore and Román grade morphisms by a *duoid*: two monoids on
 durations, `+` for sequence and `max` for parallel, with only the lax interchange
@@ -56,9 +56,74 @@ action, so analysis (duration) is lost. Fixed-arity containers avoid it: `Seq` a
 offers `relSequential` (start the second animation with an offset), which is `Par`
 with a `none` pad.
 
+**Push-pull FRP** (Elliott, Haskell '09, read in full). Semantics: a behavior is a
+function of time and an event a list of timed occurrences; every instance
+(`Functor`, `Applicative`, `Monad`, `Monoid`) is specified by making the semantic
+function a *type class morphism*, i.e. the meaning of the composite is the
+composite of the meanings. For us that is "the fold is an algebra homomorphism",
+which is `Container.Interpret`. The paper also says that in Fran "discretization is
+introduced automatically during rendering": sampling is the renderer's job, not the
+program's. The original Fran paper is a scan and could not be read.
+
+**Pomsets and concurrent Kleene algebra** (Gischer 1988; Hoare, Möller, Struth,
+Wehrman 2009; Laurence and Struth's completeness result, from abstracts and talk
+summaries only). Series-parallel partial orders have `;` and `∥` associative with
+`∥` *commutative* (a pomset is unordered) and the exchange law
+`(a ∥ b) ; (c ∥ d) ≤ (a ; c) ∥ (b ; d)` only as an inequality. Hudak's swap law is the
+equality that holds once durations agree. **Duoidal categories** (Aguiar and Mahajan,
+Booker and Street) are the categorical form: two monoidal structures and an
+interchange map that need not be invertible; invertible interchange gives braided
+monoidal categories. Di Lavore and Román's duoid grading is the same shape on
+durations.
+
+**Browser side.** reveal.js fragments take custom classes
+(`.fragment.name` and `.fragment.name.visible`, with `data-fragment-index` for order),
+and the Web Animations API takes keyframes with per-keyframe easing and interpolates
+them (MDN). So a browser can do the continuous part itself, given keyframes, a
+duration and an easing.
+
 **Not used.** Continuous `Behavior = Time → a` (Fran) and Reanimate's `(Dur, Time →
-SVG)`: the right target for video, wrong for a presentation, where the step is the
-unit. They stay available as one more algebra (sampling).
+SVG)` as the program's type: see "Time and backends" below.
+
+## Time and backends
+
+None of our backends can ask an animation for its value at an arbitrary time `t`: the
+output is static markup and a stylesheet. Two consumers remain, and both are folds:
+
+1. **Keyframes.** Emit the keyframes, a duration and an easing; the browser
+   interpolates (CSS transitions, the Web Animations API, or reveal's auto-animate).
+   The continuous part is the browser's.
+2. **Sampling.** Evaluate the animation at ticks `0, 1, …, n` ourselves, at render
+   time, as Fran's renderer does. That is Hudak's `Rendering = (Dur, [Image])` and is
+   what an export to frames or video needs.
+
+So a continuous-time *semantics* (`Time → Layout`) is optional. It would be the
+specification that a `tween` primitive's keyframe-and-easing form approximates, and
+the thing a sampler samples. Program time is ℕ ticks, a `tween` carries an easing as
+data, and no backend needs a runtime that evaluates a Haskell-style function of
+time. On-demand sampling at run time would need Agda to emit JavaScript functions,
+which this library has no AST for.
+
+## Commutativity of `Par`
+
+If equality is taken up to reordering, `Par` is commutative as soon as the frame
+merge is, and the merge is `⊙`. The geometry of `⊙` is symmetric (centring gives
+offsets `W - wa` and `W - wb`, and `⊔` is commutative), so `atop a b` and `atop b a`
+differ only in the order of the lists of drawing commands and anchors. Stdlib's
+`Permutation` relations make that an equivalence. This is what pomsets do (a pomset
+is unordered, so `∥` is commutative by construction). Three caveats:
+
+- **Overlap.** Equality up to reordering identifies two pictures that differ when
+  parts overlap, because the painter's order decides what is on top. So it is a
+  coarser notion than "renders the same". Two ways out: give each drawing command a
+  layer number and sort on it (Reanimate's z-index), which makes the merge commutative
+  on the nose; or require `Par` operands to have disjoint footprints and not overlap.
+- **Anchors.** `findAnchor` takes the first match, so reordering anchors changes which
+  box a duplicated name finds. Equality up to reordering is a congruence for `connect`
+  only if names are unique; `Names` would need to report duplicates.
+- **Cost.** `Layout` equality moves from `Pointwise` to a permutation relation, and
+  `Laws` needs a permutation version of `assoc3`, the unit lemmas and
+  the swap law. Not yet proved; I expect it to be routine.
 
 ## Design
 
@@ -129,13 +194,15 @@ Each step ends with `make check`, `make test`, and the browser run.
 
 ## Decisions for the author
 
-- **Time:** discrete ℕ ticks only, with sampling as an extra algebra (recommended), or
-  continuous time from the start?
+- **Time:** ℕ ticks in the program, keyframes or a sampler at the backend ("Time and
+  backends"). Settled unless you want a continuous specification as well.
 - **Base media:** whole-diagram frames (flipbook, recommended: reuses everything), or
   actions on named parts (`appear`, `move`, `restyle`), which are closer to what an
   author means but need a scene-state algebra and a conflict rule?
-- **Commutativity of `Par`:** dropped (z-order). Acceptable?
+- **Commutativity of `Par`:** yes up to reordering, but choose how to treat overlap:
+  explicit layers, disjoint footprints, or accept the coarser equality.
 - **Backend:** wait for the spike.
 - **Tiled PTM** (overlap via synchronisation marks, an inverse monoid) would give
-  staggered starts a proper algebra; read the full paper before deciding whether it
-  replaces `Par` with padding.
+  staggered starts a proper algebra. Only its abstract could be read (the HAL pages
+  are behind a bot check); get the PDF before deciding whether it replaces `Par`
+  with padding.
