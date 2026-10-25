@@ -6,8 +6,8 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 ## Next
 
 1. **Animations.** A DSL for animations in the style of `Dia` (a container, its
-   free monad, algebras), with a Reveal backend. Needs a design first (what the
-   signature is, what the carrier is, what the backend emits).
+   free monad, algebras), with a Reveal backend. Design and order in
+   `plan/Animations.md`; the first step is a reveal.js spike.
 2. **Use the generic `Container.*` theory for `Dia`.** `Slides.Diagram.Syntax` has
    its own concrete `fold`. State that it agrees with `Container.Interpret`'s
    initial-algebra fold, and obtain from `Container.Lowering` (fusion) the lemma
