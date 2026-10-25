@@ -17,6 +17,7 @@ open import Slides.Core using (Deck; emph; strong; inlineMath; link; codeSpan)
 open import Slides.DSL
 open import Slides.Diagram
 open import Slides.Diagram.Layout
+open import Slides.Diagram.Notation
 open import Slides.Diagram.Names using (dangling)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import Slides.Math as M
@@ -81,35 +82,32 @@ flow col = cls ("flow " ++ˢ col)
 
 -- arrows from `src`, spread along its south edge, to the north edge of each
 -- target (at `endPct` percent along it)
-fan : String → ℕ → List String → Style → Dia → Dia
-fan src endPct ts s = go 40 ts
+fan : String → ℕ → List String → List Edge
+fan src endPct = go 40
   where
-    go : ℕ → List String → Dia → Dia
-    go p []       d = d
-    go p (t ∷ ts) d = go (p + 7) ts (connectP src (at south p) t (at north endPct) s d)
+    go : ℕ → List String → List Edge
+    go p []       = []
+    go p (t ∷ ts) = (src ⊢ at south p ⇒ t ⊢ at north endPct) ∷ go (p + 7) ts
 
 ------------------------------------------------------------------------
 -- Slide 2: the problem
 
 problemDia : Dia
 problemDia =
-  margin 30 0 30 0 (
-    fan "th" 40 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "cy")
-      (fan "psi" 60 ("o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []) (flow "am")
-        (vcat 30
-          ( above 142
-              (hcat 85
-                ( labelAbove 6 (dim 16 "parameter of interest") (named "th" (atop (disc 36 (cls "node blue")) (big 30 "θ")))
-                ∷ labelAbove 6 (dim 16 "shared nuisance") (named "psi" (atop (disc 36 (cls "node crimson")) (big 30 "ψ")))
-                ∷ []))
-              (hcat 20
-                ( card "o1" "node" 14 100 54 (txt 22 "x₁")
-                ∷ card "o2" "node" 14 100 54 (txt 22 "x₂")
-                ∷ card "o3" "node" 14 100 54 (txt 22 "x₃")
-                ∷ card "oN" "node" 14 100 54 (txt 22 "x_N")
-                ∷ []))
-          ∷ dim 18 "one set X = {x₁, …, x_N} sharing the same ψ"
-          ∷ []))))
+  margin 30 0 30 0 (body ▹[ flow "cy" ] fan "th" 40 targets ▹[ flow "am" ] fan "psi" 60 targets)
+  where
+    targets = "o1" ∷ "o2" ∷ "o3" ∷ "oN" ∷ []
+    params =
+      ⟨ (dim 16 "parameter of interest" ⌃[ 6 ] ("th" ⦂ disc 36 (cls "node blue") ⊙ big 30 "θ"))
+      ∷ (dim 16 "shared nuisance"       ⌃[ 6 ] ("psi" ⦂ disc 36 (cls "node crimson") ⊙ big 30 "ψ"))
+      ∷ [] ⟩ₕ 85
+    observed =
+      ⟨ card "o1" "node" 14 100 54 (txt 22 "x₁")
+      ∷ card "o2" "node" 14 100 54 (txt 22 "x₂")
+      ∷ card "o3" "node" 14 100 54 (txt 22 "x₃")
+      ∷ card "oN" "node" 14 100 54 (txt 22 "x_N")
+      ∷ [] ⟩ₕ 20
+    body = (params ═ ↕ 142 ═ observed) ═ ↕ 30 ═ dim 18 "one set X = {x₁, …, x_N} sharing the same ψ"
 
 problem : Diagram
 problem = compile "d-problem" 100 problemDia
@@ -119,32 +117,29 @@ problem = compile "d-problem" 100 problemDia
 
 pipelineDia : Dia
 pipelineDia =
-  margin 10 0 10 0 (
-    connectEW "p1" "t1" (flow "cy") (connectEW "p2" "t2" (flow "cy")
-    (connectEW "pn" "tn" (flow "cy")
-    (connectP "t1" (side east) "mean" (at west 38) (flow "cy")
-    (connectP "t2" (side east) "mean" (side west) (flow "cy")
-    (connectP "tn" (side east) "mean" (at west 62) (flow "cy")
-    (connectEW "mean" "T" (flow "am") (connectEW "T" "q" (flow "am")
-    (connect "N" south "q" north (flow "am")
-      (beside 100
-        (labelBelow 15 (dim 15 "set elements")
-          (vcat 40 ( card "p1" "node" 14 80 50 (txt 20 "x₁")
-                   ∷ card "p2" "node" 14 80 50 (txt 20 "x₂")
-                   ∷ card "pn" "node" 14 80 50 (txt 20 "x_N") ∷ [])))
-        (beside 168
-          (labelBelow 15 (dim 15 "same network")
-            (vcat 40 ( card "t1" "node blue" 14 100 50 (txt 20 "t_ω")
-                     ∷ card "t2" "node blue" 14 100 50 (txt 20 "t_ω")
-                     ∷ card "tn" "node blue" 14 100 50 (txt 20 "t_ω") ∷ [])))
-          (beside 68
-            (labelBelow 15 (dim 15 "any set size")
-              (named "mean" (atop (disc 42 (cls "node crimson")) (big 20 "mean"))))
-            (beside 60
-              (card "T" "node on" 14 130 66 (txt 22 "T_ω(X)"))
-              (labelAbove 56 (named "N" (txt 20 "N"))
-                (card "q" "node plum" 14 190 66
-                  (vcat 0 (txt 22 "q_φ" ∷ dim 15 "posterior over θ" ∷ [])))))))))))))))))
+  margin 10 0 10 0
+    (body ▹[ flow "cy" ] ( "p1" ⟶ "t1" ∷ "p2" ⟶ "t2" ∷ "pn" ⟶ "tn"
+                         ∷ "t1" ⊢ side east ⇒ "mean" ⊢ at west 38
+                         ∷ "t2" ⊢ side east ⇒ "mean" ⊢ side west
+                         ∷ "tn" ⊢ side east ⇒ "mean" ⊢ at west 62 ∷ [] )
+          ▹[ flow "am" ] ( "mean" ⟶ "T" ∷ "T" ⟶ "q" ∷ "N" ⟱ "q" ∷ [] ))
+  where
+    elements =
+      ⟨ card "p1" "node" 14 80 50 (txt 20 "x₁")
+      ∷ card "p2" "node" 14 80 50 (txt 20 "x₂")
+      ∷ card "pn" "node" 14 80 50 (txt 20 "x_N") ∷ [] ⟩ᵥ 40
+    networks =
+      ⟨ card "t1" "node blue" 14 100 50 (txt 20 "t_ω")
+      ∷ card "t2" "node blue" 14 100 50 (txt 20 "t_ω")
+      ∷ card "tn" "node blue" 14 100 50 (txt 20 "t_ω") ∷ [] ⟩ᵥ 40
+    pool = "mean" ⦂ (disc 42 (cls "node crimson") ⊙ big 20 "mean")
+    posterior = card "q" "node plum" 14 190 66 (txt 22 "q_φ" ═ dim 15 "posterior over θ")
+    body =
+        elements ⌄[ 15 ] dim 15 "set elements"
+      ∥ ↔ 100 ∥ networks ⌄[ 15 ] dim 15 "same network"
+      ∥ ↔ 168 ∥ pool ⌄[ 15 ] dim 15 "any set size"
+      ∥ ↔ 68 ∥ card "T" "node on" 14 130 66 (txt 22 "T_ω(X)")
+      ∥ ↔ 60 ∥ ("N" ⦂ txt 20 "N") ⌃[ 56 ] posterior
 
 pipeline : Diagram
 pipeline = compile "d-pipeline" 100 pipelineDia
@@ -168,13 +163,12 @@ arrowAm = cls "flow am"
 
 stagesDia : Dia
 stagesDia =
-  margin 10 20 10 30 (
-    connectEW "st1" "st2" arrowAm (connectEW "st2" "st3" arrowAm (
-      hcat 45
-        ( infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
-        ∷ infoCard "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
-        ∷ infoCard "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
-        ∷ []))))
+  margin 10 20 10 30
+    (⟨ infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
+     ∷ infoCard "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
+     ∷ infoCard "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
+     ∷ [] ⟩ₕ 45
+     ▹[ arrowAm ] ("st1" ⟶ "st2" ∷ "st2" ⟶ "st3" ∷ []))
 
 stages : Diagram
 stages = compile "d-stages" 100 stagesDia
@@ -184,14 +178,13 @@ stages = compile "d-stages" 100 stagesDia
 
 chainDia : Dia
 chainDia =
-  margin 10 20 15 20 (
-    connectEW "c1" "c2" arrowAm (connectEW "c2" "c3" arrowAm (connectEW "c3" "c4" arrowAm (
-      hcat 45
-        ( infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
-        ∷ infoCard "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
-        ∷ infoCard "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
-        ∷ infoCard "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
-        ∷ [])))))
+  margin 10 20 15 20
+    (⟨ infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
+     ∷ infoCard "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
+     ∷ infoCard "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
+     ∷ infoCard "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
+     ∷ [] ⟩ₕ 45
+     ▹[ arrowAm ] ("c1" ⟶ "c2" ∷ "c2" ⟶ "c3" ∷ "c3" ⟶ "c4" ∷ []))
 
 chain : Diagram
 chain = compile "d-chain" 100 chainDia
@@ -201,21 +194,23 @@ chain = compile "d-chain" 100 chainDia
 
 resultsDia : Dia
 resultsDia =
-  margin 30 0 30 0 (
-  above 14 (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)")
-    (above 12
-      (above 0
-        (hcatA bottom 0
-          ( boxWidth 160 (vcat 2 (text 24 "1.17" (cls "stat plum count") ∷ rectangle 120 234 (cls "bar b1") ∷ []))
-          ∷ boxWidth 160 (vcat 2 (text 24 "0.35" (cls "stat count") ∷ rectangle 120 70 (cls "bar b2") ∷ []))
-          ∷ boxWidth 160 (vcat 2 (text 24 "0.05" (cls "stat rust count") ∷ rectangle 120 10 (cls "bar b3") ∷ []))
-          ∷ []))
-        (segment 510 0 (cls "axis")))
-      (hcat 0
-        ( boxWidth 160 (vcat 4 (big 19 "N = 1" ∷ dim 14 "per observation" ∷ []))
-        ∷ boxWidth 160 (vcat 4 (big 19 "PAIRS" ∷ dim 14 "pretrained at N ≤ 2" ∷ []))
-        ∷ boxWidth 160 (vcat 4 (big 19 "N = 1–10" ∷ dim 14 "3–4× the pretraining" ∷ []))
-        ∷ []))))
+  margin 30 0 30 0
+    (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)" ═ ↕ 14
+     ═ (bars ═ segment 510 0 (cls "axis")) ═ ↕ 12 ═ captions)
+  where
+    column : Dia → Dia
+    column = boxWidth 160
+    bars =
+      hcatA bottom 0
+        ( column (text 24 "1.17" (cls "stat plum count") ═ ↕ 2 ═ rectangle 120 234 (cls "bar b1"))
+        ∷ column (text 24 "0.35" (cls "stat count") ═ ↕ 2 ═ rectangle 120 70 (cls "bar b2"))
+        ∷ column (text 24 "0.05" (cls "stat rust count") ═ ↕ 2 ═ rectangle 120 10 (cls "bar b3"))
+        ∷ [])
+    captions =
+      ⟨ column (big 19 "N = 1" ═ ↕ 4 ═ dim 14 "per observation")
+      ∷ column (big 19 "PAIRS" ═ ↕ 4 ═ dim 14 "pretrained at N ≤ 2")
+      ∷ column (big 19 "N = 1–10" ═ ↕ 4 ═ dim 14 "3–4× the pretraining")
+      ∷ [] ⟩ₕ 0
 
 results : Diagram
 results = compile "d-results" 100 resultsDia

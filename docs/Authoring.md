@@ -154,6 +154,34 @@ stages = compile "d-stages" 100 (margin 10 20 10 30
 | `raw w h elements` | the escape hatch: `Element`s with the diagram's own coordinates (paths, curves) |
 | `compile name percent d` | the `Diagram` the rest of the library takes |
 
+**Operators.** `Slides.Diagram.Notation` (it re-exports `Layout`'s vocabulary)
+writes the same terms with operators. `Dia` has three associative operations with
+unit `empty`: `a ∥ b` (beside), `a ═ b` (above) and `a ⊙ b` (atop). A gap is
+itself a diagram, `↔ n` or `↕ n`, so `a ∥ ↔ 40 ∥ b` has no gap parameter and
+chains without nesting. There is no interchange law between `∥` and `═`: the two
+groupings of a 2 × 2 block align their columns differently.
+
+| Notation | Meaning |
+|---|---|
+| `a ∥ b`, `a ═ b`, `a ⊙ b` | beside, above, atop (`∥↑ ∥↓ ═◂ ═▸` align to an edge) |
+| `↔ n`, `↕ n` | horizontal and vertical space |
+| `⟨ ds ⟩ₕ g`, `⟨ ds ⟩ᵥ g` | a row or column with gap `g` |
+| `"id" ⦂ d` | `named` |
+| `d ⌄[ g ] lbl`, `lbl ⌃[ g ] d` | a caption below or above `d` |
+| `"a" ⟶ "b"`, `"a" ⟱ "b"` | an edge, east to west or south to north |
+| `"a" ⊢ at south 40 ⇒ "b" ⊢ side north` | an edge between any two ports |
+| `d ▹[ style ] edges` | draw a list of edges over `d`, the first first |
+| `d ▹ edge ∶ style` | one edge |
+
+Precedence, loosest first: `⦂`, `▹`, `═`, `∥`, `⟶`/`⇒`, `⊙`, captions. Parenthesise
+a `⦂` that sits next to a caption.
+
+```agda
+stages = compile "d-stages" 100 (margin 10 20 10 30
+  (⟨ step "a" "Pretrain" ∷ step "b" "Cache" ∷ [] ⟩ₕ 45
+     ▹[ cls "flow am" ] ("a" ⟶ "b" ∷ [])))
+```
+
 Coordinates are natural numbers, so a diagram always grows to the right and
 down; there is no rotation or scaling. Styles and CSS classes work exactly as
 for raw elements. `Slides.Examples.Pairs` builds all its diagrams this way.
