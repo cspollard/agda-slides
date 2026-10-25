@@ -278,7 +278,7 @@ Both backends render `classed`; with `pause` it appears on a later step like any
 layout command.
 
 Both backends render these. A future backend that cannot render a feature
-lowers it or refuses the deck; see `plan/Capabilities.md`.
+lowers it or refuses the deck; see `docs/Design.md`.
 
 ## JavaScript
 

@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- R0 spike (plan/HTML.md): a hand-built reveal.js deck as a parsnip XML
+-- R0 spike (docs/Design.md): a hand-built reveal.js deck as a parsnip XML
 -- value, printed with the verified printer.  Not part of the library; it
 -- exists to find out what a browser makes of parsnip's output.
 --
