@@ -1,0 +1,4 @@
+- [x] Complete proofs about the Dia type
+- Clean up completed items from plans, move information to docs
+- [x] Add proofs for the base DSL (`Slides.Diagram.Laws`, `NamesSound`; see `plan/Laws.md`)
+- Add DSL for animations, similar to Dia, together with Reveal backend.

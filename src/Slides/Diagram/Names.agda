@@ -13,6 +13,7 @@ module Slides.Diagram.Names where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Data.Fin using (Fin; zero; suc)
+open import Data.Unit using (tt)
 open import Data.List using (List; []; _∷_; _++_; filterᵇ)
 open import Data.Product using (_×_; _,_; proj₂)
 open import Data.String using (String; _≟_)
@@ -35,26 +36,21 @@ private
   nothingUsed : Usage
   nothingUsed = [] , []
 
-  usageConnective : (c : Connective) → (Fin (arity c) → Usage) → Usage
-  usageConnective (Beside _ _)     k = both (k zero) (k (suc zero))
-  usageConnective (Above _ _)      k = both (k zero) (k (suc zero))
-  usageConnective Atop             k = both (k zero) (k (suc zero))
-  usageConnective (Margin _ _ _ _) k = k zero
-  usageConnective (MinWidth _)     k = k zero
-  usageConnective (TopAlign _)     k = k zero
-  usageConnective (LabelAbove _)   k = both (k zero) (k (suc zero))
-  usageConnective (LabelBelow _)   k = both (k (suc zero)) (k zero)
+  usageAlgebra : ∀ {S} → Algebra S Usage
+  usageAlgebra (Beside _)             k = both (k zero) (k (suc zero))
+  usageAlgebra (Above _)              k = both (k zero) (k (suc zero))
+  usageAlgebra Atop                   k = both (k zero) (k (suc zero))
+  usageAlgebra LabelAbove             k = both (k zero) (k (suc zero))
+  usageAlgebra LabelBelow             k = both (k (suc zero)) (k zero)
+  usageAlgebra (Named n)              k with k tt
+  ... | (d , u) = n ∷ d , u
+  usageAlgebra (Connect a _ b _ _)    k with k tt
+  ... | (d , u) = d , u ++ filterᵇ (λ r → not (member r d)) (a ∷ b ∷ [])
+  usageAlgebra _                      _ = nothingUsed
 
-  usageAnnotation : Annotation → Usage → Usage
-  usageAnnotation (Named n)             (d , u) = n ∷ d , u
-  usageAnnotation (Connect a _ b _ _)   (d , u) = d , u ++ filterᵇ (λ r → not (member r d)) (a ∷ b ∷ [])
-
-namesAlgebra : Algebra Usage
-namesAlgebra = record
-  { prim       = λ _ → nothingUsed
-  ; connective = usageConnective
-  ; annotation = usageAnnotation }
+namesAlgebra : ∀ {S} → Algebra S Usage
+namesAlgebra = usageAlgebra
 
 -- names a `connect` mentions that its own diagram does not declare
-dangling : Dia → List String
+dangling : ∀ {S} → Dia S → List String
 dangling d = proj₂ (fold namesAlgebra d)

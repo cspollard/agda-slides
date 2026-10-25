@@ -119,35 +119,23 @@ atop a b =
   let w = width a ⊔ width b ; h = height a ⊔ height b in
   combine w h (w - width a , h - height a) a (w - width b , h - height b) b
 
-besideA : VAlign → S → Layout S → Layout S → Layout S
-besideA al g a b =
-  let w = width a + g + width b ; h = height a ⊔ height b in
+besideA : VAlign → Layout S → Layout S → Layout S
+besideA al a b =
+  let w = width a + width b ; h = height a ⊔ height b in
   combine w h (0# , valignOffset al h (height a)) a
-              (dbl (width a + g) , valignOffset al h (height b)) b
+              (dbl (width a) , valignOffset al h (height b)) b
 
-aboveA : Align → S → Layout S → Layout S → Layout S
-aboveA al g a b =
-  let w = width a ⊔ width b ; h = height a + g + height b in
+aboveA : Align → Layout S → Layout S → Layout S
+aboveA al a b =
+  let w = width a ⊔ width b ; h = height a + height b in
   combine w h (alignOffset al w (width a) , 0#) a
-              (alignOffset al w (width b) , dbl (height a + g)) b
+              (alignOffset al w (width b) , dbl (height a)) b
 
--- extra space left, top, right, bottom
-margin : S → S → S → S → Layout S → Layout S
-margin l t r b d = inFrame (l + width d + r) (t + height d + b) (dbl l) (dbl t) d
-
--- the layout at the top of a frame of at least the given height
-topAligned : S → Layout S → Layout S
-topAligned h d = inFrame (width d) (h ⊔ height d) 0# 0# d
-
--- at least this wide, the layout centred
-minWidth : S → Layout S → Layout S
-minWidth w d = let w′ = w ⊔ width d in inFrame w′ (height d) (w′ - width d) 0# d
-
--- a caption `g` above or below, with empty space of the caption's height on
--- the other side, so the layout stays at the centre
-labelAbove labelBelow : S → Layout S → Layout S → Layout S
-labelAbove g lbl d = aboveA centred g lbl (aboveA centred g d (spacer 0# (height lbl)))
-labelBelow g lbl d = aboveA centred g (spacer 0# (height lbl)) (aboveA centred g d lbl)
+-- a caption above or below, with empty space of the caption's size on the
+-- other side, so the layout stays at the centre
+labelAbove labelBelow : Layout S → Layout S → Layout S
+labelAbove lbl d = aboveA centred lbl (aboveA centred d (spacer 0# (height lbl)))
+labelBelow lbl d = aboveA centred (spacer 0# (height lbl)) (aboveA centred d lbl)
 
 ------------------------------------------------------------------------
 -- Names and connections

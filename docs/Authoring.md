@@ -114,12 +114,15 @@ attributes), which is how `assets/pairs/pairs.css` themes a whole deck.
 Writing absolute coordinates gets tedious. `Slides.Diagram.Layout` is a small
 layout language, in the spirit of Haskell's `diagrams`, that compiles to the same
 `Diagram`. Like the rest of the library it is a free monad on a container:
-`DiagramC = PrimC ⊎ (ConnectiveC ⊎ AnnotationC)`, with `PrimShape` (rectangles,
-text, …), `Connective` (beside, above, atop, margin, …) and `Annotation`
-(`named`, `connect`) as the three layers (`Slides.Diagram.Syntax`). A `Dia` is a
-closed program `DiagramC ⋆ ⊥`, a tree of operations; the combinators below are
-smart constructors that build it. Nothing is laid out until it is interpreted: an
-interpretation is an `Algebra` and `fold` is the catamorphism. `layout` folds
+one container `DiagramC S = Op S ▷ arity` (`Slides.Diagram.Syntax`), whose
+operations are primitives (rectangles, text, spacers, …), the binary connectives
+(beside, above, atop and the two captions) and the annotations (`named`,
+`connect`). `S` is the scalar that sizes are written in; decks use ℕ. A
+`Dia S` is a closed program `DiagramC S ⋆ ⊥`, a tree of operations; the
+combinators below are smart constructors that build it. Gaps, margins and
+minimum widths are not operations, they are spacers. Nothing is laid out until
+it is interpreted: an interpretation is an `Algebra S A` (the operation and the
+results for its children) and `fold` is the catamorphism. `layout` folds
 into `Slides.Diagram.Place.Layout` (a sized rectangle that draws itself at an
 offset and carries named anchors), `compile` turns that into a `Diagram`, and
 `Slides.Diagram.Names.dangling` is a second algebra that lists the names a
@@ -129,7 +132,7 @@ offset and carries named anchors), `compile` turns that into a `Diagram`, and
 ```agda
 open import Slides.Diagram.Layout
 
-step : String → String → Dia
+step : String → String → Dia ℕ
 step i t = named i (framed 330 200 (rounded 18 (withId i (cls "node")))
                       (text 28 t (cls "big")))
 
@@ -144,10 +147,10 @@ stages = compile "d-stages" 100 (margin 10 20 10 30
 | `rectangle w h style`, `disc r style`, `segment w h style`, `spacer w h` | leaves (`segment` is a line across a `w × h` box; `segment w 0` is a rule) |
 | `text size s style`, `bold size s style`, `lines size ss style`, `paragraph align size maxWidth s style` | text (see below) |
 | `hcat gap ds`, `vcat gap ds` | a row or column, centred on the other axis; `hcatA` / `vcatA` take an alignment (`top middle bottom`, `left centred right`) |
-| `beside gap a b`, `above gap a b`, `atop a b` | binary forms (`besideA`, `aboveA` with an alignment); `atop` centres `b` on `a` |
+| `beside a b`, `above a b`, `atop a b` | binary forms (`besideA`, `aboveA` with an alignment); `atop` centres `b` on `a` |
 | `framed w h style d` | a rectangle with `d` centred on it |
-| `margin l t r b d`, `padded n d`, `boxWidth w d`, `topAligned h d` | extra space around, a minimum width, or top-aligning inside a frame |
-| `labelAbove gap lbl d`, `labelBelow gap lbl d` | a caption a gap away; empty space of the same size goes on the other side, so `d` stays at the centre |
+| `margin l t r b d`, `padded n d`, `boxWidth w d`, `topAligned h d` | extra space around, a minimum width, or top-aligning inside a frame (all built from `∥`, `═`, `⊙` and spacers) |
+| `captionAbove gap lbl d`, `captionBelow gap lbl d` | a caption a gap away; empty space of the same size goes on the other side, so `d` stays at the centre (`labelAbove lbl d` is the same without a gap) |
 | `named n d` | remember the extent of `d` under the name `n` |
 | `connect a side b side style d`, `connectEW a b style d` | an arrow between two named boxes (`north south east west middle`); an unknown name draws nothing |
 | `connectP a port b port style d` | the same, from a `side s` or `at s pct` (percent along the edge: `at north 40`), to spread arrows over an edge |
@@ -236,8 +239,9 @@ or right aligned.
 
 The layout is computed in a scalar (`Slides.Diagram.Scalar.Ops`): `LayoutWith O`
 for any `Ops S`, and, for decks, the same names at ℕ. ℤ and ℚ are also provided,
-and `Slides.Examples.PairsScalar` checks that the Pairs diagrams lay out
-identically in all three. Sizes are in diagram units, but positions are kept in
+and `Slides.Examples.PairsScalar` checks that the Pairs diagrams, taken to ℤ and
+ℚ by `mapDia` (the action of `Dia` on a change of scalar), lay out identically
+in all three. Sizes are in diagram units, but positions are kept in
 *half* units, so centring is `outer - inner` with no division and never rounds;
 the positions are halved once, when the layout becomes a `Diagram`. A layout is
 plain data (sizes, drawing commands, named anchors), not a function.
@@ -249,7 +253,7 @@ the monus), that, up to `_≈ᴸ_` (`Slides.Diagram.Equality`, the scalar's `_�
 lifted pointwise to sizes, drawing commands and anchors):
 
 - translation is an action (`shift-0`, `shift-∘`);
-- `∥`, `═` and `⊙`, with no gap, are associative (`∥-assoc`, `═-assoc`, `⊙-assoc`);
+- `∥`, `═` and `⊙` are associative (`∥-assoc`, `═-assoc`, `⊙-assoc`);
 - the empty diagram is a unit of each, for a layout of non-negative size
   (`∥-unitˡ`, `∥-unitʳ`, …; `Valid`);
 - `named` and `connect` leave a layout's size and anchors alone;

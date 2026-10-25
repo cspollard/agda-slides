@@ -7,7 +7,7 @@
 -- runs the layout but is not covered here.
 --
 --   * translation is an action: `shift 0 d ≈ᴸ d`, `shift a (shift b d) ≈ᴸ shift (b + a) d`
---   * `∥`, `═` and `⊙` (with no gap) are associative
+--   * `∥`, `═` and `⊙` are associative
 --   * for a layout of non-negative size, the empty diagram is a unit of each
 --   * annotations do not change a layout's size or anchors
 --   * the size of a layout is a fold of its own, `sizeAlgebra` (fusion)
@@ -32,7 +32,6 @@ open import Data.Maybe using (just; nothing)
 open import Data.Nat using () renaming (_*_ to _*ℕ_; _/_ to _/ℕ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
-open import Data.Sum using (inj₁; inj₂)
 open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary using (Rel; IsEquivalence; Setoid)
@@ -42,9 +41,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong;
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
-  using ( Dia; Algebra; fold; arity; PrimShape; Rectangle; Disc; Segment; Text; Spacer; Raw
-        ; Connective; Beside; Above; Atop; Margin; MinWidth; TopAlign; LabelAbove; LabelBelow
-        ; Annotation; Named; Connect
+  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer; Raw
+        ; Beside; Above; Atop; LabelAbove; LabelBelow; Named; Connect
         ; VAlign; top; middle; bottom; Align; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
 import Slides.Diagram.Layout as Lay
@@ -381,41 +379,35 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
     t₃ : (off (b ⊔ c) c + off (a ⊔ (b ⊔ c)) (b ⊔ c)) ≈ off ((a ⊔ b) ⊔ c) c
     t₃ = R.trans (comp (a ⊔ (b ⊔ c)) (b ⊔ c) c) (off-cong c W≡)
 
-  -- sizes that add: `(a + z) + ((b + z) + c)` and the like, with `z` the zero
-  sum3 : ∀ a b c z → ((a + z) + ((b + z) + c)) ≈ ((((a + z) + b) + z) + c)
-  sum3 = λ a b c z →
-    solve 4 (λ a b c z → ((a :+ z) :+ ((b :+ z) :+ c)) ⊜ ((((a :+ z) :+ b) :+ z) :+ c)) R.refl a b c z
-
-  dbl3 : ∀ a b z → (dbl (b + z) + dbl (a + z)) ≈ dbl (((a + z) + b) + z)
-  dbl3 = λ a b z →
-    solve 3 (λ a b z → (((b :+ z) :+ (b :+ z)) :+ ((a :+ z) :+ (a :+ z)))
-                         ⊜ ((((a :+ z) :+ b) :+ z) :+ (((a :+ z) :+ b) :+ z))) R.refl a b z
+  dbl2 : ∀ a b → (dbl b + dbl a) ≈ dbl (a + b)
+  dbl2 = λ a b →
+    solve 2 (λ a b → ((b :+ b) :+ (a :+ a)) ⊜ ((a :+ b) :+ (a :+ b))) R.refl a b
 
   comm0 : ∀ x → (0# + x) ≈ (x + 0#)
   comm0 x = R.trans (+-identityˡ x) (R.sym (+-identityʳ x))
 
   ∥-assoc : ∀ al a b c →
-    besideA al 0# a (besideA al 0# b c) ≈ᴸ besideA al 0# (besideA al 0# a b) c
+    besideA al a (besideA al b c) ≈ᴸ besideA al (besideA al a b) c
   ∥-assoc al a b c =
-    combine-assoc {w′ = width b + 0# + width c} {h′ = height b ⊔ height c}
-                  {w₃ = width a + 0# + width b} {h₃ = height a ⊔ height b} a b c
-      (sum3 (width a) (width b) (width c) 0#)
+    combine-assoc {w′ = width b + width c} {h′ = height b ⊔ height c}
+                  {w₃ = width a + width b} {h₃ = height a ⊔ height b} a b c
+      (R.sym (+-assoc (width a) (width b) (width c)))
       (R.sym (⊔-assoc (height a) (height b) (height c)))
       (R.sym (+-identityʳ 0#) , t₁)
       (comm0 _ , t₂)
-      (dbl3 (width a) (width b) 0# , t₃)
+      (dbl2 (width a) (width b) , t₃)
     where open Triple (valignOffset al) (vo-comp al) (vo-congˡ al) (height a) (height b) (height c)
 
   ═-assoc : ∀ al a b c →
-    aboveA al 0# a (aboveA al 0# b c) ≈ᴸ aboveA al 0# (aboveA al 0# a b) c
+    aboveA al a (aboveA al b c) ≈ᴸ aboveA al (aboveA al a b) c
   ═-assoc al a b c =
-    combine-assoc {w′ = width b ⊔ width c} {h′ = height b + 0# + height c}
-                  {w₃ = width a ⊔ width b} {h₃ = height a + 0# + height b} a b c
+    combine-assoc {w′ = width b ⊔ width c} {h′ = height b + height c}
+                  {w₃ = width a ⊔ width b} {h₃ = height a + height b} a b c
       (R.sym (⊔-assoc (width a) (width b) (width c)))
-      (sum3 (height a) (height b) (height c) 0#)
+      (R.sym (+-assoc (height a) (height b) (height c)))
       (t₁ , R.sym (+-identityʳ 0#))
       (t₂ , comm0 _)
-      (t₃ , dbl3 (height a) (height b) 0#)
+      (t₃ , dbl2 (height a) (height b))
     where open Triple (alignOffset al) (ao-comp al) (ao-congˡ al) (width a) (width b) (width c)
 
   ⊙-assoc : ∀ a b c → atop a (atop b c) ≈ᴸ atop (atop a b) c
@@ -445,40 +437,36 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   empty : Layout S
   empty = spacer 0# 0#
 
-  -- `0 + 0 + x`, `x + 0 + 0` and `0 + 0` are `x` and `0`
-  zeros : ∀ x → ((0# + 0#) + x) ≈ x
-  zeros x = R.trans (+-cong (+-identityʳ 0#) R.refl) (+-identityˡ x)
-
-  ∥-unitˡ : ∀ al a → Valid a → besideA al 0# empty a ≈ᴸ a
+  ∥-unitˡ : ∀ al a → Valid a → besideA al empty a ≈ᴸ a
   ∥-unitˡ al a (nw , nh) =
-    combine-unitˡ {w = (0# + 0#) + width a} {h = 0# ⊔ height a}
+    combine-unitˡ {w = 0# + width a} {h = 0# ⊔ height a}
       {pe = 0# , valignOffset al (0# ⊔ height a) 0#}
-      {p = dbl (0# + 0#) , valignOffset al (0# ⊔ height a) (height a)} 0# 0# a
-      (zeros (width a)) nh
-      (R.trans (+-cong (+-identityʳ 0#) (+-identityʳ 0#)) (+-identityʳ 0#) , vo-zero al (height a) nh)
+      {p = dbl 0# , valignOffset al (0# ⊔ height a) (height a)} 0# 0# a
+      (+-identityˡ (width a)) nh
+      (+-identityʳ 0# , vo-zero al (height a) nh)
 
-  ∥-unitʳ : ∀ al a → Valid a → besideA al 0# a empty ≈ᴸ a
+  ∥-unitʳ : ∀ al a → Valid a → besideA al a empty ≈ᴸ a
   ∥-unitʳ al a (nw , nh) =
-    combine-unitʳ {w = (width a + 0#) + 0#} {h = height a ⊔ 0#}
+    combine-unitʳ {w = width a + 0#} {h = height a ⊔ 0#}
       {p = 0# , valignOffset al (height a ⊔ 0#) (height a)}
-      {pe = dbl (width a + 0#) , valignOffset al (height a ⊔ 0#) 0#} a 0# 0#
-      (R.trans (+-cong (+-identityʳ _) R.refl) (+-identityʳ _)) (nonneg-flip nh)
+      {pe = dbl (width a) , valignOffset al (height a ⊔ 0#) 0#} a 0# 0#
+      (+-identityʳ (width a)) (nonneg-flip nh)
       (R.refl , vo-zero al (height a) (nonneg-flip nh))
 
-  ═-unitˡ : ∀ al a → Valid a → aboveA al 0# empty a ≈ᴸ a
+  ═-unitˡ : ∀ al a → Valid a → aboveA al empty a ≈ᴸ a
   ═-unitˡ al a (nw , nh) =
-    combine-unitˡ {w = 0# ⊔ width a} {h = (0# + 0#) + height a}
+    combine-unitˡ {w = 0# ⊔ width a} {h = 0# + height a}
       {pe = alignOffset al (0# ⊔ width a) 0# , 0#}
-      {p = alignOffset al (0# ⊔ width a) (width a) , dbl (0# + 0#)} 0# 0# a
-      nw (zeros (height a))
-      (ao-zero al (width a) nw , R.trans (+-cong (+-identityʳ 0#) (+-identityʳ 0#)) (+-identityʳ 0#))
+      {p = alignOffset al (0# ⊔ width a) (width a) , dbl 0#} 0# 0# a
+      nw (+-identityˡ (height a))
+      (ao-zero al (width a) nw , +-identityʳ 0#)
 
-  ═-unitʳ : ∀ al a → Valid a → aboveA al 0# a empty ≈ᴸ a
+  ═-unitʳ : ∀ al a → Valid a → aboveA al a empty ≈ᴸ a
   ═-unitʳ al a (nw , nh) =
-    combine-unitʳ {w = width a ⊔ 0#} {h = (height a + 0#) + 0#}
+    combine-unitʳ {w = width a ⊔ 0#} {h = height a + 0#}
       {p = alignOffset al (width a ⊔ 0#) (width a) , 0#}
-      {pe = alignOffset al (width a ⊔ 0#) 0# , dbl (height a + 0#)} a 0# 0#
-      (nonneg-flip nw) (R.trans (+-cong (+-identityʳ _) R.refl) (+-identityʳ _))
+      {pe = alignOffset al (width a ⊔ 0#) 0# , dbl (height a)} a 0# 0#
+      (nonneg-flip nw) (+-identityʳ (height a))
       (ao-zero al (width a) (nonneg-flip nw) , R.refl)
 
   ⊙-unitˡ : ∀ a → Valid a → atop empty a ≈ᴸ a
@@ -516,34 +504,27 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   -- Size fusion: the size of a layout is computed from the sizes of its parts
 
   -- the size algebra: what `layoutAlgebra` does to (width , height), alone
-  sizeAlgebra : Algebra (S × S)
-  sizeAlgebra = record { prim = sizePrim ; connective = sizeConnective ; annotation = λ _ sz → sz }
-    where
-    sizePrim : PrimShape → S × S
-    sizePrim (Rectangle w h _)   = fromℕ w , fromℕ h
-    sizePrim (Disc r _)          = dbl (fromℕ r) , dbl (fromℕ r)
-    sizePrim (Segment w h _)     = fromℕ w , fromℕ h
-    sizePrim (Text pct size t _) = fromℕ ((textWidth size t *ℕ pct) /ℕ 100) , fromℕ ((size *ℕ 3) /ℕ 2)
-    sizePrim (Spacer w h)        = fromℕ w , fromℕ h
-    sizePrim (Raw w h _)         = fromℕ w , fromℕ h
-
-    sizeConnective : (c : Connective) → (Fin (arity c) → S × S) → S × S
-    sizeConnective (Beside _ g) k =
-      proj₁ (k zero) + fromℕ g + proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
-    sizeConnective (Above _ g) k =
-      proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + fromℕ g + proj₂ (k (suc zero))
-    sizeConnective Atop k =
-      proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
-    sizeConnective (Margin l t r b) k =
-      fromℕ l + proj₁ (k zero) + fromℕ r , fromℕ t + proj₂ (k zero) + fromℕ b
-    sizeConnective (MinWidth w) k = fromℕ w ⊔ proj₁ (k zero) , proj₂ (k zero)
-    sizeConnective (TopAlign h) k = proj₁ (k zero) , fromℕ h ⊔ proj₂ (k zero)
-    sizeConnective (LabelAbove g) k =
-      proj₁ (k zero) ⊔ (proj₁ (k (suc zero)) ⊔ 0#)
-        , proj₂ (k zero) + fromℕ g + (proj₂ (k (suc zero)) + fromℕ g + proj₂ (k zero))
-    sizeConnective (LabelBelow g) k =
-      0# ⊔ (proj₁ (k (suc zero)) ⊔ proj₁ (k zero))
-        , proj₂ (k zero) + fromℕ g + (proj₂ (k (suc zero)) + fromℕ g + proj₂ (k zero))
+  sizeAlgebra : Algebra S (S × S)
+  sizeAlgebra (Rectangle w h _)   _ = w , h
+  sizeAlgebra (Disc r _)          _ = dbl r , dbl r
+  sizeAlgebra (Segment w h _)     _ = w , h
+  sizeAlgebra (Text pct size t _) _ = fromℕ ((textWidth size t *ℕ pct) /ℕ 100) , fromℕ ((size *ℕ 3) /ℕ 2)
+  sizeAlgebra (Spacer w h)        _ = w , h
+  sizeAlgebra (Raw w h _)         _ = w , h
+  sizeAlgebra (Beside _) k =
+    proj₁ (k zero) + proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
+  sizeAlgebra (Above _) k =
+    proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + proj₂ (k (suc zero))
+  sizeAlgebra Atop k =
+    proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
+  sizeAlgebra LabelAbove k =
+    proj₁ (k zero) ⊔ (proj₁ (k (suc zero)) ⊔ 0#)
+      , proj₂ (k zero) + (proj₂ (k (suc zero)) + proj₂ (k zero))
+  sizeAlgebra LabelBelow k =
+    0# ⊔ (proj₁ (k (suc zero)) ⊔ proj₁ (k zero))
+      , proj₂ (k zero) + (proj₂ (k (suc zero)) + proj₂ (k zero))
+  sizeAlgebra (Named _) k = k tt
+  sizeAlgebra (Connect _ _ _ _ _) k = k tt
 
   module LW = Lay.LayoutWith O
 
@@ -552,66 +533,46 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
 
   size-fusion : ∀ d → size (LW.layout d) ≈ₚ fold sizeAlgebra d
   size-fusion (pure ())
-  size-fusion (impure (inj₁ (Rectangle _ _ _) , _)) = R.refl , R.refl
-  size-fusion (impure (inj₁ (Disc _ _) , _))        = R.refl , R.refl
-  size-fusion (impure (inj₁ (Segment _ _ _) , _))   = R.refl , R.refl
-  size-fusion (impure (inj₁ (Text _ _ _ _) , _))    = R.refl , R.refl
-  size-fusion (impure (inj₁ (Spacer _ _) , _))      = R.refl , R.refl
-  size-fusion (impure (inj₁ (Raw _ _ _) , _))       = R.refl , R.refl
-  size-fusion (impure (inj₂ (inj₁ (Beside _ g)) , k)) =
-    +-cong (+-cong w₀ R.refl) w₁ , ⊔-cong h₀ h₁
+  size-fusion (impure (Rectangle _ _ _ , _)) = R.refl , R.refl
+  size-fusion (impure (Disc _ _ , _))        = R.refl , R.refl
+  size-fusion (impure (Segment _ _ _ , _))   = R.refl , R.refl
+  size-fusion (impure (Text _ _ _ _ , _))    = R.refl , R.refl
+  size-fusion (impure (Spacer _ _ , _))      = R.refl , R.refl
+  size-fusion (impure (Raw _ _ _ , _))       = R.refl , R.refl
+  size-fusion (impure (Beside _ , k)) = +-cong w₀ w₁ , ⊔-cong h₀ h₁
     where
     w₀ = proj₁ (size-fusion (k zero))
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₁ (Above _ g)) , k)) =
-    ⊔-cong w₀ w₁ , +-cong (+-cong h₀ R.refl) h₁
+  size-fusion (impure (Above _ , k)) = ⊔-cong w₀ w₁ , +-cong h₀ h₁
     where
     w₀ = proj₁ (size-fusion (k zero))
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₁ Atop) , k)) =
-    ⊔-cong w₀ w₁ , ⊔-cong h₀ h₁
+  size-fusion (impure (Atop , k)) = ⊔-cong w₀ w₁ , ⊔-cong h₀ h₁
     where
     w₀ = proj₁ (size-fusion (k zero))
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₁ (Margin l t r b)) , k)) =
-    +-cong (+-cong R.refl w₀) R.refl , +-cong (+-cong R.refl h₀) R.refl
-    where
-    w₀ = proj₁ (size-fusion (k zero))
-    h₀ = proj₂ (size-fusion (k zero))
-  size-fusion (impure (inj₂ (inj₁ (MinWidth w)) , k)) =
-    ⊔-cong R.refl w₀ , h₀
-    where
-    w₀ = proj₁ (size-fusion (k zero))
-    h₀ = proj₂ (size-fusion (k zero))
-  size-fusion (impure (inj₂ (inj₁ (TopAlign h)) , k)) =
-    w₀ , ⊔-cong R.refl h₀
-    where
-    w₀ = proj₁ (size-fusion (k zero))
-    h₀ = proj₂ (size-fusion (k zero))
-  size-fusion (impure (inj₂ (inj₁ (LabelAbove g)) , k)) =
-    ⊔-cong w₀ (⊔-cong w₁ R.refl)
-      , +-cong (+-cong h₀ R.refl) (+-cong (+-cong h₁ R.refl) h₀)
+  size-fusion (impure (LabelAbove , k)) =
+    ⊔-cong w₀ (⊔-cong w₁ R.refl) , +-cong h₀ (+-cong h₁ h₀)
     where
     w₀ = proj₁ (size-fusion (k zero))
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₁ (LabelBelow g)) , k)) =
-    ⊔-cong R.refl (⊔-cong w₁ w₀)
-      , +-cong (+-cong h₀ R.refl) (+-cong (+-cong h₁ R.refl) h₀)
+  size-fusion (impure (LabelBelow , k)) =
+    ⊔-cong R.refl (⊔-cong w₁ w₀) , +-cong h₀ (+-cong h₁ h₀)
     where
     w₀ = proj₁ (size-fusion (k zero))
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
-  size-fusion (impure (inj₂ (inj₂ (Named n)) , k)) = size-fusion (k tt)
-  size-fusion (impure (inj₂ (inj₂ (Connect a pa b pb s)) , k)) =
+  size-fusion (impure (Named n , k)) = size-fusion (k tt)
+  size-fusion (impure (Connect a pa b pb s , k)) =
     R.trans (R.reflexive (proj₁ sz)) (proj₁ ih) , R.trans (R.reflexive (proj₁ (proj₂ sz))) (proj₂ ih)
     where ih = size-fusion (k tt)
           sz = connectP-size a pa b pb s (LW.layout (k tt))

@@ -68,14 +68,14 @@ cls : String → Style
 cls c = withClass c defaultStyle
 
 -- text in the slide colour; `dim` is a muted caption, `big` a heavier title
-txt dim big : ℕ → String → Dia
+txt dim big : ℕ → String → Dia ℕ
 txt  size t = text size t defaultStyle
 dim  size t = text size t (cls "dim")
 big  size t = bold size t (cls "big")
 
 -- a rounded box of a CSS class with a diagram centred on it; the name is for
 -- `connect`, and doubles as the element id that scripts light up
-card : String → String → ℕ → ℕ → ℕ → Dia → Dia
+card : String → String → ℕ → ℕ → ℕ → Dia ℕ → Dia ℕ
 card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 
 -- a flowing arrow: pulses travel along it (`am` crimson, `cy` blue)
@@ -94,7 +94,7 @@ fan src endPct = go 40
 ------------------------------------------------------------------------
 -- Slide 2: the problem
 
-problemDia : Dia
+problemDia : Dia ℕ
 problemDia =
   margin 30 0 30 0 (body ▹[ flow "cy" ] fan "th" 40 targets ▹[ flow "am" ] fan "psi" 60 targets)
   where
@@ -117,7 +117,7 @@ problem = compile "d-problem" 100 problemDia
 ------------------------------------------------------------------------
 -- Slide 5: the building blocks
 
-pipelineDia : Dia
+pipelineDia : Dia ℕ
 pipelineDia =
   margin 10 0 10 0
     (body ▹[ flow "cy" ] ( "p1" ⟶ "t1" ∷ "p2" ⟶ "t2" ∷ "pn" ⟶ "tn"
@@ -151,7 +151,7 @@ pipeline = compile "d-pipeline" 100 pipelineDia
 
 -- A card of centred text lines: a title, body lines and a small note.
 -- The id lets scripts light the card up; it is also the name `connect` uses.
-infoCard : (id : String) → ℕ → ℕ → ℕ → ℕ → String → List String → List String → Dia
+infoCard : (id : String) → ℕ → ℕ → ℕ → ℕ → String → List String → List String → Dia ℕ
 infoCard i w h tsize bsize title body note =
   named i (framed w h (rounded 18 (withId i (cls "node")))
     (topAligned (h ∸ 50)
@@ -163,7 +163,7 @@ infoCard i w h tsize bsize title body note =
 arrowAm : Style
 arrowAm = cls "flow am"
 
-stagesDia : Dia
+stagesDia : Dia ℕ
 stagesDia =
   margin 10 20 10 30
     (⟨ infoCard "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
@@ -178,7 +178,7 @@ stages = compile "d-stages" 100 stagesDia
 ------------------------------------------------------------------------
 -- Slide 7: why pairs are enough
 
-chainDia : Dia
+chainDia : Dia ℕ
 chainDia =
   margin 10 20 15 20
     (⟨ infoCard "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
@@ -194,13 +194,13 @@ chain = compile "d-chain" 100 chainDia
 ------------------------------------------------------------------------
 -- Slide 9: a result
 
-resultsDia : Dia
+resultsDia : Dia ℕ
 resultsDia =
   margin 30 0 30 0
     (dim 15 "test NLL, Circle Radius, N = 1000 (lower is better)" ═ ↕ 14
      ═ (bars ═ segment 510 0 (cls "axis")) ═ ↕ 12 ═ captions)
   where
-    column : Dia → Dia
+    column : Dia ℕ → Dia ℕ
     column = boxWidth 160
     bars =
       hcatA bottom 0
@@ -221,7 +221,7 @@ results = compile "d-results" 100 resultsDia
 -- Slide 10: cost and scale
 
 -- a tile: a big number (styled by its class), two lines of text and a note
-tile : String → String → List String → String → Dia
+tile : String → String → List String → String → Dia ℕ
 tile c n body note =
   framed 255 240 (rounded 20 (cls "tile"))
     (topAligned 170
@@ -230,7 +230,7 @@ tile c n body note =
                ∷ dim 16 note
                ∷ [])))
 
-tilesDia : Dia
+tilesDia : Dia ℕ
 tilesDia =
   margin 10 10 10 20 (
   hcat 20
