@@ -264,8 +264,13 @@ Each step ends with `make check`, `make test`, and the browser run.
    positions are `Fin 2`), `dur-⨾`, `dur-∥`, `dur-pad`, `par-balanced`, `dur-par`.
    Open: `foldA` is a concrete fold, to be related to `Container.Interpret` as for
    `Dia`; an operator table with Emacs input sequences in the docs.
-3. **`Timeline` and laws.** The `Combine` instance and its laws; the swap law;
-   `≈ᵖ` and commutativity.
+3. **`Timeline` and laws** (mostly done, `Slides.Anim.Timeline`). A timeline is a
+   `List` of frames, not `Σ n. Vec`: `Seq` is `++`, `Par` is `merge` (overlay, the longer
+   side runs on alone, so no unit or padding is needed). Proved over any `_⊙_`:
+   `merge` unit, associativity (if `_⊙_` is), commutativity (if `_⊙_` is), the swap law
+   (`timeline-swap`, needs only equal lengths), `length ∘ timeline = dur`.
+   Open: transfer of `atop`'s laws through layout (needs `Valid` frames), `≈ᵖ`
+   commutativity of `Par` for disjoint footprints (needs `footprint`).
 4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.
