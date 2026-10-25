@@ -1,134 +1,196 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The layout carrier: a `Layout` is a rectangle of known size that knows how to
--- draw itself at any offset, plus the named sub-rectangles ("anchors") inside
--- it.  The operations here are the semantics of the connectives of
--- `Slides.Diagram.Syntax`; `Slides.Diagram.Layout` assembles them into an
--- algebra.
+-- The layout operations: the semantics of the connectives of
+-- `Slides.Diagram.Syntax`, over any scalar `Ops S`.  `Slides.Diagram.Layout`
+-- assembles them into an algebra, and `Slides.Diagram.Laws` states and proves
+-- their laws.
 --
--- Coordinates are natural numbers: a layout always lives at non-negative
--- offsets inside its own frame, and every operation grows the frame to fit.
+-- A `Layout` is a rectangle of known size, the drawing commands that fill it
+-- (relative to its top-left corner) and the named sub-rectangles inside it.
+-- Combining layouts shifts the drawing commands and the anchors of each part;
+-- every operation grows its frame to fit, so offsets are never negative.
+--
+-- Positions are in half units and sizes in units (see `Slides.Diagram.Draw`).
+-- That is what makes centring exact: a child of size `inner` in a frame of
+-- size `outer` is at position `outer - inner` (that is, half of it in units).
+-- `-` is only applied to a larger minuend, so ℕ's monus never truncates.
 
-module Slides.Diagram.Place where
+open import Slides.Diagram.Scalar using (Ops)
+
+module Slides.Diagram.Place {S : Set} (O : Ops S) where
 
 open import Data.Bool using (if_then_else_)
 open import Data.List using (List; []; _∷_; map; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _+_; _*_; _/_; _⊔_)
-open import Data.Product using (_×_; _,_)
+open import Data.Nat using (ℕ; _*_; _/_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _≟_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 
 open import Slides.Diagram using (Style; Element; rect; circle; line; arrow; label)
+import Slides.Diagram as D
+open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.TextMetrics using (textWidth)
 
-record Layout : Set where
-  field
-    width   : ℕ
-    height  : ℕ
-    -- draw with the top-left corner at the given offset
-    render  : ℕ → ℕ → List Element
-    anchors : List (String × Box)
+open Ops O
 
-open Layout public
+------------------------------------------------------------------------
+-- Shifting
+
+shiftDraw : S → S → Draw S → Draw S
+shiftDraw dx dy (rect x y w h s)       = rect (x + dx) (y + dy) w h s
+shiftDraw dx dy (circle x y r s)       = circle (x + dx) (y + dy) r s
+shiftDraw dx dy (line a b c d s)       = line (a + dx) (b + dy) (c + dx) (d + dy) s
+shiftDraw dx dy (arrow a b c d s)      = arrow (a + dx) (b + dy) (c + dx) (d + dy) s
+shiftDraw dx dy (label x y n t s)      = label (x + dx) (y + dy) n t s
+shiftDraw dx dy (fixed e)              = fixed e
+
+shiftBox : S → S → Box S → Box S
+shiftBox dx dy (box l t w h) = box (l + dx) (t + dy) w h
+
+shiftAnchor : S → S → String × Box S → String × Box S
+shiftAnchor dx dy (n , b) = n , shiftBox dx dy b
+
+-- the same layout, shifted inside a frame of a given size
+inFrame : S → S → S → S → Layout S → Layout S
+inFrame w h dx dy d = layout w h
+  (map (shiftDraw dx dy) (Layout.draws d))
+  (map (shiftAnchor dx dy) (Layout.anchors d))
+
+-- two layouts in one frame, the second drawn over the first
+overlay : S → S → Layout S → Layout S → Layout S
+overlay w h a b = layout w h (Layout.draws a ++ Layout.draws b) (Layout.anchors a ++ Layout.anchors b)
+
+width height : Layout S → S
+width  = Layout.width
+height = Layout.height
 
 ------------------------------------------------------------------------
 -- Primitives
 
-spacer : ℕ → ℕ → Layout
-spacer w h = record { width = w ; height = h ; render = λ _ _ → [] ; anchors = [] }
+spacer : S → S → Layout S
+spacer w h = layout w h [] []
 
-rectangle : ℕ → ℕ → Style → Layout
-rectangle w h s = record
-  { width = w ; height = h ; anchors = []
-  ; render = λ x y → rect x y w h s ∷ [] }
+rectangle : S → S → Style → Layout S
+rectangle w h s = layout w h (rect 0# 0# w h s ∷ []) []
 
-disc : ℕ → Style → Layout
-disc r s = record
-  { width = 2 * r ; height = 2 * r ; anchors = []
-  ; render = λ x y → circle (x + r) (y + r) r s ∷ [] }
+disc : S → Style → Layout S
+disc r s = layout (dbl r) (dbl r) (circle (dbl r) (dbl r) r s ∷ []) []
 
-segment : ℕ → ℕ → Style → Layout
-segment w h s = record
-  { width = w ; height = h ; anchors = []
-  ; render = λ x y → line x y (x + w) (y + h) s ∷ [] }
+-- a line from the top-left to the bottom-right corner
+segment : S → S → Style → Layout S
+segment w h s = layout w h (line 0# 0# (dbl w) (dbl h) s ∷ []) []
 
 -- text: as wide as its characters (`pct` percent, for a heavier font), and
 -- `size * 3/2` high
-text : ℕ → ℕ → String → Style → Layout
-text pct size t s = record
-  { width = w ; height = (size * 3) / 2 ; anchors = []
-  ; render = λ x y → label (x + w / 2) (y + (size * 3) / 4) size t s ∷ [] }
-  where w = (textWidth size t * pct) / 100
+text : ℕ → ℕ → String → Style → Layout S
+text pct size t s = layout w h (label w h size t s ∷ []) []
+  where w = fromℕ ((textWidth size t * pct) / 100)
+        h = fromℕ ((size * 3) / 2)
 
-raw : ℕ → ℕ → List Element → Layout
-raw w h es = record { width = w ; height = h ; anchors = [] ; render = λ _ _ → es }
+-- elements in the diagram's own coordinates
+raw : S → S → List Element → Layout S
+raw w h es = layout w h (map fixed es) []
 
 ------------------------------------------------------------------------
--- Moving and combining
+-- Combining
 
--- the same layout, shifted inside a frame of a given size
-inFrame : ℕ → ℕ → ℕ → ℕ → Layout → Layout
-inFrame w h dx dy d = record
-  { width = w ; height = h
-  ; render = λ x y → render d (x + dx) (y + dy)
-  ; anchors = map (λ { (n , b) → n , shiftBox dx dy b }) (anchors d) }
+-- `inner` inside `outer`: the position, in half units
+valignOffset : VAlign → S → S → S
+valignOffset top    outer inner = 0#
+valignOffset middle outer inner = outer - inner
+valignOffset bottom outer inner = dbl (outer - inner)
 
--- two layouts in one frame, the second drawn over the first
-overlay : ℕ → ℕ → Layout → Layout → Layout
-overlay w h a b = record
-  { width = w ; height = h
-  ; render = λ x y → render a x y ++ render b x y
-  ; anchors = anchors a ++ anchors b }
+alignOffset : Align → S → S → S
+alignOffset left    outer inner = 0#
+alignOffset centred outer inner = outer - inner
+alignOffset right   outer inner = dbl (outer - inner)
 
-atop : Layout → Layout → Layout
+-- a frame holding two layouts at given positions, the second drawn over the
+-- first: every binary connective is one of these
+combine : S → S → S × S → Layout S → S × S → Layout S → Layout S
+combine w h p a q b =
+  overlay w h (inFrame w h (proj₁ p) (proj₂ p) a) (inFrame w h (proj₁ q) (proj₂ q) b)
+
+-- on top of one another, both centred
+atop : Layout S → Layout S → Layout S
 atop a b =
   let w = width a ⊔ width b ; h = height a ⊔ height b in
-  overlay w h (inFrame w h (centre w (width a)) (centre h (height a)) a)
-              (inFrame w h (centre w (width b)) (centre h (height b)) b)
+  combine w h (w - width a , h - height a) a (w - width b , h - height b) b
 
-besideA : VAlign → ℕ → Layout → Layout → Layout
+besideA : VAlign → S → Layout S → Layout S → Layout S
 besideA al g a b =
   let w = width a + g + width b ; h = height a ⊔ height b in
-  overlay w h (inFrame w h 0 (valignOffset al h (height a)) a)
-              (inFrame w h (width a + g) (valignOffset al h (height b)) b)
+  combine w h (0# , valignOffset al h (height a)) a
+              (dbl (width a + g) , valignOffset al h (height b)) b
 
-aboveA : Align → ℕ → Layout → Layout → Layout
+aboveA : Align → S → Layout S → Layout S → Layout S
 aboveA al g a b =
   let w = width a ⊔ width b ; h = height a + g + height b in
-  overlay w h (inFrame w h (alignOffset al w (width a)) 0 a)
-              (inFrame w h (alignOffset al w (width b)) (height a + g) b)
+  combine w h (alignOffset al w (width a) , 0#) a
+              (alignOffset al w (width b) , dbl (height a + g)) b
 
-margin : ℕ → ℕ → ℕ → ℕ → Layout → Layout
-margin l t r b d = inFrame (l + width d + r) (t + height d + b) l t d
+-- extra space left, top, right, bottom
+margin : S → S → S → S → Layout S → Layout S
+margin l t r b d = inFrame (l + width d + r) (t + height d + b) (dbl l) (dbl t) d
 
-topAligned : ℕ → Layout → Layout
-topAligned h d = inFrame (width d) (h ⊔ height d) 0 0 d
+-- the layout at the top of a frame of at least the given height
+topAligned : S → Layout S → Layout S
+topAligned h d = inFrame (width d) (h ⊔ height d) 0# 0# d
 
-minWidth : ℕ → Layout → Layout
-minWidth w d = let w′ = w ⊔ width d in inFrame w′ (height d) (centre w′ (width d)) 0 d
+-- at least this wide, the layout centred
+minWidth : S → Layout S → Layout S
+minWidth w d = let w′ = w ⊔ width d in inFrame w′ (height d) (w′ - width d) 0# d
 
-labelAbove labelBelow : ℕ → Layout → Layout → Layout
-labelAbove g lbl d = aboveA centred g lbl (aboveA centred g d (spacer 0 (height lbl)))
-labelBelow g lbl d = aboveA centred g (spacer 0 (height lbl)) (aboveA centred g d lbl)
+-- a caption `g` above or below, with empty space of the caption's height on
+-- the other side, so the layout stays at the centre
+labelAbove labelBelow : S → Layout S → Layout S → Layout S
+labelAbove g lbl d = aboveA centred g lbl (aboveA centred g d (spacer 0# (height lbl)))
+labelBelow g lbl d = aboveA centred g (spacer 0# (height lbl)) (aboveA centred g d lbl)
 
 ------------------------------------------------------------------------
 -- Names and connections
 
-named : String → Layout → Layout
-named n d = record d { anchors = (n , box 0 0 (width d) (height d)) ∷ anchors d }
+named : String → Layout S → Layout S
+named n d = layout (width d) (height d) (Layout.draws d)
+  ((n , box 0# 0# (width d) (height d)) ∷ Layout.anchors d)
 
-private
-  find : String → List (String × Box) → Maybe Box
-  find n [] = nothing
-  find n ((m , b) ∷ bs) = if ⌊ n ≟ m ⌋ then just b else find n bs
+findAnchor : String → List (String × Box S) → Maybe (Box S)
+findAnchor n [] = nothing
+findAnchor n ((m , b) ∷ bs) = if ⌊ n ≟ m ⌋ then just b else findAnchor n bs
+
+-- the point of a box a port names, in half units
+portPoint : Port → Box S → S × S
+portPoint (side north)  (box l t w h) = l + w , t
+portPoint (side south)  (box l t w h) = l + w , t + dbl h
+portPoint (side east)   (box l t w h) = l + dbl w , t + h
+portPoint (side west)   (box l t w h) = l , t + h
+portPoint (side middle) (box l t w h) = l + w , t + h
+portPoint (at north p)  (box l t w h) = l + percentOf p (dbl w) , t
+portPoint (at south p)  (box l t w h) = l + percentOf p (dbl w) , t + dbl h
+portPoint (at east p)   (box l t w h) = l + dbl w , t + percentOf p (dbl h)
+portPoint (at west p)   (box l t w h) = l , t + percentOf p (dbl h)
+portPoint (at middle p) b             = portPoint (side middle) b
 
 -- An arrow between two named boxes.  A name that does not exist draws
 -- nothing; `Slides.Diagram.Names` reports such connections.
-connectP : String → Port → String → Port → Style → Layout → Layout
-connectP a pa b pb s d with find a (anchors d) | find b (anchors d)
+connectP : String → Port → String → Port → Style → Layout S → Layout S
+connectP a pa b pb s d with findAnchor a (Layout.anchors d) | findAnchor b (Layout.anchors d)
 ... | just ba | just bb =
   let (x₁ , y₁) = portPoint pa ba ; (x₂ , y₂) = portPoint pb bb in
-  record d { render = λ x y → render d x y ++ arrow (x + x₁) (y + y₁) (x + x₂) (y + y₂) s ∷ [] }
+  layout (width d) (height d) (Layout.draws d ++ arrow x₁ y₁ x₂ y₂ s ∷ []) (Layout.anchors d)
 ... | _ | _ = d
+
+------------------------------------------------------------------------
+-- Output: the final drawing, with positions halved to diagram units
+
+toElement : Draw S → Element
+toElement (rect x y w h s)  = D.rect (half x) (half y) (toℕ w) (toℕ h) s
+  where half : S → ℕ
+        half p = toℕ p / 2
+toElement (circle x y r s)  = D.circle (toℕ x / 2) (toℕ y / 2) (toℕ r) s
+toElement (line a b c d s)  = D.line (toℕ a / 2) (toℕ b / 2) (toℕ c / 2) (toℕ d / 2) s
+toElement (arrow a b c d s) = D.arrow (toℕ a / 2) (toℕ b / 2) (toℕ c / 2) (toℕ d / 2) s
+toElement (label x y n t s) = D.label (toℕ x / 2) (toℕ y / 2) n t s
+toElement (fixed e)         = e
