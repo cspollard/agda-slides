@@ -24,14 +24,15 @@
 
 module Slides.Anim.Timeline where
 
-open import Data.List using (List; []; _∷_; _++_; length; replicate)
+open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo)
+import Slides.Anim.Track as T
 import Data.List.Properties as LP
 open import Data.Nat using (ℕ; _+_; _⊔_; suc)
 import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
 open import Data.Fin using (zero; suc)
-open import Data.Product using (_,_)
+open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Slides.Diagram.Syntax using (Dia; atop)
 open import Slides.Anim.Syntax
@@ -105,12 +106,16 @@ module _ {F : Set} (_⊙_ : F → F → F) where
     trans (length-merge (timeline leaf (k zero)) (timeline leaf (k (suc zero))))
           (cong₂ _⊔_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
 
--- the diagram language: a segment shows its frame once per tick, frames overlay by `atop`
+-- the diagram language: a segment shows its body at the parameter's value on each tick, frames overlay by `atop`
 frames : ∀ {S} → Seg S → List (Dia S)
-frames s = replicate (ticks s) (frame s)
+frames s = map (λ t → body s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
+  where sampled = T.sample T.ℚLerp (track s)
 
 frames-length : ∀ {S} (s : Seg S) → length (frames s) ≡ ticks s
-frames-length s = LP.length-replicate (ticks s)
+frames-length s =
+  trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
+               (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
+        (T.sample-dur T.ℚLerp (track s))
 
 -- the length of the timeline is the duration
 length-dur : ∀ {S} (m : Anim S (Seg S)) → length (timeline atop frames m) ≡ dur m

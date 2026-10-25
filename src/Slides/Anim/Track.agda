@@ -202,6 +202,10 @@ seqS (n , f) (m , g) = n + m , λ t → if t <ᵇ n then f t else g (t ∸ n)
 sample : ∀ {A} → Lerp A → Track A → Sampled A
 sample L = foldT (samplePiece L) seqS
 
+-- the value a track starts at
+start : ∀ {A} → Track A → A
+start = foldT from (λ a _ → a)
+
 -- the length of a track
 dur : ∀ {A} → Track A → ℕ
 dur = foldT ticks _+_

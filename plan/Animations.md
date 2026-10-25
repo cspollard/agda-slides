@@ -292,7 +292,15 @@ Each step ends with `make check`, `make test`, and the browser run.
 5. **Tracks** (`Slides.Anim.Track` done: `Easing` with `StepStart`, `progress`, `Lerp` with
    endpoint laws, `Track` = free monad on `Seq` over `Piece`, `sample` as an algebra into
    `(length, tick ↦ value)`, `piece-start`/`piece-end`, `seqS-assoc`, `reverseT` and its
-   involution, `reverseE` involution; open: the paint annotations below).
+   involution, `reverseE` involution). **Revision of the paint-annotation design:** no new
+   `Op` and no change to `Draw`. A segment is `Seg S = (track : Track ℚ, body : ℚ → Dia S)`:
+   the diagram as a function of a parameter that follows an explicit track, one frame per
+   tick (`hold n d` is the constant track; `tween n a b easing body`). Reflow (a spacer
+   that grows) and paint (an opacity in a style) are both uses of the parameter, layout
+   is exact at each frame, and every backend gets the eased motion through the flipbook.
+   Time dependence stays inspectable (the track is data; `sample` is its algebra);
+   discontinuity is `Step`/`StepStart` or pieces that do not meet. The CSS-transition
+   emitter (smooth sub-tick interpolation, element matching by id) remains optional.
    Original plan: `Track`, `Easing`, `eval` and its laws, the paint annotations with
    their size-neutrality proofs, the CSS/SMIL emitter, then `footprint` checks,
    reversal, `tween` by bind, `trackable`.

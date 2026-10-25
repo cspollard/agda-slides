@@ -37,11 +37,12 @@ import Data.List.Relation.Binary.Disjoint.Propositional.Properties as DP
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Syntax using (fold)
 open import Slides.Diagram.Names using (namesAlgebra)
+import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 
 -- the names a segment's frame declares
 footprint : ∀ {S} → Anim S (Seg S) → List String
-footprint = foldA (λ s → proj₁ (fold namesAlgebra (frame s))) _++_ _++_
+footprint = foldA (λ s → proj₁ (fold namesAlgebra (body s (T.start (track s))))) _++_ _++_
 
 footprint-⨾ : ∀ {S} (a b : Anim S (Seg S)) → footprint (a ⨾ b) ≡ footprint a ++ footprint b
 footprint-⨾ a b = refl

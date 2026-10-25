@@ -24,14 +24,14 @@ const slide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s
 check('a slide holds the animation', slide >= 0);
 await page.evaluate(i => Reveal.slide(i), slide);
 const shown = () => page.evaluate(() => {
-  const fs = [...document.querySelectorAll('.animation > .frame')];
+  const fs = [...document.querySelectorAll('#mover-0-frames > .frame')];
   return fs.map((f, i) => f.hidden ? null : i).filter(i => i !== null);
 });
-const text = () => page.evaluate(() => [...document.querySelectorAll('.animation > .frame:not([hidden]) text')].map(t => t.textContent));
+const text = () => page.evaluate(() => [...document.querySelectorAll('#mover-0-frames > .frame:not([hidden]) text')].map(t => t.textContent));
 const same = (n, got, want) => check(n, JSON.stringify(got) === JSON.stringify(want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
 
-same('three frames', await page.evaluate(() => document.querySelectorAll('.animation > .frame').length), 3);
-same('two steps', await page.evaluate(() => document.querySelectorAll('.animation .anim-step').length), 2);
+same('three frames', await page.evaluate(() => document.querySelectorAll('#mover-0-frames > .frame').length), 3);
+same('two steps', await page.evaluate(() => document.querySelectorAll('#mover-0-frames .anim-step').length), 2);
 same('frame 0 first', await shown(), [0]);
 same('caption one', await text(), ['one']);
 await page.evaluate(() => Reveal.nextFragment());
@@ -45,6 +45,13 @@ await page.evaluate(() => Reveal.prevFragment());
 same('frame 0 stepping back', await shown(), [0]);
 await page.evaluate(i => { Reveal.slide(0); Reveal.slide(i); }, slide);
 same('frame 0 on re-entering', await shown(), [0]);
+
+// the eased slider: six frames, the box moves right, slowly then quickly then slowly
+const xs = await page.evaluate(() => [...document.querySelectorAll('#slider-0-frames > .frame rect')].map(r => +r.getAttribute('x')));
+same('six slider frames', xs.length, 6);
+check('slider moves right monotonically', xs.every((x, i) => i === 0 || x > xs[i - 1]), JSON.stringify(xs));
+const gaps = xs.slice(1).map((x, i) => x - xs[i]);
+check('ease-in-out: slow, fast, slow', gaps[0] < gaps[2] && gaps[4] < gaps[2], JSON.stringify(gaps));
 same('no page errors', errors, []);
 await browser.close();
 process.exit(failures ? 1 : 0);

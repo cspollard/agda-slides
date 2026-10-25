@@ -13,7 +13,10 @@ open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Syntax using (Dia; rectangle; text; named)
 open import Slides.Diagram.Notation using (↔; _∥_)
 open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Anim.Syntax using (Anim; Seg; hold; _⨾_)
+open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
+import Slides.Anim.Track as T
+open import Data.Rational using (_/_)
+open import Data.Integer using (+_)
 open import Slides.Anim.Footprint using (parI; ⊤-witness)
 
 titleSlide : Body
@@ -54,12 +57,24 @@ animated = do
   animate "mover" 60 (parI natOps mover counter)
   notes "A free monad of Seq and Par over frames; each tick is a fragment."
 
+-- a box sliding right with an ease-in-out curve: the position is a parameter
+-- that follows an explicit track, sampled once per tick
+slide′ : Anim ℕ (Seg ℕ)
+slide′ = tween 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
+           (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 (filled "#c96" defaultStyle)))
+
+eased : Body
+eased = do
+  heading 2 "Easing"
+  animate "slider" 60 slide′
+
 demo : Deck
 demo = do
   slide titleSlide
   slide why
   slideWith (background "#2a2a40") compare
   slide animated
+  slide eased
   stack ( (do heading 2 "Details A"; paragraph "first")
         ∷ (do heading 2 "Details B"; code "agda" "id x = x")
         ∷ [] )

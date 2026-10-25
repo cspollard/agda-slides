@@ -34,6 +34,9 @@ open import Data.Unit using (tt)
 
 open import Slides.Diagram.Syntax using (Dia; spacer)
 open import Slides.Diagram.Scalar using (Ops)
+import Slides.Anim.Track as T
+open import Data.Rational as ℚ using (ℚ; 0ℚ)
+open import Data.Integer as ℤ using ()
 
 ------------------------------------------------------------------------
 -- The signature
@@ -44,13 +47,21 @@ data Op : Set where
 AnimC : Container 0ℓ 0ℓ
 AnimC = Op ▷ (λ _ → Fin 2)
 
--- A segment: a diagram held for a number of ticks
+-- A segment: a diagram that depends on a parameter, which follows a track for as
+-- many ticks as the track lasts.  The track is explicit data (`Slides.Anim.Track`:
+-- pieces with easings, steps for discontinuities); the body is the diagram as a
+-- function of the parameter, so reflow (a spacer that grows) and paint (an
+-- opacity in a style) are both just uses of the parameter.  A diagram held for
+-- `n` ticks is the constant track.
 record Seg (S : Set) : Set where
   constructor seg
   field
-    ticks : ℕ
-    frame : Dia S
+    track : T.Track ℚ
+    body  : ℚ → Dia S
 open Seg public
+
+ticks : ∀ {S} → Seg S → ℕ
+ticks s = T.dur (track s)
 
 -- An animation over leaves `T`
 Anim : Set → Set → Set
@@ -71,7 +82,15 @@ a ∥ᵃ b = impure (Par , pick2 a b)
 
 -- A segment as a one-leaf animation
 hold : ∀ {S} → ℕ → Dia S → Anim S (Seg S)
-hold n d = pure (seg n d)
+hold n d = pure (seg (pure (T.piece n 0ℚ 0ℚ T.Linear)) (λ _ → d))
+
+-- a parameter as a whole number of the scalar's units (rounded down, negatives clamp)
+units : ℚ → ℕ
+units q = ℤ.∣ ℚ.⌊ q ⌋ ∣
+
+-- a parameter moving from `a` to `b` in `n` ticks along an easing
+tween : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → (ℚ → Dia S) → Anim S (Seg S)
+tween n a b e f = pure (seg (pure (T.piece n a b e)) f)
 
 -- a pause: an empty frame, which needs the scalar's zero
 none : ∀ {S} → Ops S → ℕ → Anim S (Seg S)
