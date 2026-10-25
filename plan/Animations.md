@@ -146,63 +146,90 @@ is unordered, so `∥` is commutative by construction). Three caveats:
 | Carrier | Algebra | Role |
 |---|---|---|
 | `ℕ` | `dur`: `+`, `max`, `none d ↦ d` | well-formedness, padding |
-| `List String` | `footprint`: names touched | disjointness for `Par` |
-| `Timeline S = (ℕ , List (Layout S))` | `concat` = append, `merge` = frame-wise `⊙`, `zero d` = `d` empty layouts | the meaning (Hudak's `Combine`) |
-| reveal markup | see below | the backend |
-| sampling `Time → Layout S` | later | video, a continuous backend |
+| `List String` | `footprint`: names touched | disjointness of `Par` operands |
+| `Timeline S = Σ n. Vec (Layout S) n` | `concat` = append, `merge` = frame-wise `⊙`, `zero d` = `d` empty layouts | the meaning (Hudak's `Combine`) |
+| `Σ n. (Fin n → Diagram)` | `compile` of each frame | what backends consume |
+
+The backend interface is `Fin n → Diagram` (a frame per tick). The carrier is a `Vec`
+and the function is its `lookup`: `Vec` has a decidable structure and needs no
+function extensionality for the laws, and the two are isomorphic.
 
 ### Laws to prove (`Slides.Anim.Laws`)
 
 For `Timeline`: associativity of `concat` and `merge`, units, additivity of `zero`, the
 serial/parallel swap under equal durations, `dur` of the timeline equals `dur` of the
-term. No commutativity (z-order). `fold` is a homomorphism by construction, so
-these are laws of the algebra and hold for every term. Functor and monad laws and
-fusion are the generic `Container.*` results. Completeness (normal forms) is a
-stretch goal. Reversal as a fold with its involution by fusion is cheap and a good
-first use of fusion.
+term, and commutativity of `merge` up to the permutation relation `≈ᵖ` (below).
+`fold` is a homomorphism by construction, so these are laws of the algebra and hold
+for every term. Functor and monad laws and fusion are the generic `Container.*`
+results. Completeness (normal forms) is a stretch goal. Reversal as a fold with its
+involution by fusion is cheap and a good first use of fusion.
 
-### Reveal backend
+## Backends: from `Fin n → Diagram`
 
-Open: reveal.js offers two things and the repo should spike both, as it did for the
-HTML printer (`Slides.Spike.Reveal`), before choosing.
+Yes, SVGs animate this way, in two forms. Both consume the same `Fin n → Diagram`.
 
-1. **Auto-animate.** Each step is a section marked `data-auto-animate`; elements with
-   the same `data-id` (taken from `named`) are interpolated, duration and easing by
-   attributes. Needs an elaboration pass like `Slides.Steps`: a slide with an
-   animation becomes a sequence of sections that repeat the rest of the content
-   (matched, so static). *Risk:* the page documents matching of text, images and
-   iframes; whether inline SVG children are interpolated is unverified.
-2. **Fragments.** One slide, one SVG, step boundaries as fragment indices with CSS
-   transitions on elements; reuses the existing `pause`/fragment machinery.
-   *Risk:* generating per-step CSS for moves.
+1. **Flipbook.** Emit all `n` frames as `<g>` groups inside one `<svg>` and show one at
+   a time (class toggled by a few lines of script on fragment events). Works in every
+   backend, including plain HTML and any later PDF or video export. Costs: markup
+   grows with `n`, there is no easing, and it is only as smooth as the tick rate.
+2. **Tracks (reveal).** Treat the frames as *keyframes*. Match elements across frames
+   by `Style.ident` (the existing hook, set with `withId`); emit each matched element
+   once, at its first position, and per step a CSS rule with `transform: translate(…)`,
+   `opacity`, and colour, with a `transition` giving duration and easing. A few lines of
+   script copy reveal's fragment state to a `data-step` attribute on the `<svg>`, so
+   stepping backwards plays the transition in reverse for free (SMIL animations would
+   need explicit reversal). Elements present in only some frames get opacity 0 outside
+   them. Unnamed elements must be equal in all frames; `trackable` (a fold) checks that
+   and the backend falls back to the flipbook otherwise.
 
-Plain HTML backend: show the final frame, or step through frames with its own script.
+"Curves parametric in time" are, in browser terms, the easing curve (`cubic-bezier`,
+which CSS and SMIL's `keySplines` both take) applied between keyframes. That is the
+better way where it applies: markup stays small, interpolation is hardware-accelerated,
+and the program stays discrete. A parametric *path* (moving along a curve) is
+`offset-path` or SMIL `animateMotion`, and is out of scope until a deck needs it.
+Dense sampling is then just a `tween` that expands to many frames. Interpolating
+a layout needs only `percentOf` from `Ops` (`a + percentOf p (b - a)`), so ℚ makes it
+exact.
+
+Risks to settle in the spike: CSS `transform` on SVG children (works, but check
+`transform-box`/`transform-origin`), and reveal fragment events for a diagram that is not
+itself a fragment.
 
 ## Order
 
 Each step ends with `make check`, `make test`, and the browser run.
 
-1. **Spike.** A hand-written reveal page with an inline SVG, tried with auto-animate
-   and with fragments; record what moves. Decide the backend strategy.
+1. **Spike.** A hand-written reveal page: an inline SVG with three frames, driven by
+   fragment events, as a flipbook and as tracks (CSS transitions), forward and
+   backward. Record what works in reveal and plain HTML.
 2. **Syntax and `dur`.** `AnimC`, `Anim`, smart constructors, `dur`, `par` with
-   padding; an `Emacs` operator table in the docs.
-3. **`Timeline` and laws.** The `Combine` instance and its eight laws; the swap law.
-4. **Backend.** An `animate` command (a new stratum joined with `⊎`), the
-   elaboration, golden and browser tests, and the Pairs deck's hand-written
-   animation replaced by a described one as the first user.
-5. **Extras.** `footprint`, reversal, `tween` by bind, a sampling algebra, easing.
+   padding; an operator table with Emacs input sequences in the docs.
+3. **`Timeline` and laws.** The `Combine` instance and its laws; the swap law;
+   `≈ᵖ` and commutativity.
+4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
+   then tracks; golden and browser tests; the Pairs deck's hand-written animation
+   replaced by a described one as the first user.
+5. **Extras.** `footprint` checks, reversal, `tween` by bind, easing, `trackable`.
 
-## Decisions for the author
+## Proposal for the open questions
 
-- **Time:** ℕ ticks in the program, keyframes or a sampler at the backend ("Time and
-  backends"). Settled unless you want a continuous specification as well.
-- **Base media:** whole-diagram frames (flipbook, recommended: reuses everything), or
-  actions on named parts (`appear`, `move`, `restyle`), which are closer to what an
-  author means but need a scene-state algebra and a conflict rule?
-- **Commutativity of `Par`:** yes up to reordering, but choose how to treat overlap:
-  explicit layers, disjoint footprints, or accept the coarser equality.
-- **Backend:** wait for the spike.
-- **Tiled PTM** (overlap via synchronisation marks, an inverse monoid) would give
-  staggered starts a proper algebra. Only its abstract could be read (the HAL pages
-  are behind a bot check); get the PDF before deciding whether it replaces `Par`
-  with padding.
+1. **Time.** ℕ ticks in the program. Backends take `Fin n → Diagram`; interpolation is
+   the browser's (tracks) or ours (a `tween` that expands to frames). No continuous
+   specification for now.
+2. **Base media.** Whole-diagram frames. A scene-state algebra for `appear`/`move` can
+   be added later as a *derived* layer that compiles to frames, so nothing is lost.
+3. **Overlap and commutativity.**
+   - `Par` requires its operands' footprints to be disjoint, checked by a decidable
+     predicate that a deck asserts with `refl`, as it does for `dangling` (an
+     ill-formed `Par` fails to typecheck).
+   - Commutativity is stated up to `≈ᵖ`, equality up to permutation of draws and of
+     anchors. Disjoint footprints make the anchor caveat vanish: no name is shared,
+     so `findAnchor` is unaffected by the order.
+   - Paint order *inside* a part is untouched; authors who need an ordered overlay use
+     `⊙` within a frame. `Par` is for independent parts, and `≈ᵖ` is then the
+     right notion. No layer numbers.
+4. **Backend.** Flipbook first (it works everywhere), then tracks for reveal, as in
+   "Backends".
+5. **Tiled PTM.** Defer. Staggered starts are `Par` with a `none` pad until a deck
+   needs overlap that padding cannot say; read the full paper then (the HAL pages are
+   behind a bot check, so it needs a PDF from the author).
