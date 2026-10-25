@@ -259,8 +259,11 @@ Each step ends with `make check`, `make test`, and the browser run.
 
 1. **Spike** (done for reveal; see "Spike result"): an inline SVG with three frames,
    driven by fragment events, as flipbook and as tracks, forward and backward.
-2. **Syntax and `dur`.** `AnimC`, `Anim`, smart constructors, `dur`, `par` with
-   padding; an operator table with Emacs input sequences in the docs.
+2. **Syntax and `dur`** (done, `Slides.Anim.Syntax`). `AnimC`, `Anim`, `foldA`, `dur`,
+   `par` with padding. Proved: `foldA-bind` (fusion for bind, no extensionality since
+   positions are `Fin 2`), `dur-⨾`, `dur-∥`, `dur-pad`, `par-balanced`, `dur-par`.
+   Open: `foldA` is a concrete fold, to be related to `Container.Interpret` as for
+   `Dia`; an operator table with Emacs input sequences in the docs.
 3. **`Timeline` and laws.** The `Combine` instance and its laws; the swap law;
    `≈ᵖ` and commutativity.
 4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
