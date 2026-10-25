@@ -274,8 +274,12 @@ Each step ends with `make check`, `make test`, and the browser run.
    the sides of `Par`; `Independent` (stdlib `Disjoint`) is decidable and symmetric.
    `Slides.Diagram.Commute`: `atop a b ≈ᵖ atop b a`, layouts equal up to permutation
    of draws and anchors (stdlib setoid `↭`), over the lawful scalars.
-   Open: transfer of `atop`'s laws through layout (needs `Valid` frames); lifting
-   `≈ᵖ` from `atop` to `merge` of whole timelines; a `Par` that checks `Independent`.
+   `par-comm` lifts it to whole timelines (`mergeL-comm`, `layout-merge`): laid-out `a ∥ b`
+   and `b ∥ a` agree frame by frame up to `≈ᵖ`, with no independence needed; independence
+   is what makes `≈ᵖ` mean "the same picture". `parI` is `par` with an instance argument
+   `True (independent? a b)` (found as `tt`), so overlapping operands fail to typecheck
+   (`tests/negative/OverlappingPar.agda`).
+   Open: transfer of `atop`'s laws through layout (needs `Valid` frames).
 4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.

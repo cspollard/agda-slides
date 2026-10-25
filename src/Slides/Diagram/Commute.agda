@@ -28,6 +28,13 @@ open import Relation.Binary using (Rel; IsEquivalence; Setoid)
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
+import Slides.Diagram.Layout as Lay
+open import Slides.Diagram.Syntax using (Dia)
+import Slides.Diagram.Syntax as DS
+open import Slides.Anim.Syntax using (AnimC; _∥ᵃ_)
+open import Slides.Anim.Timeline using (merge; timeline)
+open import Data.Container.FreeMonad using (_⋆_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 open import Slides.Diagram.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
 
 module For {S : Set} (O : Ops S) (L : IsLawful O) where
@@ -82,6 +89,40 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) where
       qb = width a ⊔ width b - width b , height a ⊔ height b - height b
       pa = sub-congˡ (width a) ew , sub-congˡ (height a) eh
       pb = sub-congˡ (width b) ew , sub-congˡ (height b) eh
+
+  ≈ᵖ-refl : ∀ {l} → l ≈ᵖ l
+  ≈ᵖ-refl = record
+    { width≈ = R.refl ; height≈ = R.refl
+    ; draws↭ = PD.↭-reflexive-≋ (PW.refl ≈ᵈ-refl)
+    ; anchors↭ = PA.↭-reflexive-≋ (PW.refl (IsEquivalence.refl ≈ᵃ-isEquivalence)) }
+
+  -- frame-by-frame overlay of two lists of layouts; the longer runs on alone
+  mergeL : List (Layout S) → List (Layout S) → List (Layout S)
+  mergeL []       ys       = ys
+  mergeL (x ∷ xs) []       = x ∷ xs
+  mergeL (x ∷ xs) (y ∷ ys) = atop x y ∷ mergeL xs ys
+
+  -- `Par` commutes frame by frame, up to permutation
+  mergeL-comm : ∀ xs ys → Pointwise _≈ᵖ_ (mergeL xs ys) (mergeL ys xs)
+  mergeL-comm []       []       = []
+  mergeL-comm []       (y ∷ ys) = ≈ᵖ-refl ∷ PW.refl ≈ᵖ-refl
+  mergeL-comm (x ∷ xs) []       = ≈ᵖ-refl ∷ PW.refl ≈ᵖ-refl
+  mergeL-comm (x ∷ xs) (y ∷ ys) = atop-comm x y ∷ mergeL-comm xs ys
+
+  -- laying out a merged timeline is merging the laid-out frames
+  layout-merge : ∀ xs ys → map LW.layout (merge DS.atop xs ys) ≡ mergeL (map LW.layout xs) (map LW.layout ys)
+  layout-merge []       ys       = refl
+  layout-merge (x ∷ xs) []       = refl
+  layout-merge (x ∷ xs) (y ∷ ys) = cong (atop (LW.layout x) (LW.layout y) ∷_) (layout-merge xs ys)
+
+  -- `Par` is commutative on laid-out frames, up to permutation of draws and anchors.
+  -- (It is the picture that is the same only if the parts do not overlap.)
+  par-comm : ∀ {T} (leaf : T → List (Dia S)) (a b : AnimC ⋆ T) →
+             Pointwise _≈ᵖ_ (map LW.layout (timeline DS.atop leaf (a ∥ᵃ b)))
+                            (map LW.layout (timeline DS.atop leaf (b ∥ᵃ a)))
+  par-comm leaf a b rewrite layout-merge (timeline DS.atop leaf a) (timeline DS.atop leaf b)
+                          | layout-merge (timeline DS.atop leaf b) (timeline DS.atop leaf a)
+    = mergeL-comm (map LW.layout (timeline DS.atop leaf a)) (map LW.layout (timeline DS.atop leaf b))
 
 module ForInts = For intOps lawfulℤ
 module ForRats = For ratOps lawfulℚ

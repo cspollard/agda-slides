@@ -23,10 +23,12 @@ import Data.List.Properties as LP
 open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-refl; ↭-trans; ↭-sym)
 import Data.List.Relation.Binary.Permutation.Propositional.Properties as PP
 open import Data.Bool using (true; false)
+open import Data.Unit using (⊤; tt)
 open import Data.Nat using (_<ᵇ_)
 open import Data.Product using (_,_; proj₁)
 open import Data.String using (String; _≟_)
 open import Relation.Nullary using (Dec)
+open import Relation.Nullary.Decidable using (True)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
 open import Data.List.Relation.Binary.Disjoint.DecPropositional _≟_ using (Disjoint; disjoint?)
@@ -88,3 +90,15 @@ independent? a b = disjoint? (footprint a) (footprint b)
 
 independent-sym : ∀ {S} {a b : Anim S (Seg S)} → Independent a b → Independent b a
 independent-sym = DP.sym
+
+-- `par` that only accepts independent operands.  The check is by computation:
+-- the instance argument is `⊤` (found as `tt`) when the footprints are disjoint
+-- and `⊥` otherwise, so an ill-formed parallel composition fails to typecheck,
+-- as a dangling `connect` does.
+parI : ∀ {S} (O : Ops S) (a b : Anim S (Seg S)) → {{_ : True (independent? a b)}} → Anim S (Seg S)
+parI O a b = par O a b
+
+-- what the instance argument of `parI` is found as (`True` computes to `⊤`)
+instance
+  ⊤-witness : ⊤
+  ⊤-witness = tt
