@@ -25,13 +25,20 @@ module Slides.Anim.Track where
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Integer as ℤ using (ℤ)
+open import Data.Integer as ℤ using (ℤ; +_)
+open import Data.Integer.Tactic.RingSolver using (solve-∀)
 import Data.Integer.Properties as ℤP
-open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_)
+open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ)
+open import Data.Sum using (inj₁; inj₂)
+open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _/_)
 import Data.Rational.Properties as ℚP
-import Data.Rational.Properties as ℚP
+open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_)
+import Data.Rational.Unnormalised.Properties as ℚᵘP
+open import Data.Maybe using (Maybe; just; nothing)
+open import Relation.Nullary using (yes; no)
+open import Tactic.RingSolver.Core.AlmostCommutativeRing using (fromCommutativeRing)
+import Tactic.RingSolver.NonReflective as NR
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 import Data.Nat.Properties as ℕP
@@ -300,3 +307,98 @@ reverseT-dur (pure p)         = refl
 reverseT-dur (impure (_ , k)) =
   trans (ℕP.+-comm (dur (reverseT (k (suc zero)))) (dur (reverseT (k zero))))
         (cong₂ _+_ (reverseT-dur (k zero)) (reverseT-dur (k (suc zero))))
+
+------------------------------------------------------------------------
+-- Reversal at the level of samples
+--
+-- For `Linear` pieces, playing a piece backwards is sampling it at `d - k`:
+-- the reversed piece (ends swapped) at tick `k` equals the piece at tick `d - k`.
+-- (At a boundary inside a track the original is right-continuous and the reversed
+-- track left-continuous, so the statement is for one piece.  `Bezier` is
+-- approximate and `Step` needs the order on `ℚ`; both are left out.)
+
+private
+  pos∸ : ∀ d k → k ≤ d → + (d ∸ k) ≡ + d ℤ.- + k
+  pos∸ d k h = trans (sym (ℤP.⊖-≥ h)) (sym (ℤP.m-n≡m⊖n d k))
+
+  toℚᵘ-/ : ∀ n d′ → ℚ.toℚᵘ (n / ℕ.suc d′) ≃ mkℚᵘ n d′
+  toℚᵘ-/ n d′ = ℚP.toℚᵘ-fromℚᵘ (mkℚᵘ n d′)
+
+  core : ∀ k d′ → k ≤ ℕ.suc d′ → mkℚᵘ (+ (ℕ.suc d′ ∸ k)) d′ ≃ ℚᵘ.1ℚᵘ ℚᵘ.+ ℚᵘ.- mkℚᵘ (+ k) d′
+  core k d′ h rewrite pos∸ (ℕ.suc d′) k h | ℕP.+-identityʳ d′ = *≡* (alg (+ ℕ.suc d′) (+ k))
+    where alg : ∀ E K → (E ℤ.- K) ℤ.* E ≡ (E ℤ.+ ℤ.- K ℤ.* ℤ.+ 1) ℤ.* E
+          alg = solve-∀
+
+
+frac-compl : ∀ k d′ → k ≤ ℕ.suc d′ → (+ (ℕ.suc d′ ∸ k)) / ℕ.suc d′ ≡ 1ℚ ℚ.- (+ k) / ℕ.suc d′
+frac-compl k d′ h = ℚP.toℚᵘ-injective chain
+  where
+    x = (+ k) / ℕ.suc d′
+    s1 : ℚ.toℚᵘ (1ℚ ℚ.- x) ≃ ℚᵘ.1ℚᵘ ℚᵘ.+ ℚᵘ.- ℚ.toℚᵘ x
+    s1 = ℚᵘP.≃-trans (ℚP.toℚᵘ-homo-+ 1ℚ (ℚ.- x)) (ℚᵘP.+-cong (ℚᵘP.≃-refl {ℚᵘ.1ℚᵘ}) (ℚP.toℚᵘ-homo‿- x))
+    s2 : ℚᵘ.1ℚᵘ ℚᵘ.+ ℚᵘ.- ℚ.toℚᵘ x ≃ ℚᵘ.1ℚᵘ ℚᵘ.+ ℚᵘ.- mkℚᵘ (+ k) d′
+    s2 = ℚᵘP.+-cong (ℚᵘP.≃-refl {ℚᵘ.1ℚᵘ}) (ℚᵘP.-‿cong (toℚᵘ-/ (+ k) d′))
+    chain : ℚ.toℚᵘ ((+ (ℕ.suc d′ ∸ k)) / ℕ.suc d′) ≃ ℚ.toℚᵘ (1ℚ ℚ.- x)
+    chain = ℚᵘP.≃-trans (toℚᵘ-/ (+ (ℕ.suc d′ ∸ k)) d′) (ℚᵘP.≃-trans (core k d′ h) (ℚᵘP.≃-sym (ℚᵘP.≃-trans s1 s2)))
+
+
+
+private
+  ring′ = fromCommutativeRing ℚP.+-*-commutativeRing zero?
+    where zero? : ∀ x → Maybe (0ℚ ≡ x)
+          zero? x with x ℚ.≟ 0ℚ
+          ... | yes p = just (sym p)
+          ... | no _  = nothing
+open NR ring′ using (solve; _⊜_; Κ; ⊝_) renaming (_⊕_ to _:+_; _⊗_ to _:*_)
+
+flip-ℚ : ∀ q a b → a ℚ.+ (1ℚ ℚ.- q) ℚ.* (b ℚ.- a) ≡ b ℚ.+ q ℚ.* (a ℚ.- b)
+flip-ℚ = solve 3 (λ q a b → (a :+ (Κ 1ℚ :+ ⊝ q) :* (b :+ ⊝ a)) ⊜ (b :+ q :* (a :+ ⊝ b))) refl
+
+private
+  ite-true : ∀ {X Y : ℚ} b → b ≡ true → (if b then X else Y) ≡ X
+  ite-true .true refl = refl
+
+  ite-false : ∀ {X Y : ℚ} b → b ≡ false → (if b then X else Y) ≡ Y
+  ite-false .false refl = refl
+
+  lt-true : ∀ k n → k ℕ.< n → (k <ᵇ n) ≡ true
+  lt-true ℕ.zero    (ℕ.suc n) _          = refl
+  lt-true (ℕ.suc k) (ℕ.suc n) (ℕ.s≤s h)  = lt-true k n h
+
+  lt-irrefl : ∀ n → (n <ᵇ n) ≡ false
+  lt-irrefl ℕ.zero    = refl
+  lt-irrefl (ℕ.suc n) = lt-irrefl n
+
+ratio-lt : ∀ t d′ → t ℕ.< ℕ.suc d′ → ratio t (ℕ.suc d′) ≡ ℤ.+ t / ℕ.suc d′
+ratio-lt t d′ h = ite-true (t <ᵇ ℕ.suc d′) (lt-true t (ℕ.suc d′) h)
+
+ratio-full : ∀ d′ → ratio (ℕ.suc d′) (ℕ.suc d′) ≡ 1ℚ
+ratio-full d′ = ite-false (ℕ.suc d′ <ᵇ ℕ.suc d′) (lt-irrefl (ℕ.suc d′))
+
+-- progress at `d - k` is the complement of progress at `k`
+ratio-compl : ∀ k d′ → k ≤ ℕ.suc d′ → ratio (ℕ.suc d′ ∸ k) (ℕ.suc d′) ≡ 1ℚ ℚ.- ratio k (ℕ.suc d′)
+ratio-compl ℕ.zero d′ _ =
+  trans (ratio-full d′)
+        (sym (cong (λ x → 1ℚ ℚ.- x) (trans (ratio-lt 0 d′ (ℕ.s≤s ℕ.z≤n)) (ℚP.0/n≡0 (ℕ.suc d′)))))
+ratio-compl (ℕ.suc k) d′ h with ℕP.m≤n⇒m<n∨m≡n h
+... | inj₂ refl rewrite ℕP.n∸n≡0 k =
+  trans (trans (ratio-lt 0 k (ℕ.s≤s ℕ.z≤n)) (ℚP.0/n≡0 (ℕ.suc k)))
+        (sym (cong (λ x → 1ℚ ℚ.- x) (ratio-full k)))
+... | inj₁ lt =
+  trans (ratio-lt (ℕ.suc d′ ∸ ℕ.suc k) d′ (ℕ.s≤s (ℕP.m∸n≤m d′ k)))
+  (trans (frac-compl (ℕ.suc k) d′ (ℕP.<⇒≤ lt))
+         (sym (cong (λ x → 1ℚ ℚ.- x) (ratio-lt (ℕ.suc k) d′ lt))))
+
+-- the interpolation is symmetric: `lerp (1 - q) a b = lerp q b a`
+LerpFlip : ∀ {A} → Lerp A → Set
+LerpFlip {A} L = ∀ q (a b : A) → Lerp.lerp L (1ℚ ℚ.- q) a b ≡ Lerp.lerp L q b a
+
+ℚLerpFlip : LerpFlip ℚLerp
+ℚLerpFlip = flip-ℚ
+
+-- a linear piece played backwards (its ends swapped) at tick `k` is the piece at tick `d - k`
+reverse-linear : ∀ {A} (L : Lerp A) → LerpFlip L → ∀ k d′ a b → k ≤ ℕ.suc d′ →
+                 proj₂ (samplePiece L (piece (ℕ.suc d′) b a Linear)) k
+                 ≡ proj₂ (samplePiece L (piece (ℕ.suc d′) a b Linear)) (ℕ.suc d′ ∸ k)
+reverse-linear L F k d′ a b h =
+  sym (trans (cong (λ x → Lerp.lerp L x a b) (ratio-compl k d′ h)) (F (ratio k (ℕ.suc d′)) a b))

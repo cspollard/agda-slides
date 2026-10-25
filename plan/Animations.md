@@ -292,7 +292,10 @@ Each step ends with `make check`, `make test`, and the browser run.
 5. **Tracks** (`Slides.Anim.Track` done: `Easing` with `StepStart`, `progress`, `Lerp` with
    endpoint laws, `Track` = free monad on `Seq` over `Piece`, `sample` as an algebra into
    `(length, tick ↦ value)`, `piece-start`/`piece-end`, `seqS-assoc`, `reverseT` and its
-   involution, `reverseE` involution). **Revision of the paint-annotation design:** no new
+   involution, `reverseE` involution; `reverse-linear`: a `Linear` piece with swapped ends
+   at tick `k` is the original at `d - k`, from `ratio-compl` (exact `ℚ` arithmetic via
+   `ℚᵘ`) and the flip law of the interpolation (`ℚLerpFlip`, by the ring solver). Not for
+   `Bezier` (approximate), nor `Step`, whose half-open ends do not mirror). **Revision of the paint-annotation design:** no new
    `Op` and no change to `Draw`. A segment is `Seg S = (track : Track ℚ, body : ℚ → Dia S)`:
    the diagram as a function of a parameter that follows an explicit track, one frame per
    tick (`hold n d` is the constant track; `tween n a b easing body`). Reflow (a spacer
