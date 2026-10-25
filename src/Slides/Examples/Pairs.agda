@@ -22,7 +22,7 @@ open import Slides.Diagram.Names using (dangling)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 import Slides.Math as M
 
-open Content using () renaming (p■; h■)
+open Content using () renaming (paragraph to p■; heading to h■)
 
 ------------------------------------------------------------------------
 -- Mathematics
@@ -277,11 +277,11 @@ pairs = do
   -- 1 ------------------------------------------------------------------
   slide (do
     mount "hero-title"
-    classed "title-copy tag" (Content.paragraph "Neural posterior estimation · Deep Sets")
-    classed "title-copy" (Content.heading 1 "It Just Takes Two")
-    classed "title-copy subtitle" (Content.paragraph "Scaling Amortized Inference to Large Sets")
-    classed "title-copy authors" (Content.paragraph "Antoine Wehenkel · Michael Kagan · Lukas Heinrich · Chris Pollard")
-    classed "title-copy small" (Content.paragraph ("arXiv:2605.07972 · " ∷ link "https://arxiv.org/abs/2605.07972" "abstract" ∷ []))
+    classed "title-copy tag" (p■ "Neural posterior estimation · Deep Sets")
+    classed "title-copy" (h■ 1 "It Just Takes Two")
+    classed "title-copy subtitle" (p■ "Scaling Amortized Inference to Large Sets")
+    classed "title-copy authors" (p■ "Antoine Wehenkel · Michael Kagan · Lukas Heinrich · Chris Pollard")
+    classed "title-copy small" (p■ ("arXiv:2605.07972 · " ∷ link "https://arxiv.org/abs/2605.07972" "abstract" ∷ []))
     script "PAIRS.title(slide, 'hero-title')"
     notes "The paper in one line: train a mean-pool Deep Set on sets of at most two elements, then finetune the inference head on cached aggregates.")
 
@@ -298,7 +298,7 @@ pairs = do
             Content.displayMath joint)
       ∷ [])
     classed "callout blue"
-      (Content.paragraph ("Goal: one amortized " ∷ inlineMath (M.call "q" (M.rel M.mid θ X ∷ []))
+      (p■ ("Goal: one amortized " ∷ inlineMath (M.call "q" (M.rel M.mid θ X ∷ []))
                           ∷ " for any set size " ∷ inlineMath N ∷ []))
     script "PAIRS.flow(slide)"
     notes "The posterior does not factorise over observations because they share the nuisance parameter.")
@@ -308,7 +308,7 @@ pairs = do
     heading 2 "A bump hunt, event by event"
     columns
       ( (do Content.mount "bump"
-            Content.paragraph "simulated live in your browser: background gray, signal crimson")
+            p■ "simulated live in your browser: background gray, signal crimson")
       ∷ (do Content.bullets
               ( ("signal fraction " ∷ inlineMath θ ∷ " in [0, 1]" ∷ [])
               ∷ ("signal location " ∷ inlineMath ψ ∷ " unknown" ∷ [])
@@ -317,23 +317,23 @@ pairs = do
               ∷ []))
       ∷ [])
     classed "callout"
-      (Content.paragraph "At N = 100 the PAIRS posterior width tracks MCMC on the full set; the naive product of per-event posteriors is underconfident.")
+      (p■ "At N = 100 the PAIRS posterior width tracks MCMC on the full set; the naive product of per-event posteriors is underconfident.")
     script "PAIRS.bump(slide, 'bump')")
 
   -- 4 ------------------------------------------------------------------
   slide (do
     heading 2 "Two ways to scale, both costly"
     classed "card plum"
-      (do Content.heading 3 "Combine per-observation posteriors"
-          Content.paragraph "✓ scales to any set size"
-          Content.paragraph ("✗ misses what the observations share through " ∷ inlineMath ψ ∷ []))
+      (do h■ 3 "Combine per-observation posteriors"
+          p■ "✓ scales to any set size"
+          p■ ("✗ misses what the observations share through " ∷ inlineMath ψ ∷ []))
     classed "card crimson"
-      (do Content.heading 3 "Encode the whole set at deployment size"
-          Content.paragraph "✓ principled: the set is seen jointly"
-          Content.paragraph ("✗ per step, memory grows as " ∷ inlineMath memory ∷ " and compute with the mean set size" ∷ []))
+      (do h■ 3 "Encode the whole set at deployment size"
+          p■ "✓ principled: the set is seen jointly"
+          p■ ("✗ per step, memory grows as " ∷ inlineMath memory ∷ " and compute with the mean set size" ∷ []))
     pause
     classed "callout blue"
-      (Content.paragraph "Can we train small, and still deploy on sets of thousands?"))
+      (p■ "Can we train small, and still deploy on sets of thousands?"))
 
   -- 5 ------------------------------------------------------------------
   slide (do
@@ -347,23 +347,23 @@ pairs = do
   -- 6 ------------------------------------------------------------------
   slide (do
     heading 2 "PAIRS: train on pairs, finetune on aggregates"
-    classed "small" (Content.paragraph "Pretraining Aggregators for Inference at aRbitrary Set-sizes")
+    classed "small" (p■ "Pretraining Aggregators for Inference at aRbitrary Set-sizes")
     diagram stages
     classed "callout"
-      (Content.paragraph "Training memory and compute no longer depend on the largest set size.")
+      (p■ "Training memory and compute no longer depend on the largest set size.")
     script "PAIRS.flow(slide); PAIRS.cycle(slide, ['st1', 'st2', 'st3'])")
 
   -- 7 ------------------------------------------------------------------
   slide (do
     heading 2 "Why two is enough"
     classed "card wide"
-      (do Content.heading 3 "Theorem (informally)"
-          Content.paragraph ("If a mean-pooled statistic is sufficient at every " ∷ inlineMath N
+      (do h■ 3 "Theorem (informally)"
+          p■ ("If a mean-pooled statistic is sufficient at every " ∷ inlineMath N
             ∷ ", a network trained to be sufficient at " ∷ inlineMath (M.rel M.elem N (M.raw "\\{1, 2\\}"))
             ∷ " is sufficient at every " ∷ inlineMath N ∷ ", and the two statistics differ by an affine map." ∷ []))
     diagram chain
     classed "small"
-      (Content.paragraph ("At N = 2 the constraint is the additive equation " ∷ inlineMath cauchy
+      (p■ ("At N = 2 the constraint is the additive equation " ∷ inlineMath cauchy
         ∷ ". Mean-pool sufficiency holds exactly when the marginals are an exponential family; errors in pair training degrade gracefully." ∷ []))
     script "PAIRS.flow(slide); PAIRS.cycle(slide, ['c1', 'c2', 'c3', 'c4'], {accumulate: true, seconds: 1.3})")
 
@@ -371,21 +371,21 @@ pairs = do
   slide (do
     heading 2 "Does it work? Five test beds"
     classed "callout blue"
-      (Content.paragraph "Bivariate Gaussian: trained at N ≤ 2, PAIRS tracks the analytic posterior up to N = 10⁵.")
+      (p■ "Bivariate Gaussian: trained at N ≤ 2, PAIRS tracks the analytic posterior up to N = 10⁵.")
     classed "card plum"
-      (do Content.heading 3 "Circle Radius"
-          Content.paragraph "Radius of a circle in 64×64 images with distractors; N up to 1000.")
+      (do h■ 3 "Circle Radius"
+          p■ "Radius of a circle in 64×64 images with distractors; N up to 1000.")
     classed "card"
-      (do Content.heading 3 "Digit Expectation"
-          Content.paragraph "Expected digit from rotated MNIST images sharing one angle; N up to 1000.")
+      (do h■ 3 "Digit Expectation"
+          p■ "Expected digit from rotated MNIST images sharing one angle; N up to 1000.")
     classed "card crimson"
-      (do Content.heading 3 "3D Object Properties"
-          Content.paragraph "Volume and aspect ratio from partial ModelNet40 views.")
+      (do h■ 3 "3D Object Properties"
+          p■ "Volume and aspect ratio from partial ModelNet40 views.")
     classed "card rust"
-      (do Content.heading 3 "Molecular Lipophilicity"
-          Content.paragraph "logP from sets of GEOM 3D conformers.")
+      (do h■ 3 "Molecular Lipophilicity"
+          p■ "logP from sets of GEOM 3D conformers.")
     classed "small"
-      (Content.paragraph "Baselines: N = 1, N = 1–10, a Gaussian head, and end-to-end at N = 1000 (synthetic tasks). Three seeds."))
+      (p■ "Baselines: N = 1, N = 1–10, a Gaussian head, and end-to-end at N = 1000 (synthetic tasks). Three seeds."))
 
   -- 9 ------------------------------------------------------------------
   slide (do
@@ -406,21 +406,21 @@ pairs = do
     heading 2 "Cost and scale"
     diagram tiles
     classed "callout"
-      (Content.paragraph "Novel-view synthesis: three coloured spheres, a flow-matching head, one model for N from 1 to 100.")
+      (p■ "Novel-view synthesis: three coloured spheres, a flow-matching head, one model for N from 1 to 100.")
     script "PAIRS.grow(slide)")
 
   -- 11 -----------------------------------------------------------------
   slide (do
     mount "hero-end"
     classed "title-copy"
-      (do Content.heading 2 "Take-aways"
+      (do h■ 2 "Take-aways"
           Content.bullets
             ( ("train small, " ∷ emph "deploy large" ∷ [])
             ∷ "pairs recover the pooled representation, up to an affine map"
             ∷ "training cost decouples from the deployment set size"
             ∷ "open: max and attention pooling; the exponential-family idealisation"
             ∷ []))
-    classed "title-copy closing" (Content.paragraph "It just takes two.")
+    classed "title-copy closing" (p■ "It just takes two.")
     classed "title-copy small"
-      (Content.paragraph ("Wehenkel, Kagan, Heinrich, Pollard · " ∷ link "https://arxiv.org/abs/2605.07972" "arXiv:2605.07972" ∷ []))
+      (p■ ("Wehenkel, Kagan, Heinrich, Pollard · " ∷ link "https://arxiv.org/abs/2605.07972" "arXiv:2605.07972" ∷ []))
     script "PAIRS.title(slide, 'hero-end')")
