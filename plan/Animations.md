@@ -132,14 +132,54 @@ is unordered, so `∥` is commutative by construction). Three caveats:
 - `AnimC = Seq | Par`, both with `Fin 2` positions; `Anim T = AnimC ⋆ T`, with `T` the
   base media. `fmap`, `>>=`, `fold` come from `Container.FreeMonad` and
   `Container.Interpret`; nothing is re-proved.
-- Base media `Frame S`: `hold d D`, the diagram `D : Dia S` shown for `d : ℕ` ticks.
-  `none d = hold d empty`. Names (`named`) give elements identity across frames.
-  A *flipbook* of diagrams reuses `Dia`, `Layout`, and the laws proved for `⊙`.
+- Base media `Seg`: a duration `d : ℕ` (ticks) and a diagram `D : Dia S` shown for that
+  long, with time-dependence in *paint tracks* (next section) and in tweens between
+  frames. `hold d D` is the constant segment and `none d = hold d empty`. A flipbook of
+  diagrams reuses `Dia`, `Layout`, and the laws proved for `⊙`.
 - Smart constructors derive the rest: `par a b` pads the shorter with `none`
   (computing `dur` by fold at construction), so well-formedness holds by construction;
   `a ⨾ b`, offsets, staggering (`sequence delay`, Motion Canvas's) are `Par` with
-  pads; `tween` expands one primitive into k frames by `>>=`; `restyle`, `shift`
-  are `fmap`.
+  pads; `tween` between two frames expands by `>>=`; `restyle`, `shift` are `fmap`.
+
+## Time dependence: paint tracks
+
+Quantities split into **reflow** quantities (sizes, gaps, margins: they feed `⊔` in layout,
+so a symbolic polynomial or Bézier scalar would leave the class of functions layout is
+closed under, since a max of polynomials is piecewise with irrational breakpoints) and
+**paint** quantities (translation, scale, rotation, opacity, colour, visibility: applied
+after layout, never fed back). Paint quantities are explicit data:
+
+```
+Track A  = list of segments  (duration d, from v₀, to v₁, easing)
+Easing   = Linear | Bezier x₁ y₁ x₂ y₂ | Step
+```
+
+- **Linear** is `v₀ + p·(v₁ - v₀)` with `p` the progress in `[0, 1]`. It is exact over
+  ℚ (`percentOf`), so sampling and the laws are exact.
+- **Bezier** is CSS's `cubic-bezier` timing function. Backends take it as data
+  (`transition-timing-function`, SMIL `keySplines`). A sampler has to invert
+  `x(s) = p`, a cubic with no exact rational root, so it uses a fixed number of
+  bisection steps with a stated tolerance. Laws are stated for `Linear` and `Step`;
+  `Bezier` sampling is an approximation, said so in its docstring.
+- **Step** is the explicit discontinuity: hold `v₀` until the end of the segment, then
+  `v₁` (CSS `steps(1, jump-end)`, SMIL `calcMode="discrete"`). A track whose
+  consecutive segments do not meet (`v₁` of one `≠ v₀` of the next) is a jump at the
+  boundary too. Values of a type that cannot be interpolated (visibility, a class name,
+  an unlerpable colour) use `Step` only; the sampler is given the interpolation as an
+  argument (`Lerp A`, with no instance search).
+- **Semantics.** Segments are half-open `[tᵢ, tᵢ₊₁)`, so evaluation is total and
+  right-continuous: at a boundary the *new* segment's start value holds, and the last
+  segment's end value is the value at its end time. `eval (a ++ b) t = if t < dur a
+  then eval a t else eval b (t - dur a)`, by induction on the segment list.
+
+Tracks attach as unary annotation operations: `Move dx dy`, `Scale`, `Rotate`, `Fade`,
+`Recolour`, `Show`, each taking tracks. They do not change a layout's size or anchors,
+so the size algebra ignores them and the proofs are `Named`'s. They compose by *nesting*
+(`Move a (Move b d)` is two groups), so tracks are never added to each other and no
+closure is needed. Reflowing changes (a box growing and pushing its neighbours) are a
+`tween` between two frames: layout is exact at each, and a browser interpolates matched
+elements linearly between them (exact for translation and fade, an approximation where
+`⊔` makes layout non-affine in between).
 
 ### Algebras
 
@@ -209,15 +249,19 @@ Each step ends with `make check`, `make test`, and the browser run.
 4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.
-5. **Extras.** `footprint` checks, reversal, `tween` by bind, easing, `trackable`.
+5. **Tracks.** `Track`, `Easing`, `eval` and its laws, the paint annotations with
+   their size-neutrality proofs, the CSS/SMIL emitter, then `footprint` checks,
+   reversal, `tween` by bind, `trackable`.
 
 ## Proposal for the open questions
 
 1. **Time.** ℕ ticks in the program. Backends take `Fin n → Diagram`; interpolation is
    the browser's (tracks) or ours (a `tween` that expands to frames). No continuous
    specification for now.
-2. **Base media.** Whole-diagram frames. A scene-state algebra for `appear`/`move` can
-   be added later as a *derived* layer that compiles to frames, so nothing is lost.
+2. **Base media.** Whole-diagram frames with paint tracks (`Move`, `Fade`, … carrying
+   `Linear`, `Bezier` or `Step` segments); reflow by tweening frames. Polynomial or
+   Bézier *scalars* in layout are out: `⊔` leaves the class. A scene-state algebra for
+   `appear`/`move` can be derived on top.
 3. **Overlap and commutativity.**
    - `Par` requires its operands' footprints to be disjoint, checked by a decidable
      predicate that a deck asserts with `refl`, as it does for `dangling` (an
