@@ -279,7 +279,10 @@ Each step ends with `make check`, `make test`, and the browser run.
    is what makes `≈ᵖ` mean "the same picture". `parI` is `par` with an instance argument
    `True (independent? a b)` (found as `tt`), so overlapping operands fail to typecheck
    (`tests/negative/OverlappingPar.agda`).
-   Open: transfer of `atop`'s laws through layout (needs `Valid` frames).
+   `Slides.Anim.Laws`: laid-out `Par` is associative up to `≈ᴸ` (`mergeL-assoc`; the unit
+   laws of `merge` are definitional), and `par-layout`: `par` (padding with `none`) lays out
+   like the unpadded `Par` when all frames are `Valid` (padding is invisible; this is where
+   `⊙-unitˡ/ʳ` and `Valid` are needed).
 4. **Backend** (flipbook done; tracks open). `animation` content command (first frame and
    the rest), `Slides.Anim.Render` (timeline → laid-out, equally sized `Diagram`s), DSL
    `animate name width anim`, `renderAnimation` (all frames emitted, later ones `hidden`,
