@@ -133,15 +133,26 @@ showcase:
 	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
 	$(BUILD_DIR)/ShowcaseMain
 
-# The "It Just Takes Two" deck (docs/PairsDeck.md): out/pairs/index.html.
-.PHONY: pairs
+# The "It Just Takes Two" deck (docs/PairsDeck.md).  `make pairs` loads reveal.js and
+# KaTeX from a CDN (out/pairs/, needs network in the browser); `make pairs-local
+# REVEAL=…` links a local copy of reveal.js (out/pairs-local/).
+PAIRS_FILES = assets/slides.css assets/pairs/pairs.css assets/pairs/pairs.js
+
+.PHONY: pairs pairs-local
 pairs:
 	mkdir -p out/pairs $(BUILD_DIR)
-	ln -sfn $(REVEAL) out/pairs/reveal
-	cp assets/slides.css assets/pairs/pairs.css assets/pairs/pairs.js out/pairs/
+	cp $(PAIRS_FILES) out/pairs/
 	$(COMPILE) src/Slides/Examples/PairsMain.agda
 	mv PairsMain $(BUILD_DIR)/PairsMain 2>/dev/null || true
-	$(BUILD_DIR)/PairsMain
+	$(BUILD_DIR)/PairsMain cdn
+
+pairs-local:
+	mkdir -p out/pairs-local $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/pairs-local/reveal
+	cp $(PAIRS_FILES) out/pairs-local/
+	$(COMPILE) src/Slides/Examples/PairsMain.agda
+	mv PairsMain $(BUILD_DIR)/PairsMain 2>/dev/null || true
+	$(BUILD_DIR)/PairsMain local
 
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.
@@ -150,8 +161,10 @@ test-playwright:
 	cd tests/browser && npm install --silent
 	node tests/browser/run.mjs out
 
-# Drive the "It Just Takes Two" deck (needs `make pairs` first).
+# Drive the "It Just Takes Two" deck (needs `make pairs` first; also drives the
+# local-copy build if `make pairs-local` has been run).
 .PHONY: test-pairs
 test-pairs:
 	cd tests/browser && npm install --silent
-	node tests/browser/pairs.mjs out
+	node tests/browser/pairs.mjs out pairs
+	@if [ -d out/pairs-local ]; then node tests/browser/pairs.mjs out pairs-local; fi

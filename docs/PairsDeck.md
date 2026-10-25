@@ -7,7 +7,8 @@ the largest example in the repository and uses most of the library: typed math,
 SVG diagrams, a custom stylesheet, and JavaScript animations.
 
 ```
-make pairs REVEAL=/path/to/node_modules/reveal.js   # writes out/pairs/
+make pairs                        # reveal.js from a CDN: out/pairs/ (needs network in the browser)
+make pairs-local REVEAL=…/node_modules/reveal.js   # a local copy: out/pairs-local/
 open out/pairs/index.html
 make test-pairs                                      # drives it in headless Chrome
 ```
@@ -58,8 +59,13 @@ numbers the text gives, not the full figure.
   | `PAIRS.bump(slide, id)` | a histogram of simulated events in the `mount` with that id |
   | `PAIRS.grow(slide)` | grows `.bar` rectangles and counts up numbers in elements of class `count` |
 
-- **Configuration** is in `PairsMain.agda`: a 1280×720 canvas, slide numbers, the
-  two stylesheets, `pairs.js`, and a deck-level script
+- **Configuration** is in `PairsMain.agda`. Where reveal.js comes from is an option
+  (`Reveal.Source`): `cdn "6.0.2"` loads the pinned version from jsDelivr, so the
+  output is just `index.html`, `init.js`, `pairs.js`, `pairs.css` and `slides.css`;
+  `local "reveal/"` uses a copy linked next to the page. The executable takes the
+  choice as an argument (`PairsMain cdn`, the default, or `PairsMain local`), which
+  is what the two make targets pass. KaTeX comes from the CDN in both, so math
+  needs network access either way. The rest of the configuration is a 1280×720 canvas, slide numbers, the two stylesheets, `pairs.js`, and a deck-level script
   (`Reveal.configure({center: false})`) so titles stay at the top.
 
 ## Library features added for this deck
@@ -69,7 +75,8 @@ numbers the text gives, not the full figure.
   the `path` element, and the diagram's `name` as the container `id`;
 - math constructors `prod`, `call`, `tuple`, `juxt`, `dd`, `cal`, `bb` and the
   relations `mid` and `elem`;
-- `RevealConfig.scriptFiles` for extra JavaScript files.
+- `RevealConfig.scriptFiles` for extra JavaScript files;
+- `Reveal.Source` (`local path` or `cdn version`) and `withSource` to choose where reveal.js is loaded from.
 
 They are described in `docs/Authoring.md`.
 

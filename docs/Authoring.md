@@ -170,6 +170,24 @@ original with a pulled-back algebra (`lower-fusion`). Write your own lowering as
 a function from a content command to a content program, for example
 `stripNotes (notes _) = pure tt; stripNotes a = ret a`.
 
+## Where reveal.js comes from
+
+`RevealConfig.base` is the URL or path of the reveal.js distribution. The typed
+choice is `Reveal.Source`: `local "reveal/"` (a copy linked next to the page,
+what `make example` does) or `cdn "6.0.2"` (that version from jsDelivr, nothing to
+install, but the browser needs network access). `Reveal.withSource s config` sets
+it, so a deck can offer both:
+
+```agda
+build : List String → IO ⊤
+build ("local" ∷ _) = writeRevealDeck "out/talk" (Reveal.withSource (Reveal.local "reveal/") cfg) talk
+build _             = writeRevealDeck "out/talk" (Reveal.withSource (Reveal.cdn "6.0.2") cfg) talk
+
+main = run (getArgs >>= build)
+```
+
+The math plugin loads KaTeX from a CDN in either case.
+
 ## Rendering
 
 ```agda

@@ -94,6 +94,16 @@ whiteTheme     = record { revealTheme = "white"     ; highlight = "github"  ; st
 serifTheme     = record { revealTheme = "serif"     ; highlight = "github"  ; stylesheets = "slides.css" ∷ [] }
 solarizedTheme = record { revealTheme = "solarized" ; highlight = "base16/solarized-light" ; stylesheets = "slides.css" ∷ [] }
 
+-- Where reveal.js comes from: a copy next to the page, or a pinned version on
+-- the jsDelivr CDN (nothing to install; the browser needs network access).
+data Source : Set where
+  local : (path : String) → Source      -- a directory with a trailing slash
+  cdn   : (version : String) → Source   -- for example "6.0.2"
+
+sourceBase : Source → String
+sourceBase (local p) = p
+sourceBase (cdn v)   = "https://cdn.jsdelivr.net/npm/reveal.js@" ++ˢ v ++ˢ "/"
+
 record RevealConfig : Set where
   field
     title       : String
@@ -162,6 +172,10 @@ page cfg slides =
   where
     open RevealConfig cfg
     dist = base ++ˢ "dist/"
+
+-- Choose where reveal.js is loaded from.
+withSource : Source → RevealConfig → RevealConfig
+withSource s cfg = record cfg { base = sourceBase s }
 
 -- The options for `Reveal.initialize`, as JSON.
 options : RevealConfig → JSON

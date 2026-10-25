@@ -1,7 +1,8 @@
 // Drives the rendered "It Just Takes Two" deck (`make pairs`): structure,
 // the SVG diagrams, and every JavaScript animation.
 //
-// usage: node pairs.mjs [outdir]      (default: ../../out)
+// usage: node pairs.mjs [outdir [deck]]   (default: ../../out, deck `pairs`;
+// `pairs-local` is the build with a local copy of reveal.js)
 // Set CHROME to override the browser binary.
 
 import { chromium } from 'playwright-core';
@@ -25,7 +26,9 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-await page.goto(pathToFileURL(path.join(out, 'pairs', 'index.html')).href);
+const deck = process.argv[3] ?? 'pairs';
+console.log(`deck: ${deck}`);
+await page.goto(pathToFileURL(path.join(out, deck, 'index.html')).href);
 await page.waitForSelector('.reveal.ready');
 const ev = f => page.evaluate(f);
 const go = async i => { await page.evaluate(n => Reveal.slide(n), i); };
@@ -35,6 +38,7 @@ console.log('-- structure');
 eq('eleven slides', await ev(() => Reveal.getHorizontalSlides().length), 11);
 eq('first slide is the title', await ev(() => Reveal.getHorizontalSlides()[0].querySelector('h1').textContent), 'It Just Takes Two');
 eq('deck script ran (reveal configured)', await ev(() => Reveal.getConfig().center), false);
+eq('reveal.js came from the expected place', await ev(() => Array.from(document.scripts).some(s => s.src.includes('reveal.js@6.0.2/')) ? 'cdn' : 'local'), deck === 'pairs' ? 'cdn' : 'local');
 eq('pairs.js loaded', await ev(() => typeof PAIRS.title), 'function');
 check('stylesheet applied', await ev(() => getComputedStyle(document.querySelector('.card')).borderRadius !== '0px'));
 eq('diagram slides', await ev(() =>
