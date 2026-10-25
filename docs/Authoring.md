@@ -83,7 +83,7 @@ slide (do heading 2 "Pipeline"
 ### Subscripts and superscripts in labels
 
 A `label` understands light markup: `_x` or `_{xyz}` sets a subscript, `^x`
-or `^{xyz}` a superscript, and a backslash quotes the next character (`\\_`
+or `^{xyz}` a superscript, and a backslash quotes the next character (`\_`
 is a literal underscore). So `"t_ω"`, `"g(y_1) + g(y_2)"` and `"x^{n+1}"` come
 out as typeset scripts. The renderer emits `<tspan>`s shifted by whole user
 units (not `baseline-shift`, which browsers handle unevenly) in a smaller
