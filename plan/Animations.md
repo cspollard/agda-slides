@@ -269,8 +269,13 @@ Each step ends with `make check`, `make test`, and the browser run.
    side runs on alone, so no unit or padding is needed). Proved over any `_⊙_`:
    `merge` unit, associativity (if `_⊙_` is), commutativity (if `_⊙_` is), the swap law
    (`timeline-swap`, needs only equal lengths), `length ∘ timeline = dur`.
-   Open: transfer of `atop`'s laws through layout (needs `Valid` frames), `≈ᵖ`
-   commutativity of `Par` for disjoint footprints (needs `footprint`).
+   `Slides.Anim.Footprint`: `footprint` as a `foldA` into names (`none` touches nothing,
+   padding preserves it); invariant up to `↭` under the swap law and under exchanging
+   the sides of `Par`; `Independent` (stdlib `Disjoint`) is decidable and symmetric.
+   `Slides.Diagram.Commute`: `atop a b ≈ᵖ atop b a`, layouts equal up to permutation
+   of draws and anchors (stdlib setoid `↭`), over the lawful scalars.
+   Open: transfer of `atop`'s laws through layout (needs `Valid` frames); lifting
+   `≈ᵖ` from `atop` to `merge` of whole timelines; a `Par` that checks `Independent`.
 4. **Backend.** An `animate` command (a new stratum joined with `⊎`), flipbook first,
    then tracks; golden and browser tests; the Pairs deck's hand-written animation
    replaced by a described one as the first user.
