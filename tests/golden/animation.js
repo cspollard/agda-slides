@@ -65,19 +65,22 @@ function SlidesAnimation(shown) {
     return 0;
   }
   // a formula: a number, a string (the parameter of that segment, from `r`) or `[op, a, b]`;
-  // `["h", a]` is half of `a`, positions being in half units.  A discrete template (`D`, see
-  // `renderParamAnimation`) is read in the naturals: `-` clamps at 0, `%` rounds down, and there
-  // are floor division `["/", n, a]`, remainder `["r", n, a]`, a literal factor `["*", n, a]` and
-  // `["<", a, b, x, y]`, which is `x` if `a < b` else `y`
-  function ev(e, r, D) {
-    if (typeof e === 'number') return e;
+  // a negative number `-1 - i` is the definition `i` of the phase's program (`V`, see `pframe`:
+  // the shared subformulas, evaluated once per time step, oldest first).  The operations are
+  // numbers: 0 plus, 1 minus, 2 maximum, 3 `[3, p, a]` p percent of `a`, 4 `[4, a]` half of `a`
+  // (positions being in half units).  A discrete template (`D`, see `renderParamAnimation`) is
+  // read in the naturals: `-` clamps at 0, `%` rounds down, and there are floor division
+  // `[5, n, a]`, remainder `[6, n, a]`, a literal factor `[7, n, a]` and `[8, a, b, x, y]`, which
+  // is `x` if `a < b` else `y`
+  function ev(e, r, D, V) {
+    if (typeof e === 'number') return e < 0 ? V[-1 - e] : e;
     if (typeof e === 'string') return r[+e];
-    var o = e[0], x = ev(e[1], r, D);
-    if (o === 'h') return x / 2;
-    if (o === '<') return x < ev(e[2], r, D) ? ev(e[3], r, D) : ev(e[4], r, D);
-    var y = ev(e[2], r, D);
-    return o === '+' ? x + y : o === '-' ? (D ? Math.max(0, x - y) : x - y) : o === 'm' ? Math.max(x, y)
-         : o === '/' ? Math.floor(y / x) : o === 'r' ? y % x : o === '*' ? x * y
+    var o = e[0], x = ev(e[1], r, D, V);
+    if (o === 4) return x / 2;
+    if (o === 8) return x < ev(e[2], r, D, V) ? ev(e[3], r, D, V) : ev(e[4], r, D, V);
+    var y = ev(e[2], r, D, V);
+    return o === 0 ? x + y : o === 1 ? (D ? Math.max(0, x - y) : x - y) : o === 2 ? Math.max(x, y)
+         : o === 5 ? Math.floor(y / x) : o === 6 ? y % x : o === 7 ? x * y
          : D ? Math.floor(x * y / 100) : x * y / 100;
   }
   // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number
@@ -91,14 +94,20 @@ function SlidesAnimation(shown) {
     var svg = a.querySelector(':scope > .frame svg');
     if (a._ph !== i) {
       while (svg.children.length > 1) svg.removeChild(svg.lastChild);
-      P.p[i].b.forEach(function (s) { svg.appendChild(parse(s)); });
+      // the base elements: a string, or the number of an earlier string (shipped once)
+      var seen = [];
+      P.p[i].b.forEach(function (s) { if (typeof s === 'number') s = seen[s]; else seen.push(s); svg.appendChild(parse(s)); });
       a._ph = i;
     }
     var r = P.v.map(function (v) { var x = track(v[1], (D ? k : t) - v[0]); return D ? Math.floor(x + 1e-9) : x; });
+    // the phase's program (`f`): the shared subformulas, each over the parameters and the earlier
+    // ones, evaluated once; then the numbers of the elements
+    var V = [];
+    (P.p[i].f || []).forEach(function (d) { V.push(ev(d, r, D, V)); });
     P.p[i].c.forEach(function (cs, j) {
       if (cs === null) return;
       var el = svg.children[1 + j];
-      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, D)); });
+      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, D, V)); });
     });
   }
   // show frame `k` (a real time for a parametric animation): rebuild from the first frame when

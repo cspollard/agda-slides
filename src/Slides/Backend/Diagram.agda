@@ -41,6 +41,8 @@ import Slides.Anim.Formula as F
 open F using (Formula)
 open import Slides.Anim.Phases using (Elem; phasesOf)
 open import Slides.Anim.DPhases using (phasesOfD)
+open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oAdd; oSub; oMax)
+open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Data.Container.FreeMonad using (pure; impure)
@@ -258,61 +260,94 @@ renderAnimation d ds ms play =
 -- `[n, d]` is the fraction `n/d`; an easing is `0` (Linear), `1` (Step, which jumps at the end
 -- of its piece), `2` (StepStart) or `[x₁, y₁, x₂, y₂]` (a cubic Bézier, in hundredths).  A
 -- *phase* is a run of ticks whose layouts have the same shape and the same formulas (a segment
--- starting or ending changes it): `{"s": first tick, "b": elements, "c": coordinates}`, with `b`
--- the elements as `<svg>` strings and `c`, for each element, `null` if all its numbers are
--- constants, else its numbers in the order of the player's attribute table, each `null` (a
--- constant) or a formula.  The formulas are evaluated *without rounding* (ℚ, in floating
--- point): a formula is a number, a string `"i"` (the parameter of segment `i`) or an array
--- `[op, a, b]` with `op` one of `"+"`, `"-"` (real subtraction), `"m"` (maximum) and
--- `["%", p, a]` (`p` percent of `a`); `["h", a]` is half of `a` (positions are in half units).
--- Closed subformulas are evaluated here when the result is a non-negative whole number, so
--- only what depends on a parameter (or is not whole) is shipped.  `data-n` is the number of
--- ticks.  The size does not depend on the number of ticks: one phase holds for all of them.
+-- starting or ending changes it): `{"s": first tick, "b": elements, "c": coordinates, "f":
+-- program}`, with `b` the elements as `<svg>` strings (a later element with the same string is
+-- the number of the first), `c`, for each element, `null` if all its numbers are constants, else
+-- its numbers in the order of the player's attribute table, each `null` (a constant) or a
+-- formula, and `f` the *program* of the phase: the subformulas the numbers share
+-- (`Slides.Anim.Share`), definitions each over the parameters and the earlier ones, which the
+-- page evaluates once per time step, oldest first.  A formula is a number, a string `"i"` (the
+-- parameter of segment `i`), a negative number `-1 - i` (definition `i` of the program) or an
+-- array `[op, args…]` with `op` a number (`nodeⱼ`: plus, minus, maximum, `[3, p, a]` p percent of
+-- `a`, `[4, a]` half of `a`, positions being in half units).  The formulas are evaluated
+-- *without rounding* (ℚ, in floating point).  Closed subformulas are evaluated here when the
+-- result is a non-negative whole number, so only what depends on a parameter (or is not whole)
+-- is shipped.  `data-n` is the number of ticks.  The size does not depend on the number of ticks:
+-- one phase holds for all of them.
 private
-  -- a formula as the JSON the player evaluates
-  formulaⱼ : Formula → JSON
-  formulaⱼ (F.num n)   = natⱼ n
-  formulaⱼ (F.var i)   = stringⱼ (num i)
-  formulaⱼ (F.add a b) = arrayⱼ (stringⱼ "+" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.sub a b) = arrayⱼ (stringⱼ "-" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.max a b) = arrayⱼ (stringⱼ "m" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.pct p a) = arrayⱼ (stringⱼ "%" ∷ natⱼ p ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.hlf a)   = arrayⱼ (stringⱼ "h" ∷ formulaⱼ a ∷ [])
-  -- the Euclidean nodes of a discrete template (`Slides.Anim.Formula`, read in ℕ); the divisor
-  -- is shipped as it is, `d + 1`
-  formulaⱼ (F.fdiv d a)     = arrayⱼ (stringⱼ "/" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.fmod d a)     = arrayⱼ (stringⱼ "r" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.fmul n a)     = arrayⱼ (stringⱼ "*" ∷ natⱼ n ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.flt a b x y)  = arrayⱼ (stringⱼ "<" ∷ formulaⱼ a ∷ formulaⱼ b ∷ formulaⱼ x ∷ formulaⱼ y ∷ [])
+  -- an argument: a number, the parameter `"i"` of a segment, or a reference to a definition of
+  -- the phase's program, which is the negative number `-1 - i` for definition `i`
+  argⱼ : Arg → JSON
+  argⱼ (anum n) = natⱼ n
+  argⱼ (apar i) = stringⱼ (num i)
+  argⱼ (aref i) = intⱼ (ℤ.-[1+ i ])
 
-  coordJ : Maybe Formula → JSON
+  -- a node as the JSON the player evaluates (`Slides.Anim.Share.Node`: an operation on
+  -- arguments).  The operation is a number, not a string: a quote costs six characters in an
+  -- HTML attribute.  `0` plus, `1` minus, `2` maximum, `3` `["%", p, a]` (p percent of a), `4`
+  -- half, and for a discrete template (read in ℕ) `5` floor division `[5, n, a]`, `6` remainder
+  -- `[6, n, a]` (the divisor is shipped as it is, `d + 1`), `7` a literal factor `[7, n, a]` and
+  -- `8` `[8, a, b, x, y]`, which is `x` if `a < b` else `y`.
+  nodeⱼ : Node → JSON
+  nodeⱼ (atom a)               = argⱼ a
+  nodeⱼ (un (oPct p) a)        = arrayⱼ (natⱼ 3 ∷ natⱼ p ∷ argⱼ a ∷ [])
+  nodeⱼ (un oHlf a)            = arrayⱼ (natⱼ 4 ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oDiv d) a)        = arrayⱼ (natⱼ 5 ∷ natⱼ (suc d) ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oMod d) a)        = arrayⱼ (natⱼ 6 ∷ natⱼ (suc d) ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oMul n) a)        = arrayⱼ (natⱼ 7 ∷ natⱼ n ∷ argⱼ a ∷ [])
+  nodeⱼ (bin oAdd a b)         = arrayⱼ (natⱼ 0 ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (bin oSub a b)         = arrayⱼ (natⱼ 1 ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (bin oMax a b)         = arrayⱼ (natⱼ 2 ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (quad a b x y)         = arrayⱼ (natⱼ 8 ∷ argⱼ a ∷ argⱼ b ∷ argⱼ x ∷ argⱼ y ∷ [])
+
+  coordJ : Maybe Node → JSON
   coordJ nothing  = nullⱼ
-  coordJ (just f) = formulaⱼ f
+  coordJ (just f) = nodeⱼ f
 
   -- the numbers of a drawing command: `null` if all are constants, else an entry for each
   -- (`null` for a constant)
-  elemCoordsⱼ : Elem → JSON
-  elemCoordsⱼ e with Elem.coords e
+  elemCoordsⱼ : SElem → JSON
+  elemCoordsⱼ e with SElem.coords e
   ... | nothing = nullⱼ
   ... | just cs = arrayⱼ (map coordJ cs)
 
   -- the element at the all-zero assignment
-  baseElement : Elem → Element
-  baseElement e = PN.toElement (Elem.base e)
+  baseElement : SElem → Element
+  baseElement e = PN.toElement (SElem.base e)
 
-  phaseFields : String → List Elem → List (String × JSON)
-  phaseFields n es =
-      ("b" , arrayⱼ (map (λ e → stringⱼ (elementString n (baseElement e))) es))
+  -- a phase: its elements, and its program (the definitions the numbers refer to, oldest first),
+  -- evaluated once per time step before the elements (`Slides.Anim.SharePhases`)
+  -- the base elements as `<svg>` strings, each string once: a later element with the same
+  -- string is the number of the first (the position among the strings shipped).  (The base
+  -- numbers a formula overwrites are zeroed by `Slides.Anim.SharePhases.shareElem`, so elements
+  -- that differ only in them have the same string.)
+  dedupe : List String → List JSON
+  dedupe = go []
+    where
+      index : String → ℕ → List String → Maybe ℕ
+      index s i []       = nothing
+      index s i (t ∷ ts) = if ⌊ s Str.≟ t ⌋ then just i else index s (suc i) ts
+      go : List String → List String → List JSON
+      go seen []       = []
+      go seen (s ∷ ss) with index s 0 seen
+      ... | just i  = natⱼ i ∷ go seen ss
+      ... | nothing = stringⱼ s ∷ go (seen ++ (s ∷ [])) ss
+
+  phaseFields : String → SBody → List (String × JSON)
+  phaseFields n (sbody prog es) =
+      ("b" , arrayⱼ (dedupe (map (λ e → elementString n (baseElement e)) es)))
     ∷ ("c" , arrayⱼ (map elemCoordsⱼ es))
+    ∷ ("f" , arrayⱼ (map nodeⱼ prog))
     ∷ []
 
-  -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements)
+  -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements), with
+  -- the formulas of each phase shared (`Slides.Anim.SharePhases.sharePhases`)
   phasesⱼ : String → List (Dr.Layout (Expr ℕ)) → List JSON
-  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOf ls)
+  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOf ls))
 
   -- the same for discrete templates (`Slides.Anim.DPhases.phasesOfD`)
   phasesⱼᴰ : String → List (Dr.Layout (DExpr ℕ)) → List JSON
-  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOfD ls)
+  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOfD ls))
 
   ratⱼ : ℚ.ℚ → JSON
   ratⱼ q with ℚ.↧ₙ q
@@ -332,8 +367,8 @@ private
   segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map pieceⱼ ps) ∷ [])
 
 -- A discrete parametric animation is the same object with `"d": 1`: the page reads its formulas
--- in ℕ (a difference clamps at 0, `"%"` rounds down, `"/"`, `"r"`, `"*"`, `"<"` are floor
--- division, remainder, a literal factor, and `["<", a, b, x, y]` is `x` if `a < b` else `y`) and
+-- in ℕ (a difference clamps at 0, `[3, p, a]` rounds down, and `5`, `6`, `7`, `8` are floor
+-- division, remainder, a literal factor, and `[8, a, b, x, y]`, which is `x` if `a < b` else `y`) and
 -- shows, at real time `τ`, the frame of the whole tick `⌊τ⌋`, with every segment's parameter
 -- the floor of its track's value at that whole tick.
 renderParamAnimation : Diagram → AnyParam → ℕ → Play → XMLM A

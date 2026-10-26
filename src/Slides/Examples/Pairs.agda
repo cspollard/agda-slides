@@ -16,7 +16,7 @@ open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
 open import Slides.Anim.Render using (render; renderLoop)
-open import Slides.Examples.PairsHero using (hero)
+open import Slides.Examples.PairsHero using (heroD)
 import Slides.Anim.Track as T
 import Data.Rational as ℚ
 open import Data.Integer using (+_)
@@ -350,7 +350,7 @@ pairs = do
 
   -- 1 ------------------------------------------------------------------
   slide (do
-    classed "hero-bg hero-title" (Content.cmd (renderLoop "hero-title" 100 100 (hero 7)))
+    classed "hero-bg hero-title" (Content.cmd (renderLoop "hero-title" 100 100 (heroD 26 7)))
     classed "title-copy tag" (p■ "Neural posterior estimation · Deep Sets")
     classed "title-copy" (h■ 1 "It Just Takes Two")
     classed "title-copy subtitle" (p■ "Scaling Amortized Inference to Large Sets")
@@ -479,7 +479,7 @@ pairs = do
 
   -- 11 -----------------------------------------------------------------
   slide (do
-    classed "hero-bg hero-end" (Content.cmd (renderLoop "hero-end" 100 100 (hero 13)))
+    classed "hero-bg hero-end" (Content.cmd (renderLoop "hero-end" 100 100 (heroD 26 13)))
     classed "title-copy"
       (do h■ 2 "Take-aways"
           Content.bullets

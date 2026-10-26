@@ -57,8 +57,8 @@ private
   -- the full period must equal the frame Agda computes
   dloop : Body
   dloop = do
-    animateLoop "dhero" 100 100 (heroD 3 7)
-    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natOps) (heroD 3 7)))
+    animateLoop "dhero" 100 100 (heroD 26 7)
+    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natOps) (heroD 26 7)))
 
   loop : Body
   loop = do

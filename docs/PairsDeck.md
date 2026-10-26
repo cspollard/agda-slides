@@ -69,10 +69,11 @@ numbers the text gives, not the full figure.
     through a half turn and sways along a fixed direction over 64 frames. The sway is a
     triangle wave, so the last frame runs into the first and nothing jumps.
 
-    The deck has no JavaScript of its own: `pairs.js` is gone. An animation is shipped as its
-    first frame and edits to the next ones (`Slides.Diagram.Delta`), so the two 64-frame loops
-    add about 0.07 MB each rather than 0.7 MB.
-
+    The deck has no JavaScript of its own: `pairs.js` is gone. The two 64-frame loops are
+    *discrete templates* (`heroD 26 seed`: the frame is written once over any scalar, with the
+    tick as the variable, and shipped as formulas, `docs/Design.md`): each loop adds 25 KB to the
+    page (its `data-param` is 16.9 KB with shared subformulas) where the same loop as edits to
+    the first frame was 51 KB; the page is 189 KB (it was 240 KB with edits, 1.47 MB as frames).
 - **Configuration** is in `PairsMain.agda`. Where reveal.js comes from is an option
   (`Reveal.Source`): `cdn "6.0.2"` loads the pinned version from jsDelivr, so the
   output is just `index.html`, `init.js`, `pairs.css` and `slides.css`;

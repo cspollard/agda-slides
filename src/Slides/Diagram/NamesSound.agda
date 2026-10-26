@@ -39,7 +39,7 @@ open import Slides.Diagram.Geometry using (Port; centred)
 open import Slides.Diagram.Names
 open import Slides.Diagram.Syntax
   using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
-        ; Beside; Above; Atop; LabelAbove; LabelBelow; Named; Connect )
+        ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect )
 import Slides.Diagram.Layout as Lay
 open import Slides.Diagram.Place O
 open Ops O using (0#; fromℕ; _+_; _-_; _⊔_; dbl)
@@ -116,6 +116,10 @@ names-fusion (impure (LabelAbove , k)) =
   trans (names-labelAbove (LW.layout (k zero)) (LW.layout (k (suc zero)))) (cong₂ _++_ (names-fusion (k zero)) (names-fusion (k (suc zero))))
 names-fusion (impure (LabelBelow , k)) =
   trans (names-labelBelow (LW.layout (k zero)) (LW.layout (k (suc zero)))) (cong₂ _++_ (names-fusion (k (suc zero))) (names-fusion (k zero)))
+names-fusion (impure (Overlay w h , k)) =
+  trans (L.map-++ proj₁ (Layout.anchors (LW.layout (k zero))) (Layout.anchors (LW.layout (k (suc zero)))))
+        (cong₂ _++_ (names-fusion (k zero)) (names-fusion (k (suc zero))))
+names-fusion (impure (Place w h x y , k)) = trans (names-inFrame w h (dbl x) (dbl y) (LW.layout (k tt))) (names-fusion (k tt))
 names-fusion (impure (Named n , k)) = cong (n ∷_) (names-fusion (k tt))
 names-fusion (impure (Connect a pa b pb s , k)) =
   trans (cong (map proj₁) (names-connectP a pa b pb s (LW.layout (k tt)))) (names-fusion (k tt))
@@ -163,6 +167,8 @@ Draws (impure (Above _ , k))         = (i : Fin 2) → Draws (k i)
 Draws (impure (Atop , k))            = (i : Fin 2) → Draws (k i)
 Draws (impure (LabelAbove , k))      = (i : Fin 2) → Draws (k i)
 Draws (impure (LabelBelow , k))      = (i : Fin 2) → Draws (k i)
+Draws (impure (Place _ _ _ _ , k))   = Draws (k tt)
+Draws (impure (Overlay _ _ , k))     = (i : Fin 2) → Draws (k i)
 Draws (impure (Named _ , k))         = Draws (k tt)
 Draws (impure (Connect a pa b pb s , k)) =
   Draws (k tt) × Arrow a pa b pb s (LW.layout (k tt))
@@ -213,6 +219,8 @@ soundness (impure (Above _ , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundne
 soundness (impure (Atop , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))
 soundness (impure (LabelAbove , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))
 soundness (impure (LabelBelow , k)) h = fin2 (soundness (k zero) (++ʳ h)) (soundness (k (suc zero)) (++ˡ h))
+soundness (impure (Place _ _ _ _ , k)) h = soundness (k tt) h
+soundness (impure (Overlay _ _ , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))
 soundness (impure (Named _ , k)) h = soundness (k tt) h
 soundness (impure (Connect a pa b pb s , k)) h =
   soundness (k tt) (L.++-conicalˡ _ _ h)

@@ -54,6 +54,8 @@ mapOp f (Above al)            = Above al
 mapOp f Atop                  = Atop
 mapOp f LabelAbove            = LabelAbove
 mapOp f LabelBelow            = LabelBelow
+mapOp f (Place w h x y)       = Place (f w) (f h) (f x) (f y)
+mapOp f (Overlay w h)         = Overlay (f w) (f h)
 mapOp f (Named n)             = Named n
 mapOp f (Connect a pa b pb s) = Connect a pa b pb s
 
@@ -69,6 +71,8 @@ posOf f (Above _)           x = x
 posOf f Atop                x = x
 posOf f LabelAbove          x = x
 posOf f LabelBelow          x = x
+posOf f (Place _ _ _ _)     x = x
+posOf f (Overlay _ _)       x = x
 posOf f (Named _)           x = x
 posOf f (Connect _ _ _ _ _) x = x
 
@@ -89,6 +93,8 @@ mapDia-translate f (impure (Above al , k))            = refl , λ { zero → map
 mapDia-translate f (impure (Atop , k))                = refl , λ { zero → mapDia-translate f (k zero) ; (suc zero) → mapDia-translate f (k (suc zero)) }
 mapDia-translate f (impure (LabelAbove , k))          = refl , λ { zero → mapDia-translate f (k zero) ; (suc zero) → mapDia-translate f (k (suc zero)) }
 mapDia-translate f (impure (LabelBelow , k))          = refl , λ { zero → mapDia-translate f (k zero) ; (suc zero) → mapDia-translate f (k (suc zero)) }
+mapDia-translate f (impure (Overlay w h , k))         = refl , λ { zero → mapDia-translate f (k zero) ; (suc zero) → mapDia-translate f (k (suc zero)) }
+mapDia-translate f (impure (Place w h x y , k))       = refl , λ _ → mapDia-translate f (k tt)
 mapDia-translate f (impure (Named n , k))             = refl , λ _ → mapDia-translate f (k tt)
 mapDia-translate f (impure (Connect a pa b pb s , k)) = refl , λ _ → mapDia-translate f (k tt)
 
@@ -110,6 +116,8 @@ translate-id (impure (Above al , k))            = refl , λ { zero → translate
 translate-id (impure (Atop , k))                = refl , λ { zero → translate-id (k zero) ; (suc zero) → translate-id (k (suc zero)) }
 translate-id (impure (LabelAbove , k))          = refl , λ { zero → translate-id (k zero) ; (suc zero) → translate-id (k (suc zero)) }
 translate-id (impure (LabelBelow , k))          = refl , λ { zero → translate-id (k zero) ; (suc zero) → translate-id (k (suc zero)) }
+translate-id (impure (Overlay w h , k))         = refl , λ { zero → translate-id (k zero) ; (suc zero) → translate-id (k (suc zero)) }
+translate-id (impure (Place w h x y , k))       = refl , λ _ → translate-id (k tt)
 translate-id (impure (Named n , k))             = refl , λ _ → translate-id (k tt)
 translate-id (impure (Connect a pa b pb s , k)) = refl , λ _ → translate-id (k tt)
 
@@ -125,6 +133,8 @@ translate-∘ f g (impure (Above al , k))            = refl , λ { zero → tran
 translate-∘ f g (impure (Atop , k))                = refl , λ { zero → translate-∘ f g (k zero) ; (suc zero) → translate-∘ f g (k (suc zero)) }
 translate-∘ f g (impure (LabelAbove , k))          = refl , λ { zero → translate-∘ f g (k zero) ; (suc zero) → translate-∘ f g (k (suc zero)) }
 translate-∘ f g (impure (LabelBelow , k))          = refl , λ { zero → translate-∘ f g (k zero) ; (suc zero) → translate-∘ f g (k (suc zero)) }
+translate-∘ f g (impure (Overlay w h , k))         = refl , λ { zero → translate-∘ f g (k zero) ; (suc zero) → translate-∘ f g (k (suc zero)) }
+translate-∘ f g (impure (Place w h x y , k))       = refl , λ _ → translate-∘ f g (k tt)
 translate-∘ f g (impure (Named n , k))             = refl , λ _ → translate-∘ f g (k tt)
 translate-∘ f g (impure (Connect a pa b pb s , k)) = refl , λ _ → translate-∘ f g (k tt)
 

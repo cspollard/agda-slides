@@ -7,6 +7,10 @@
 --   * primitives (no sub-diagrams): rectangles, text, spacers, …
 --   * binary connectives, which place two diagrams relative to each other:
 --     beside, above, atop, and the two that keep a caption's room free
+--   * absolute placement: `Place` (a child at `(x, y)` of a frame of declared size) and
+--     `Overlay` (two children at the corner of a declared frame): no centring, so the
+--     coordinates do not depend on the size of a neighbour; this is what keeps the symbolic
+--     layout of a template small (`Slides.Examples.PairsHero`, `docs/Design.md`)
 --   * annotations (one sub-diagram) that do not change the picture's geometry:
 --     `Named`, `Connect`
 --
@@ -65,6 +69,14 @@ data Op (S : Set) : Set where
   -- diagram, with empty space of the caption's size on the other side, so the
   -- diagram stays at the centre of the result
   LabelAbove LabelBelow : Op S
+  -- one child at absolute position (x, y) (units, from the top-left corner) in a frame of
+  -- size w × h: no centring, no complement margins.  The caller says where the child goes; the
+  -- frame does not grow to fit (a child that sticks out is drawn outside it)
+  Place     : (w h x y : S) → Op S
+  -- two children in one frame of size w × h, both at its top-left corner, the second drawn
+  -- over the first: no centring, so nothing about the size of the children enters the
+  -- coordinates (the frame is declared, like a `Spacer`'s)
+  Overlay   : (w h : S) → Op S
   -- remember the extent of the child under a name
   Named     : String → Op S
   -- an arrow from a port of one named box to a port of another
@@ -82,6 +94,8 @@ arity (Above _)         = Fin 2
 arity Atop              = Fin 2
 arity LabelAbove        = Fin 2
 arity LabelBelow        = Fin 2
+arity (Place _ _ _ _)   = ⊤
+arity (Overlay _ _)     = Fin 2
 arity (Named _)         = ⊤
 arity (Connect _ _ _ _ _) = ⊤
 
@@ -155,6 +169,14 @@ labelBelow lbl d = impure (LabelBelow , pick2 lbl d)
 framed : ∀ {S} → S → S → Style → Dia S → Dia S
 framed w h s d = atop (rectangle w h s) d
 
+-- two diagrams in one w × h frame, both at its corner, the second over the first
+overlay : ∀ {S} → S → S → Dia S → Dia S → Dia S
+overlay w h a b = impure (Overlay w h , pick2 a b)
+
+-- a diagram at the absolute position (x, y) of an empty w × h frame
+place : ∀ {S} → S → S → S → S → Dia S → Dia S
+place w h x y d = impure (Place w h x y , λ _ → d)
+
 -- remember the extent of a diagram under a name
 named : ∀ {S} → String → Dia S → Dia S
 named n d = impure (Named n , λ _ → d)
@@ -184,6 +206,8 @@ rescale f (Above al)              k = aboveA al (k zero) (k (suc zero))
 rescale f Atop                    k = atop (k zero) (k (suc zero))
 rescale f LabelAbove              k = labelAbove (k zero) (k (suc zero))
 rescale f LabelBelow              k = labelBelow (k zero) (k (suc zero))
+rescale f (Place w h x y)         k = place (f w) (f h) (f x) (f y) (k tt)
+rescale f (Overlay w h)           k = overlay (f w) (f h) (k zero) (k (suc zero))
 rescale f (Named n)               k = named n (k tt)
 rescale f (Connect a pa b pb s)   k = connectP a pa b pb s (k tt)
 

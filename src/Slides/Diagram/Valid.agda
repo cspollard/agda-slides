@@ -37,7 +37,7 @@ open import Data.Unit using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Slides.Diagram.Syntax
   using ( Dia; Op; Rectangle; Disc; Segment; Text; Spacer; Beside; Above; Atop
-        ; LabelAbove; LabelBelow; Named; Connect )
+        ; LabelAbove; LabelBelow; Place; Overlay; Named; Connect )
 import Slides.Diagram.Notation as Nt
 
 record IsOrdered {S : Set} (O : Ops S) (L : IsLawful O) : Set where
@@ -125,6 +125,12 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
     valid-aboveA centred {spacer 0# (height l)} {aboveA centred d l} (valid-spacer {0#} {height l} nonneg-0 (proj₂ vl))
       (valid-aboveA centred {d} {l} vd vl)
 
+  valid-overlay : ∀ {w h a b} → Nonneg w → Nonneg h → Valid (overlay w h a b)
+  valid-overlay nw nh = nw , nh
+
+  valid-place : ∀ {w h x y d} → Nonneg w → Nonneg h → Valid (place w h x y d)
+  valid-place nw nh = nw , nh
+
   valid-named : ∀ n {d} → Valid d → Valid (named n d)
   valid-named n v = v
 
@@ -141,6 +147,8 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
   OpOk (Disc r _)        = Nonneg r
   OpOk (Segment w h _)   = Nonneg w × Nonneg h
   OpOk (Spacer w h)      = Nonneg w × Nonneg h
+  OpOk (Place w h _ _)   = Nonneg w × Nonneg h
+  OpOk (Overlay w h)     = Nonneg w × Nonneg h
   OpOk _                 = ⊤
 
   WellSized : Dia S → Set
@@ -164,6 +172,8 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
     valid-labelAbove {LW.layout (k zero)} {LW.layout (k (suc zero))} (valid-layout (k zero) (ok zero)) (valid-layout (k (suc zero)) (ok (suc zero)))
   valid-layout (impure (LabelBelow , k)) (_ , ok) =
     valid-labelBelow {LW.layout (k zero)} {LW.layout (k (suc zero))} (valid-layout (k zero) (ok zero)) (valid-layout (k (suc zero)) (ok (suc zero)))
+  valid-layout (impure (Overlay w h , k)) ((nw , nh) , _) = valid-overlay {w} {h} {LW.layout (k zero)} {LW.layout (k (suc zero))} nw nh
+  valid-layout (impure (Place w h x y , k)) ((nw , nh) , _) = valid-place {w} {h} {x} {y} {LW.layout (k tt)} nw nh
   valid-layout (impure (Named n , k)) (_ , ok) = valid-named n {LW.layout (k tt)} (valid-layout (k tt) (ok tt))
   valid-layout (impure (Connect a pa b pb s , k)) (_ , ok) = valid-connectP a pa b pb s {LW.layout (k tt)} (valid-layout (k tt) (ok tt))
 
