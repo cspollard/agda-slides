@@ -45,6 +45,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Expr
+open import Slides.Diagram.Expr.Properties
 open import Slides.Diagram.Layout.Properties using (layout-natural; layout-eval; mapLayout-∘)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.NatQ

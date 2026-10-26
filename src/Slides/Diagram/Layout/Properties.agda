@@ -53,7 +53,8 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Bool using (true; false)
 import Slides.Diagram.Place as Place
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; evalWith; evalWith-hom; subst; subst-hom; evalWith-subst)
+open import Slides.Diagram.Expr using (Expr; exprOps; eval; evalWith; subst)
+open import Slides.Diagram.Expr.Properties using (eval-hom; evalWith-hom; subst-hom; evalWith-subst)
 open import Function using (_∘_)
 
 private

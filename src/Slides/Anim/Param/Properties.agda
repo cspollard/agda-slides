@@ -40,7 +40,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym;
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; var)
+open import Slides.Diagram.Expr using (Expr; exprOps; eval; var)
+open import Slides.Diagram.Expr.Properties using (eval-hom)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Diagram.Layout.Properties using (layout-subst; layout-eval; atop-natural)

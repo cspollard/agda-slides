@@ -59,6 +59,7 @@ open import Slides.Diagram.Signature
 open import Slides.Diagram.Signature.Properties
 open import Slides.Diagram.Expr
 
+open import Slides.Diagram.Expr.Properties
 ------------------------------------------------------------------------
 -- The layer
 
