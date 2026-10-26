@@ -20,6 +20,7 @@ open import Data.Rational using (ℚ)
 
 open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Expr using (Expr)
+open import Slides.Diagram.Euclid using (DExpr)
 open import Slides.Anim.Track using (Piece)
 
 record Param : Set where
@@ -31,3 +32,19 @@ record Param : Set where
     -- for each segment (variable `i` is the `i`-th): the tick it starts at and the pieces of
     -- its track, in order
     segments : List (ℕ × List (Piece ℚ))
+
+-- The same for an animation with *discrete* templates (`Slides.Anim.Syntax.discrete`,
+-- `Slides.Diagram.Euclid`): the symbolic layouts are over `DExpr` and the page reads the
+-- formulas in ℕ, at the whole tick `⌊τ⌋` (a discrete body has one frame per tick, and the
+-- parameters it sees are whole: `units` of the track's sample).  Its own type, so that a
+-- formula with floor division cannot be read as a continuous one by mistake.
+record DParam : Set where
+  constructor dparam
+  field
+    ticks    : List (Layout (DExpr ℕ))
+    segments : List (ℕ × List (Piece ℚ))
+
+-- what an animation can be shipped as
+data AnyParam : Set where
+  continuous : Param → AnyParam
+  discrete   : DParam → AnyParam

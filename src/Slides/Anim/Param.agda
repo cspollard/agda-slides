@@ -67,6 +67,7 @@ leafOf : ℕ → ℕ → Seg ℕ → Maybe Leaf
 leafOf i t₀ s with content s
 ... | template d  = just (leaf i t₀ (track s) d)
 ... | blackBox _  = nothing
+... | discrete _  = nothing   -- shipped by `Slides.Anim.DParam`
 
 -- number the segments, from `i`, and give each its start tick, from `t₀`; the result is
 -- the next number and the same animation over leaves

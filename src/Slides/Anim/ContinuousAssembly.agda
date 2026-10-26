@@ -103,6 +103,7 @@ Exact (seg tr (template d)) m =
   let q = proj₂ (Tr.sample Tr.ℚLerp tr) m in
   q ≡ ι (units q) × AllLayout (Faithful (λ _ → units q)) (LayoutWith.layout exprOps d)
 Exact (seg tr (blackBox _)) m = ⊤
+Exact (seg tr (discrete _)) m = ⊤
 
 -- Exactness of the segments running at the tick `k` of an animation (`k` relative to its start).
 Good : Anim ℕ (Seg ℕ) → ℕ → Set
@@ -180,6 +181,7 @@ assembly (pure (seg tr (template d))) T refl k H
        (bothFrames (trans (cong (λ r → layoutQ (instQ d r)) (proj₁ ex))
                           (sym (faithful-layout (λ _ → units q) d (proj₂ ex)))))
 assembly (pure (seg tr (blackBox f))) T () k H
+assembly (pure (seg tr (discrete d))) T () k H
 assembly (impure (Seq , c)) T eq k H with lift2-just seqAt (animAt (c zero)) (animAt (c (suc zero))) eq
 ... | A , B , e₁ , e₂ , refl = go (nth-++′ (timeline atop (frames natOps) (c zero)) (timeline atop (frames natOps) (c (suc zero)))
                                               k (dur (c zero)) (length-dur natOps (c zero)))

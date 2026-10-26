@@ -172,18 +172,6 @@ evalD : ∀ {V S} → DiscreteOps S → (V → S) → DExpr V → S
 evalD D = foldT (dH D)
 
 ------------------------------------------------------------------------
--- Weakening: a continuous template is a discrete one
-
-weakenE : ∀ {V} → Expr V → DExpr V
-weakenE = translate exprD
-
--- read with the operations of the first two layers only
-evalD-weaken : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) (e : Expr V) →
-               evalD D ρ (weakenE e) ≡ evalWith (DiscreteOps.ops D) ρ e
-evalD-weaken D ρ e =
-  trans (foldT-translate exprD (dH D) ρ e) (foldT-ext _ _ (λ s k → refl) ρ e)
-
-------------------------------------------------------------------------
 -- The `Ops` structure of discrete templates
 
 dexprOps : ∀ {V} → Ops (DExpr V)
@@ -249,3 +237,28 @@ evalD-substD D ρ σ (pure v)         = refl
 evalD-substD D ρ σ (impure (s , k)) =
   trans (nodeD D ρ s (λ q → substD σ (k q)))
         (dH D .Handler.respects s (λ q → evalD-substD D ρ σ (k q)))
+
+------------------------------------------------------------------------
+-- Weakening: a continuous template is a discrete one
+--
+-- `weakenE` is the fold of the free algebra into the bigger one: the unique `Ops`-homomorphism
+-- `Expr V → DExpr V` over the variables.  It is an `Ops`-homomorphism by construction
+-- (`weakenE-hom`, so layout is natural along it), and it evaluates to the original
+-- (`evalD-weaken`): a continuous template is a discrete one, read in ℕ.  (It is the
+-- translation along the inclusion `exprD` of the signatures, `Signature.weaken-bind`, up to
+-- equality of programs: the translation presents the children of a node as `pick2 a b ∘ position`,
+-- the fold as `pick2 a b`.)
+
+weakenE : ∀ {V} → Expr V → DExpr V
+weakenE = evalWith dexprOps pure
+
+weakenE-hom : ∀ {V} → IsOpsHom (exprOps {V}) dexprOps weakenE
+weakenE-hom = evalWith-hom dexprOps pure
+
+-- read with the operations of the first two layers only
+evalD-weaken : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) (e : Expr V) →
+               evalD D ρ (weakenE e) ≡ evalWith (DiscreteOps.ops D) ρ e
+evalD-weaken D ρ (pure v)         = refl
+evalD-weaken D ρ (impure (s , k)) =
+  trans (nodeD D ρ (inj₁ s) (λ q → weakenE (k q)))
+        (opsH (DiscreteOps.ops D) .Handler.respects s (λ q → evalD-weaken D ρ (k q)))

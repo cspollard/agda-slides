@@ -210,6 +210,10 @@ private
   ... | max a b = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
   ... | pct p a = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
   ... | hlf a   = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
+  ... | fdiv d a  = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
+  ... | fmod d a  = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
+  ... | fmul n a  = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
+  ... | flt a b c e  = cong₂ _∷_ (trans (cong (λ f → ⟦ f ⟧ ρ) (sym eq)) (slot-val x ρ)) (pageNums-A ns ρ)
 
   pageNums-B : ∀ ns ρ → allNum (map slotF ns) ≡ true → pageNums (map base0 ns) [] ρ ≡ map (target ρ) ns
   pageNums-B []       ρ h = refl
@@ -221,6 +225,10 @@ private
   pageNums-B (x ∷ ns) ρ () | max a b
   pageNums-B (x ∷ ns) ρ () | pct p a
   pageNums-B (x ∷ ns) ρ () | hlf a
+  pageNums-B (x ∷ ns) ρ () | fdiv d a
+  pageNums-B (x ∷ ns) ρ () | fmod d a
+  pageNums-B (x ∷ ns) ρ () | fmul n a
+  pageNums-B (x ∷ ns) ρ () | flt a b c e
 
   map-map : ∀ {A B C : Set} (f : B → C) (g : A → B) xs → map f (map g xs) ≡ map (λ x → f (g x)) xs
   map-map f g []       = refl
@@ -254,67 +262,159 @@ encodeDraw-sem dr ρ =
 -- Equality of what is shipped
 
 formulaEq? : DecidableEquality Formula
-formulaEq? (num a₁) (num a₂) = map′ (cong num) (λ { refl → refl }) (ℕP._≟_ a₁ a₂)
+formulaEq? (num x0) (num y0) with ℕP._≟_ x0 y0
+... | yes refl = yes refl
+... | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (num _) (var _) = no λ ()
 formulaEq? (num _) (add _ _) = no λ ()
 formulaEq? (num _) (sub _ _) = no λ ()
 formulaEq? (num _) (max _ _) = no λ ()
 formulaEq? (num _) (pct _ _) = no λ ()
 formulaEq? (num _) (hlf _) = no λ ()
+formulaEq? (num _) (fdiv _ _) = no λ ()
+formulaEq? (num _) (fmod _ _) = no λ ()
+formulaEq? (num _) (fmul _ _) = no λ ()
+formulaEq? (num _) (flt _ _ _ _) = no λ ()
 formulaEq? (var _) (num _) = no λ ()
-formulaEq? (var a₁) (var a₂) = map′ (cong var) (λ { refl → refl }) (ℕP._≟_ a₁ a₂)
+formulaEq? (var x0) (var y0) with ℕP._≟_ x0 y0
+... | yes refl = yes refl
+... | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (var _) (add _ _) = no λ ()
 formulaEq? (var _) (sub _ _) = no λ ()
 formulaEq? (var _) (max _ _) = no λ ()
 formulaEq? (var _) (pct _ _) = no λ ()
 formulaEq? (var _) (hlf _) = no λ ()
+formulaEq? (var _) (fdiv _ _) = no λ ()
+formulaEq? (var _) (fmod _ _) = no λ ()
+formulaEq? (var _) (fmul _ _) = no λ ()
+formulaEq? (var _) (flt _ _ _ _) = no λ ()
 formulaEq? (add _ _) (num _) = no λ ()
 formulaEq? (add _ _) (var _) = no λ ()
-formulaEq? (add a₁ b₁) (add a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+formulaEq? (add x0 x1) (add y0 y1) with formulaEq? x0 y0 | formulaEq? x1 y1
 ... | yes refl | yes refl = yes refl
-... | no ¬p   | _        = no λ { refl → ¬p refl }
-... | _       | no ¬q    = no λ { refl → ¬q refl }
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (add _ _) (sub _ _) = no λ ()
 formulaEq? (add _ _) (max _ _) = no λ ()
 formulaEq? (add _ _) (pct _ _) = no λ ()
 formulaEq? (add _ _) (hlf _) = no λ ()
+formulaEq? (add _ _) (fdiv _ _) = no λ ()
+formulaEq? (add _ _) (fmod _ _) = no λ ()
+formulaEq? (add _ _) (fmul _ _) = no λ ()
+formulaEq? (add _ _) (flt _ _ _ _) = no λ ()
 formulaEq? (sub _ _) (num _) = no λ ()
 formulaEq? (sub _ _) (var _) = no λ ()
 formulaEq? (sub _ _) (add _ _) = no λ ()
-formulaEq? (sub a₁ b₁) (sub a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+formulaEq? (sub x0 x1) (sub y0 y1) with formulaEq? x0 y0 | formulaEq? x1 y1
 ... | yes refl | yes refl = yes refl
-... | no ¬p   | _        = no λ { refl → ¬p refl }
-... | _       | no ¬q    = no λ { refl → ¬q refl }
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (sub _ _) (max _ _) = no λ ()
 formulaEq? (sub _ _) (pct _ _) = no λ ()
 formulaEq? (sub _ _) (hlf _) = no λ ()
+formulaEq? (sub _ _) (fdiv _ _) = no λ ()
+formulaEq? (sub _ _) (fmod _ _) = no λ ()
+formulaEq? (sub _ _) (fmul _ _) = no λ ()
+formulaEq? (sub _ _) (flt _ _ _ _) = no λ ()
 formulaEq? (max _ _) (num _) = no λ ()
 formulaEq? (max _ _) (var _) = no λ ()
 formulaEq? (max _ _) (add _ _) = no λ ()
 formulaEq? (max _ _) (sub _ _) = no λ ()
-formulaEq? (max a₁ b₁) (max a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+formulaEq? (max x0 x1) (max y0 y1) with formulaEq? x0 y0 | formulaEq? x1 y1
 ... | yes refl | yes refl = yes refl
-... | no ¬p   | _        = no λ { refl → ¬p refl }
-... | _       | no ¬q    = no λ { refl → ¬q refl }
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (max _ _) (pct _ _) = no λ ()
 formulaEq? (max _ _) (hlf _) = no λ ()
+formulaEq? (max _ _) (fdiv _ _) = no λ ()
+formulaEq? (max _ _) (fmod _ _) = no λ ()
+formulaEq? (max _ _) (fmul _ _) = no λ ()
+formulaEq? (max _ _) (flt _ _ _ _) = no λ ()
 formulaEq? (pct _ _) (num _) = no λ ()
 formulaEq? (pct _ _) (var _) = no λ ()
 formulaEq? (pct _ _) (add _ _) = no λ ()
 formulaEq? (pct _ _) (sub _ _) = no λ ()
 formulaEq? (pct _ _) (max _ _) = no λ ()
-formulaEq? (pct a₁ b₁) (pct a₂ b₂) with ℕP._≟_ a₁ a₂ | formulaEq? b₁ b₂
+formulaEq? (pct x0 x1) (pct y0 y1) with ℕP._≟_ x0 y0 | formulaEq? x1 y1
 ... | yes refl | yes refl = yes refl
-... | no ¬p   | _        = no λ { refl → ¬p refl }
-... | _       | no ¬q    = no λ { refl → ¬q refl }
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
 formulaEq? (pct _ _) (hlf _) = no λ ()
+formulaEq? (pct _ _) (fdiv _ _) = no λ ()
+formulaEq? (pct _ _) (fmod _ _) = no λ ()
+formulaEq? (pct _ _) (fmul _ _) = no λ ()
+formulaEq? (pct _ _) (flt _ _ _ _) = no λ ()
 formulaEq? (hlf _) (num _) = no λ ()
 formulaEq? (hlf _) (var _) = no λ ()
 formulaEq? (hlf _) (add _ _) = no λ ()
 formulaEq? (hlf _) (sub _ _) = no λ ()
 formulaEq? (hlf _) (max _ _) = no λ ()
 formulaEq? (hlf _) (pct _ _) = no λ ()
-formulaEq? (hlf a₁) (hlf a₂) = map′ (cong hlf) (λ { refl → refl }) (formulaEq? a₁ a₂)
+formulaEq? (hlf x0) (hlf y0) with formulaEq? x0 y0
+... | yes refl = yes refl
+... | no ¬p = no λ { refl → ¬p refl }
+formulaEq? (hlf _) (fdiv _ _) = no λ ()
+formulaEq? (hlf _) (fmod _ _) = no λ ()
+formulaEq? (hlf _) (fmul _ _) = no λ ()
+formulaEq? (hlf _) (flt _ _ _ _) = no λ ()
+formulaEq? (fdiv _ _) (num _) = no λ ()
+formulaEq? (fdiv _ _) (var _) = no λ ()
+formulaEq? (fdiv _ _) (add _ _) = no λ ()
+formulaEq? (fdiv _ _) (sub _ _) = no λ ()
+formulaEq? (fdiv _ _) (max _ _) = no λ ()
+formulaEq? (fdiv _ _) (pct _ _) = no λ ()
+formulaEq? (fdiv _ _) (hlf _) = no λ ()
+formulaEq? (fdiv x0 x1) (fdiv y0 y1) with ℕP._≟_ x0 y0 | formulaEq? x1 y1
+... | yes refl | yes refl = yes refl
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
+formulaEq? (fdiv _ _) (fmod _ _) = no λ ()
+formulaEq? (fdiv _ _) (fmul _ _) = no λ ()
+formulaEq? (fdiv _ _) (flt _ _ _ _) = no λ ()
+formulaEq? (fmod _ _) (num _) = no λ ()
+formulaEq? (fmod _ _) (var _) = no λ ()
+formulaEq? (fmod _ _) (add _ _) = no λ ()
+formulaEq? (fmod _ _) (sub _ _) = no λ ()
+formulaEq? (fmod _ _) (max _ _) = no λ ()
+formulaEq? (fmod _ _) (pct _ _) = no λ ()
+formulaEq? (fmod _ _) (hlf _) = no λ ()
+formulaEq? (fmod _ _) (fdiv _ _) = no λ ()
+formulaEq? (fmod x0 x1) (fmod y0 y1) with ℕP._≟_ x0 y0 | formulaEq? x1 y1
+... | yes refl | yes refl = yes refl
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
+formulaEq? (fmod _ _) (fmul _ _) = no λ ()
+formulaEq? (fmod _ _) (flt _ _ _ _) = no λ ()
+formulaEq? (fmul _ _) (num _) = no λ ()
+formulaEq? (fmul _ _) (var _) = no λ ()
+formulaEq? (fmul _ _) (add _ _) = no λ ()
+formulaEq? (fmul _ _) (sub _ _) = no λ ()
+formulaEq? (fmul _ _) (max _ _) = no λ ()
+formulaEq? (fmul _ _) (pct _ _) = no λ ()
+formulaEq? (fmul _ _) (hlf _) = no λ ()
+formulaEq? (fmul _ _) (fdiv _ _) = no λ ()
+formulaEq? (fmul _ _) (fmod _ _) = no λ ()
+formulaEq? (fmul x0 x1) (fmul y0 y1) with ℕP._≟_ x0 y0 | formulaEq? x1 y1
+... | yes refl | yes refl = yes refl
+... | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p = no λ { refl → ¬p refl }
+formulaEq? (fmul _ _) (flt _ _ _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (num _) = no λ ()
+formulaEq? (flt _ _ _ _) (var _) = no λ ()
+formulaEq? (flt _ _ _ _) (add _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (sub _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (max _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (pct _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (hlf _) = no λ ()
+formulaEq? (flt _ _ _ _) (fdiv _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (fmod _ _) = no λ ()
+formulaEq? (flt _ _ _ _) (fmul _ _) = no λ ()
+formulaEq? (flt x0 x1 x2 x3) (flt y0 y1 y2 y3) with formulaEq? x0 y0 | formulaEq? x1 y1 | formulaEq? x2 y2 | formulaEq? x3 y3
+... | yes refl | yes refl | yes refl | yes refl = yes refl
+... | no ¬p | _ | _ | _ = no λ { refl → ¬p refl }
+... | _ | no ¬p | _ | _ = no λ { refl → ¬p refl }
+... | _ | _ | no ¬p | _ = no λ { refl → ¬p refl }
+... | _ | _ | _ | no ¬p = no λ { refl → ¬p refl }
 
 elemEq? : DecidableEquality Elem
 elemEq? (elem b₁ c₁) (elem b₂ c₂) with drawEq? ℕP._≟_ b₁ b₂ | MP.≡-dec (LP.≡-dec (MP.≡-dec formulaEq?)) c₁ c₂
