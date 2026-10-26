@@ -3,8 +3,8 @@
 -- An introduction to "It Just Takes Two: Scaling Amortized Inference to Large
 -- Sets" (Wehenkel, Kagan, Heinrich, Pollard; arXiv:2605.07972) in eleven
 -- slides.  It uses typed math, SVG diagrams, cards and callouts styled by
--- `assets/pairs/pairs.css`, and the animations of `assets/pairs/pairs.js`
--- (the point pairs); the flow arrows are a loop.  Lit stages, the filling histogram, the
+-- `assets/pairs/pairs.css`.  There is no JavaScript: the drifting point pairs and
+-- the flow arrows are loops (`Slides.Examples.PairsHero`).  Lit stages, the filling histogram, the
 -- growing bars and the counters are `Slides.Anim` animations: a parameter
 -- follows a track and the diagram is a function of it, one reveal step per act.
 -- See `docs/PairsDeck.md`.
@@ -16,6 +16,7 @@ open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
 open import Slides.Anim.Render using (render; renderLoop)
+open import Slides.Examples.PairsHero using (hero)
 import Slides.Anim.Track as T
 import Data.Rational as ℚ
 open import Data.Integer using (+_)
@@ -349,13 +350,12 @@ pairs = do
 
   -- 1 ------------------------------------------------------------------
   slide (do
-    mount "hero-title"
+    classed "hero-bg hero-title" (Content.cmd (renderLoop "hero-title" 100 100 (hero 7)))
     classed "title-copy tag" (p■ "Neural posterior estimation · Deep Sets")
     classed "title-copy" (h■ 1 "It Just Takes Two")
     classed "title-copy subtitle" (p■ "Scaling Amortized Inference to Large Sets")
     classed "title-copy authors" (p■ "Antoine Wehenkel · Michael Kagan · Lukas Heinrich · Chris Pollard")
     classed "title-copy small" (p■ ("arXiv:2605.07972 · " ∷ link "https://arxiv.org/abs/2605.07972" "abstract" ∷ []))
-    script "PAIRS.title(slide, 'hero-title')"
     notes "The paper in one line: train a mean-pool Deep Set on sets of at most two elements, then finetune the inference head on cached aggregates.")
 
   -- 2 ------------------------------------------------------------------
@@ -479,7 +479,7 @@ pairs = do
 
   -- 11 -----------------------------------------------------------------
   slide (do
-    mount "hero-end"
+    classed "hero-bg hero-end" (Content.cmd (renderLoop "hero-end" 100 100 (hero 13)))
     classed "title-copy"
       (do h■ 2 "Take-aways"
           Content.bullets
@@ -491,4 +491,4 @@ pairs = do
     classed "title-copy closing" (p■ "It just takes two.")
     classed "title-copy small"
       (p■ ("Wehenkel, Kagan, Heinrich, Pollard · " ∷ link "https://arxiv.org/abs/2605.07972" "arXiv:2605.07972" ∷ []))
-    script "PAIRS.title(slide, 'hero-end')")
+    )

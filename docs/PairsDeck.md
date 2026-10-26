@@ -4,7 +4,7 @@
 *It Just Takes Two: Scaling Amortized Inference to Large Sets* (Wehenkel, Kagan,
 Heinrich, Pollard; [arXiv:2605.07972](https://arxiv.org/abs/2605.07972)). It is
 the largest example in the repository and uses most of the library: typed math,
-SVG diagrams, a custom stylesheet, `Slides.Anim` animations and a little JavaScript.
+SVG diagrams, a custom stylesheet, `Slides.Anim` animations and no JavaScript of its own.
 
 ```
 make pairs                        # reveal.js from a CDN: out/pairs/ (needs network in the browser)
@@ -17,7 +17,7 @@ make test-pairs                                      # drives it in headless Chr
 
 | # | Title | What it shows |
 | --- | --- | --- |
-| 1 | It Just Takes Two | title; point pairs drifting on a canvas |
+| 1 | It Just Takes Two | title; point pairs drifting behind it |
 | 2 | Inference from a set of observations | SVG diagram of θ, the shared nuisance ψ and the observations; the hierarchical model as typed math |
 | 3 | A bump hunt, event by event | a histogram of 2500 simulated events (background and signal) that fills on the first step |
 | 4 | Two ways to scale, both costly | two cards; the question appears on the next step (`pause`) |
@@ -64,24 +64,20 @@ numbers the text gives, not the full figure.
     (`marching f` runs the phase `0 … 7` once through; `flow ph` puts the class `ph<k>`
     on the arrow and the stylesheet offsets the dashes by `k/8` of a period).
     On slides 6 and 7 the same march runs under the reveal steps (`animateBoth`).
-  - Free-running decoration is `assets/pairs/pairs.js`, loaded with
-    `RevealConfig.scriptFiles`. Each slide calls one function from a `script`
-    command; it runs once, when the slide is first shown, and only advances while
-    that slide is current:
+  - Slides 1 and 11: the drifting point pairs are a loop too (`Slides.Examples.PairsHero`):
+    26 pairs from a seeded generator, each a pair of dots joined by a line that turns
+    through a half turn and sways along a fixed direction over 64 frames. The sway is a
+    triangle wave, so the last frame runs into the first and nothing jumps.
 
-    | Call | Effect |
-    | --- | --- |
-    | `PAIRS.title(slide, id)` | point pairs drifting on a canvas in the `mount` with that id |
-
-    It stays in JavaScript because a random drift is not a track.
+    The deck has no JavaScript of its own: `pairs.js` is gone.
 
 - **Configuration** is in `PairsMain.agda`. Where reveal.js comes from is an option
   (`Reveal.Source`): `cdn "6.0.2"` loads the pinned version from jsDelivr, so the
-  output is just `index.html`, `init.js`, `pairs.js`, `pairs.css` and `slides.css`;
+  output is just `index.html`, `init.js`, `pairs.css` and `slides.css`;
   `local "reveal/"` uses a copy linked next to the page. The executable takes the
   choice as an argument (`PairsMain cdn`, the default, or `PairsMain local`), which
   is what the two make targets pass. KaTeX comes from the CDN in both, so math
-  needs network access either way. The rest of the configuration is a 1280×720 canvas, slide numbers, the two stylesheets, `pairs.js`, and a deck-level script
+  needs network access either way. The rest of the configuration is a 1280×720 canvas, slide numbers, the two stylesheets and a deck-level script
   (`Reveal.configure({center: false})`) so titles stay at the top.
 
 ## Library features added for this deck
@@ -99,8 +95,7 @@ They are described in `docs/Authoring.md`.
 ## Reusing it
 
 To make your own animated deck, copy `Pairs.agda` and `PairsMain.agda`, keep
-`pairs.css` as a starting stylesheet, and write your animations in a JavaScript
-file next to it, called from `script`, for anything that free-runs. Use `animate`
-for anything that should follow the slide's steps. Only use ids on diagram nodes
+`pairs.css` as a starting stylesheet, and write animations with `animate` (follows the steps), `animateLoop` (free-runs) or `animateBoth`; reach for
+`script` only for what a diagram cannot express. Only use ids on diagram nodes
 that a script needs, and keep ids unique across the deck (the frames of an
 `animate` repeat their contents, so give those nodes names, not ids).

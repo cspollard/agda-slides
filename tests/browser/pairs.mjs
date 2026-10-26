@@ -39,26 +39,22 @@ eq('eleven slides', await ev(() => Reveal.getHorizontalSlides().length), 11);
 eq('first slide is the title', await ev(() => Reveal.getHorizontalSlides()[0].querySelector('h1').textContent), 'It Just Takes Two');
 eq('deck script ran (reveal configured)', await ev(() => Reveal.getConfig().center), false);
 eq('reveal.js came from the expected place', await ev(() => Array.from(document.scripts).some(s => s.src.includes('reveal.js@6.0.2/')) ? 'cdn' : 'local'), deck === 'pairs' ? 'cdn' : 'local');
-eq('pairs.js loaded', await ev(() => typeof PAIRS.title), 'function');
+eq('no JavaScript beyond reveal and the deck script', await ev(() => typeof PAIRS), 'undefined');
 check('stylesheet applied', await ev(() => getComputedStyle(document.querySelector('.card')).borderRadius !== '0px'));
 eq('diagram slides', await ev(() =>
   Reveal.getHorizontalSlides().map(s => Array.from(s.querySelectorAll('.diagram svg')).filter(v => !v.closest('.frame[hidden]')).length).join(',')),
-  '0,1,1,0,1,1,1,0,1,1,0');
+  '1,1,1,0,1,1,1,0,1,1,1');
 eq('math rendered on slides 2, 5, 7', await ev(() =>
   [1, 4, 6].map(i => Reveal.getHorizontalSlides()[i].querySelectorAll('.katex').length > 0).join(',')), 'true,true,true');
 
-console.log('-- title animation');
-await go(0); await wait(600);
-eq('canvas drawn in the hero mount', await ev(() => {
-  const c = document.querySelector('#hero-title canvas');
-  return !!c && c.width > 0 && c.height > 0;
-}), true);
-check('canvas has painted pixels', await ev(() => {
-  const c = document.querySelector('#hero-title canvas');
-  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-  for (let i = 3; i < d.length; i += 4) if (d[i] > 0) return true;
-  return false;
-}));
+console.log('-- point pairs (loops)');
+for (const [i, id] of [[0, 'hero-title-0-frames'], [10, 'hero-end-0-frames']]) {
+  await go(i); await wait(300);
+  const seen = new Set();
+  for (let k = 0; k < 12; k++) { seen.add(await page.evaluate(id => +(document.getElementById(id).dataset.phase || 0), id)); await wait(150); }
+  check(`slide ${i + 1}: the pairs move`, seen.size >= 5, [...seen].join(','));
+  eq(`slide ${i + 1}: 26 pairs of two dots`, await page.evaluate(id => document.querySelectorAll(`#${id} > .frame:not([hidden]) circle`).length, id), 52);
+}
 
 console.log('-- marching arrows (loops)');
 const cur = id => page.evaluate(id => +(document.getElementById(id).dataset.phase || 0), id);
@@ -130,9 +126,8 @@ eq('slide 10: counters reach their targets', (await ev(() =>
   Array.from(document.querySelectorAll('#d-tiles-0-frames > .frame:not([hidden]) text')).map(e => e.textContent))).filter(t => /^[≈0-9]/.test(t) && !/ /.test(t)), ['≈100×', '3–4×', '128', '0.004']);
 
 console.log('-- closing slide');
-await go(10); await wait(600);
-check('slide 11: canvas animation and link', await ev(() =>
-  !!document.querySelector('#hero-end canvas') && !!Reveal.getCurrentSlide().querySelector('a[href="https://arxiv.org/abs/2605.07972"]')));
+await go(10); await wait(300);
+check('slide 11: link', await ev(() => !!Reveal.getCurrentSlide().querySelector('a[href="https://arxiv.org/abs/2605.07972"]')));
 
 eq('no page errors', errors, []);
 await browser.close();

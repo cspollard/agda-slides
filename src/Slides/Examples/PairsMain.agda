@@ -30,7 +30,6 @@ config = record Reveal.defaultConfig
   ; slideNumber = true
   ; width       = just 1280
   ; height      = just 720
-  ; scriptFiles = "pairs.js" ∷ []
   ; scripts     = "Reveal.configure({center: false});" ∷ []
   }
 

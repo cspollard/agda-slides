@@ -74,7 +74,6 @@ test:
 	diff -u tests/golden/pairs.index.html out/pairs/index.html
 	diff -u tests/golden/pairs.init.js out/pairs/init.js
 	diff -u tests/golden/pairs.css out/pairs/pairs.css
-	diff -u tests/golden/pairs.js out/pairs/pairs.js
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 
@@ -136,7 +135,7 @@ showcase:
 # The "It Just Takes Two" deck (docs/PairsDeck.md).  `make pairs` loads reveal.js and
 # KaTeX from a CDN (out/pairs/, needs network in the browser); `make pairs-local
 # REVEAL=…` links a local copy of reveal.js (out/pairs-local/).
-PAIRS_FILES = assets/slides.css assets/pairs/pairs.css assets/pairs/pairs.js
+PAIRS_FILES = assets/slides.css assets/pairs/pairs.css
 
 .PHONY: pairs pairs-local
 pairs:
