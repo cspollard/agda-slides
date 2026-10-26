@@ -159,7 +159,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    (`--profile=modules`): 634 s, 5.3 GB peak RSS, 30% in GC. Heavy modules: `Anim.Track` 131 s
    (one definition, `reversal`), `Anim.ContinuousAssembly` 111 s, `Anim.Continuous` 67 s,
    `Anim.DPhases` 63 s, `Examples.PairsScalar` 58 s, `Anim.DParamCorrect` 54 s,
-   `Anim.ParamCorrect` 30 s, `Container.FreeMonad.Monadic` 25 s; each module also spends 20-57 s
+   `Anim.ParamCorrect` 30 s, `Container.FreeMonad.Properties.Monadic` 25 s; each module also spends 20-57 s
    "Miscellaneous" loading and re-serialising big interfaces, so time and memory follow how much
    a module imports. Every executable imported 56-59 modules / 10.9-11.7K lines because runtime
    code and proofs shared files. Done, consolidation first:

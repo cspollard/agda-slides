@@ -15,7 +15,7 @@
 -- content is `fold-action`: for a module `(A , a)`, folding the induced
 -- algebra over the identity is `a`.
 
-module Container.FreeMonad.Monadic where
+module Container.FreeMonad.Properties.Monadic where
 
 open import Level using (Level; _⊔_; lift)
 open import Data.Product.Base using (_,_)
@@ -41,7 +41,9 @@ import Categories.Category.Construction.EilenbergMoore as EilenbergMooreC
 
 open import Container.Polynomial using ()
 open import Container.FreeMonad
+open import Container.FreeMonad.Properties
 open import Container.FreeMonad.Algebraic
+open import Container.FreeMonad.Algebraic.Properties
 
 module Monadic {s p} (c ℓ : Level) (C : Container s p) where
   open Alg c ℓ C

@@ -19,6 +19,7 @@ open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Container.Polynomial
 open import Container.FreeMonad
+open import Container.FreeMonad.Properties
 open import Container.FreeMonad.Algebraic
 
 open import Container.Lowering

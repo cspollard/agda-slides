@@ -29,7 +29,7 @@ that equalities of continuations need no function extensionality:
 | `Container.Polynomial.Morphism` | container morphisms are natural transformations; identity and composition are preserved |
 | `Container.FreeMonad` | `Free C` is a `Monad` on `Setoids`; tree equality is by recursion, not an inductive family (an indexed family would live in a universe that depends on the carrier level) |
 | `Container.FreeMonad.Algebraic` | the forgetful functor from `F-Algebras ⟦C⟧`, `Free C X` as a `FreeObject`, the adjunction `Free ⊣ Forget`, and its monad is isomorphic to `Free C` (key lemma: `fold-bind`) |
-| `Container.FreeMonad.Monadic` | that adjunction is monadic: `⟦C⟧`-algebras (backends) are exactly the Eilenberg–Moore algebras of the free monad |
+| `Container.FreeMonad.Properties.Monadic` | that adjunction is monadic: `⟦C⟧`-algebras (backends) are exactly the Eilenberg–Moore algebras of the free monad |
 | `Container.Interpret` | `Free C ⊥` is the initial algebra (Lambek); folds commute with algebra homomorphisms; fusion (translating along a container morphism, then folding, is folding with the pulled-back algebra) |
 | `Container.Sum` | `⟦C₁ ⊎ C₂⟧ A ≅ ⟦C₁⟧ A ⊎ ⟦C₂⟧ A`, and `copair` of algebras with its universal property: this is how backends for separate vocabularies combine |
 | `Container.Lowering`, `Container.Category` | a *lowering* sends each command to a program (a Kleisli map between containers); `lower`, `_>=>_`, the category of containers and lowerings, and `lower-fusion` |
