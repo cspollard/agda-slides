@@ -12,9 +12,9 @@
 
 module Slides.Diagram.Draw where
 
-open import Data.List using (List)
+open import Data.List using (List; map)
 open import Data.Nat using (ℕ)
-open import Data.Product using (_×_)
+open import Data.Product using (_×_; _,_)
 open import Data.String using (String)
 
 open import Slides.Diagram using (Style)
@@ -41,3 +41,23 @@ record Layout (S : Set) : Set where
     -- drawn with the top-left corner at the origin
     draws   : List (Draw S)
     anchors : List (String × Box S)
+
+------------------------------------------------------------------------
+-- Change of scalar (the action on maps; see `Slides.Diagram.LayoutNatural`)
+
+mapBox : ∀ {S T} → (S → T) → Box S → Box T
+mapBox f (box l t w h) = box (f l) (f t) (f w) (f h)
+
+mapDraw : ∀ {S T} → (S → T) → Draw S → Draw T
+mapDraw f (rect x y w h s)     = rect (f x) (f y) (f w) (f h) s
+mapDraw f (circle x y r s)     = circle (f x) (f y) (f r) s
+mapDraw f (line a b c d s)     = line (f a) (f b) (f c) (f d) s
+mapDraw f (arrow a b c d s)    = arrow (f a) (f b) (f c) (f d) s
+mapDraw f (label x y n t s)    = label (f x) (f y) n t s
+
+mapAnchor : ∀ {S T} → (S → T) → String × Box S → String × Box T
+mapAnchor f (n , b) = n , mapBox f b
+
+mapLayout : ∀ {S T} → (S → T) → Layout S → Layout T
+mapLayout f l = layout (f (Layout.width l)) (f (Layout.height l))
+                       (map (mapDraw f) (Layout.draws l)) (map (mapAnchor f) (Layout.anchors l))
