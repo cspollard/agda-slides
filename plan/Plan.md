@@ -56,6 +56,24 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
        proof; `animateBoth` is still always a flipbook.
      - `toℕ` of `exprOps` is the value at the all-zero assignment (it is not part of
        `IsOpsHom`; layout never applies it).
+   - *Continuous time* (next; replaces "ship the track" above). A template animation
+     compiles to a small simulator: the page gets the track (pieces with easings: data, so
+     a few numbers per piece) and the symbolic layout over a rational-valued `Expr`, and
+     evaluates it at the real time `τ` of each `requestAnimationFrame`, so the size is
+     independent of the number of ticks and motion is smooth at any frame rate. Needs:
+     (1) `Expr` over ℚ (`ratOps`) with the parameter sampled by `Track.sample`, so the
+     semantics is `layout_ℚ` at the sampled parameter, drawn without flooring (the tick
+     semantics is its restriction to whole ticks: a theorem, the integer frames are the
+     continuous ones at `τ = k` after rounding); (2) the easings (`Linear`, `Step`,
+     `StepStart`, `Bezier`) evaluated in JavaScript floats, which cannot be proved equal to
+     the exact ℚ ones, so agreement is tested at sampled times with a tolerance and the
+     piece boundaries (where `Step` jumps) exactly; (3) the same expression evaluator,
+     now at floats. Black-box bodies keep the flipbook/edit encoding, where time stays
+     discrete.
+   - *`Expr` through the generic theory.* `Slides.Diagram.Expr` is already `ExprC ⋆ V`;
+     route `evalWith` through `Container.FreeMonad.Algebraic` (`fold-agrees`, as in
+     `Slides.Diagram.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
+     from `Container.FreeMonad` (`Eq`, `bind-cong`, `join-assoc`).
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
 3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
