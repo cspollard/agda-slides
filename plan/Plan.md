@@ -118,6 +118,18 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    API drift in `Slides.Backend.*` (`Data.XML.*`, `Data.SVG`, `Data.JSON.*`); update the
    pinned commit noted under "Risks". Worktrees need a plain copy of `parsnip/` (the
    submodule is empty in a fresh worktree).
+9. **Investigate memory use and time when compiling decks.** Compiling `PairsMain` peaked
+   at about 4.4 GB resident in `agda` (typechecking with `--compile`), and a from-scratch
+   `make pairs` (no `_build`) took around 20 minutes, much of it GHC compiling the standard
+   library's MAlonzo output (`Tactic.RingSolver`, ...). Find out what dominates: which
+   modules are heavy to typecheck (profile with `agda --profile=modules` /
+   `--profile=definitions`, and `+RTS -s` for the peak), whether large `with`/normalisation
+   in the proof modules (`LayoutNatural`, `ParamCorrect`, `Phases`, ...) is pulled into the
+   executables, and whether the executables could avoid importing the proof modules at all
+   (proofs are erased, but their modules are still loaded and compiled); consider
+   `--erasure`, splitting the proof-only modules from the ones the decks import, and a
+   documented minimum for RAM and the standard-library version (`v2.3`; an older checkout
+   fails with a missing `Data.Bool.ListAction`).
 
 ## Risks
 
