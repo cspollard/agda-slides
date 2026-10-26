@@ -114,10 +114,10 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
       dn = sway-natural p t
       dxN = trans (h-divBy 99 (E₁.mulLit radius (F₁.dirX a₁)))
                   (cong (E₂.divBy 99) (trans (h-mulLit radius (F₁.dirX a₁))
-                    (cong (E₂.mulLit radius) (trans (sel-natural 0 _ a₁) (cong (F₂.sel 0 _) an)))))
+                    (cong (E₂.mulLit radius) (trans (sel-natural 0 tabX a₁) (cong (F₂.sel 0 tabX) an)))))
       dyN = trans (h-divBy 99 (E₁.mulLit radius (F₁.dirY a₁)))
                   (cong (E₂.divBy 99) (trans (h-mulLit radius (F₁.dirY a₁))
-                    (cong (E₂.mulLit radius) (trans (sel-natural 0 _ a₁) (cong (F₂.sel 0 _) an)))))
+                    (cong (E₂.mulLit radius) (trans (sel-natural 0 tabY a₁) (cong (F₂.sel 0 tabY) an)))))
       oxN = trans (h-+ (O₁.fromℕ (cx ∸ amp)) _)
               (cong₂ O₂._+_ (h-fromℕ (cx ∸ amp))
                 (trans (ifd swayX amp d₁) (cong (λ x → if swayX then x else O₂.fromℕ amp O₂.- x) dn)))

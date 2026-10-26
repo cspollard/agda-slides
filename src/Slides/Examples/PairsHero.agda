@@ -76,6 +76,10 @@ pairs (suc k) s = p ∷ pairs k s₉
 
 -- the lookup table of 8 entries by the angle: `sel i xs a` is `xs !! (a - i)`, the last entry
 -- for all larger `a`
+tabX tabY : List ℕ
+tabX = 100 ∷ 92 ∷ 71 ∷ 38 ∷ 0 ∷ 38 ∷ 71 ∷ 92 ∷ []
+tabY = 0 ∷ 38 ∷ 71 ∷ 92 ∷ 100 ∷ 92 ∷ 71 ∷ 38 ∷ []
+
 module Frame {S : Set} (D : DiscreteOps S) where
   private
     O = DiscreteOps.ops D
@@ -92,8 +96,8 @@ module Frame {S : Set} (D : DiscreteOps S) where
   -- the direction of angle `i` of 8: |dx|, |dy| in hundredths (the lines through it rise to the
   -- right for the angles 5, 6, 7, so that "left" is the lower end)
   dirX dirY : S → S
-  dirX = sel 0 (100 ∷ 92 ∷ 71 ∷ 38 ∷ 0 ∷ 38 ∷ 71 ∷ 92 ∷ [])
-  dirY = sel 0 (0 ∷ 38 ∷ 71 ∷ 92 ∷ 100 ∷ 92 ∷ 71 ∷ 38 ∷ [])
+  dirX = sel 0 tabX
+  dirY = sel 0 tabY
 
   -- the triangle wave: 0 up to 32 and back down over a period
   tri : S → S
