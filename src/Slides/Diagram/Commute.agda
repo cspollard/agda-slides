@@ -22,7 +22,7 @@ open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
 import Data.List.Relation.Binary.Permutation.Setoid as Perm
 import Data.List.Relation.Binary.Permutation.Setoid.Properties as PermP
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_)
 open import Data.String using (String)
 open import Relation.Binary using (Rel; IsEquivalence; Setoid)
 

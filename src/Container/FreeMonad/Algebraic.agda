@@ -11,7 +11,7 @@
 
 module Container.FreeMonad.Algebraic where
 
-open import Level using (Level; _⊔_; lift; lower)
+open import Level using (Level; _⊔_; lift)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)

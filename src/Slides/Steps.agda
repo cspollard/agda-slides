@@ -19,7 +19,7 @@ open import Data.Bool using (Bool; true; false; _∨_; if_then_else_)
 open import Data.Maybe using (nothing)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.Unit using (⊤; tt)
+open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans; sym)
 

@@ -22,9 +22,9 @@ open import Relation.Binary.Structures using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; subst)
 
 open import Categories.Category.Instance.Setoids using (Setoids)
-open import Categories.Functor using (Functor; Endofunctor)
+open import Categories.Functor using (Functor)
 open import Categories.Monad using (Monad)
-open import Categories.NaturalTransformation using (NaturalTransformation)
+open import Categories.NaturalTransformation using ()
 import Categories.NaturalTransformation.Core as NT
 
 private

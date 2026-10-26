@@ -19,8 +19,8 @@
 
 module Slides.Examples.PairsHero where
 
-open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; map; zipWith; upTo; foldr)
+open import Data.Bool using (Bool; if_then_else_)
+open import Data.List using (List; []; _∷_; zipWith; upTo; foldr)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _%_; _/_; _<ᵇ_; NonZero)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
@@ -29,9 +29,9 @@ open import Data.Integer using (+_)
 import Data.Rational as ℚ
 open import Data.Unit using (⊤)
 
-open import Slides.Diagram using (Style; withClass; defaultStyle)
+open import Slides.Diagram using (withClass; defaultStyle)
 open import Slides.Diagram.Syntax using (Dia; disc; named; connect; spacer; place; overlay)
-open import Slides.Diagram.Notation using (side; east; west)
+open import Slides.Diagram.Notation using (east; west)
 import Slides.Diagram.Notation as N
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Euclid using (DiscreteOps; natD; DExpr; dexprD; tickD; EuclidOps)

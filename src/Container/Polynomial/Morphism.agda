@@ -8,7 +8,7 @@ module Container.Polynomial.Morphism where
 
 open import Level using (Level)
 open import Data.Product.Base using (_,_)
-open import Data.Container.Core using (Container; _⇒_; shape; position; ⟪_⟫)
+open import Data.Container.Core using (Container; _⇒_; position; ⟪_⟫)
 import Data.Container.Morphism as CM
 open import Data.Container.Relation.Binary.Pointwise
   using () renaming (_,_ to _,ₚ_)
@@ -16,7 +16,7 @@ open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 
-open import Categories.Category.Instance.Setoids using (Setoids)
+open import Categories.Category.Instance.Setoids using ()
 open import Categories.NaturalTransformation using (NaturalTransformation)
 open import Categories.NaturalTransformation.Equivalence using (_≃_)
 import Categories.NaturalTransformation.Core as NT

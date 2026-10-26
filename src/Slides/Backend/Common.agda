@@ -13,7 +13,7 @@ module Slides.Backend.Common where
 
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; true; false)
-open import Data.List using (List; []; _∷_; _++_; map; length)
+open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Nat.Show using (show)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -37,11 +37,11 @@ open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
-open import Data.XML.Print using (renderXML)
-open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ)
-open import Data.JSON.Print using (renderJSON)
+open import Data.XML.Print using ()
+open import Data.JSON.AST using ()
+open import Data.JSON.Print using ()
 
-open import Container.Polynomial using (Poly; Poly₀)
+open import Container.Polynomial using (Poly₀)
 open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core

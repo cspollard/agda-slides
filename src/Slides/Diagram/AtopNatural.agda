@@ -22,10 +22,10 @@ module Slides.Diagram.AtopNatural {S T : Set} (O : Ops S) (P : Ops T) (h : S →
   (h-⊔-r : ∀ a b → h (Ops._-_ O (Ops._⊔_ O a b) b) ≡ Ops._-_ P (h (Ops._⊔_ O a b)) (h b))
   where
 
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.List using ([]; _∷_; map; _++_)
 import Data.List.Properties as LP
 open import Data.Product using (_,_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; trans)
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar using (Ops)

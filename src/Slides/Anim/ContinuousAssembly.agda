@@ -32,13 +32,13 @@
 
 module Slides.Anim.ContinuousAssembly where
 
-open import Data.Bool using (Bool; true; false; if_then_else_; T)
-open import Data.List using (List; []; _∷_; _++_; length)
+open import Data.Bool using (true; false; if_then_else_; T)
+open import Data.List using (_∷_; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
-open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
 open import Data.Unit using (⊤; tt)
 open import Data.Fin using (zero; suc)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
@@ -47,7 +47,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval)
+open import Slides.Diagram.Expr using (exprOps; eval)
 open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps; ratOps)
@@ -57,9 +57,10 @@ import Slides.Diagram.Place ratOps as PQ
 import Slides.Diagram.AtopNatural as AN
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (timeline; merge; frames; length-dur)
+open import Slides.Anim.Timeline using (timeline; frames; length-dur; mergeM)
 open import Slides.Anim.Continuous
-open import Slides.Anim.ParamCorrect using (nth; nth-++′; nth-merge; nth-frames; nth-in)
+open import Slides.Anim.Arith using (<ᵇ-true; <ᵇ-lt; <ᵇ-ge)
+open import Slides.Anim.Nth using (nth; nth-++′; nth-merge; nth-frames; nth-in)
 
 private
   layoutN : Dia ℕ → Layout ℕ
@@ -138,17 +139,6 @@ leafAt-out tr d k hk
 -- Arithmetic of ticks
 
 private
-  <ᵇ-true : ∀ {m n} → m ℕ.< n → (m <ᵇ n) ≡ true
-  <ᵇ-true h = T⇒≡ (ℕP.<⇒<ᵇ h)
-    where T⇒≡ : ∀ {b} → T b → b ≡ true
-          T⇒≡ {true} _ = refl
-
-  <ᵇ-lt : ∀ {m n} → (m <ᵇ n) ≡ true → m ℕ.< n
-  <ᵇ-lt {m} {n} h = ℕP.<ᵇ⇒< m n (subst T (sym h) tt)
-
-  <ᵇ-ge : ∀ {m n} → (m <ᵇ n) ≡ false → n ≤ m
-  <ᵇ-ge {m} {n} h = ℕP.≮⇒≥ (λ lt → subst T h (ℕP.<⇒<ᵇ lt))
-
   -- inside the first part of a `Seq`, inside the sum
   <ᵇ-+ˡ : ∀ {k n} m → (k <ᵇ n) ≡ true → (k <ᵇ n + m) ≡ true
   <ᵇ-+ˡ {k} {n} m h = <ᵇ-true {k} {n + m} (ℕP.<-≤-trans {k} {n} {n + m} (<ᵇ-lt {k} {n} h) (ℕP.m≤m+n n m))

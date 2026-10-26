@@ -12,7 +12,7 @@
 module Slides.Driver where
 
 open import Data.String using (String; _++_)
-open import IO using (IO; run; writeFile; _>>_)
+open import IO using (IO; writeFile; _>>_)
 open import Level using (0ℓ)
 open import Data.Unit.Polymorphic.Base using (⊤)
 

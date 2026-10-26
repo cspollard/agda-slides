@@ -28,18 +28,18 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Categories.Adjoint.Monadic using (IsMonadicAdjunction)
-open import Categories.Adjoint.Properties using (adjoint⇒monad)
+open import Categories.Adjoint.Properties using ()
 open import Categories.Category.Construction.F-Algebras using (F-Algebras)
 open import Categories.Category.Construction.Properties.EilenbergMoore using (ComparisonF)
-open import Categories.Category.Equivalence using (WeakInverse)
+open import Categories.Category.Equivalence using ()
 open import Categories.Functor using (Functor; _∘F_) renaming (id to idF)
-open import Categories.Functor.Algebra using (F-Algebra; F-Algebra-Morphism)
+open import Categories.Functor.Algebra using (F-Algebra)
 open import Categories.Monad using (Monad)
-open import Categories.NaturalTransformation using (NaturalTransformation)
+open import Categories.NaturalTransformation using ()
 open import Categories.NaturalTransformation.NaturalIsomorphism using (NaturalIsomorphism)
 import Categories.Category.Construction.EilenbergMoore as EilenbergMooreC
 
-open import Container.Polynomial using (Poly₀)
+open import Container.Polynomial using ()
 open import Container.FreeMonad
 open import Container.FreeMonad.Algebraic
 

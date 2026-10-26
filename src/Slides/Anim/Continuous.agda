@@ -68,13 +68,14 @@ open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _/_)
 import Data.Rational.Properties as ℚP
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Data.Fin using (zero; suc)
-open import Data.Empty using (⊥-elim)
-open import Data.Unit using (tt)
+open import Data.Empty using ()
+open import Data.Unit using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 
 open import Slides.Diagram.NatQ using (ι; ι-≤ᵇ; ι-∸; ι-ratio)
 import Slides.Anim.Track as Tr
-open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete; dur; Op; Seq; Par)
+open import Slides.Anim.Timeline using (mergeM)
+open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete; dur; Seq; Par)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Expr using (Expr; evalWith; exprOps)
@@ -193,12 +194,6 @@ leafAt tr d =
   proj₁ (sampleAt Tr.ℚLerp tr) ,
   λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (proj₁ (sampleAt Tr.ℚLerp tr)))
         then just (instQ d (proj₂ (sampleAt Tr.ℚLerp tr) τ)) else nothing
-
--- what is shown when at most one of two parts is running, or both: they go over each other
-mergeM : ∀ {F : Set} → (F → F → F) → Maybe F → Maybe F → Maybe F
-mergeM _⊙_ nothing  y        = y
-mergeM _⊙_ x        nothing  = x
-mergeM _⊙_ (just x) (just y) = just (x ⊙ y)
 
 -- running in parallel: the same time on both sides; a side that is not running adds nothing
 -- (`Slides.Anim.Timeline.merge`)

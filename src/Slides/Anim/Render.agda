@@ -18,7 +18,7 @@ import Data.List.Relation.Unary.All as All
 open import Data.Nat.Properties using (_≟_)
 open import Relation.Nullary using (Dec)
 open import Relation.Nullary.Decidable using (True)
-open import Data.Unit using (⊤; tt)
+open import Data.Unit using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 open import Data.Nat using (ℕ; _⊔_; _+_; _∸_; suc)
 open import Data.Nat.Show using (show)

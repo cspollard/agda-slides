@@ -20,7 +20,7 @@ module Slides.Anim.Footprint where
 
 open import Data.List using (List; []; _∷_; _++_)
 import Data.List.Properties as LP
-open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-refl; ↭-trans; ↭-sym)
+open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-trans; ↭-sym; ↭-refl)
 import Data.List.Relation.Binary.Permutation.Propositional.Properties as PP
 open import Data.Bool using (true; false)
 open import Data.Unit using (⊤; tt)
@@ -29,8 +29,8 @@ open import Data.Product using (_,_; proj₁)
 open import Data.String using (String; _≟_)
 open import Relation.Nullary using (Dec)
 open import Relation.Nullary.Decidable using (True)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym)
+open import Data.Container.FreeMonad using (_⋆_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym)
 open import Data.List.Relation.Binary.Disjoint.DecPropositional _≟_ using (Disjoint; disjoint?)
 import Data.List.Relation.Binary.Disjoint.Propositional.Properties as DP
 

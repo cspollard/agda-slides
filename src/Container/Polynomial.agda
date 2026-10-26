@@ -15,8 +15,8 @@
 module Container.Polynomial where
 
 open import Level using (Level; _⊔_; 0ℓ)
-open import Data.Product.Base using (_,_; proj₁; proj₂)
-open import Data.Container.Core using (Container; ⟦_⟧; Shape; Position)
+open import Data.Product.Base using (_,_)
+open import Data.Container.Core using (Container; ⟦_⟧)
 import Data.Container.Core as CC
 open import Data.Container.Relation.Binary.Pointwise
   using (Pointwise) renaming (_,_ to _,ₚ_)

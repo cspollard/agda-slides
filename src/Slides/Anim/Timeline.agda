@@ -24,10 +24,11 @@
 
 module Slides.Anim.Timeline where
 
-open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; length; map; applyUpTo)
 import Slides.Anim.Track as T
 import Data.List.Properties as LP
-open import Data.Nat using (ℕ; _+_; _⊔_; suc)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Nat using (_+_; _⊔_; suc)
 import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
@@ -37,6 +38,12 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Slides.Diagram.Syntax using (Dia; atop)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Anim.Syntax
+
+-- what is shown when at most one of two parts is running, or both: they go over each other
+mergeM : ∀ {F : Set} → (F → F → F) → Maybe F → Maybe F → Maybe F
+mergeM _⊙_ nothing  y        = y
+mergeM _⊙_ x        nothing  = x
+mergeM _⊙_ (just x) (just y) = just (x ⊙ y)
 
 module _ {F : Set} (_⊙_ : F → F → F) where
 

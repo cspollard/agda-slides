@@ -36,7 +36,7 @@ open import Data.Product.Base using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Container.Relation.Binary.Pointwise using () renaming (_,_ to _,ₚ_)
 open import Function.Bundles using (Func; _⟨$⟩_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans; setoid)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; setoid)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Container.Lowering using (translate; embed; lower-embed; lower-bind; _≈⋆_; sym≈; trans≈; bind-cong≈)

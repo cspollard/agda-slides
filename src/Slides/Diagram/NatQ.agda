@@ -10,7 +10,7 @@
 
 module Slides.Diagram.NatQ where
 
-open import Data.Bool using (Bool; true; false)
+open import Data.Bool using (true; false)
 open import Data.Integer as ℤ using (ℤ; +_)
 open import Data.Product using (_,_)
 open import Data.Integer.Tactic.RingSolver using (solve-∀)
@@ -21,7 +21,7 @@ import Data.Nat.Divisibility as ℕD
 import Data.Nat.Properties as ℕP
 open import Data.Rational as ℚ using (ℚ; _/_)
 import Data.Rational.Properties as ℚP
-open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; *≤*; _≃_)
+open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_; *≤*)
 import Data.Rational.Unnormalised.Properties as ℚᵘP
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Bool using (T; if_then_else_)

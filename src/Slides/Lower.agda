@@ -20,11 +20,11 @@ module Slides.Lower where
 open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; zero; suc)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using ()
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
-open import Data.Unit using (⊤; tt)
+open import Data.String using () renaming (_++_ to _++ˢ_)
+open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure)
 
 open import Container.Lowering

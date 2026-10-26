@@ -19,8 +19,8 @@
 
 module Slides.Diagram.Delta where
 
-open import Data.List using (List; []; _∷_; map; _++_; drop; length)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.List using (List; []; _∷_; _++_)
+open import Data.Maybe using ()
 import Data.Maybe.Properties as MaybeP
 open import Data.Nat using (ℕ)
 import Data.Nat.Properties as ℕP
@@ -31,117 +31,74 @@ open import Data.Product using (_×_; _,_)
 import Data.Product.Properties as ProdP
 open import Data.String using (String)
 import Data.String.Properties as StrP
+import Data.Sum.Properties as SP
+import Data.Unit.Properties as UP
+open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
+open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (Dec; yes; no)
-open import Relation.Nullary.Decidable using (map′)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
+open import Relation.Nullary.Decidable using ()
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import Slides.Diagram
+import Slides.Diagram.Draw as Dr
+open import Slides.Diagram.DrawEq using (drawEq?; styleEq?)
+open import Slides.DecEq
 
 ------------------------------------------------------------------------
 -- Decidable equality of elements
 
--- a style is the tuple of its fields
-styleT : Style → Maybe String × Maybe String × Maybe ℕ × Maybe String × Maybe String × Maybe ℕ × Maybe String × Maybe ℕ × Maybe String
-styleT s = Style.stroke s , Style.fill s , Style.strokeWidth s , Style.cls s , Style.ident s
-         , Style.rx s , Style.dash s , Style.opacity s , Style.anchor s
-
+-- An element is a rose tree (`Slides.DecEq`): the drawing commands (the same arguments as
+-- `Slides.Diagram.Draw.Draw ℕ`, equal by `drawEq?`) and a path are leaves, a group has its
+-- members as subtrees.  No clause for a pair of different constructors.
 private
-  _≟ˢ_ = MaybeP.≡-dec StrP._≟_
-  _≟ⁿ_ = MaybeP.≡-dec ℕP._≟_
-  _≟₁_ = ℕP._≟_
-  _≟₃_ = ProdP.≡-dec _≟₁_ (ProdP.≡-dec _≟₁_ _≟₁_)
-  _≟₄_ = ProdP.≡-dec _≟₁_ (ProdP.≡-dec _≟₁_ (ProdP.≡-dec _≟₁_ _≟₁_))
-  _≟₉_ = ProdP.≡-dec _≟ˢ_ (ProdP.≡-dec _≟ˢ_ (ProdP.≡-dec _≟ⁿ_ (ProdP.≡-dec _≟ˢ_ (ProdP.≡-dec _≟ˢ_
-           (ProdP.≡-dec _≟ⁿ_ (ProdP.≡-dec _≟ˢ_ (ProdP.≡-dec _≟ⁿ_ _≟ˢ_)))))))
+  Tok : Set
+  Tok = Dr.Draw ℕ ⊎ ⊤ ⊎ (String × Style)
 
-_≟ₛ_ : (s t : Style) → Dec (s ≡ t)
-s ≟ₛ t with styleT s ≟₉ styleT t
-... | yes eq = yes (back eq)
-  where back : styleT s ≡ styleT t → s ≡ t
-        back refl = refl
-... | no ¬eq = no (λ { refl → ¬eq refl })
+  mutual
+    to : Element → Rose Tok
+    to (rect x y w h s)  = node (inj₁ (Dr.rect x y w h s)) []
+    to (circle x y r s)  = node (inj₁ (Dr.circle x y r s)) []
+    to (line a b c d s)  = node (inj₁ (Dr.line a b c d s)) []
+    to (arrow a b c d s) = node (inj₁ (Dr.arrow a b c d s)) []
+    to (label x y n t s) = node (inj₁ (Dr.label x y n t s)) []
+    to (group xs)        = node (inj₂ (inj₁ tt)) (toL xs)
+    to (path d s)        = node (inj₂ (inj₂ (d , s))) []
 
-private
-  _≟ₚ₄_ = ProdP.≡-dec _≟₄_ _≟ₛ_
-  _≟ₚ₃_ = ProdP.≡-dec _≟₃_ _≟ₛ_
-  _≟ₜ_  = ProdP.≡-dec _≟₃_ StrP._≟_
+    toL : List Element → List (Rose Tok)
+    toL []       = []
+    toL (x ∷ xs) = to x ∷ toL xs
 
-mutual
-  _≟ₑ_ : (a b : Element) → Dec (a ≡ b)
-  rect x y w h s ≟ₑ rect x′ y′ w′ h′ s′ with ((x , y , w , h) , s) ≟ₚ₄ ((x′ , y′ , w′ , h′) , s′)
-  ... | yes refl = yes refl
-  ... | no ¬eq   = no (λ { refl → ¬eq refl })
-  circle x y r s ≟ₑ circle x′ y′ r′ s′ with ((x , y , r) , s) ≟ₚ₃ ((x′ , y′ , r′) , s′)
-  ... | yes refl = yes refl
-  ... | no ¬eq   = no (λ { refl → ¬eq refl })
-  line a b c d s ≟ₑ line a′ b′ c′ d′ s′ with ((a , b , c , d) , s) ≟ₚ₄ ((a′ , b′ , c′ , d′) , s′)
-  ... | yes refl = yes refl
-  ... | no ¬eq   = no (λ { refl → ¬eq refl })
-  arrow a b c d s ≟ₑ arrow a′ b′ c′ d′ s′ with ((a , b , c , d) , s) ≟ₚ₄ ((a′ , b′ , c′ , d′) , s′)
-  ... | yes refl = yes refl
-  ... | no ¬eq   = no (λ { refl → ¬eq refl })
-  label x y z t s ≟ₑ label x′ y′ z′ t′ s′ with ((x , y , z) , t) ≟ₜ ((x′ , y′ , z′) , t′) | s ≟ₛ s′
-  ... | yes refl | yes refl = yes refl
-  ... | no ¬eq   | _        = no (λ { refl → ¬eq refl })
-  ... | _        | no ¬eq   = no (λ { refl → ¬eq refl })
-  group xs ≟ₑ group ys with xs ≟ₗ ys
-  ... | yes refl = yes refl
-  ... | no ¬eq   = no (λ { refl → ¬eq refl })
-  path d s ≟ₑ path d′ s′ with d StrP.≟ d′ | s ≟ₛ s′
-  ... | yes refl | yes refl = yes refl
-  ... | no ¬eq   | _        = no (λ { refl → ¬eq refl })
-  ... | _        | no ¬eq   = no (λ { refl → ¬eq refl })
-  rect _ _ _ _ _ ≟ₑ circle _ _ _ _ = no (λ ())
-  rect _ _ _ _ _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  rect _ _ _ _ _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  rect _ _ _ _ _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  rect _ _ _ _ _ ≟ₑ group _ = no (λ ())
-  rect _ _ _ _ _ ≟ₑ path _ _ = no (λ ())
-  circle _ _ _ _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  circle _ _ _ _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  circle _ _ _ _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  circle _ _ _ _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  circle _ _ _ _ ≟ₑ group _ = no (λ ())
-  circle _ _ _ _ ≟ₑ path _ _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ circle _ _ _ _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ group _ = no (λ ())
-  line _ _ _ _ _ ≟ₑ path _ _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ circle _ _ _ _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ group _ = no (λ ())
-  arrow _ _ _ _ _ ≟ₑ path _ _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ circle _ _ _ _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ group _ = no (λ ())
-  label _ _ _ _ _ ≟ₑ path _ _ = no (λ ())
-  group _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  group _ ≟ₑ circle _ _ _ _ = no (λ ())
-  group _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  group _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  group _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  group _ ≟ₑ path _ _ = no (λ ())
-  path _ _ ≟ₑ rect _ _ _ _ _ = no (λ ())
-  path _ _ ≟ₑ circle _ _ _ _ = no (λ ())
-  path _ _ ≟ₑ line _ _ _ _ _ = no (λ ())
-  path _ _ ≟ₑ arrow _ _ _ _ _ = no (λ ())
-  path _ _ ≟ₑ label _ _ _ _ _ = no (λ ())
-  path _ _ ≟ₑ group _ = no (λ ())
+  mutual
+    from : Rose Tok → Element
+    from (node (inj₁ (Dr.rect x y w h s))  _)  = rect x y w h s
+    from (node (inj₁ (Dr.circle x y r s))  _)  = circle x y r s
+    from (node (inj₁ (Dr.line a b c d s))  _)  = line a b c d s
+    from (node (inj₁ (Dr.arrow a b c d s)) _)  = arrow a b c d s
+    from (node (inj₁ (Dr.label x y n t s)) _)  = label x y n t s
+    from (node (inj₂ (inj₁ _))             cs) = group (fromL cs)
+    from (node (inj₂ (inj₂ (d , s)))       _)  = path d s
 
-  _≟ₗ_ : (xs ys : List Element) → Dec (xs ≡ ys)
-  []       ≟ₗ []       = yes refl
-  []       ≟ₗ (_ ∷ _)  = no (λ ())
-  (_ ∷ _)  ≟ₗ []       = no (λ ())
-  (x ∷ xs) ≟ₗ (y ∷ ys) with x ≟ₑ y | xs ≟ₗ ys
-  ... | yes refl | yes refl = yes refl
-  ... | no ¬eq   | _        = no (λ { refl → ¬eq refl })
-  ... | _        | no ¬eq   = no (λ { refl → ¬eq refl })
+    fromL : List (Rose Tok) → List Element
+    fromL []       = []
+    fromL (c ∷ cs) = from c ∷ fromL cs
+
+  mutual
+    from-to : ∀ e → from (to e) ≡ e
+    from-to (rect _ _ _ _ _)  = refl
+    from-to (circle _ _ _ _)  = refl
+    from-to (line _ _ _ _ _)  = refl
+    from-to (arrow _ _ _ _ _) = refl
+    from-to (label _ _ _ _ _) = refl
+    from-to (group xs)        = cong group (fromL-toL xs)
+    from-to (path _ _)        = refl
+
+    fromL-toL : ∀ xs → fromL (toL xs) ≡ xs
+    fromL-toL []       = refl
+    fromL-toL (x ∷ xs) = cong₂ _∷_ (from-to x) (fromL-toL xs)
+
+_≟ₑ_ : (a b : Element) → Dec (a ≡ b)
+_≟ₑ_ = retract-dec to from from-to
+  (roseEq? (SP.≡-dec (drawEq? ℕP._≟_) (SP.≡-dec UP._≟_ (ProdP.≡-dec StrP._≟_ styleEq?))))
 
 ------------------------------------------------------------------------
 -- Edits

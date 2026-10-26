@@ -12,7 +12,7 @@
 module Slides.Examples.Pairs where
 
 open import Data.List using (List; _∷_; []; map; zipWith)
-open import Data.Bool using (Bool; true; false; if_then_else_)
+open import Data.Bool using (Bool; false; if_then_else_)
 open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
 open import Slides.Anim.Render using (render; renderLoop)
@@ -24,7 +24,7 @@ open import Data.Nat.Show using (show)
 open import Data.Nat.DivMod using (_/_; _%_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
-open import Slides.Core using (Deck; emph; strong; inlineMath; link; codeSpan)
+open import Slides.Core using (Deck; emph; strong; inlineMath; link)
 open import Slides.DSL
 open import Slides.Diagram
 open import Slides.Diagram.Layout

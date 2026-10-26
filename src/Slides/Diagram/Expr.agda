@@ -55,17 +55,17 @@ open import Data.Nat using (ℕ)
 open import Data.Product using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Container.Core using (Container; Shape; Position; _▷_; _⇒_; shape; position)
+open import Data.Container.Core using (Shape; Position; _▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Function.Bundles using (Func; _⟨$⟩_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; setoid)
+open import Function.Bundles using (_⟨$⟩_)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; setoid)
 
 open import Container.FreeMonad using (Eq; refl⋆; sym⋆; trans⋆; bind-cong; bind-pure; bind-assoc; fmap)
 open import Container.Lowering using (translate)
 open import Container.Sum using (inl; inr)
 
-open import Slides.Diagram.Scalar using (Ops; CoreOps; SubOps; natOps; IsOpsHom; IsCoreHom; IsSubHom)
+open import Slides.Diagram.Scalar using (Ops; CoreOps; SubOps; natOps; IsOpsHom)
 open import Slides.Diagram.Signature
 
 ------------------------------------------------------------------------

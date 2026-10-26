@@ -31,19 +31,19 @@
 module Slides.Diagram.LayoutNatural where
 
 open import Data.Fin using (zero; suc)
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.List using ([]; _∷_; map; _++_)
 import Data.List.Properties as LP
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.String using (String; _≟_)
+open import Data.String using (_≟_)
 open import Data.Unit using (tt)
 open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
-open import Slides.Diagram using (Style)
+open import Slides.Diagram using ()
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Scalar using (Ops; IsOpsHom; natOps)
