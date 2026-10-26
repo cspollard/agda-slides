@@ -30,19 +30,34 @@ open import Data.String using (String; _≟_)
 open import Relation.Nullary using (Dec)
 open import Relation.Nullary.Decidable using (True)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym)
 open import Data.List.Relation.Binary.Disjoint.DecPropositional _≟_ using (Disjoint; disjoint?)
 import Data.List.Relation.Binary.Disjoint.Propositional.Properties as DP
 
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Syntax using (fold)
-open import Slides.Diagram.Names using (namesAlgebra)
+open import Slides.Diagram.Names using (namesAlgebra; Usage; names-mapDia)
+open import Data.Rational using (ℚ)
+open import Slides.Diagram.Expr using (Expr; evalWith)
+open import Slides.Diagram.Syntax using (Dia)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 
--- the names a segment's frame declares
+-- the names a segment's frame declares: of a function body, those of its first frame; of a
+-- template, those of the template itself (evaluating sizes does not change which names a
+-- diagram declares, `names-mapDia`)
+bodyUsage : ∀ {S} → SegBody S → ℚ → Usage
+bodyUsage (blackBox f) q = fold namesAlgebra (f q)
+bodyUsage (template d) q = fold namesAlgebra d
+
 footprint : ∀ {S} → Anim S (Seg S) → List String
-footprint = foldA (λ s → proj₁ (fold namesAlgebra (body s (T.start (track s))))) _++_ _++_
+footprint = foldA (λ s → proj₁ (bodyUsage (content s) (T.start (track s)))) _++_ _++_
+
+-- a template declares the names of every one of its instances
+-- (not so for a function body, which may declare different names at different parameters)
+bodyUsage-template : ∀ {S} (O : Ops S) (d : Dia (Expr ⊤)) (q q′ : ℚ) →
+                     bodyUsage {S} (template d) q ≡ fold namesAlgebra (bodyAt O (template d) q′)
+bodyUsage-template O d q q′ = sym (names-mapDia (evalWith O (λ _ → Ops.fromℕ O (units q′))) d)
 
 footprint-⨾ : ∀ {S} (a b : Anim S (Seg S)) → footprint (a ⨾ b) ≡ footprint a ++ footprint b
 footprint-⨾ a b = refl

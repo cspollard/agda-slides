@@ -35,6 +35,7 @@ open import Data.Fin using (zero; suc)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Slides.Diagram.Syntax using (Dia; atop)
+open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Anim.Syntax
 
 module _ {F : Set} (_⊙_ : F → F → F) where
@@ -107,22 +108,22 @@ module _ {F : Set} (_⊙_ : F → F → F) where
           (cong₂ _⊔_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
 
 -- the diagram language: a segment shows its body at the parameter's value on each tick, frames overlay by `atop`
-frames : ∀ {S} → Seg S → List (Dia S)
-frames s = map (λ t → body s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
+frames : ∀ {S} → Ops S → Seg S → List (Dia S)
+frames O s = map (λ t → body O s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
   where sampled = T.sample T.ℚLerp (track s)
 
-frames-length : ∀ {S} (s : Seg S) → length (frames s) ≡ ticks s
-frames-length s =
+frames-length : ∀ {S} (O : Ops S) (s : Seg S) → length (frames O s) ≡ ticks s
+frames-length O s =
   trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
                (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
         (T.sample-dur T.ℚLerp (track s))
 
 -- the length of the timeline is the duration
-length-dur : ∀ {S} (m : Anim S (Seg S)) → length (timeline atop frames m) ≡ dur m
-length-dur m = trans (length-timeline atop frames m) (foldA-ext m)
+length-dur : ∀ {S} (O : Ops S) (m : Anim S (Seg S)) → length (timeline atop (frames O) m) ≡ dur m
+length-dur {S} O m = trans (length-timeline atop (frames O) m) (foldA-ext m)
   where
-    foldA-ext : ∀ {S} (m : Anim S (Seg S)) →
-                foldA (λ t → length (frames t)) _+_ _⊔_ m ≡ dur m
-    foldA-ext (pure t)               = frames-length t
+    foldA-ext : (m : Anim S (Seg S)) →
+                foldA (λ t → length (frames O t)) _+_ _⊔_ m ≡ dur m
+    foldA-ext (pure t)               = frames-length O t
     foldA-ext (impure (Seq , k))     = cong₂ _+_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))
     foldA-ext (impure (Par , k))     = cong₂ _⊔_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))

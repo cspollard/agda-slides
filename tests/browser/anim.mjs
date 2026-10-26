@@ -69,7 +69,7 @@ await page.evaluate(i => Reveal.slide(i), sliderSlide);
 // the box's x at each frame, as the player draws it
 const xs = await page.evaluate(() => {
   const a = document.getElementById('slider-0-frames');
-  const n = JSON.parse(a.dataset.deltas).length + 1;
+  const n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas).length + 1;   // a template slider ships formulas (`data-param`)
   const out = [];
   for (let k = 0; k < n; k++) { a._show(k); out.push(+a.querySelector(':scope > .frame rect').getAttribute('x')); }
   return out;

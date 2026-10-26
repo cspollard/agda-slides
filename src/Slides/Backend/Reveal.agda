@@ -249,8 +249,37 @@ animationSync =
   "    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);\n" ++ˢ
   "    rest.forEach(function (s) { parent.appendChild(parse(s)); });\n" ++ˢ
   "  }\n" ++ˢ
+  "  // A parametric animation (`data-param`, see `renderParamAnimation`): a formula is a number, a\n" ++ˢ
+  "  // string (the parameter of that segment, from `r`) or `[op, a, b]`; `[\"h\", a]` is half of `a`,\n" ++ˢ
+  "  // positions being in half units.\n" ++ˢ
+  "  function ev(e, r) {\n" ++ˢ
+  "    if (typeof e === 'number') return e;\n" ++ˢ
+  "    if (typeof e === 'string') return r[+e];\n" ++ˢ
+  "    var o = e[0], x = ev(e[1], r);\n" ++ˢ
+  "    if (o === 'h') return Math.floor(x / 2);\n" ++ˢ
+  "    var y = ev(e[2], r);\n" ++ˢ
+  "    return o === '+' ? x + y : o === '-' ? Math.max(0, x - y) : o === 'm' ? Math.max(x, y) : Math.floor(x * y / 100);\n" ++ˢ
+  "  }\n" ++ˢ
+  "  // show tick `k`: swap in the elements of its phase, then set every number that depends on a parameter\n" ++ˢ
+  "  function pframe(a, k) {\n" ++ˢ
+  "    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;\n" ++ˢ
+  "    while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;\n" ++ˢ
+  "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
+  "    if (a._ph !== i) {\n" ++ˢ
+  "      while (svg.children.length > 1) svg.removeChild(svg.lastChild);\n" ++ˢ
+  "      P.p[i].b.forEach(function (s) { svg.appendChild(parse(s)); });\n" ++ˢ
+  "      a._ph = i;\n" ++ˢ
+  "    }\n" ++ˢ
+  "    var r = P.v.map(function (v) { return v[1][k - v[0]] || 0; });\n" ++ˢ
+  "    P.p[i].c.forEach(function (cs, j) {\n" ++ˢ
+  "      if (cs === null) return;\n" ++ˢ
+  "      var el = svg.children[1 + j];\n" ++ˢ
+  "      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r)); });\n" ++ˢ
+  "    });\n" ++ˢ
+  "  }\n" ++ˢ
   "  // show frame `k`: rebuild from the first frame when going back, else apply the next edits\n" ++ˢ
   "  function frame(a, k) {\n" ++ˢ
+  "    if (a.dataset.param) { pframe(a, k); return; }\n" ++ˢ
   "    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));\n" ++ˢ
   "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
   "    if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }\n" ++ˢ
@@ -258,7 +287,7 @@ animationSync =
   "    for (; a._at < k; a._at++) patch(svg, d[a._at], 1);\n" ++ˢ
   "  }\n" ++ˢ
   "  function geom(a) {\n" ++ˢ
-  "    var n = JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');\n" ++ˢ
+  "    var n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');\n" ++ˢ
   "    var p = v === null ? 1 : (v === '' ? n : +v);\n" ++ˢ
   "    return { n: n, p: p, steps: n / p };\n" ++ˢ
   "  }\n" ++ˢ

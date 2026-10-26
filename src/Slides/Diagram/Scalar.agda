@@ -20,6 +20,7 @@ open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.DivMod as ℤ
 import Data.Rational as ℚ
 import Data.Rational.Properties as ℚP
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 record Ops (S : Set) : Set where
   infixl 6 _+_ _-_
@@ -56,3 +57,21 @@ ratOps = record
   { 0# = ℚ.0ℚ ; _+_ = ℚ._+_ ; _-_ = ℚ._-_ ; _⊔_ = ℚ._⊔_
   ; fromℕ = λ n → ℤ.+ n ℚ./ 1 ; toℕ = λ q → ℤ.∣ ℚ.floor q ∣
   ; percentOf = λ p x → (ℤ.+ p ℚ./ 100) ℚ.* x }
+
+-- A homomorphism of scalars: a map that commutes with every operation the layout
+-- uses (everything but `toℕ`, which only the final output step applies).  The
+-- equations are exactly what `Slides.Diagram.LayoutNatural` needs; no order is
+-- required, because layout only *computes* with the operations, and each of them
+-- is preserved on the nose.  (Preserving `-` as `_≡_` is a real condition: it
+-- holds for the evaluation of `Slides.Diagram.Expr` into ℕ, whose difference is
+-- the monus on both sides, and fails for a map ℤ → ℕ that clamps.)
+record IsOpsHom {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) : Set where
+  private module O = Ops O
+  private module P = Ops P
+  field
+    h-0         : h O.0# ≡ P.0#
+    h-+         : ∀ a b → h (a O.+ b) ≡ h a P.+ h b
+    h--         : ∀ a b → h (a O.- b) ≡ h a P.- h b
+    h-⊔         : ∀ a b → h (a O.⊔ b) ≡ h a P.⊔ h b
+    h-fromℕ     : ∀ n → h (O.fromℕ n) ≡ P.fromℕ n
+    h-percentOf : ∀ p a → h (O.percentOf p a) ≡ P.percentOf p (h a)
