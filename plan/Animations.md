@@ -301,7 +301,7 @@ Each step ends with `make check`, `make test`, and the browser run.
    `reversal` law `progress e (1 - x) = 1 - progress (reverseE e) x` (`Linear`, `Step`,
    `StepStart`: the order on `ℚ` through `≤ᵇ`) and from `ratio-compl` (exact `ℚ` arithmetic via
    `ℚᵘ`) and the flip law of the interpolation (`ℚLerpFlip`, by the ring solver). Not for
-   `Bezier` (approximate; the `Exact` easings exclude it), and for one piece only, not across a track boundary. **Revision of the paint-annotation design:** no new
+   `Bezier` (approximate; the `Exact` easings exclude it), and across boundaries (`reverse-sample`) for `Good` tracks: positive-length pieces with `Exact` easings that meet (end of one = start of the next). The original is right-continuous at a boundary and the reversed track is not, so without continuity the two differ exactly at the boundaries; zero-length pieces are excluded. **Revision of the paint-annotation design:** no new
    `Op` and no change to `Draw`. A segment is `Seg S = (track : Track ℚ, body : ℚ → Dia S)`:
    the diagram as a function of a parameter that follows an explicit track, one frame per
    tick (`hold n d` is the constant track; `tween n a b easing body`). Reflow (a spacer

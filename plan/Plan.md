@@ -7,7 +7,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 
 1. **Animations** (built: syntax, `dur`, timelines, footprints, tracks and easings,
    playback in reveal; see `plan/Animations.md`). Left: the optional CSS-transition
-   emitter, the reverse theorem for `Bezier` (approximate) and across track boundaries, other backends for
+   emitter, the reverse theorem for `Bezier` (approximate), other backends for
    `animation`, the Pairs deck's random point-pairs canvas.
 2. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
