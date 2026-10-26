@@ -11,10 +11,12 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    `animation`, the Pairs deck's random point-pairs canvas.
 2. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
-   (`fold-agrees`). Left: the lemma that folding after `mapDia` is folding with a
-   pulled-back algebra, from `Container.Lowering`/`Interpret` fusion (`mapDia` is a
-   translation along a container morphism only up to the scalar), and monad laws for
-   `Dia`-with-holes if templates are wanted.
+   (`fold-agrees`); `Slides.Diagram.MapFusion` shows `mapDia f` is translation along the
+   container morphism `scalarMor f` (identity on positions), hence functorial up to
+   equality of programs (`mapDia-id`, `mapDia-∘`) and `fold α (mapDia f d) ≈ fold (pull
+   (scalarMor f) α) d` for congruent `α` (`fold-mapDia`). Left: monad laws for
+   `Dia`-with-holes if templates are wanted; pulling `Layout` back along a scalar map
+   needs the map to be an ordered-ring homomorphism (see `docs/Design.md`).
 3. **Laws left over for diagrams** (`Slides.Diagram.Laws`):
    - `Valid` (non-negative size) is a hypothesis of the unit laws; prove that every
      operation preserves it. This needs an ordered-ring record built on stdlib's
