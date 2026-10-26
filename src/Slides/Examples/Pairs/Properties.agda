@@ -15,7 +15,7 @@ open import Data.List using (_∷_; [])
 open import Slides.Diagram using (defaultStyle)
 open import Slides.Diagram.Layout using (module LayoutWith; compile)
 open import Slides.Diagram.Names using (dangling)
-import Slides.Diagram.Names.Properties as Sound
+import Slides.Diagram.Names.Properties.Soundness as Sound
 open import Slides.Diagram.Notation
 open import Slides.Diagram.Scalar using (Ops; intOps; natOps; ratOps)
 open import Data.Nat using (ℕ; _≡ᵇ_)

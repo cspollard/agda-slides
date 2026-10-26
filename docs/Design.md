@@ -214,7 +214,7 @@ unchanged, evaluated with `evalWith ratOps`; no floor operation), `frameAt` the 
 ℚ differs from the discrete reading: `-` is real subtraction (negative sizes are outside
 `Valid`), percentages are exact, the parameter is not floored. `sampleAt-ι` (whole ticks
 agree with `Track.sample`), `leaf-tick` (the continuous frame is the discrete one through
-`ι` when the template is `Faithful`, `Slides.Diagram.ExprQ`), and the time laws are proved;
+`ι` when the template is `Faithful`, `Slides.Diagram.Expr.Properties.Faithful`), and the time laws are proved;
 the JavaScript is tested against exact ℚ values (`make test-anim-ref`, tolerance 0.01 for
 float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
 evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,

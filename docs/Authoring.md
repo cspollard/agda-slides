@@ -258,7 +258,7 @@ lifted pointwise to sizes, drawing commands and anchors):
 - `named` and `connect` leave a layout's size and anchors alone;
 - size fusion: the width and height of `layout d` are the fold of `sizeAlgebra`.
 
-`Slides.Diagram.Names.Properties` proves that `dangling d ≡ []` implies every `connect`
+`Slides.Diagram.Names.Properties.Soundness` proves that `dangling d ≡ []` implies every `connect`
 draws an arrow. `dangling` resolves a connection against the names declared
 *inside that connect's own diagram*, since that is all `connect` can see: a name
 declared next to the `connect` is reported.

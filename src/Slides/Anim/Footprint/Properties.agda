@@ -19,7 +19,8 @@ import Data.List.Relation.Binary.Disjoint.Propositional.Properties as DP
 
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Syntax using (fold)
-open import Slides.Diagram.Names using (namesAlgebra; Usage; names-mapDia)
+open import Slides.Diagram.Names using (namesAlgebra; Usage)
+open import Slides.Diagram.Names.Properties using (names-mapDia)
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Expr using (Expr; evalWith)
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)

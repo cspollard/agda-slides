@@ -29,6 +29,7 @@ open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax using (Dia; mapDia; overlay; spacer; connect)
 open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Euclid
+open import Slides.Diagram.Euclid.Properties
 open import Slides.Examples.PairsHero
 
 module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S → T)

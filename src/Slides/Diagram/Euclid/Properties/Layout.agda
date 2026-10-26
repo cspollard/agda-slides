@@ -28,6 +28,7 @@ open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Expr using (Expr; exprOps; evalWith)
 open import Slides.Diagram.Expr.Properties using (evalWith-hom)
 open import Slides.Diagram.Euclid
+open import Slides.Diagram.Euclid.Properties
 open import Slides.Diagram.Layout.Properties using (layout-natural; mapLayout-∘; mapLayout-cong)
 open import Slides.Diagram.Draw using (mapLayout)
 

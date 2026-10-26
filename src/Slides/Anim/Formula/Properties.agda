@@ -42,7 +42,7 @@ open import Slides.Diagram.Expr using (Expr; evalWith; eval)
 import Slides.Diagram.Expr as E
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
 import Slides.Diagram.Euclid as Eu
-open import Slides.Diagram.ExprQ using (exact%)
+open import Slides.Diagram.Expr.Properties.Faithful using (exact%)
 open import Slides.Diagram.NatQ
 open import Slides.Diagram.NatQ.Properties
 open import Slides.Diagram.NatQ.Properties

@@ -21,7 +21,7 @@
 -- template.  Nothing is claimed for an assignment that is not whole: a parameter between
 -- two whole numbers has no ℕ value (the discrete reading floors it, `Slides.Anim.Syntax.units`).
 
-module Slides.Diagram.ExprQ where
+module Slides.Diagram.Expr.Properties.Faithful where
 
 open import Data.Fin using (zero; suc)
 open import Data.Sum.Base using (inj₁; inj₂)

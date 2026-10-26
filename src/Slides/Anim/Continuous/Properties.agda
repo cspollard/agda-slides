@@ -26,7 +26,7 @@ import Slides.Anim.Track.Properties as TrP
 open import Slides.Anim.Timeline using (mergeM)
 open import Slides.Anim.Syntax using (units; bodyAt; track; content; template; blackBox; discrete; dur; Seq; Par)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
-open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
+open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Expr using (Expr; exprOps)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps; natOps)
@@ -156,7 +156,7 @@ leafAt-ι tr d k hk
 
 -- ... and that is the discrete frame sent through `ι` whenever the discrete reading was
 -- exact: the sample is a whole number `m`, and the template's layout is exact at `m`
--- (`Slides.Diagram.ExprQ`: no monus that truncates, no percentage that rounds).
+-- (`Slides.Diagram.Expr.Properties.Faithful`: no monus that truncates, no percentage that rounds).
 leaf-tick : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
             let q = proj₂ (Tr.sample Tr.ℚLerp tr) k in
             q ≡ ι (units q) →

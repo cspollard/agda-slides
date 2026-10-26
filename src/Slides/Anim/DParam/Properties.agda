@@ -37,6 +37,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 open import Slides.Diagram.Euclid
+open import Slides.Diagram.Euclid.Properties
 open import Slides.Diagram.Euclid.Properties.Layout using (layout-evalD; layout-weakenE; layout-substD)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)

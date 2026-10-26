@@ -40,7 +40,7 @@
 --   * `sampleAt-ι`: at whole ticks the continuous sample of a track is the discrete one
 --     (`Slides.Anim.Track.sample`), exactly; so is `leafAt-ι` for a segment's frame.
 --   * `leaf-tick`: if moreover the sample is a whole number and the template's layout is exact
---     (`Slides.Diagram.ExprQ.Faithful`: differences with minuend ≥ subtrahend, percentages that
+--     (`Slides.Diagram.Expr.Properties.Faithful.Faithful`: differences with minuend ≥ subtrahend, percentages that
 --     divide), the continuous frame at tick `k` is the discrete frame sent through `ι`.
 --   * `parAt-time`, `parAt-dur`, `seqAt-before`, `seqAt-after`, `seqAt-boundary`: `Par` is the
 --     same `τ` on both sides and `Seq` offsets time by the duration; `animAt-dur`: the

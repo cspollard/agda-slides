@@ -48,7 +48,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
 open import Slides.Diagram.Expr using (exprOps; eval)
-open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
+open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps; ratOps)
 open import Slides.Diagram.NatQ using (ι)

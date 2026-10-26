@@ -7,7 +7,7 @@
 -- `tri t = let m = t % 64 in if m < 33 then m else 64 ∸ m`, an angle `(t / 4) % 8`, a table
 -- lookup, a product with a constant.  Nothing in it is meaningful between two ticks, and
 -- floor division is not exact division, so these operations cannot live in the layers of
--- `Slides.Diagram.Expr` (which are read in ℕ *and* in ℚ, `Slides.Diagram.ExprQ`).  They get
+-- `Slides.Diagram.Expr` (which are read in ℕ *and* in ℚ, `Slides.Diagram.Expr.Properties.Faithful`).  They get
 -- a layer of their own, read in ℕ only:
 --
 --     EuclidC = EuclidOp ▷ euclidArity
@@ -38,28 +38,23 @@
 
 module Slides.Diagram.Euclid where
 
-open import Level using (0ℓ)
-open import Data.Empty using ()
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat as ℕ using (ℕ; _/_; _%_; _<ᵇ_; _*_)
 open import Data.Bool using (if_then_else_)
 open import Data.Product using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Container.Core using (Shape; Position; _▷_; _⇒_; shape; position)
+open import Data.Container.Core using (_▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans)
 
-open import Container.Lowering using ()
 open import Container.Sum using (inl)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
-open import Slides.Diagram.Signature.Properties
 open import Slides.Diagram.Expr
 
-open import Slides.Diagram.Expr.Properties
 ------------------------------------------------------------------------
 -- The layer
 
@@ -196,53 +191,12 @@ record IsEuclidHom {S T : Set} (O : EuclidOps S) (P : EuclidOps T) (h : S → T)
     h-mulLit : ∀ n a → h (O.mulLit n a) ≡ P.mulLit n (h a)
     h-lt     : ∀ a b x y → h (O.lt a b x y) ≡ P.lt (h a) (h b) (h x) (h y)
 
--- `evalD` is a homomorphism of all three layers, by construction
-evalD-hom : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) →
-            IsOpsHom dexprOps (DiscreteOps.ops D) (evalD D ρ)
-evalD-hom D ρ = record
-  { coreHom = record
-      { h-0 = refl ; h-+ = λ _ _ → refl ; h-⊔ = λ _ _ → refl
-      ; h-fromℕ = λ _ → refl ; h-percentOf = λ _ _ → refl }
-  ; subHom = record { h-- = λ _ _ → refl } }
-
-evalD-euclid-hom : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) →
-                   IsEuclidHom termEuclid (DiscreteOps.euclid D) (evalD D ρ)
-evalD-euclid-hom D ρ = record
-  { h-divBy = λ _ _ → refl ; h-modBy = λ _ _ → refl ; h-mulLit = λ _ _ → refl ; h-lt = λ _ _ _ _ → refl }
-
-evalD-hom-ℕ : ∀ {V} (ρ : V → ℕ) → IsOpsHom dexprOps natOps (evalD natD ρ)
-evalD-hom-ℕ = evalD-hom natD
-
 -- substitution, as the fold into the term algebra
 substD : ∀ {V W} → (V → DExpr W) → DExpr V → DExpr W
 substD {W = W} σ = evalD (dexprD {W}) σ
 
 renameD : ∀ {V W} → (V → W) → DExpr V → DExpr W
 renameD f = substD (λ v → pure (f v))
-
-substD-hom : ∀ {V W} (σ : V → DExpr W) → IsOpsHom dexprOps dexprOps (substD σ)
-substD-hom σ = evalD-hom dexprD σ
-
-nodeD : ∀ {W S} (D : DiscreteOps S) (ρ : W → S) (s : Shape DExprC) (k : Position DExprC s → DExpr W) →
-        evalD D ρ (dH (dexprD {W}) .Handler.handle s k) ≡ dH D .Handler.handle s (λ q → evalD D ρ (k q))
-nodeD D ρ (inj₁ (inj₁ Zero))     k = refl
-nodeD D ρ (inj₁ (inj₁ (Lit n)))  k = refl
-nodeD D ρ (inj₁ (inj₁ Plus))     k = refl
-nodeD D ρ (inj₁ (inj₁ Max))      k = refl
-nodeD D ρ (inj₁ (inj₁ (Pct p)))  k = refl
-nodeD D ρ (inj₁ (inj₂ Sub))      k = refl
-nodeD D ρ (inj₂ (DivBy d))       k = refl
-nodeD D ρ (inj₂ (ModBy d))       k = refl
-nodeD D ρ (inj₂ (MulLit n))      k = refl
-nodeD D ρ (inj₂ Lt)              k = refl
-
--- evaluating after substituting is evaluating with the evaluated substitution
-evalD-substD : ∀ {V W S} (D : DiscreteOps S) (ρ : W → S) (σ : V → DExpr W) (e : DExpr V) →
-               evalD D ρ (substD σ e) ≡ evalD D (λ v → evalD D ρ (σ v)) e
-evalD-substD D ρ σ (pure v)         = refl
-evalD-substD D ρ σ (impure (s , k)) =
-  trans (nodeD D ρ s (λ q → substD σ (k q)))
-        (dH D .Handler.respects s (λ q → evalD-substD D ρ σ (k q)))
 
 ------------------------------------------------------------------------
 -- Weakening: a continuous template is a discrete one
@@ -257,14 +211,3 @@ evalD-substD D ρ σ (impure (s , k)) =
 
 weakenE : ∀ {V} → Expr V → DExpr V
 weakenE = evalWith dexprOps pure
-
-weakenE-hom : ∀ {V} → IsOpsHom (exprOps {V}) dexprOps weakenE
-weakenE-hom = evalWith-hom dexprOps pure
-
--- read with the operations of the first two layers only
-evalD-weaken : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) (e : Expr V) →
-               evalD D ρ (weakenE e) ≡ evalWith (DiscreteOps.ops D) ρ e
-evalD-weaken D ρ (pure v)         = refl
-evalD-weaken D ρ (impure (s , k)) =
-  trans (nodeD D ρ (inj₁ s) (λ q → weakenE (k q)))
-        (opsH (DiscreteOps.ops D) .Handler.respects s (λ q → evalD-weaken D ρ (k q)))
