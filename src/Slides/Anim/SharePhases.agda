@@ -32,17 +32,17 @@
 module Slides.Anim.SharePhases where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; map; reverse)
+open import Data.List using (List; []; _∷_; map; reverse; length)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 import Data.List.Properties as LP
-open import Data.Nat as ℕ using (ℕ; suc; _/_; _%_; _*_; _∸_; _⊔_; _<ᵇ_; _≤ᵇ_)
+open import Data.Nat as ℕ using (ℕ; zero; suc; _/_; _%_; _*_; _∸_; _⊔_; _<ᵇ_; _≤ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ; 0ℚ)
 open import Data.Integer using (+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
-open import Slides.Diagram.Draw using (Draw)
+open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label)
 open import Slides.Diagram.NatQ using (ι)
 open import Slides.Anim.Formula
 open import Slides.Anim.Phases using (Elem; elem; Kind; nums; baseNum; withNums; entries; pageNums; pageElem; active; pick)
@@ -156,10 +156,27 @@ open SBody
 shareCoords : Maybe (List (Maybe Formula)) → Sh (Maybe (List (Maybe Node)))
 shareCoords = traverseM (traverseL (traverseM output))
 
+entriesS : Maybe (List (Maybe Node)) → List (Maybe Node)
+entriesS nothing   = []
+entriesS (just cs) = cs
+
+-- The numbers of an element's base command that a formula overwrites are never read by the page
+-- (`pageNumsS` takes the base number only where there is no formula): they are shipped as 0,
+-- which makes the base commands of elements that differ only in those numbers equal, so that
+-- the printer ships each of them once (`zeroBase-sem`).
+zeroAt : List (Kind × ℕ) → List (Maybe Node) → List ℕ
+zeroAt []             _              = []
+zeroAt ((k , n) ∷ bs) []             = n ∷ zeroAt bs []
+zeroAt ((k , n) ∷ bs) (nothing ∷ es) = n ∷ zeroAt bs es
+zeroAt ((k , n) ∷ bs) (just _  ∷ es) = 0 ∷ zeroAt bs es
+
+zeroBase : Draw ℕ → Maybe (List (Maybe Node)) → Draw ℕ
+zeroBase d cs = withNums d (zeroAt (nums d) (entriesS cs)) 0
+
 shareElem : Elem → Sh SElem
 shareElem e st = wrap (shareCoords (Elem.coords e) st)
   where wrap : _ → _
-        wrap r = selem (Elem.base e) (proj₁ r) , proj₂ r
+        wrap r = selem (zeroBase (Elem.base e) (proj₁ r)) (proj₁ r) , proj₂ r
 
 -- the elements of a phase, through one store
 shareBody : List Elem → SBody
@@ -210,12 +227,79 @@ pageNumsS v (b ∷ bs) []             = baseNum b ∷ pageNumsS v bs []
 pageNumsS v (b ∷ bs) (nothing ∷ es) = baseNum b ∷ pageNumsS v bs es
 pageNumsS v (b ∷ bs) (just n  ∷ es) = v n ∷ pageNumsS v bs es
 
-entriesS : Maybe (List (Maybe Node)) → List (Maybe Node)
-entriesS nothing   = []
-entriesS (just cs) = cs
-
 pageElemS : (Node → ℚ) → SElem → Draw ℚ
 pageElemS v e = withNums (base e) (pageNumsS v (nums (base e)) (entriesS (coords e))) 0ℚ
+
+------------------------------------------------------------------------
+-- Zeroing the numbers the formulas overwrite changes nothing the page sets
+
+-- the slots with other numbers
+zipK : List (Kind × ℕ) → List ℕ → List (Kind × ℕ)
+zipK []             _        = []
+zipK ((k , n) ∷ bs) []       = (k , n) ∷ zipK bs []
+zipK ((k , n) ∷ bs) (m ∷ zs) = (k , m) ∷ zipK bs zs
+
+length-zeroAt : ∀ bs es → length (zeroAt bs es) ≡ length bs
+length-zeroAt []             es             = refl
+length-zeroAt ((k , n) ∷ bs) []             = cong suc (length-zeroAt bs [])
+length-zeroAt ((k , n) ∷ bs) (nothing ∷ es) = cong suc (length-zeroAt bs es)
+length-zeroAt ((k , n) ∷ bs) (just _  ∷ es) = cong suc (length-zeroAt bs es)
+
+-- a command refilled with numbers is a command whose slots have those numbers (the kinds stay)
+nums-withNums : ∀ d zs → length zs ≡ length (nums d) → nums (withNums d zs 0) ≡ zipK (nums d) zs
+nums-withNums (rect _ _ _ _ _) (a ∷ b ∷ c ∷ e ∷ []) _ = refl
+nums-withNums (rect _ _ _ _ _) []                     ()
+nums-withNums (rect _ _ _ _ _) (_ ∷ [])               ()
+nums-withNums (rect _ _ _ _ _) (_ ∷ _ ∷ [])           ()
+nums-withNums (rect _ _ _ _ _) (_ ∷ _ ∷ _ ∷ [])       ()
+nums-withNums (rect _ _ _ _ _) (_ ∷ _ ∷ _ ∷ _ ∷ _ ∷ _) ()
+nums-withNums (circle _ _ _ _) (a ∷ b ∷ c ∷ [])       _ = refl
+nums-withNums (circle _ _ _ _) []                     ()
+nums-withNums (circle _ _ _ _) (_ ∷ [])               ()
+nums-withNums (circle _ _ _ _) (_ ∷ _ ∷ [])           ()
+nums-withNums (circle _ _ _ _) (_ ∷ _ ∷ _ ∷ _ ∷ _)    ()
+nums-withNums (line _ _ _ _ _) (a ∷ b ∷ c ∷ e ∷ [])   _ = refl
+nums-withNums (line _ _ _ _ _) []                     ()
+nums-withNums (line _ _ _ _ _) (_ ∷ [])               ()
+nums-withNums (line _ _ _ _ _) (_ ∷ _ ∷ [])           ()
+nums-withNums (line _ _ _ _ _) (_ ∷ _ ∷ _ ∷ [])       ()
+nums-withNums (line _ _ _ _ _) (_ ∷ _ ∷ _ ∷ _ ∷ _ ∷ _) ()
+nums-withNums (arrow _ _ _ _ _) (a ∷ b ∷ c ∷ e ∷ [])  _ = refl
+nums-withNums (arrow _ _ _ _ _) []                    ()
+nums-withNums (arrow _ _ _ _ _) (_ ∷ [])              ()
+nums-withNums (arrow _ _ _ _ _) (_ ∷ _ ∷ [])          ()
+nums-withNums (arrow _ _ _ _ _) (_ ∷ _ ∷ _ ∷ [])      ()
+nums-withNums (arrow _ _ _ _ _) (_ ∷ _ ∷ _ ∷ _ ∷ _ ∷ _) ()
+nums-withNums (label _ _ _ _ _) (a ∷ b ∷ [])          _ = refl
+nums-withNums (label _ _ _ _ _) []                    ()
+nums-withNums (label _ _ _ _ _) (_ ∷ [])              ()
+nums-withNums (label _ _ _ _ _) (_ ∷ _ ∷ _ ∷ _)       ()
+
+-- refilling ignores the numbers a command has
+withNums-withNums : ∀ {T : Set} (d : Draw ℕ) zs (z : ℕ) (ts : List T) (z′ : T) →
+                    withNums (withNums d zs z) ts z′ ≡ withNums d ts z′
+withNums-withNums (rect _ _ _ _ _)  zs z ts z′ = refl
+withNums-withNums (circle _ _ _ _)  zs z ts z′ = refl
+withNums-withNums (line _ _ _ _ _)  zs z ts z′ = refl
+withNums-withNums (arrow _ _ _ _ _) zs z ts z′ = refl
+withNums-withNums (label _ _ _ _ _) zs z ts z′ = refl
+
+pageNumsS-zip : ∀ v bs es → pageNumsS v (zipK bs (zeroAt bs es)) es ≡ pageNumsS v bs es
+pageNumsS-zip v []             es             = refl
+pageNumsS-zip v ((k , n) ∷ bs) []             = cong (baseNum (k , n) ∷_) (pageNumsS-zip v bs [])
+pageNumsS-zip v ((k , n) ∷ bs) (nothing ∷ es) = cong (baseNum (k , n) ∷_) (pageNumsS-zip v bs es)
+pageNumsS-zip v ((k , n) ∷ bs) (just m  ∷ es) = cong (v m ∷_) (pageNumsS-zip v bs es)
+
+-- the page sets the same numbers on a shared element whose base is zeroed
+zeroBase-sem : ∀ v d cs → pageElemS v (selem (zeroBase d cs) cs) ≡ pageElemS v (selem d cs)
+zeroBase-sem v d cs =
+  trans (withNums-withNums d zs 0 (pageNumsS v (nums (withNums d zs 0)) es) 0ℚ)
+        (cong (λ ts → withNums d ts 0ℚ)
+          (trans (cong (λ l → pageNumsS v l es) (nums-withNums d zs (length-zeroAt (nums d) es)))
+                 (pageNumsS-zip v (nums d) es)))
+  where
+    es = entriesS cs
+    zs = zeroAt (nums d) es
 
 ------------------------------------------------------------------------
 -- Sharing means the same, for any reading
@@ -226,7 +310,7 @@ module Lift {A : Set} (R : Reading A ℚ) (S : Semantics R) (ref : Formula → (
 
   -- an element and its shared version: the same base, and numbers that read the same
   ElemQ : (ℕ → A) → List Node → Elem → SElem → Set
-  ElemQ ρ ds e se = base se ≡ Elem.base e × MaybeQ (AllQ (MaybeQ (OutQ ρ))) ds (Elem.coords e) (coords se)
+  ElemQ ρ ds e se = base se ≡ zeroBase (Elem.base e) (coords se) × MaybeQ (AllQ (MaybeQ (OutQ ρ))) ds (Elem.coords e) (coords se)
 
   ElemQ-stable : ∀ ρ → Stable (ElemQ ρ)
   ElemQ-stable ρ x (b , q) =
@@ -265,9 +349,11 @@ module Lift {A : Set} (R : Reading A ℚ) (S : Semantics R) (ref : Formula → (
   pageElemS-sem : ∀ ρ ds (v : Node → ℚ) e se →
                   (∀ g nd → OutQ ρ ds g nd → v nd ≡ ref g ρ) →
                   ElemQ ρ ds e se → pageElemS v se ≡ pageElemG (λ f → ref f ρ) e
-  pageElemS-sem ρ ds v e se h (b , q) rewrite b =
-    cong (λ ns → withNums (Elem.base e) ns 0ℚ)
-         (pageNumsS-sem ρ ds v (nums (Elem.base e)) (entries (Elem.coords e)) (entriesS (coords se)) h (entries-Q q))
+  pageElemS-sem ρ ds v e se h (b , q) =
+    trans (cong (pageElemS v) {x = se} {y = selem (zeroBase (Elem.base e) (coords se)) (coords se)} (cong (λ d → selem d (coords se)) b))
+   (trans (zeroBase-sem v (Elem.base e) (coords se))
+          (cong (λ ns → withNums (Elem.base e) ns 0ℚ)
+                (pageNumsS-sem ρ ds v (nums (Elem.base e)) (entries (Elem.coords e)) (entriesS (coords se)) h (entries-Q q))))
 
   pageElemsS-sem : ∀ ρ ds (v : Node → ℚ) es ses →
                    (∀ g nd → OutQ ρ ds g nd → v nd ≡ ref g ρ) →

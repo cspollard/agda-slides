@@ -247,9 +247,35 @@ condition: `encD-semN`, `enc-numN`). Layout never compares or divides, so it is 
 (shared induction in `Slides.Anim.Assembly`), `DPhases.pageFrameD-sem` the shipped phases. A
 field layer (exact division by a literal) was not needed. The hero frame is written once over
 any scalar with the three layers (`PairsHero.Frame`); `heroT-correct` proves the template is
-the flipbook frame. It is *not used* in the Pairs deck: laying the pairs out symbolically costs
-far more than the edits (each pair sits on a layer whose width is a formula, and the next pair
-centres against a maximum of those), see `plan/Plan.md`.
+the flipbook frame, and the Pairs deck's two hero loops are `heroD 26 seed`.
+*Compact formulas.* The first discrete hero was unusable (3 pairs shipped 779,366 characters
+of formulas, 26 pairs ran over four CPU minutes): each pair sat on a layer of the canvas's
+size by margins with a *complement* (`W ∸ (x + 2r)`, not closed in the tick), `atop` centred
+a layer against the running maximum of the widths of all later layers, so every coordinate
+contained a copy of that chain (about `n³` nodes in all; measured 123 KB for one pair,
+340 KB for two, 779 KB for three, 1.08 MB for four, 149 s to lay out 8). Two changes, with
+their measurements (26 pairs, phases of `data-param`): *(a) absolute placement*: `Place`
+(a child at `(x, y)` of a frame of declared size) and `Overlay` (two children at the corner
+of a declared frame) are `Dia` primitives with layout operations in `Place`, naturality along
+any `Ops`-hom (`LayoutNatural`), names, size and validity laws; the hero frame is an
+overlay of placed dots, so a coordinate is the pair's own formula: linear, 247,547 characters
+unshared, 7 s. *(b) sharing*: the formulas of a phase are value-numbered into a straight-line
+program (`Slides.Anim.Share`: a store of definitions, each over the parameters and the earlier
+ones, hash-consed through an AVL memo that is only a hint, checked before use), and the
+numbers of the elements are nodes over it (`SharePhases`); the page evaluates the definitions
+once per time step, in order, then the numbers. 1,004 definitions for 26 pairs, 18,849
+characters of phases (against 42,732 of edits), page 240,278 to 192 KB bytes. Mathematically the
+program is a Kleisli family and its meaning the evaluation of the tree obtained by
+substitution: `Share.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
+store, the law `evalWith-subst` for the shipped syntax), `share-unfold` (the unfolding of the
+shared reference of `g` evaluates equal to `g`, every assignment), and `share-impl`,
+`output-realises` (the shared output reads as the formula, for every reading `Reading` with a
+`Semantics`: instances at ℚ and ℕ), chained through traversals by stability along store
+extensions (`Realises`, `Stable`); `SharePhases.pageFrameS-sem` is that sharing changes no
+frame the page draws, with `zeroBase-sem` for the base numbers a formula overwrites (shipped as
+0 so that equal strings are shipped once). Not adopted: simplifying `a + 0` in the encoder (the
+overlay hero has no zero shifts) and inlining single-use definitions (about 16% of the
+program). Only tested: the JSON printing and the page's evaluation of the program.
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:
