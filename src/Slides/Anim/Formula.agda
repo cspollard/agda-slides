@@ -39,6 +39,7 @@ import Data.Rational.Unnormalised.Properties as ℚᵘP
 open import Data.Rational.Unnormalised using (*≡*)
 open import Data.Product using (_,_; _×_; ∃; ∃₂)
 open import Data.Unit using (tt)
+open import Data.Sum.Base using (inj₁; inj₂)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Nullary using (yes; no)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
@@ -98,12 +99,12 @@ half a       = hlf a
 
 enc : Expr ℕ → Formula
 enc (pure v)                = var v
-enc (impure (E.Zero , _))   = num 0
-enc (impure (E.Lit n , _))  = num n
-enc (impure (E.Plus , k))   = plus (enc (k zero)) (enc (k (suc zero)))
-enc (impure (E.Monus , k))  = monus (enc (k zero)) (enc (k (suc zero)))
-enc (impure (E.Max , k))    = maxF (enc (k zero)) (enc (k (suc zero)))
-enc (impure (E.Pct p , k))  = percent p (enc (k tt))
+enc (impure (inj₁ E.Zero , _))   = num 0
+enc (impure (inj₁ (E.Lit n) , _))  = num n
+enc (impure (inj₁ E.Plus , k))   = plus (enc (k zero)) (enc (k (suc zero)))
+enc (impure (inj₂ E.Sub , k))  = monus (enc (k zero)) (enc (k (suc zero)))
+enc (impure (inj₁ E.Max , k))    = maxF (enc (k zero)) (enc (k (suc zero)))
+enc (impure (inj₁ (E.Pct p) , k))  = percent p (enc (k tt))
 
 ------------------------------------------------------------------------
 -- The folds are exact
@@ -194,15 +195,15 @@ half-sem (hlf _) ρ = refl
 -- Shipping the folded formula means what the symbolic coordinate means in ℚ.
 enc-sem : ∀ (e : Expr ℕ) (ρ : ℕ → ℚ) → ⟦ enc e ⟧ ρ ≡ evalWith ratOps ρ e
 enc-sem (pure v) ρ = refl
-enc-sem (impure (E.Zero , _)) ρ = refl
-enc-sem (impure (E.Lit n , _)) ρ = refl
-enc-sem (impure (E.Plus , k)) ρ =
+enc-sem (impure (inj₁ E.Zero , _)) ρ = refl
+enc-sem (impure (inj₁ (E.Lit n) , _)) ρ = refl
+enc-sem (impure (inj₁ E.Plus , k)) ρ =
   trans (plus-sem (enc (k zero)) (enc (k (suc zero))) ρ) (cong₂ ℚ._+_ (enc-sem (k zero) ρ) (enc-sem (k (suc zero)) ρ))
-enc-sem (impure (E.Monus , k)) ρ =
+enc-sem (impure (inj₂ E.Sub , k)) ρ =
   trans (monus-sem (enc (k zero)) (enc (k (suc zero))) ρ) (cong₂ ℚ._-_ (enc-sem (k zero) ρ) (enc-sem (k (suc zero)) ρ))
-enc-sem (impure (E.Max , k)) ρ =
+enc-sem (impure (inj₁ E.Max , k)) ρ =
   trans (maxF-sem (enc (k zero)) (enc (k (suc zero))) ρ) (cong₂ ℚ._⊔_ (enc-sem (k zero) ρ) (enc-sem (k (suc zero)) ρ))
-enc-sem (impure (E.Pct p , k)) ρ =
+enc-sem (impure (inj₁ (E.Pct p) , k)) ρ =
   trans (percent-sem p (enc (k tt)) ρ) (cong ((+ p ℚ./ 100) ℚ.*_) (enc-sem (k tt) ρ))
 
 ------------------------------------------------------------------------
@@ -269,15 +270,15 @@ private
 
 enc-num : ∀ (e : Expr ℕ) n → enc e ≡ num n → ∀ (ρ : ℕ → ℕ) → eval ρ e ≡ n
 enc-num (pure v) n () ρ
-enc-num (impure (E.Zero , _)) n refl ρ = refl
-enc-num (impure (E.Lit m , _)) n refl ρ = refl
-enc-num (impure (E.Plus , k)) n h ρ with plus-inv (enc (k zero)) (enc (k (suc zero))) n h
+enc-num (impure (inj₁ E.Zero , _)) n refl ρ = refl
+enc-num (impure (inj₁ (E.Lit m) , _)) n refl ρ = refl
+enc-num (impure (inj₁ E.Plus , k)) n h ρ with plus-inv (enc (k zero)) (enc (k (suc zero))) n h
 ... | x , y , e₁ , e₂ , refl = cong₂ _+_ (enc-num (k zero) x e₁ ρ) (enc-num (k (suc zero)) y e₂ ρ)
-enc-num (impure (E.Monus , k)) n h ρ with monus-inv (enc (k zero)) (enc (k (suc zero))) n h
+enc-num (impure (inj₂ E.Sub , k)) n h ρ with monus-inv (enc (k zero)) (enc (k (suc zero))) n h
 ... | x , y , e₁ , e₂ , refl = cong₂ _∸_ (enc-num (k zero) x e₁ ρ) (enc-num (k (suc zero)) y e₂ ρ)
-enc-num (impure (E.Max , k)) n h ρ with maxF-inv (enc (k zero)) (enc (k (suc zero))) n h
+enc-num (impure (inj₁ E.Max , k)) n h ρ with maxF-inv (enc (k zero)) (enc (k (suc zero))) n h
 ... | x , y , e₁ , e₂ , refl = cong₂ _⊔_ (enc-num (k zero) x e₁ ρ) (enc-num (k (suc zero)) y e₂ ρ)
-enc-num (impure (E.Pct p , k)) n h ρ with percent-inv p (enc (k tt)) n h
+enc-num (impure (inj₁ (E.Pct p) , k)) n h ρ with percent-inv p (enc (k tt)) n h
 ... | x , e₁ , refl = cong (λ v → (v * p) / 100) (enc-num (k tt) x e₁ ρ)
 
 -- `half` of a number only folds when the number is even, and then to its half
