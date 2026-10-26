@@ -34,7 +34,7 @@ spike:
 	$(COMPILE) src/Slides/Spike/Reveal.agda
 	mv Reveal $(BUILD_DIR)/Reveal 2>/dev/null || true
 	$(BUILD_DIR)/Reveal
-	cp assets/slides.css out/spike/slides.css
+	cp assets/slides.css assets/animation.js out/spike/
 
 # Render any deck: `make deck MAIN=src/MyTalkMain.agda NAME=mytalk`, where the
 # main module writes to out/$(NAME).  Puts reveal.js and the stylesheet next to
@@ -44,7 +44,7 @@ NAME ?= mytalk
 deck:
 	mkdir -p out/$(NAME) $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/$(NAME)/reveal
-	cp assets/slides.css assets/plot.svg out/$(NAME)/
+	cp assets/slides.css assets/animation.js assets/plot.svg out/$(NAME)/
 	$(COMPILE) $(MAIN)
 	mv $(basename $(notdir $(MAIN))) $(BUILD_DIR)/ 2>/dev/null || true
 	$(BUILD_DIR)/$(basename $(notdir $(MAIN)))
@@ -54,7 +54,7 @@ deck:
 example:
 	mkdir -p out/intro $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/intro/reveal
-	cp assets/slides.css out/intro/slides.css
+	cp assets/slides.css assets/animation.js out/intro/
 	$(COMPILE) src/Slides/Examples/IntroMain.agda
 	mv IntroMain $(BUILD_DIR)/IntroMain 2>/dev/null || true
 	$(BUILD_DIR)/IntroMain
@@ -76,6 +76,7 @@ test:
 	diff -u tests/golden/pairs.init.js out/pairs/init.js
 	diff -u tests/golden/pairs.css out/pairs/pairs.css
 	diff -u tests/golden/plain.js out/plain/plain.js
+	diff -u tests/golden/animation.js out/plain/animation.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 
 # Load the rendered deck in headless Chrome (set CHROME to override the binary).
@@ -93,7 +94,7 @@ test-browser:
 talk:
 	mkdir -p out/talk $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/talk/reveal
-	cp assets/slides.css assets/plot.svg out/talk/
+	cp assets/slides.css assets/animation.js assets/plot.svg out/talk/
 	$(COMPILE) src/Slides/Examples/TalkMain.agda
 	mv TalkMain $(BUILD_DIR)/TalkMain 2>/dev/null || true
 	$(BUILD_DIR)/TalkMain
@@ -102,7 +103,7 @@ talk:
 .PHONY: plain
 plain:
 	mkdir -p out/plain $(BUILD_DIR)
-	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/plain/
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/plain/
 	$(COMPILE) src/Slides/Examples/PlainMain.agda
 	mv PlainMain $(BUILD_DIR)/PlainMain 2>/dev/null || true
 	$(BUILD_DIR)/PlainMain
@@ -129,10 +130,10 @@ check-resources:
 showcase:
 	mkdir -p out/showcase out/showcase-plain out/showcase-lowered out/showcase-still $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/showcase/reveal
-	cp assets/slides.css assets/plot.svg out/showcase/
-	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-plain/
-	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-lowered/
-	cp assets/plain.css assets/plain.js assets/slides.css assets/plot.svg out/showcase-still/
+	cp assets/slides.css assets/animation.js assets/plot.svg out/showcase/
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-plain/
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-lowered/
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-still/
 	$(COMPILE) src/Slides/Examples/ShowcaseMain.agda
 	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
 	$(BUILD_DIR)/ShowcaseMain
@@ -140,7 +141,7 @@ showcase:
 # The "It Just Takes Two" deck (docs/PairsDeck.md).  `make pairs` loads reveal.js and
 # KaTeX from a CDN (out/pairs/, needs network in the browser); `make pairs-local
 # REVEAL=…` links a local copy of reveal.js (out/pairs-local/).
-PAIRS_FILES = assets/slides.css assets/pairs/pairs.css
+PAIRS_FILES = assets/slides.css assets/animation.js assets/pairs/pairs.css
 
 .PHONY: pairs pairs-local
 pairs:
@@ -183,7 +184,7 @@ test-plain-anim:
 .PHONY: animref test-anim-ref
 animref:
 	mkdir -p out/animref $(BUILD_DIR)
-	cp assets/plain.css assets/plain.js assets/slides.css out/animref/
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css out/animref/
 	$(COMPILE) src/Slides/Examples/AnimRefMain.agda
 	mv AnimRefMain $(BUILD_DIR)/AnimRefMain 2>/dev/null || true
 	$(BUILD_DIR)/AnimRefMain

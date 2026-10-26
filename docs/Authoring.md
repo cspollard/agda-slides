@@ -398,7 +398,7 @@ main : Main
 main = run (writeRevealDeck "out/mytalk" defaultConfig talk)
 ```
 
-Compile it with `agda --compile` (see the `showcase` target in the `Makefile` for the exact steps), put reveal.js and `assets/slides.css` next to the generated `index.html` (`out/mytalk/reveal` and `out/mytalk/slides.css`), and open it in a browser.
+Compile it with `agda --compile` (see the `showcase` target in the `Makefile` for the exact steps), put reveal.js, `assets/slides.css` and `assets/animation.js` (the animation player, loaded by every deck) next to the generated `index.html` (`out/mytalk/reveal`, `out/mytalk/slides.css`, `out/mytalk/animation.js`), and open it in a browser.
 
 Configuration (`Slides.Backend.Reveal.RevealConfig`): title, location of reveal.js, `Theme` (`blackTheme`, `whiteTheme`, `serifTheme`, `solarizedTheme`), transition, slide number, controls, progress, width and height. `writePlainDeck` and `Slides.Backend.Plain` give a standalone page with its own navigation script.
 

@@ -170,7 +170,7 @@ renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name
 -- An animation is shipped as its first frame and an edit from each frame to the next
 -- (`Slides.Diagram.Delta`, which proves that replaying the edits gives back every
 -- frame), in `data-deltas` as JSON, followed by one empty fragment per step.  The
--- page script (`animationSync` in `Slides.Backend.Reveal`) rebuilds the frame it
+-- page script (`assets/animation.js`) rebuilds the frame it
 -- wants from the first one and plays the frames between the resting frames
 -- `data-rests`, one every `data-ms` milliseconds.  Without the script the first
 -- frame stays.

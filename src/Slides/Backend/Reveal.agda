@@ -165,6 +165,7 @@ page cfg slides =
         ∷ scriptTag (dist ++ˢ "plugin/notes.js")
         ∷ scriptTag (dist ++ˢ "plugin/highlight.js")
         ∷ scriptTag (dist ++ˢ "plugin/math.js")
+        ∷ scriptTag "animation.js"
         ∷ map scriptTag (RevealConfig.scriptFiles cfg)
         ++ scriptTag "init.js"
         ∷ [] )
@@ -214,176 +215,19 @@ scriptLoader =
   "  Reveal.on('slidechanged', function (e) { run(e.currentSlide); });\n" ++ˢ
   "})();\n"
 
--- Plays animations (`.animation`, see `renderAnimation`).  The step is the number
--- of visible `.anim-step` fragments; it rests on frame 0 at step 0 and on
--- `rests[step-1]` after, and the page moves one frame towards the target every
--- `data-ms` milliseconds (forward or backward).  A `data-loop` animation also
--- advances a phase every `data-ms` while its slide is shown; the frame shown is
--- `phase * steps + step`.  Changing slide jumps.  A parametric animation (`data-param`) is
--- played in real time instead: the time `τ` (in ticks) moves towards the target by one tick
--- per `data-ms` milliseconds on every animation frame, a loop's phase is the elapsed time,
--- and the frame at `τ` is computed from the tracks and formulas (`renderParamAnimation`).
+-- Plays animations (`.animation`, see `renderAnimation`) with the player shared with the
+-- standalone backend, `assets/animation.js` (loaded before `init.js`; it describes the
+-- playback).  This is the glue: an animation is shown while its slide is the current one,
+-- and it is brought to the step its fragments are at when the slide changes or a fragment
+-- is shown or hidden.
 animationSync : String
 animationSync =
   "(function () {\n" ++ˢ
-  "  function target(a) {\n" ++ˢ
-  "    var n = a.querySelectorAll('.anim-step.visible').length;\n" ++ˢ
-  "    if (n === 0) return 0;\n" ++ˢ
-  "    var r = a.dataset.rests.split(',');\n" ++ˢ
-  "    return +r[Math.min(n, r.length) - 1];\n" ++ˢ
-  "  }\n" ++ˢ
-  "  var SVGNS = 'http://www.w3.org/2000/svg';\n" ++ˢ
-  "  var NUMS = { rect: ['x', 'y', 'width', 'height'], circle: ['cx', 'cy', 'r'], line: ['x1', 'y1', 'x2', 'y2'], text: ['x', 'y'] };\n" ++ˢ
-  "  function parse(s) {\n" ++ˢ
-  "    return document.importNode(new DOMParser().parseFromString(s, 'image/svg+xml').documentElement.firstChild, true);\n" ++ˢ
-  "  }\n" ++ˢ
-  "  // apply a list of edits to the children of `parent` (skipping `offset` of them)\n" ++ˢ
-  "  function patch(parent, items, offset) {\n" ++ˢ
-  "    var kids = parent.children, n = 0, rest = [];\n" ++ˢ
-  "    items.forEach(function (it) {\n" ++ˢ
-  "      if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }\n" ++ˢ
-  "      if (typeof it === 'number' && it < 0) { n -= it; return; }\n" ++ˢ
-  "      var el = kids[offset + n]; n++;\n" ++ˢ
-  "      if (it === 0) return;\n" ++ˢ
-  "      if (Array.isArray(it)) { it.forEach(function (v, j) { var k = NUMS[el.localName][j]; el.setAttribute(k, +el.getAttribute(k) + v); }); return; }\n" ++ˢ
-  "      if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }\n" ++ˢ
-  "      patch(el, it.g, 0);\n" ++ˢ
-  "    });\n" ++ˢ
-  "    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);\n" ++ˢ
-  "    rest.forEach(function (s) { parent.appendChild(parse(s)); });\n" ++ˢ
-  "  }\n" ++ˢ
-  "  // A parametric animation (`data-param`, see `renderParamAnimation`) is a small simulator: the\n" ++ˢ
-  "  // tracks of its segments and symbolic layouts, evaluated at the real time `t` (in ticks) and\n" ++ˢ
-  "  // drawn without rounding.  An easing `e` is 0 (linear), 1 (step), 2 (step start) or a cubic\n" ++ˢ
-  "  // Bezier [x1, y1, x2, y2] in hundredths, as in `Slides.Anim.Track.progress`: the curve\n" ++ˢ
-  "  // parameter with x(s) = p is found by 16 bisection steps.\n" ++ˢ
-  "  function cubic(c1, c2, s) { var u = 1 - s; return 3 * u * u * s * c1 + 3 * u * s * s * c2 + s * s * s; }\n" ++ˢ
-  "  function ease(e, p) {\n" ++ˢ
-  "    if (e === 0) return p;\n" ++ˢ
-  "    if (e === 1) return p >= 1 ? 1 : 0;\n" ++ˢ
-  "    if (e === 2) return p <= 0 ? 0 : 1;\n" ++ˢ
-  "    if (p <= 0) return 0;\n" ++ˢ
-  "    if (p >= 1) return 1;\n" ++ˢ
-  "    var lo = 0, hi = 1, i;\n" ++ˢ
-  "    for (i = 0; i < 16; i++) { if (cubic(e[0] / 100, e[2] / 100, (lo + hi) / 2) <= p) lo = (lo + hi) / 2; else hi = (lo + hi) / 2; }\n" ++ˢ
-  "    return cubic(e[1] / 100, e[3] / 100, (lo + hi) / 2);\n" ++ˢ
-  "  }\n" ++ˢ
-  "  function rat(x) { return typeof x === 'number' ? x : x[0] / x[1]; }\n" ++ˢ
-  "  // a segment's parameter `u` ticks after its start: its pieces [ticks, from, to, easing] in\n" ++ˢ
-  "  // order, the last holding its end value\n" ++ˢ
-  "  function track(ps, u) {\n" ++ˢ
-  "    for (var i = 0; i < ps.length; i++) {\n" ++ˢ
-  "      var d = ps[i][0];\n" ++ˢ
-  "      if (u < d || i === ps.length - 1) {\n" ++ˢ
-  "        var a = rat(ps[i][1]), b = rat(ps[i][2]);\n" ++ˢ
-  "        return a + ease(ps[i][3], u < d ? u / d : 1) * (b - a);\n" ++ˢ
-  "      }\n" ++ˢ
-  "      u -= d;\n" ++ˢ
-  "    }\n" ++ˢ
-  "    return 0;\n" ++ˢ
-  "  }\n" ++ˢ
-  "  // a formula: a number, a string (the parameter of that segment, from `r`) or `[op, a, b]`;\n" ++ˢ
-  "  // `[\"h\", a]` is half of `a`, positions being in half units\n" ++ˢ
-  "  function ev(e, r) {\n" ++ˢ
-  "    if (typeof e === 'number') return e;\n" ++ˢ
-  "    if (typeof e === 'string') return r[+e];\n" ++ˢ
-  "    var o = e[0], x = ev(e[1], r);\n" ++ˢ
-  "    if (o === 'h') return x / 2;\n" ++ˢ
-  "    var y = ev(e[2], r);\n" ++ˢ
-  "    return o === '+' ? x + y : o === '-' ? x - y : o === 'm' ? Math.max(x, y) : x * y / 100;\n" ++ˢ
-  "  }\n" ++ˢ
-  "  // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number\n" ++ˢ
-  "  // that depends on a parameter\n" ++ˢ
-  "  function pframe(a, t) {\n" ++ˢ
-  "    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;\n" ++ˢ
-  "    var k = Math.max(0, Math.min(Math.floor(t), +a.dataset.n - 1));\n" ++ˢ
-  "    while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;\n" ++ˢ
-  "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
-  "    if (a._ph !== i) {\n" ++ˢ
-  "      while (svg.children.length > 1) svg.removeChild(svg.lastChild);\n" ++ˢ
-  "      P.p[i].b.forEach(function (s) { svg.appendChild(parse(s)); });\n" ++ˢ
-  "      a._ph = i;\n" ++ˢ
-  "    }\n" ++ˢ
-  "    var r = P.v.map(function (v) { return track(v[1], t - v[0]); });\n" ++ˢ
-  "    P.p[i].c.forEach(function (cs, j) {\n" ++ˢ
-  "      if (cs === null) return;\n" ++ˢ
-  "      var el = svg.children[1 + j];\n" ++ˢ
-  "      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r)); });\n" ++ˢ
-  "    });\n" ++ˢ
-  "  }\n" ++ˢ
-  "  // show frame `k` (a real time for a parametric animation): rebuild from the first frame when\n" ++ˢ
-  "  // going back, else apply the next edits\n" ++ˢ
-  "  function frame(a, k) {\n" ++ˢ
-  "    if (a.dataset.param) { pframe(a, k); return; }\n" ++ˢ
-  "    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));\n" ++ˢ
-  "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
-  "    if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }\n" ++ˢ
-  "    if (k < a._at) { var fresh = a._base.cloneNode(true); svg.parentNode.replaceChild(fresh, svg); svg = fresh; a._at = 0; }\n" ++ˢ
-  "    for (; a._at < k; a._at++) patch(svg, d[a._at], 1);\n" ++ˢ
-  "  }\n" ++ˢ
-  "  function geom(a) {\n" ++ˢ
-  "    var n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');\n" ++ˢ
-  "    var p = v === null ? 1 : (v === '' ? n : +v);\n" ++ˢ
-  "    return { n: n, p: p, steps: n / p };\n" ++ˢ
-  "  }\n" ++ˢ
-  "  function draw(a) {\n" ++ˢ
-  "    var g = geom(a);\n" ++ˢ
-  "    frame(a, (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0)));\n" ++ˢ
-  "  }\n" ++ˢ
-  "  function show(a, i) { a.dataset.cur = String(i); draw(a); }\n" ++ˢ
-  "  function sync(a, jump) {\n" ++ˢ
-  "    if (!a) return;\n" ++ˢ
-  "    clearInterval(a._timer);\n" ++ˢ
-  "    cancelAnimationFrame(a._raf);\n" ++ˢ
-  "    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);\n" ++ˢ
-  "    if (jump || ms === 0 || t === cur) { show(a, t); return; }\n" ++ˢ
-  "    if (a.dataset.param) {\n" ++ˢ
-  "      // continuous time: one tick every `ms` milliseconds, on every animation frame\n" ++ˢ
-  "      var t0 = null, c0 = cur;\n" ++ˢ
-  "      a._raf = requestAnimationFrame(function go(now) {\n" ++ˢ
-  "        if (t0 === null) t0 = now;\n" ++ˢ
-  "        cur = c0 + (t > c0 ? 1 : -1) * (now - t0) / ms;\n" ++ˢ
-  "        if (t > c0 ? cur >= t : cur <= t) cur = t;\n" ++ˢ
-  "        show(a, cur);\n" ++ˢ
-  "        if (cur !== t) a._raf = requestAnimationFrame(go);\n" ++ˢ
-  "      });\n" ++ˢ
-  "      return;\n" ++ˢ
-  "    }\n" ++ˢ
-  "    a._timer = setInterval(function () {\n" ++ˢ
-  "      cur += (t > cur ? 1 : -1);\n" ++ˢ
-  "      show(a, cur);\n" ++ˢ
-  "      if (cur === t) clearInterval(a._timer);\n" ++ˢ
-  "    }, ms);\n" ++ˢ
-  "  }\n" ++ˢ
-  "  function spin(a) {\n" ++ˢ
-  "    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);\n" ++ˢ
-  "    if (a.dataset.param) {\n" ++ˢ
-  "      // continuous time: the phase is the real time in ticks, modulo the length of the loop\n" ++ˢ
-  "      var t0 = null;\n" ++ˢ
-  "      requestAnimationFrame(function go(now) {\n" ++ˢ
-  "        if (p > 1 && a.closest('section').classList.contains('present')) {\n" ++ˢ
-  "          if (t0 === null) t0 = now;\n" ++ˢ
-  "          a.dataset.phase = String(((now - t0) / Math.max(+a.dataset.ms, 1)) % p);\n" ++ˢ
-  "          draw(a);\n" ++ˢ
-  "        } else t0 = null;\n" ++ˢ
-  "        requestAnimationFrame(go);\n" ++ˢ
-  "      });\n" ++ˢ
-  "      return;\n" ++ˢ
-  "    }\n" ++ˢ
-  "    setInterval(function () {\n" ++ˢ
-  "      if (p > 1 && a.closest('section').classList.contains('present')) {\n" ++ˢ
-  "        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);\n" ++ˢ
-  "        draw(a);\n" ++ˢ
-  "      }\n" ++ˢ
-  "    }, ms);\n" ++ˢ
-  "  }\n" ++ˢ
-  "  document.querySelectorAll('.animation').forEach(function (a) { a._show = function (k) { frame(a, k); }; });\n" ++ˢ
-  "  document.querySelectorAll('.animation[data-loop]').forEach(spin);\n" ++ˢ
-  "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }\n" ++ˢ
-  "  Reveal.on('ready', function (e) { all(e.currentSlide); });\n" ++ˢ
-  "  Reveal.on('slidechanged', function (e) { all(e.currentSlide); });\n" ++ˢ
-  "  Reveal.on('fragmentshown', function (e) { sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
-  "  Reveal.on('fragmenthidden', function (e) { sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
+  "  var player = SlidesAnimation(function (a) { return a.closest('section').classList.contains('present'); });\n" ++ˢ
+  "  Reveal.on('ready', function (e) { player.syncAll(e.currentSlide, true); });\n" ++ˢ
+  "  Reveal.on('slidechanged', function (e) { player.syncAll(e.currentSlide, true); });\n" ++ˢ
+  "  Reveal.on('fragmentshown', function (e) { player.sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
+  "  Reveal.on('fragmenthidden', function (e) { player.sync(e.fragment.closest('.animation'), false); });\n" ++ˢ
   "})();\n"
 
 -- `init.js`: the options plus the plugins (which are JavaScript values, not

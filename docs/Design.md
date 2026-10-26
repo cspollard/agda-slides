@@ -80,9 +80,9 @@ own `_>>=_`. A backend that cannot render a feature natively either lowers it
 `uses : Deck → List Feature`, not built until a backend lacks a feature.
 
 *Animations across backends.* `renderAnimation` (a flipbook of frames with `data-*`
-attributes) is shared by the reveal.js and standalone backends, and each carries the
-same small player: `animationSync` in `init.js`, and the same code in `assets/plain.js`
-(which also shows the last step when printing). A backend that cannot play them lowers
+attributes) is shared by the reveal.js and standalone backends, and both load the
+one player, `assets/animation.js` (a few lines of glue each: which slide is shown, when a
+fragment appears; it also shows the last step when printing). A backend that cannot play them lowers
 the command with `animationFinal`, which replaces an animation by a still of the frame
 it rests on once all steps have played (`finalFrame`: the last rest, the first frame for
 a loop), or with `diagramPlaceholder`, which drops it to a one-line placeholder.

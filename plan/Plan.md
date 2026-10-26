@@ -16,8 +16,9 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      from the old ones (trailing zeros dropped) and the JSON collapses runs of unchanged
      elements: the Pairs page is 1.47 MB → 0.24 MB. The page
      player is checked against Agda (`make test-anim-ref`: every frame the player rebuilds
-     equals the frame Agda computed, on a steps animation and a 64-frame loop); the two
-     copies of the player share their frame code (`tests/check_players.py`). A *proof*
+     equals the frame Agda computed, on a steps animation and a 64-frame loop); the page
+     player is one file, `assets/animation.js`, loaded by both backends (reveal's `init.js` and
+     `plain.js` hold only glue). A *proof*
      about JavaScript is out of reach; stage 2 shrinks what the player has to be trusted with.
    - *Parametric bodies* (built; see `docs/Design.md`, "Animations"). `Slides.Diagram.Expr`:
      `Expr V = ExprC ⋆ V`, the free `Ops`-algebra (a free monad) over variables, with
@@ -52,7 +53,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    - *Continuous time* (built). A template animation ships the tracks (pieces with easings)
      and the symbolic layout; the page evaluates at the real time of each
      `requestAnimationFrame` (`Slides.Anim.Continuous`, `Slides.Diagram.NatQ`/`ExprQ`; players
-     in `plain.js` and `animationSync`). Size is independent of the tick count. Proved:
+     in `assets/animation.js`). Size is independent of the tick count. Proved:
      `sampleAt-ι`, `leafAt-ι`, `leaf-tick` (with `Faithful`), `parAt-time`, `seqAt-*`,
      `animAt-dur`, `piece-hold`, `piece-start`. Tested only: the JavaScript (float easings,
      evaluator) against exact `frameAt` at every tick and quarter tick.

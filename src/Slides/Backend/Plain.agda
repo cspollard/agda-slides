@@ -99,7 +99,7 @@ page cfg slides =
         ( hElement "div" (("class" , "deck") ∷ []) slides
         ∷ hElement "div" (("class" , "progress") ∷ []) []
         ∷ katexJs (PlainConfig.katex cfg)
-        ++ scriptTag "plain.js" ∷ [] )
+        ++ scriptTag "animation.js" ∷ scriptTag "plain.js" ∷ [] )
     ∷ [] )
   where
     katexCss : Maybe String → List XMLDoc

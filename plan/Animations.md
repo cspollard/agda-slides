@@ -286,7 +286,7 @@ Each step ends with `make check`, `make test`, and the browser run.
 4. **Backend** (flipbook done; tracks open). `animation` content command (first frame and
    the rest), `Slides.Anim.Render` (timeline → laid-out, equally sized `Diagram`s), DSL
    `animate name width anim`, `renderAnimation` (all frames emitted, later ones `hidden`,
-   one empty `.anim-step` fragment per further step), `animationSync` in `init.js`,
+   one empty `.anim-step` fragment per further step), `assets/animation.js` (shared player),
    golden test and `tests/browser/anim.mjs` (`make test-anim`, forward and backward).
    Pairs deck: lit stages, the filling histogram, the growing bars and the counters are
    `animate` (`grow`, `part`); the flow arrows are a `loop` (`Play = looping`, `Slides.Anim.Loop`); the point pairs are a loop too (`Slides.Examples.PairsHero`), so the deck has no JavaScript.
@@ -312,7 +312,7 @@ Each step ends with `make check`, `make test`, and the browser run.
    emitter (smooth sub-tick interpolation, element matching by id) remains optional.
    **Playback (replaces stepping per tick):** `animate name width ms acts`; an act is one
    reveal step and plays its frames at `ms` per frame (`restsOf` gives the resting frame
-   per step; `animationSync` moves one frame towards the target, backward too).
+   per step; the player moves one frame towards the target, backward too).
    Original plan: `Track`, `Easing`, `eval` and its laws, the paint annotations with
    their size-neutrality proofs, the CSS/SMIL emitter, then `footprint` checks,
    reversal, `tween` by bind, `trackable`.

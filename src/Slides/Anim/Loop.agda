@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Looping: the frame shown at time `t` of an animation of `n` frames repeated
--- forever is frame `t mod n` (`Slides.Core.loop`; `animationSync` steps `i ↦ (i + 1)
+-- forever is frame `t mod n` (`Slides.Core.loop`; the player steps `i ↦ (i + 1)
 -- mod n`).  This is the periodic extension of the timeline: it agrees with the
 -- timeline on its own `n` ticks, is `n`-periodic, and stepping one tick at a time
 -- from the start visits exactly that frame.
