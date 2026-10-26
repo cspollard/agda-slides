@@ -21,7 +21,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `frames` at `t` (`Slides.Anim.Generic`, one level up). Bodies that stay Agda functions
      keep the flipbook. This is also what the open-diagrams item below needs.
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
-2. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
+3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
    (`fold-agrees`); `Slides.Diagram.MapFusion` shows `mapDia f` is translation along the
    container morphism `scalarMor f` (identity on positions), hence functorial up to
