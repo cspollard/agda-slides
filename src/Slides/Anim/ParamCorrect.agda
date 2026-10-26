@@ -37,8 +37,7 @@
 
 module Slides.Anim.ParamCorrect where
 
-open import Data.Bool using (Bool; true; false; if_then_else_)
-import Data.Bool
+open import Data.Bool using (Bool; true; false; if_then_else_; _∧_; T)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo; concat)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -46,10 +45,15 @@ import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃₂)
+import Data.List.Properties as LP
 open import Data.Unit using (⊤; tt)
+open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Relation.Nullary.Decidable using (⌊_⌋)
+open import Relation.Nullary using (yes; no)
 open import Data.Fin using (zero; suc)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst; subst₂)
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
@@ -63,6 +67,7 @@ open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline; merge; frames; length-dur)
 open import Slides.Anim.Param
 open import Slides.Anim.Continuous using (mergeM)
+import Slides.Diagram.Param as DP
 
 private
   layoutℕ : Dia ℕ → Layout ℕ
@@ -200,7 +205,7 @@ private
   nth-++′ xs ys j n refl = nth-++ xs ys j
 
   lt-false : ∀ {m n} → (m <ᵇ n) ≡ false → n ≤ m
-  lt-false {m} {n} e = ℕP.≮⇒≥ (λ h → subst Data.Bool.T e (ℕP.<⇒<ᵇ h))
+  lt-false {m} {n} e = ℕP.≮⇒≥ (λ h → subst T e (ℕP.<⇒<ᵇ h))
 
 Agree-++ : ∀ {G₁ G₂ t xs xs′ ys ys′} → Agree G₁ t xs xs′ → Agree G₂ (t + length xs) ys ys′ →
            Agree (λ k ρ → G₁ k ρ × G₂ k ρ) t (xs ++ ys) (xs′ ++ ys′)
@@ -276,3 +281,337 @@ leaves-agree (impure (Par , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (
 ... | (i₁ , a′) , e₁ , r₁ with bind-just (leaves i₁ _ (k (suc zero))) _ r₁
 ... | (i₂ , b′) , e₂ , refl =
   Agree-merge (leaves-agree (k zero) i t₀ i₁ a′ e₁) (leaves-agree (k (suc zero)) i₁ t₀ i₂ b′ e₂)
+
+------------------------------------------------------------------------
+-- Tick by tick
+
+private
+  nth-in : ∀ {A : Set} (xs : List A) j → (j <ᵇ length xs) ≡ true → ∃ λ x → nth xs j ≡ just x
+  nth-in []       j       ()
+  nth-in (x ∷ xs) zero    h = x , refl
+  nth-in (x ∷ xs) (suc j) h = nth-in xs j h
+
+  Rel-just : ∀ {G F m} → Rel G (just F) m →
+             ∃ λ S → m ≡ just S × (∀ ρ → G ρ → layoutℕ F ≡ mapLayout (eval ρ) (layoutE S))
+  Rel-just (bothFrames {y = y} r) = y , refl , r
+
+-- Statement (A).  For an animation of templates (`leaves 0 0 a ≡ just (i′ , l)`), at every tick
+-- `k < dur a` the frame of `timeline atop (frames natOps) a` is the layout of the symbolic
+-- frame evaluated at any assignment `ρ` that gives each leaf running at `k` the (floored)
+-- parameter of its track at that tick (`GoodL l k ρ`).
+discrete-assembly :
+  ∀ (a : Anim ℕ (Seg ℕ)) i′ l → leaves 0 0 a ≡ just (i′ , l) → ∀ k → (k <ᵇ dur a) ≡ true →
+  ∀ ρ → GoodL l k ρ →
+  ∃₂ λ F S → nth (timeline atop (frames natOps) a) k ≡ just F
+           × nth (symbolicFrames l) k ≡ just S
+           × layoutℕ F ≡ mapLayout (eval ρ) (layoutE S)
+discrete-assembly a i′ l eq k hk ρ g with nth-in (timeline atop (frames natOps) a) k
+                                            (subst (λ n → (k <ᵇ n) ≡ true) (sym (length-dur natOps a)) hk)
+... | F , eF with Rel-just (subst (λ m → Rel (GoodL l k) m (nth (symbolicFrames l) k)) eF (at (leaves-agree a 0 0 i′ l eq) k))
+... | S , eS , r = F , S , eF , eS , r ρ g
+
+------------------------------------------------------------------------
+-- The assignment `i ↦ (parameter of segment i at tick k)`
+--
+-- `GoodL` says what an assignment must do; this is one that does it.  The leaves of `leaves`
+-- are numbered apart (`numbered`: the variables of a tree lie in `[i, i′)`, a `Seq` or `Par`
+-- splitting the range at `i₁`), and `assignAt` gives variable `j` the floored parameter of the
+-- leaf numbered `j` at tick `k` if that leaf is running, and 0 otherwise.
+
+numbered : ℕ → ℕ → AnimC ⋆ Leaf → Set
+numbered i i′ (pure l)           = Leaf.idx l ≡ i × i′ ≡ suc i
+numbered i i′ (impure (Seq , c)) = ∃ λ i₁ → numbered i i₁ (c zero) × numbered i₁ i′ (c (suc zero))
+numbered i i′ (impure (Par , c)) = ∃ λ i₁ → numbered i i₁ (c zero) × numbered i₁ i′ (c (suc zero))
+
+leaves-numbered : ∀ (a : Anim ℕ (Seg ℕ)) i t₀ i′ l → leaves i t₀ a ≡ just (i′ , l) → numbered i i′ l
+leaves-numbered (pure (seg tr (template d))) i t₀ _ _ refl = refl , refl
+leaves-numbered (pure (seg tr (blackBox f))) i t₀ _ _ ()
+leaves-numbered (impure (Seq , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (k zero)) _ eq
+... | (i₁ , a′) , e₁ , r₁ with bind-just (leaves i₁ _ (k (suc zero))) _ r₁
+... | (i₂ , b′) , e₂ , refl = i₁ , leaves-numbered (k zero) i t₀ i₁ a′ e₁ , leaves-numbered (k (suc zero)) i₁ _ i₂ b′ e₂
+leaves-numbered (impure (Par , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (k zero)) _ eq
+... | (i₁ , a′) , e₁ , r₁ with bind-just (leaves i₁ _ (k (suc zero))) _ r₁
+... | (i₂ , b′) , e₂ , refl = i₁ , leaves-numbered (k zero) i t₀ i₁ a′ e₁ , leaves-numbered (k (suc zero)) i₁ t₀ i₂ b′ e₂
+
+numbered-≤ : ∀ t i i′ → numbered i i′ t → i ≤ i′
+numbered-≤ (pure l)           i i′ (refl , refl) = ℕP.n≤1+n i
+numbered-≤ (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) = ℕP.≤-trans (numbered-≤ (c zero) i i₁ n₁) (numbered-≤ (c (suc zero)) i₁ i′ n₂)
+numbered-≤ (impure (Par , c)) i i′ (i₁ , n₁ , n₂) = ℕP.≤-trans (numbered-≤ (c zero) i i₁ n₁) (numbered-≤ (c (suc zero)) i₁ i′ n₂)
+
+-- the parameter of a leaf at tick `k` if it is running there
+activeVal : Leaf → ℕ → ℕ
+activeVal l k =
+  if (Leaf.start l ℕ.≤ᵇ k) ∧ (k <ᵇ Leaf.start l + T.dur (Leaf.track l))
+  then units (proj₂ (T.sample T.ℚLerp (Leaf.track l)) (k ∸ Leaf.start l)) else 0
+
+assignAt : AnimC ⋆ Leaf → ℕ → ℕ → ℕ
+assignAt (pure l)           k j = if ⌊ j ℕP.≟ Leaf.idx l ⌋ then activeVal l k else 0
+assignAt (impure (Seq , c)) k j = assignAt (c zero) k j + assignAt (c (suc zero)) k j
+assignAt (impure (Par , c)) k j = assignAt (c zero) k j + assignAt (c (suc zero)) k j
+
+private
+  T⇒≡ : ∀ {b} → T b → b ≡ true
+  T⇒≡ {true} _ = refl
+
+  <ᵇ-true : ∀ {m n} → m ℕ.< n → (m <ᵇ n) ≡ true
+  <ᵇ-true h = T⇒≡ (ℕP.<⇒<ᵇ h)
+
+  ≤ᵇ-true : ∀ {m n} → m ≤ n → (m ℕ.≤ᵇ n) ≡ true
+  ≤ᵇ-true h = T⇒≡ (ℕP.≤⇒≤ᵇ h)
+
+  <ᵇ-lt : ∀ {m n} → (m <ᵇ n) ≡ true → m ℕ.< n
+  <ᵇ-lt {m} {n} h = ℕP.<ᵇ⇒< m n (subst T (sym h) tt)
+
+  true≢false : true ≡ false → ⊥
+  true≢false ()
+
+  <ᵇ-irrefl : ∀ i → (i <ᵇ i) ≡ false
+  <ᵇ-irrefl zero    = refl
+  <ᵇ-irrefl (suc i) = <ᵇ-irrefl i
+
+  ⌊≟⌋-diag : ∀ i → ⌊ i ℕP.≟ i ⌋ ≡ true
+  ⌊≟⌋-diag i rewrite ℕP.≟-diag {i} {i} refl = refl
+
+activeVal-on : ∀ l m → (m <ᵇ T.dur (Leaf.track l)) ≡ true →
+               activeVal l (Leaf.start l + m) ≡ units (proj₂ (T.sample T.ℚLerp (Leaf.track l)) m)
+activeVal-on l m h =
+  trans (cong (λ b → if b then units (proj₂ (T.sample T.ℚLerp (Leaf.track l)) (Leaf.start l + m ∸ Leaf.start l)) else 0)
+              (cong₂ _∧_ (≤ᵇ-true (ℕP.m≤m+n (Leaf.start l) m))
+                         (<ᵇ-true (ℕP.+-monoʳ-< (Leaf.start l) (<ᵇ-lt h)))))
+        (cong (λ x → units (proj₂ (T.sample T.ℚLerp (Leaf.track l)) x)) (ℕP.m+n∸m≡n (Leaf.start l) m))
+
+assignAt-out : ∀ t i i′ → numbered i i′ t → ∀ k j → ((j <ᵇ i) ≡ true) ⊎ (i′ ≤ j) → assignAt t k j ≡ 0
+assignAt-out (pure l) i i′ (refl , refl) k j out with j ℕP.≟ Leaf.idx l
+... | no  _    = refl
+... | yes refl with out
+...   | inj₁ h = ⊥-elim (true≢false (trans (sym h) (<ᵇ-irrefl (Leaf.idx l))))
+...   | inj₂ h = ⊥-elim (ℕP.1+n≰n h)
+assignAt-out (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) k j out =
+  cong₂ _+_ (assignAt-out (c zero) i i₁ n₁ k j (outˡ n₂ out))
+            (assignAt-out (c (suc zero)) i₁ i′ n₂ k j (outʳ n₁ out))
+  where
+    outˡ : numbered i₁ i′ (c (suc zero)) → _ → _
+    outˡ n₂ (inj₁ h) = inj₁ h
+    outˡ n₂ (inj₂ h) = inj₂ (ℕP.≤-trans (numbered-≤ _ i₁ i′ n₂) h)
+    outʳ : numbered i i₁ (c zero) → _ → _
+    outʳ n₁ (inj₁ h) = inj₁ (<ᵇ-true (ℕP.<-≤-trans (<ᵇ-lt h) (numbered-≤ _ i i₁ n₁)))
+    outʳ n₁ (inj₂ h) = inj₂ h
+assignAt-out (impure (Par , c)) i i′ (i₁ , n₁ , n₂) k j out =
+  cong₂ _+_ (assignAt-out (c zero) i i₁ n₁ k j (outˡ n₂ out))
+            (assignAt-out (c (suc zero)) i₁ i′ n₂ k j (outʳ n₁ out))
+  where
+    outˡ : numbered i₁ i′ (c (suc zero)) → _ → _
+    outˡ n₂ (inj₁ h) = inj₁ h
+    outˡ n₂ (inj₂ h) = inj₂ (ℕP.≤-trans (numbered-≤ _ i₁ i′ n₂) h)
+    outʳ : numbered i i₁ (c zero) → _ → _
+    outʳ n₁ (inj₁ h) = inj₁ (<ᵇ-true (ℕP.<-≤-trans (<ᵇ-lt h) (numbered-≤ _ i i₁ n₁)))
+    outʳ n₁ (inj₂ h) = inj₂ h
+
+-- `assignAt` is good, and so is anything that agrees with it on the variables of the tree
+canonical-good : ∀ t i i′ → numbered i i′ t → ∀ k ρ →
+                 (∀ j → i ≤ j → j ℕ.< i′ → ρ j ≡ assignAt t k j) → GoodL t k ρ
+canonical-good (pure l) i i′ (refl , refl) k ρ h m hm refl =
+  trans (h (Leaf.idx l) ℕP.≤-refl (ℕP.n<1+n (Leaf.idx l)))
+        (trans (cong (λ b → if b then activeVal l (Leaf.start l + m) else 0) (⌊≟⌋-diag (Leaf.idx l)))
+               (activeVal-on l m hm))
+canonical-good (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) k ρ h =
+  canonical-good (c zero) i i₁ n₁ k ρ
+    (λ j lo hi → trans (h j lo (ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)))
+                       (trans (cong (assignAt (c zero) k j +_) (assignAt-out _ i₁ i′ n₂ k j (inj₁ (<ᵇ-true hi))))
+                              (ℕP.+-identityʳ _)))
+  , canonical-good (c (suc zero)) i₁ i′ n₂ k ρ
+    (λ j lo hi → trans (h j (ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo) hi)
+                       (cong (_+ assignAt (c (suc zero)) k j) (assignAt-out _ i i₁ n₁ k j (inj₂ lo))))
+canonical-good (impure (Par , c)) i i′ (i₁ , n₁ , n₂) k ρ h =
+  canonical-good (c zero) i i₁ n₁ k ρ
+    (λ j lo hi → trans (h j lo (ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)))
+                       (trans (cong (assignAt (c zero) k j +_) (assignAt-out _ i₁ i′ n₂ k j (inj₁ (<ᵇ-true hi))))
+                              (ℕP.+-identityʳ _)))
+  , canonical-good (c (suc zero)) i₁ i′ n₂ k ρ
+    (λ j lo hi → trans (h j (ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo) hi)
+                       (cong (_+ assignAt (c (suc zero)) k j) (assignAt-out _ i i₁ n₁ k j (inj₂ lo))))
+
+-- Statement (A), with the assignment named: variable `j` is the floored parameter, at tick `k`, of
+-- the segment numbered `j` (0 when it is not running).  No hypothesis beyond `a` being made of
+-- templates.
+discrete-assembly-canonical :
+  ∀ (a : Anim ℕ (Seg ℕ)) i′ l → leaves 0 0 a ≡ just (i′ , l) → ∀ k → (k <ᵇ dur a) ≡ true →
+  ∃₂ λ F S → nth (timeline atop (frames natOps) a) k ≡ just F
+           × nth (symbolicFrames l) k ≡ just S
+           × layoutℕ F ≡ mapLayout (eval (assignAt l k)) (layoutE S)
+discrete-assembly-canonical a i′ l eq k hk =
+  discrete-assembly a i′ l eq k hk (assignAt l k)
+    (canonical-good l 0 i′ (leaves-numbered a 0 0 i′ l eq) k (assignAt l k) (λ j _ _ → refl))
+
+------------------------------------------------------------------------
+-- The shipped segments are the leaves, in order of their variable
+
+-- `lf` is a leaf of the tree
+InTree : Leaf → AnimC ⋆ Leaf → Set
+InTree lf (pure l)           = lf ≡ l
+InTree lf (impure (Seq , c)) = InTree lf (c zero) ⊎ InTree lf (c (suc zero))
+InTree lf (impure (Par , c)) = InTree lf (c zero) ⊎ InTree lf (c (suc zero))
+
+InTree-range : ∀ t i i′ lf → numbered i i′ t → InTree lf t → i ≤ Leaf.idx lf × Leaf.idx lf ℕ.< i′
+InTree-range (pure l) i i′ lf (refl , refl) refl = ℕP.≤-refl , ℕP.n<1+n _
+InTree-range (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) with InTree-range (c zero) i i₁ lf n₁ h
+... | lo , hi = lo , ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)
+InTree-range (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) with InTree-range (c (suc zero)) i₁ i′ lf n₂ h
+... | lo , hi = ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo , hi
+InTree-range (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) with InTree-range (c zero) i i₁ lf n₁ h
+... | lo , hi = lo , ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)
+InTree-range (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) with InTree-range (c (suc zero)) i₁ i′ lf n₂ h
+... | lo , hi = ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo , hi
+
+length-segmentsOf : ∀ t i i′ → numbered i i′ t → i + length (segmentsOf t) ≡ i′
+length-segmentsOf (pure l) i i′ (refl , refl) = ℕP.+-comm i 1
+length-segmentsOf (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) =
+  trans (cong (i +_) (LP.length-++ (segmentsOf (c zero))))
+  (trans (sym (ℕP.+-assoc i (length (segmentsOf (c zero))) (length (segmentsOf (c (suc zero))))))
+  (trans (cong (_+ length (segmentsOf (c (suc zero)))) (length-segmentsOf (c zero) i i₁ n₁))
+         (length-segmentsOf (c (suc zero)) i₁ i′ n₂)))
+length-segmentsOf (impure (Par , c)) i i′ (i₁ , n₁ , n₂) =
+  trans (cong (i +_) (LP.length-++ (segmentsOf (c zero))))
+  (trans (sym (ℕP.+-assoc i (length (segmentsOf (c zero))) (length (segmentsOf (c (suc zero))))))
+  (trans (cong (_+ length (segmentsOf (c (suc zero)))) (length-segmentsOf (c zero) i i₁ n₁))
+         (length-segmentsOf (c (suc zero)) i₁ i′ n₂)))
+
+private
+  lt-or-ge : ∀ x y → x ℕ.< y ⊎ y ≤ x
+  lt-or-ge x y with ℕP.<-cmp x y
+  ... | tri< a _ _ = inj₁ a
+  ... | tri≈ _ b _ = inj₂ (ℕP.≤-reflexive (sym b))
+  ... | tri> _ _ c = inj₂ (ℕP.<⇒≤ c)
+
+  <ᵇ-false : ∀ {m n} → n ≤ m → (m <ᵇ n) ≡ false
+  <ᵇ-false {m} {zero}  ℕ.z≤n       = refl
+  <ᵇ-false {suc m} {suc n} (ℕ.s≤s h) = <ᵇ-false h
+
+  -- reading the `d`-th element of `xs ++ ys` when `xs` and `ys` cover consecutive ranges of
+  -- positions `[i, i₁)`, `[i₁, …)`
+  nth-join : ∀ {A : Set} (xs ys : List A) i i₁ x (r : A) d → i + length xs ≡ i₁ → i + d ≡ x →
+             (x ℕ.< i₁ → nth xs d ≡ just r) →
+             (i₁ ≤ x → ∀ d′ → i₁ + d′ ≡ x → nth ys d′ ≡ just r) →
+             nth (xs ++ ys) d ≡ just r
+  nth-join xs ys i i₁ x r d len e h₁ h₂ with lt-or-ge x i₁
+  ... | inj₁ lt = trans (trans (nth-++ xs ys d) (cong (λ b → if b then nth xs d else nth ys (d ∸ length xs)) d<))
+                        (h₁ lt)
+    where d< = <ᵇ-true (ℕP.+-cancelˡ-< i d (length xs) (subst₂ ℕ._<_ (sym e) (sym len) lt))
+  ... | inj₂ ge = trans (trans (nth-++ xs ys d) (cong (λ b → if b then nth xs d else nth ys (d ∸ length xs)) d≮))
+                        (h₂ ge (d ∸ length xs) off)
+    where d≥ : length xs ≤ d
+          d≥ = ℕP.+-cancelˡ-≤ i _ d (subst₂ ℕ._≤_ (sym len) (sym e) ge)
+          d≮ = <ᵇ-false d≥
+          off = trans (cong (_+ (d ∸ length xs)) (sym len))
+                 (trans (ℕP.+-assoc i (length xs) (d ∸ length xs))
+                 (trans (cong (i +_) (ℕP.m+[n∸m]≡n d≥)) e))
+
+-- the `d`-th shipped segment, counting from the first variable `i`, is the leaf numbered `i + d`
+segmentsOf-nth : ∀ t i i′ lf → numbered i i′ t → InTree lf t → ∀ d → i + d ≡ Leaf.idx lf →
+                 nth (segmentsOf t) d ≡ just (Leaf.start lf , pieces (Leaf.track lf))
+segmentsOf-nth (pure l) i i′ lf (refl , refl) refl d h
+  with ℕP.+-cancelˡ-≡ (Leaf.idx l) d 0 (trans h (sym (ℕP.+-identityʳ _)))
+... | refl = refl
+segmentsOf-nth (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) d e =
+  nth-join (segmentsOf (c zero)) (segmentsOf (c (suc zero))) i i₁ (Leaf.idx lf) _ d
+    (length-segmentsOf (c zero) i i₁ n₁) e
+    (λ _ → segmentsOf-nth (c zero) i i₁ lf n₁ h d e)
+    (λ ge → ⊥-elim (ℕP.<⇒≱ (proj₂ (InTree-range (c zero) i i₁ lf n₁ h)) ge))
+segmentsOf-nth (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) d e =
+  nth-join (segmentsOf (c zero)) (segmentsOf (c (suc zero))) i i₁ (Leaf.idx lf) _ d
+    (length-segmentsOf (c zero) i i₁ n₁) e
+    (λ lt → ⊥-elim (ℕP.<⇒≱ lt (proj₁ (InTree-range (c (suc zero)) i₁ i′ lf n₂ h))))
+    (λ _ d′ e′ → segmentsOf-nth (c (suc zero)) i₁ i′ lf n₂ h d′ e′)
+segmentsOf-nth (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) d e =
+  nth-join (segmentsOf (c zero)) (segmentsOf (c (suc zero))) i i₁ (Leaf.idx lf) _ d
+    (length-segmentsOf (c zero) i i₁ n₁) e
+    (λ _ → segmentsOf-nth (c zero) i i₁ lf n₁ h d e)
+    (λ ge → ⊥-elim (ℕP.<⇒≱ (proj₂ (InTree-range (c zero) i i₁ lf n₁ h)) ge))
+segmentsOf-nth (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) d e =
+  nth-join (segmentsOf (c zero)) (segmentsOf (c (suc zero))) i i₁ (Leaf.idx lf) _ d
+    (length-segmentsOf (c zero) i i₁ n₁) e
+    (λ lt → ⊥-elim (ℕP.<⇒≱ lt (proj₁ (InTree-range (c (suc zero)) i₁ i′ lf n₂ h))))
+    (λ _ d′ e′ → segmentsOf-nth (c (suc zero)) i₁ i′ lf n₂ h d′ e′)
+
+------------------------------------------------------------------------
+-- What `render` ships
+
+private
+  map-just : ∀ {A B : Set} (f : A → B) (m : Maybe A) {y} → Maybe.map f m ≡ just y →
+             ∃ λ x → m ≡ just x × f x ≡ y
+  map-just f (just x) refl = x , refl , refl
+  map-just f nothing  ()
+
+-- the acts, one after the other, play their frames one after the other
+seqAll-timeline : ∀ acts {a} → seqAll acts ≡ just a →
+                  timeline atop (frames natOps) a ≡ concat (map (timeline atop (frames natOps)) acts)
+seqAll-timeline []             ()
+seqAll-timeline (a ∷ [])       refl = sym (LP.++-identityʳ (timeline atop (frames natOps) a))
+seqAll-timeline (a ∷ b ∷ as)   eq =
+  let r = map-just (a ⨾_) (seqAll (b ∷ as)) eq in
+  trans (cong (timeline atop (frames natOps)) (sym (proj₂ (proj₂ r))))
+        (cong (timeline atop (frames natOps) a ++_) (seqAll-timeline (b ∷ as) (proj₁ (proj₂ r))))
+
+-- what `paramOf` is made of
+paramOf-inv : ∀ acts {p} → paramOf acts ≡ just p →
+              ∃₂ λ a l → seqAll acts ≡ just a × (∃ λ i′ → leaves 0 0 a ≡ just (i′ , l)) × mkParam l ≡ p
+paramOf-inv acts eq with bind-just (seqAll acts) _ eq
+... | a , e₁ , r₁ with bind-just (leaves 0 0 a) _ r₁
+... | (i′ , l) , e₂ , r₂ = a , l , e₁ , (i′ , e₂) , ne (mkParam l) r₂
+  where
+    ne : ∀ q {p} → nonEmptyParam q ≡ just p → q ≡ p
+    ne q eq with DP.Param.ticks q
+    ne q refl | _ ∷ _ = refl
+
+private
+  shipped : ∀ acts a l i′ → seqAll acts ≡ just a → leaves 0 0 a ≡ just (i′ , l) →
+            ∀ k → (k <ᵇ length (concat (map (timeline atop (frames natOps)) acts))) ≡ true →
+            ∀ ρ → GoodL l k ρ →
+            ∃₂ λ F L → nth (concat (map (timeline atop (frames natOps)) acts)) k ≡ just F
+                     × nth (DP.Param.ticks (mkParam l)) k ≡ just L
+                     × layoutℕ F ≡ mapLayout (eval ρ) L
+  shipped acts a l i′ ea el k hk ρ g =
+    let hk′ = subst (λ xs → (k <ᵇ length xs) ≡ true) (sym (seqAll-timeline acts ea)) hk
+        hk″ = subst (λ n → (k <ᵇ n) ≡ true) (length-dur natOps a) hk′
+    in go (seqAll-timeline acts ea) (discrete-assembly a i′ l el k hk″ ρ g)
+    where
+      go : timeline atop (frames natOps) a ≡ concat (map (timeline atop (frames natOps)) acts) →
+           (∃₂ λ F S → nth (timeline atop (frames natOps) a) k ≡ just F
+                     × nth (symbolicFrames l) k ≡ just S
+                     × layoutℕ F ≡ mapLayout (eval ρ) (layoutE S)) → _
+      go e (F , S , eF , eS , r) = F , layoutE S , subst (λ xs → nth xs k ≡ just F) e eF
+                                  , trans (nth-map layoutE (symbolicFrames l) k) (cong (Maybe.map layoutE) eS) , r
+
+-- Statement (A) for what `render` ships.  If `paramOf acts ≡ just p`, there are leaves `l`
+-- (the numbered segments, with their tracks) whose `segmentsOf` are the shipped `segments`, and
+-- for every tick `k` of the frames `render` shows (`concat (map (timeline atop (frames natOps))
+-- acts)`) and every assignment `ρ` that is right for the leaves running at `k`, the shipped
+-- layout of tick `k`, evaluated at `ρ`, is the layout of the shown frame.
+paramOf-assembly :
+  ∀ acts {p} → paramOf acts ≡ just p →
+  ∃ λ l → DP.Param.segments p ≡ segmentsOf l
+        × ∀ k → (k <ᵇ length (concat (map (timeline atop (frames natOps)) acts))) ≡ true →
+          ∀ ρ → GoodL l k ρ →
+          ∃₂ λ F L → nth (concat (map (timeline atop (frames natOps)) acts)) k ≡ just F
+                   × nth (DP.Param.ticks p) k ≡ just L
+                   × layoutℕ F ≡ mapLayout (eval ρ) L
+paramOf-assembly acts eq with paramOf-inv acts eq
+... | a , l , ea , (i′ , el) , refl = l , refl , shipped acts a l i′ ea el
+
+-- The same with the assignment named, and the shipped segments identified: variable `j` is the
+-- `j`-th entry of `segments` (the leaf `lf` with `idx lf ≡ j`: `(start lf , pieces (track lf))`),
+-- and its value at tick `k` is the floored parameter of that segment's track there.
+paramOf-assembly-canonical :
+  ∀ acts {p} → paramOf acts ≡ just p →
+  ∃ λ l → DP.Param.segments p ≡ segmentsOf l
+        × (∀ lf → InTree lf l → nth (DP.Param.segments p) (Leaf.idx lf) ≡ just (Leaf.start lf , pieces (Leaf.track lf)))
+        × ∀ k → (k <ᵇ length (concat (map (timeline atop (frames natOps)) acts))) ≡ true →
+          ∃₂ λ F L → nth (concat (map (timeline atop (frames natOps)) acts)) k ≡ just F
+                   × nth (DP.Param.ticks p) k ≡ just L
+                   × layoutℕ F ≡ mapLayout (eval (assignAt l k)) L
+paramOf-assembly-canonical acts eq with paramOf-inv acts eq
+... | a , l , ea , (i′ , el) , refl = l , refl , segs , λ k hk →
+  shipped acts a l i′ ea el k hk (assignAt l k) (canonical-good l 0 i′ (leaves-numbered a 0 0 i′ l el) k (assignAt l k) (λ j _ _ → refl))
+  where
+    segs : ∀ lf → InTree lf l → nth (segmentsOf l) (Leaf.idx lf) ≡ just (Leaf.start lf , pieces (Leaf.track lf))
+    segs lf h = segmentsOf-nth l 0 i′ lf (leaves-numbered a 0 0 i′ l el) h (Leaf.idx lf) refl

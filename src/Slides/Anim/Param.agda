@@ -100,16 +100,18 @@ seqAll []           = nothing
 seqAll (a ∷ [])     = just a
 seqAll (a ∷ b ∷ as) = Maybe.map (a ⨾_) (seqAll (b ∷ as))
 
+-- no frames: the empty frame is not a parametric one
+nonEmptyParam : Param → Maybe Param
+nonEmptyParam p with Param.ticks p
+... | []    = nothing
+... | _ ∷ _ = just p
+
 -- the parametric encoding of acts played one after the other, if every segment is a template
 paramOf : List (Anim ℕ (Seg ℕ)) → Maybe Param
 paramOf acts =
   seqAll acts Maybe.>>= λ a →
   leaves 0 0 a Maybe.>>= λ { (_ , l) →
-  nonEmpty (mkParam l) }
-  where nonEmpty : Param → Maybe Param
-        nonEmpty p with Param.ticks p
-        ... | []    = nothing   -- no frames: the empty frame is not a parametric one
-        ... | _ ∷ _ = just p
+  nonEmptyParam (mkParam l) }
 
 ------------------------------------------------------------------------
 -- Agreement for one segment
