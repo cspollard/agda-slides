@@ -132,6 +132,46 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    documented minimum for RAM and the standard-library version (`v2.3`; an older checkout
    fails with a missing `Data.Bool.ListAction`).
 
+   *Status (branch `perf-consolidate`).* Baseline, clean typecheck of every module
+   (`--profile=modules`): 634 s, 5.3 GB peak RSS, 30% in GC. Heavy modules: `Anim.Track` 131 s
+   (one definition, `reversal`), `Anim.ContinuousAssembly` 111 s, `Anim.Continuous` 67 s,
+   `Anim.DPhases` 63 s, `Examples.PairsScalar` 58 s, `Anim.DParamCorrect` 54 s,
+   `Anim.ParamCorrect` 30 s, `Container.FreeMonad.Monadic` 25 s; each module also spends 20-57 s
+   "Miscellaneous" loading and re-serialising big interfaces, so time and memory follow how much
+   a module imports. Every executable imported 56-59 modules / 10.9-11.7K lines because runtime
+   code and proofs shared files. Done, consolidation first:
+   - *One proof, two readings.* `Phases`/`DPhases` and `ParamCorrect`/`DParamCorrect` were copies.
+     The encoder and grouping are one generic runtime definition (`Phases.encodeWith`,
+     `phasesWith`); its meaning is proved once for any reading of formulas
+     (`PhasesCorrect.Over`: two facts per slot, `slot-val`, `slot-num`) and instantiated at ℚ and
+     ℕ (`PhasesReadings`). `Leaf` is parametrised by the language of its template's numbers and
+     the whole assembly induction (leaves-agree, tick-by-tick, numbering, canonical assignment,
+     `segmentsOf-nth`) is proved once (`LeafAssembly`); `ParamCorrect` and `DParamCorrect` are
+     instances (the discrete one gains the canonical form). `DPhases` went from 261 to 31 lines,
+     `DParamCorrect` from 147 to 98; old theorem names are kept as aliases.
+   - *Decidable equality by retraction* (`Slides.DecEq`): `Formula`, `Element` (`Delta`), `Draw`,
+     Share's `Arg`/`Op1`/`Op2`/`Node` are retracts of sums/products (or of a rose tree, for the
+     recursive ones) with one generic equality: about 400 lines of constructor-pair clauses gone.
+   - *Runtime separated from proofs:* `Formula`/`FormulaCorrect`, `Share`/`ShareCorrect`,
+     `SharePhases`/`SharePhasesCorrect`; `mergeM` moved to `Timeline` (so `Nth` and `Phases` no
+     longer import `Continuous`/`ParamCorrect`); `leaf-agrees` moved out of `Param`/`DParam`;
+     small shared lemmas in `Anim.Arith`; unused names pruned from `using` lists. Executable
+     closures: PairsMain 57 modules / 11,666 lines -> 50 / 7,990; IntroMain 57 / 11,189 -> 50 /
+     7,513; ShowcaseMain 57 / 11,105 -> 50 / 7,429; Plain/TalkMain 56 / 10,875 -> 49 / 7,199;
+     AnimRefMain 59 / 11,566 -> 56 / 8,855 (it also imports `Continuous`).
+   - *Measured* (same machine, under load): clean typecheck 563 s (was 634), peak RSS 5.0 GB
+     (was 5.3), GC 167 s. `PhasesReadings` is 20 s where `DPhases` was 63 s; `DParamCorrect`
+     0.3 s (the instantiation cost now shows in `ParamCorrect`, 57 s: net -27 s for the pair).
+     A cold `make example talk plain showcase pairs animref` (GHC included) took 627 s, agda
+     peaking at 1.8 GB resident.
+   Remaining: `Anim.Track` (`reversal`) and `PairsScalar` belong to the hot-proofs work;
+   `ContinuousAssembly` (107 s) and `Continuous` (67 s) are now outside every deck executable
+   except `animref`, and could be sped up by explicit signatures / `abstract` for the big `with`
+   proofs; the proof parts of `Expr`, `Euclid`, `Anim.Syntax`, `Delta` (about 300 lines in all) are
+   still in the runtime modules; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
+   target `make spike`). `--erasure` was not tried. Peak memory is still set by the single
+   `make check` process; the lever is fewer, smaller interfaces per module.
+
 ## Risks
 
 - **Submodule.** parsnip is pinned by the submodule commit; builds need
