@@ -36,7 +36,7 @@
 -- domain where its differences are non-negative) and a ℕ frame at the floor of a fractional
 -- sample differs from the ℚ frame at the sample itself.
 --
--- Proved here.
+-- Proved in `Slides.Anim.Continuous.Properties`.
 --   * `sampleAt-ι`: at whole ticks the continuous sample of a track is the discrete one
 --     (`Slides.Anim.Track.sample`), exactly; so is `leafAt-ι` for a segment's frame.
 --   * `leaf-tick`: if moreover the sample is a whole number and the template's layout is exact
@@ -56,31 +56,25 @@
 
 module Slides.Anim.Continuous where
 
-open import Data.Bool using (Bool; true; false; not; _∧_; if_then_else_; T)
+open import Data.Bool using (Bool; not; _∧_; if_then_else_; T)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Unit using (⊤)
 open import Data.Integer as ℤ using (+_)
 open import Data.Nat as ℕ using (ℕ; suc; zero)
-import Data.Nat.Properties as ℕP
-open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _/_)
-import Data.Rational.Properties as ℚP
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Data.Fin using (zero; suc)
-open import Data.Empty using ()
-open import Data.Unit using ()
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 
-open import Slides.Diagram.NatQ using (ι; ι-≤ᵇ; ι-∸; ι-ratio)
+open import Slides.Diagram.NatQ using (ι)
+
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Timeline using (mergeM)
-open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete; dur; Seq; Par)
-open import Slides.Diagram.Draw using (Layout; mapLayout)
-open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
-open import Slides.Diagram.Expr using (Expr; evalWith; exprOps)
+open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete)
+open import Slides.Diagram.Draw using (Layout)
+open import Slides.Diagram.Expr using (Expr; evalWith)
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Scalar using (ratOps; natOps)
+open import Slides.Diagram.Scalar using (ratOps)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
 
 ------------------------------------------------------------------------
@@ -110,77 +104,6 @@ sampleAt : ∀ {A} → Tr.Lerp A → Tr.Track A → Timed A
 sampleAt L = Tr.foldT (λ p → Tr.ticks p , pieceAt L p) seqAt
 
 ------------------------------------------------------------------------
--- Whole ticks: the continuous sample is the discrete one
-
-private
-  lt-suc : ∀ a b → not (a ℕ.<ᵇ b) ≡ (b ℕ.<ᵇ suc a)
-  lt-suc zero    zero    = refl
-  lt-suc zero    (suc b) = refl
-  lt-suc (suc a) zero    = refl
-  lt-suc (suc a) (suc b) = lt-suc a b
-
-  nat-not : ∀ m n → not (n ℕ.≤ᵇ m) ≡ (m ℕ.<ᵇ n)
-  nat-not m zero    = refl
-  nat-not m (suc n) = lt-suc n m
-
-ι-<ᵗ : ∀ k n → (ι k <ᵗ ι n) ≡ (k ℕ.<ᵇ n)
-ι-<ᵗ k n = trans (cong not (ι-≤ᵇ n k)) (nat-not k n)
-
-ratioAt-ι : ∀ k d → ratioAt (ι k) d ≡ Tr.ratio k d
-ratioAt-ι k zero    = refl
-ratioAt-ι k (suc d) =
-  trans (cong (λ c → if c then ι k ℚ.* (+ 1 / suc d) else 1ℚ) (ι-<ᵗ k (suc d))) (go (k ℕ.<ᵇ suc d))
-  where go : ∀ b → (if b then ι k ℚ.* (+ 1 / suc d) else 1ℚ) ≡ (if b then + k / suc d else 1ℚ)
-        go true  = ι-ratio k d
-        go false = refl
-
-pieceAt-ι : ∀ {A} (L : Tr.Lerp A) (p : Tr.Piece A) k →
-            pieceAt L p (ι k) ≡ proj₂ (Tr.samplePiece L p) k
-pieceAt-ι L (Tr.piece d a b e) k = cong (λ r → Tr.Lerp.lerp L (Tr.progress e r) a b) (ratioAt-ι k d)
-
-sampleAt-dur : ∀ {A} (L : Tr.Lerp A) (tr : Tr.Track A) → proj₁ (sampleAt L tr) ≡ proj₁ (Tr.sample L tr)
-sampleAt-dur L (pure p)         = refl
-sampleAt-dur L (impure (_ , c)) = cong₂ ℕ._+_ (sampleAt-dur L (c zero)) (sampleAt-dur L (c (suc zero)))
-
--- A track sampled at whole ticks of real time is the track sampled by ticks.
-sampleAt-ι : ∀ {A} (L : Tr.Lerp A) (tr : Tr.Track A) k →
-             proj₂ (sampleAt L tr) (ι k) ≡ proj₂ (Tr.sample L tr) k
-sampleAt-ι L (pure p) k = pieceAt-ι L p k
-sampleAt-ι L (impure (_ , c)) k
-  rewrite sampleAt-dur L (c zero) | ι-<ᵗ k (proj₁ (Tr.sample L (c zero)))
-  with k ℕ.<ᵇ proj₁ (Tr.sample L (c zero)) in eq
-... | true  = sampleAt-ι L (c zero) k
-... | false = trans (cong (proj₂ (sampleAt L (c (suc zero))))
-                          (sym (ι-∸ k m (ℕP.≮⇒≥ (λ h → subst T eq (ℕP.<⇒<ᵇ h))))))
-                    (sampleAt-ι L (c (suc zero)) (k ℕ.∸ m))
-  where m = proj₁ (Tr.sample L (c zero))
-
--- the first facts about the track at real time: a piece holds `to` once it is over, at a
--- boundary the *later* piece takes over (right-continuity), and sequencing offsets time
-piece-hold : ∀ {A} (L : Tr.Lerp A) d a b e τ → (τ <ᵗ ι d) ≡ false →
-             pieceAt L (Tr.piece d a b e) τ ≡ b
-piece-hold L zero    a b e τ _ = trans (cong (λ p → Tr.Lerp.lerp L p a b) (Tr.progress-1 e)) (Tr.Lerp.lerp-1 L a b)
-piece-hold L (suc d) a b e τ h
-  rewrite h = trans (cong (λ p → Tr.Lerp.lerp L p a b) (Tr.progress-1 e)) (Tr.Lerp.lerp-1 L a b)
-
-seqAt-before : ∀ {A} (n m : ℕ) (f g : ℚ → A) τ → (τ <ᵗ ι n) ≡ true →
-               proj₂ (seqAt (n , f) (m , g)) τ ≡ f τ
-seqAt-before n m f g τ h rewrite h = refl
-
-seqAt-after : ∀ {A} (n m : ℕ) (f g : ℚ → A) τ → (τ <ᵗ ι n) ≡ false →
-              proj₂ (seqAt (n , f) (m , g)) τ ≡ g (τ ℚ.- ι n)
-seqAt-after n m f g τ h rewrite h = refl
-
--- at the boundary the second takes over, from its own time 0
-seqAt-boundary : ∀ {A} (n m : ℕ) (f g : ℚ → A) →
-                 proj₂ (seqAt (n , f) (m , g)) (ι n) ≡ g 0ℚ
-seqAt-boundary n m f g = trans (seqAt-after n m f g (ι n) (trans (ι-<ᵗ n n) (lt-irrefl n)))
-                               (cong g (ℚP.+-inverseʳ (ι n)))
-  where lt-irrefl : ∀ n → (n ℕ.<ᵇ n) ≡ false
-        lt-irrefl zero    = refl
-        lt-irrefl (suc n) = lt-irrefl n
-
-------------------------------------------------------------------------
 -- Template segments in real time
 
 -- A template at the value `q` of its parameter: the sizes are evaluated *in ℚ*, with
@@ -199,17 +122,6 @@ leafAt tr d =
 -- (`Slides.Anim.Timeline.merge`)
 parAt : ∀ {F : Set} → (F → F → F) → Timed (Maybe F) → Timed (Maybe F) → Timed (Maybe F)
 parAt _⊙_ (n , f) (m , g) = n ℕ.⊔ m , λ τ → mergeM _⊙_ (f τ) (g τ)
-
--- the structure-preserving laws of time: `Par` runs both sides at the same `τ` and takes the
--- longer duration; `Seq` runs the first side up to its duration (`seqAt-before`), then the
--- second from its own time 0 (`seqAt-after`, `seqAt-boundary`)
-parAt-time : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) τ →
-             proj₂ (parAt _⊙_ A B) τ ≡ mergeM _⊙_ (proj₂ A τ) (proj₂ B τ)
-parAt-time _⊙_ A B τ = refl
-
-parAt-dur : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) →
-            proj₁ (parAt _⊙_ A B) ≡ proj₁ A ℕ.⊔ proj₁ B
-parAt-dur _⊙_ A B = refl
 
 -- the timed frames of an animation all of whose segments are templates
 bodyAt′ : Tr.Track ℚ → SegBody ℕ → Maybe (Timed (Maybe (Dia ℚ)))
@@ -234,60 +146,3 @@ frameAt : Anim ℕ (Seg ℕ) → ℚ → Maybe (Layout ℚ)
 frameAt a τ with animAt a
 ... | nothing        = nothing
 ... | just (_ , f)   = Maybe.map (LayoutWith.layout ratOps) (f τ)
-
--- the duration of the timed frames is the duration of the animation
-segAt-dur : ∀ s T → segAt s ≡ just T → proj₁ T ≡ Tr.dur (track s)
-segAt-dur s T eq = go (track s) (content s) T eq
-  where
-    go : ∀ tr b T → bodyAt′ tr b ≡ just T → proj₁ T ≡ Tr.dur tr
-    go tr (template d) _ refl = trans (sampleAt-dur Tr.ℚLerp tr) (Tr.sample-dur Tr.ℚLerp tr)
-    go tr (blackBox _) _ ()
-    go tr (discrete _) _ ()
-
--- the parts of a `lift2` that is there
-lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
-               ∃₂ λ a b → x ≡ just a × y ≡ just b × f a b ≡ T
-lift2-just f (just a) (just b) refl = a , b , refl , refl , refl
-lift2-just f (just a) nothing  ()
-lift2-just f nothing  y        ()
-
-animAt-dur : ∀ a T → animAt a ≡ just T → proj₁ T ≡ dur a
-animAt-dur (pure s) T eq = segAt-dur s T eq
-animAt-dur (impure (Seq , k)) T eq with lift2-just seqAt (animAt (k zero)) (animAt (k (suc zero))) eq
-... | A , B , e₁ , e₂ , refl = cong₂ ℕ._+_ (animAt-dur (k zero) A e₁) (animAt-dur (k (suc zero)) B e₂)
-animAt-dur (impure (Par , k)) T eq with lift2-just (parAt atop) (animAt (k zero)) (animAt (k (suc zero))) eq
-... | A , B , e₁ , e₂ , refl = cong₂ ℕ._⊔_ (animAt-dur (k zero) A e₁) (animAt-dur (k (suc zero)) B e₂)
-
-------------------------------------------------------------------------
--- A template segment at whole ticks
-
-zero≤ι : ∀ k → (0ℚ ℚ.≤ᵇ ι k) ≡ true
-zero≤ι k = ι-≤ᵇ 0 k
-
--- At a whole tick the continuous frame of a segment is its template at the track's tick
--- sample, exactly (no flooring).
-leafAt-ι : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
-           proj₂ (leafAt tr d) (ι k) ≡ just (instQ d (proj₂ (Tr.sample Tr.ℚLerp tr) k))
-leafAt-ι tr d k hk
-  rewrite sampleAt-dur Tr.ℚLerp tr | Tr.sample-dur Tr.ℚLerp tr
-        | ι-<ᵗ k (Tr.dur tr) | hk | zero≤ι k
-  = cong (λ q → just (instQ d q)) (sampleAt-ι Tr.ℚLerp tr k)
-
--- ... and that is the discrete frame sent through `ι` whenever the discrete reading was
--- exact: the sample is a whole number `m`, and the template's layout is exact at `m`
--- (`Slides.Diagram.ExprQ`: no monus that truncates, no percentage that rounds).
-leaf-tick : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
-            let q = proj₂ (Tr.sample Tr.ℚLerp tr) k in
-            q ≡ ι (units q) →
-            AllLayout (Faithful (λ _ → units q)) (LayoutWith.layout exprOps d) →
-            Maybe.map (LayoutWith.layout ratOps) (proj₂ (leafAt tr d) (ι k))
-            ≡ just (mapLayout ι (LayoutWith.layout natOps (bodyAt natOps (template d) q)))
-leaf-tick tr d k hk whole ok rewrite leafAt-ι tr d k hk =
-  cong just (trans (cong (λ r → LayoutWith.layout ratOps (instQ d r)) whole)
-                   (sym (faithful-layout (λ _ → units q) d ok)))
-  where q = proj₂ (Tr.sample Tr.ℚLerp tr) k
-
--- a piece of positive length starts at `from` (time 0 is the start)
-piece-start : ∀ {A} (L : Tr.Lerp A) d a b e → pieceAt L (Tr.piece (suc d) a b e) 0ℚ ≡ a
-piece-start L d a b e
-  rewrite ι-≤ᵇ (suc d) 0 | ℚP.*-zeroˡ (+ 1 / suc d) | Tr.progress-0 e = Tr.Lerp.lerp-0 L a b

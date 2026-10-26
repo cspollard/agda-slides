@@ -48,6 +48,8 @@ open import Slides.Diagram.Expr
 open import Slides.Diagram.Layout.Properties using (layout-natural; layout-eval; mapLayout-∘)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.NatQ
+open import Slides.Diagram.NatQ.Properties
+open import Slides.Diagram.NatQ.Properties
 open import Slides.Diagram.Scalar using (Ops; natOps; ratOps)
 open import Slides.Diagram.Signature using (Handler)
 open import Slides.Diagram.Syntax using (Dia; mapDia)

@@ -47,7 +47,7 @@ open import Data.Integer using (+_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label)
-open import Slides.Diagram.NatQ using (ι)
+open import Slides.Diagram.NatQ.Properties using (ι)
 open import Slides.Anim.Formula
 open import Slides.Anim.Formula.Properties
 open import Slides.Anim.Phases using (Elem; Kind; nums; entries; withNums)

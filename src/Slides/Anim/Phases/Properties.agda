@@ -50,7 +50,7 @@ import Data.Nat.Properties as ℕP
 import Data.List.Properties as LP
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label; mapDraw; Layout)
-open import Slides.Diagram.NatQ using (ι)
+open import Slides.Diagram.NatQ.Properties using (ι)
 open import Slides.Anim.Formula
 open import Slides.Anim.Arith using (≤ᵇ-true)
 open import Slides.Anim.Nth using (nth; nth-map)

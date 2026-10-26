@@ -26,6 +26,7 @@ module Slides.Anim.Timeline where
 
 open import Data.List using (List; []; _∷_; _++_; length; map; applyUpTo)
 import Slides.Anim.Track as T
+import Slides.Anim.Track.Properties as TP
 import Data.List.Properties as LP
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (_+_; _⊔_; suc)
@@ -123,7 +124,7 @@ frames-length : ∀ {S} (O : Ops S) (s : Seg S) → length (frames O s) ≡ tick
 frames-length O s =
   trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
                (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
-        (T.sample-dur T.ℚLerp (track s))
+        (TP.sample-dur T.ℚLerp (track s))
 
 -- the length of the timeline is the duration
 length-dur : ∀ {S} (O : Ops S) (m : Anim S (Seg S)) → length (timeline atop (frames O) m) ≡ dur m

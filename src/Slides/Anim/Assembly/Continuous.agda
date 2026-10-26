@@ -51,14 +51,17 @@ open import Slides.Diagram.Expr using (exprOps; eval)
 open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps; ratOps)
-open import Slides.Diagram.NatQ using (ι; ι-+; ι-⊔; ι-∸)
+open import Slides.Diagram.NatQ using (ι)
+open import Slides.Diagram.NatQ.Properties using (ι-+; ι-⊔; ι-∸)
 import Slides.Diagram.Place natOps as PN
 import Slides.Diagram.Place ratOps as PQ
 import Slides.Diagram.Place.Properties.Atop as AN
 import Slides.Anim.Track as Tr
+import Slides.Anim.Track.Properties as TrP
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline; frames; length-dur; mergeM)
 open import Slides.Anim.Continuous
+open import Slides.Anim.Continuous.Properties
 open import Slides.Anim.Arith using (<ᵇ-true; <ᵇ-lt; <ᵇ-ge)
 open import Slides.Anim.Nth using (nth; nth-++′; nth-merge; nth-frames; nth-in)
 
@@ -133,7 +136,7 @@ AllExact⇒Good (impure (Par , c)) (e₁ , e₂) k =
 -- outside `[0, ticks)` nothing is shown at a whole tick
 leafAt-out : ∀ tr d k → (k <ᵇ Tr.dur tr) ≡ false → proj₂ (leafAt tr d) (ι k) ≡ nothing
 leafAt-out tr d k hk
-  rewrite sampleAt-dur Tr.ℚLerp tr | Tr.sample-dur Tr.ℚLerp tr | ι-<ᵗ k (Tr.dur tr) | hk | zero≤ι k = refl
+  rewrite sampleAt-dur Tr.ℚLerp tr | TrP.sample-dur Tr.ℚLerp tr | ι-<ᵗ k (Tr.dur tr) | hk | zero≤ι k = refl
 
 ------------------------------------------------------------------------
 -- Arithmetic of ticks
@@ -161,7 +164,7 @@ private
 assembly : ∀ a T → animAt a ≡ just T → ∀ k → ((k <ᵇ dur a) ≡ true → Good a k) →
            RelC (proj₂ T (ι k)) (nth (timeline atop (frames natOps) a) k)
 assembly (pure (seg tr (template d))) T refl k H
-  rewrite nth-frames natOps (seg tr (template d)) k | Tr.sample-dur Tr.ℚLerp tr
+  rewrite nth-frames natOps (seg tr (template d)) k | TrP.sample-dur Tr.ℚLerp tr
   with k <ᵇ Tr.dur tr in eq
 ... | false = subst (λ m → RelC m nothing) (sym (leafAt-out tr d k eq)) noFrame
 ... | true  =

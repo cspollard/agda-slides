@@ -62,6 +62,7 @@ open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 import Slides.Anim.Track as T
+import Slides.Anim.Track.Properties as TP
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline; frames; length-dur)
 open import Slides.Anim.Param using (Leaf; leaf; leavesWith; symbolicFramesWith; segmentsOf; pieces)
@@ -112,7 +113,7 @@ module Over
                                            (nth (replicate (T.dur tr) (inst l)) j)
     go j rewrite nth-frames natOps (seg tr c) j
                | nth-replicate (T.dur tr) (inst l) j
-               | T.sample-dur T.ℚLerp tr
+               | TP.sample-dur T.ℚLerp tr
       with j <ᵇ T.dur tr in eq
     ... | false = noFrame
     ... | true  = bothFrames λ ρ g →
