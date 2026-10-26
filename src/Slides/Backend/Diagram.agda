@@ -12,7 +12,7 @@ module Slides.Backend.Diagram where
 open import Data.Char using (Char)
 open import Data.List using (List; []; _∷_; _++_; reverse; [_]; map; length)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _*_; _/_; suc; _+_; _∸_; _⊔_)
+open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _∸_; _⊔_; _≤ᵇ_; _≟_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
@@ -29,6 +29,8 @@ open import Data.JSON.Print using (renderJSON)
 open import Data.XML.Print using (renderXML)
 import Data.Sign as Sign
 import Data.Integer as ℤ
+import Data.Rational as ℚ
+import Slides.Anim.Track as Tr
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 import Slides.Diagram.Draw as Dr
@@ -243,20 +245,24 @@ renderAnimation d ds ms play =
     ms play
 
 ------------------------------------------------------------------------
--- A parametric animation (`Slides.Diagram.Param`) is shipped as formulas.
+-- A parametric animation (`Slides.Diagram.Param`) is shipped as a simulator: tracks and formulas.
 --
--- `data-param` is JSON `{"v": segments, "p": phases}`.  `segments` has, for each segment,
--- `[start tick, [parameter on each tick]]`.  A *phase* is a run of ticks whose layouts have
--- the same shape and the same formulas (a segment starting or ending changes it):
--- `{"s": first tick, "b": elements, "c": coordinates}`, with `b` the elements as `<svg>`
--- strings (the numbers that depend on a parameter at the all-zero assignment) and `c`, for
--- each element, `null` if all its numbers are constants, else its numbers in the order of
--- the player's attribute table, each `null` (a constant) or a formula.  A formula is a
--- number, a string `"i"` (the parameter of segment `i`), or an array `[op, a, b]` with `op`
--- one of `"+"`, `"-"` (the monus), `"m"` (maximum), `"%"` (`[ "%", p, a ]` is `p` percent of
--- `a`), and `["h", a]`, half of `a` rounded down (positions are in half units).  Closed
--- subformulas are evaluated here, so only what depends on a parameter is shipped.
--- `data-n` is the number of ticks.
+-- `data-param` is JSON `{"v": segments, "p": phases}`, played in real time `τ` (ticks) by the
+-- page (`Slides.Anim.Continuous` says what it must draw).  `segments` has, for each segment,
+-- `[start tick, pieces]`, with a piece `[ticks, from, to, easing]`: a number is whole and
+-- `[n, d]` is the fraction `n/d`; an easing is `0` (Linear), `1` (Step, which jumps at the end
+-- of its piece), `2` (StepStart) or `[x₁, y₁, x₂, y₂]` (a cubic Bézier, in hundredths).  A
+-- *phase* is a run of ticks whose layouts have the same shape and the same formulas (a segment
+-- starting or ending changes it): `{"s": first tick, "b": elements, "c": coordinates}`, with `b`
+-- the elements as `<svg>` strings and `c`, for each element, `null` if all its numbers are
+-- constants, else its numbers in the order of the player's attribute table, each `null` (a
+-- constant) or a formula.  The formulas are evaluated *without rounding* (ℚ, in floating
+-- point): a formula is a number, a string `"i"` (the parameter of segment `i`) or an array
+-- `[op, a, b]` with `op` one of `"+"`, `"-"` (real subtraction), `"m"` (maximum) and
+-- `["%", p, a]` (`p` percent of `a`); `["h", a]` is half of `a` (positions are in half units).
+-- Closed subformulas are evaluated here when the result is a non-negative whole number, so
+-- only what depends on a parameter (or is not whole) is shipped.  `data-n` is the number of
+-- ticks.  The size does not depend on the number of ticks: one phase holds for all of them.
 private
   data Enc : Set where
     const : ℕ → Enc
@@ -266,21 +272,37 @@ private
   encJ (const n) = natⱼ n
   encJ (open′ j) = j
 
-  bin : String → (ℕ → ℕ → ℕ) → Enc → Enc → Enc
-  bin op f (const a) (const b) = const (f a b)
-  bin op f a         b         = open′ (arrayⱼ (stringⱼ op ∷ encJ a ∷ encJ b ∷ []))
+  bin : String → Enc → Enc → Enc
+  bin op a b = open′ (arrayⱼ (stringⱼ op ∷ encJ a ∷ encJ b ∷ []))
+
+  -- a closed difference is folded when it is not negative (it is exact then)
+  monus : Enc → Enc → Enc
+  monus (const a) (const b) = if b ≤ᵇ a then const (a ∸ b) else bin "-" (const a) (const b)
+  monus a         b         = bin "-" a b
+
+  -- ... and a closed percentage when it divides evenly
+  percent : ℕ → Enc → Enc
+  percent p (const a) = if ⌊ (a * p) % 100 ≟ 0 ⌋ then const ((a * p) / 100) else bin "%" (const p) (const a)
+  percent p a         = bin "%" (const p) a
 
   enc : Expr ℕ → Enc
   enc (pure v)                    = open′ (stringⱼ (num v))
   enc (impure (E.Zero , _))       = const 0
   enc (impure (E.Lit n , _))      = const n
-  enc (impure (E.Plus , k))       = bin "+" _+_ (enc (k zero)) (enc (k (suc zero)))
-  enc (impure (E.Monus , k))      = bin "-" _∸_ (enc (k zero)) (enc (k (suc zero)))
-  enc (impure (E.Max , k))        = bin "m" _⊔_ (enc (k zero)) (enc (k (suc zero)))
-  enc (impure (E.Pct p , k))      = bin "%" (λ p a → (a * p) / 100) (const p) (enc (k tt))
+  enc (impure (E.Plus , k))       = plus (enc (k zero)) (enc (k (suc zero)))
+    where plus : Enc → Enc → Enc
+          plus (const a) (const b) = const (a + b)
+          plus a         b         = bin "+" a b
+  enc (impure (E.Monus , k))      = monus (enc (k zero)) (enc (k (suc zero)))
+  enc (impure (E.Max , k))        = maxE (enc (k zero)) (enc (k (suc zero)))
+    where maxE : Enc → Enc → Enc
+          maxE (const a) (const b) = const (a ⊔ b)
+          maxE a         b         = bin "m" a b
+  enc (impure (E.Pct p , k))      = percent p (enc (k tt))
 
+  -- positions are in half units
   half : Enc → Enc
-  half (const a) = const (a / 2)
+  half (const a) = if ⌊ a % 2 ≟ 0 ⌋ then const (a / 2) else open′ (arrayⱼ (stringⱼ "h" ∷ natⱼ a ∷ []))
   half (open′ j) = open′ (arrayⱼ (stringⱼ "h" ∷ j ∷ []))
 
   isConst : Enc → Bool
@@ -326,8 +348,22 @@ private
     if ⌊ key Str.≟ prev ⌋ then phases n (suc k) prev ls
     else objectFromList (("s" , natⱼ k) ∷ fs) ∷ phases n (suc k) key ls
 
-  segmentJ : ℕ × List ℕ → JSON
-  segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map natⱼ ps) ∷ [])
+  ratⱼ : ℚ.ℚ → JSON
+  ratⱼ q with ℚ.↧ₙ q
+  ... | 1 = intⱼ (ℚ.↥ q)
+  ... | d = arrayⱼ (intⱼ (ℚ.↥ q) ∷ natⱼ d ∷ [])
+
+  easingⱼ : Tr.Easing → JSON
+  easingⱼ Tr.Linear           = natⱼ 0
+  easingⱼ Tr.Step             = natⱼ 1
+  easingⱼ Tr.StepStart        = natⱼ 2
+  easingⱼ (Tr.Bezier a b c d) = arrayⱼ (intⱼ a ∷ intⱼ b ∷ intⱼ c ∷ intⱼ d ∷ [])
+
+  pieceⱼ : Tr.Piece ℚ.ℚ → JSON
+  pieceⱼ (Tr.piece n a b e) = arrayⱼ (natⱼ n ∷ ratⱼ a ∷ ratⱼ b ∷ easingⱼ e ∷ [])
+
+  segmentJ : ℕ × List (Tr.Piece ℚ.ℚ) → JSON
+  segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map pieceⱼ ps) ∷ [])
 
 renderParamAnimation : Diagram → Param → ℕ → Play → XMLM A
 renderParamAnimation d (param ls segs) ms play =

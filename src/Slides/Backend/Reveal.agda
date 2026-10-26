@@ -219,7 +219,10 @@ scriptLoader =
 -- `rests[step-1]` after, and the page moves one frame towards the target every
 -- `data-ms` milliseconds (forward or backward).  A `data-loop` animation also
 -- advances a phase every `data-ms` while its slide is shown; the frame shown is
--- `phase * steps + step`.  Changing slide jumps.
+-- `phase * steps + step`.  Changing slide jumps.  A parametric animation (`data-param`) is
+-- played in real time instead: the time `τ` (in ticks) moves towards the target by one tick
+-- per `data-ms` milliseconds on every animation frame, a loop's phase is the elapsed time,
+-- and the frame at `τ` is computed from the tracks and formulas (`renderParamAnimation`).
 animationSync : String
 animationSync =
   "(function () {\n" ++ˢ
@@ -249,20 +252,51 @@ animationSync =
   "    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);\n" ++ˢ
   "    rest.forEach(function (s) { parent.appendChild(parse(s)); });\n" ++ˢ
   "  }\n" ++ˢ
-  "  // A parametric animation (`data-param`, see `renderParamAnimation`): a formula is a number, a\n" ++ˢ
-  "  // string (the parameter of that segment, from `r`) or `[op, a, b]`; `[\"h\", a]` is half of `a`,\n" ++ˢ
-  "  // positions being in half units.\n" ++ˢ
+  "  // A parametric animation (`data-param`, see `renderParamAnimation`) is a small simulator: the\n" ++ˢ
+  "  // tracks of its segments and symbolic layouts, evaluated at the real time `t` (in ticks) and\n" ++ˢ
+  "  // drawn without rounding.  An easing `e` is 0 (linear), 1 (step), 2 (step start) or a cubic\n" ++ˢ
+  "  // Bezier [x1, y1, x2, y2] in hundredths, as in `Slides.Anim.Track.progress`: the curve\n" ++ˢ
+  "  // parameter with x(s) = p is found by 16 bisection steps.\n" ++ˢ
+  "  function cubic(c1, c2, s) { var u = 1 - s; return 3 * u * u * s * c1 + 3 * u * s * s * c2 + s * s * s; }\n" ++ˢ
+  "  function ease(e, p) {\n" ++ˢ
+  "    if (e === 0) return p;\n" ++ˢ
+  "    if (e === 1) return p >= 1 ? 1 : 0;\n" ++ˢ
+  "    if (e === 2) return p <= 0 ? 0 : 1;\n" ++ˢ
+  "    if (p <= 0) return 0;\n" ++ˢ
+  "    if (p >= 1) return 1;\n" ++ˢ
+  "    var lo = 0, hi = 1, i;\n" ++ˢ
+  "    for (i = 0; i < 16; i++) { if (cubic(e[0] / 100, e[2] / 100, (lo + hi) / 2) <= p) lo = (lo + hi) / 2; else hi = (lo + hi) / 2; }\n" ++ˢ
+  "    return cubic(e[1] / 100, e[3] / 100, (lo + hi) / 2);\n" ++ˢ
+  "  }\n" ++ˢ
+  "  function rat(x) { return typeof x === 'number' ? x : x[0] / x[1]; }\n" ++ˢ
+  "  // a segment's parameter `u` ticks after its start: its pieces [ticks, from, to, easing] in\n" ++ˢ
+  "  // order, the last holding its end value\n" ++ˢ
+  "  function track(ps, u) {\n" ++ˢ
+  "    for (var i = 0; i < ps.length; i++) {\n" ++ˢ
+  "      var d = ps[i][0];\n" ++ˢ
+  "      if (u < d || i === ps.length - 1) {\n" ++ˢ
+  "        var a = rat(ps[i][1]), b = rat(ps[i][2]);\n" ++ˢ
+  "        return a + ease(ps[i][3], u < d ? u / d : 1) * (b - a);\n" ++ˢ
+  "      }\n" ++ˢ
+  "      u -= d;\n" ++ˢ
+  "    }\n" ++ˢ
+  "    return 0;\n" ++ˢ
+  "  }\n" ++ˢ
+  "  // a formula: a number, a string (the parameter of that segment, from `r`) or `[op, a, b]`;\n" ++ˢ
+  "  // `[\"h\", a]` is half of `a`, positions being in half units\n" ++ˢ
   "  function ev(e, r) {\n" ++ˢ
   "    if (typeof e === 'number') return e;\n" ++ˢ
   "    if (typeof e === 'string') return r[+e];\n" ++ˢ
   "    var o = e[0], x = ev(e[1], r);\n" ++ˢ
-  "    if (o === 'h') return Math.floor(x / 2);\n" ++ˢ
+  "    if (o === 'h') return x / 2;\n" ++ˢ
   "    var y = ev(e[2], r);\n" ++ˢ
-  "    return o === '+' ? x + y : o === '-' ? Math.max(0, x - y) : o === 'm' ? Math.max(x, y) : Math.floor(x * y / 100);\n" ++ˢ
+  "    return o === '+' ? x + y : o === '-' ? x - y : o === 'm' ? Math.max(x, y) : x * y / 100;\n" ++ˢ
   "  }\n" ++ˢ
-  "  // show tick `k`: swap in the elements of its phase, then set every number that depends on a parameter\n" ++ˢ
-  "  function pframe(a, k) {\n" ++ˢ
+  "  // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number\n" ++ˢ
+  "  // that depends on a parameter\n" ++ˢ
+  "  function pframe(a, t) {\n" ++ˢ
   "    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;\n" ++ˢ
+  "    var k = Math.max(0, Math.min(Math.floor(t), +a.dataset.n - 1));\n" ++ˢ
   "    while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;\n" ++ˢ
   "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
   "    if (a._ph !== i) {\n" ++ˢ
@@ -270,14 +304,15 @@ animationSync =
   "      P.p[i].b.forEach(function (s) { svg.appendChild(parse(s)); });\n" ++ˢ
   "      a._ph = i;\n" ++ˢ
   "    }\n" ++ˢ
-  "    var r = P.v.map(function (v) { return v[1][k - v[0]] || 0; });\n" ++ˢ
+  "    var r = P.v.map(function (v) { return track(v[1], t - v[0]); });\n" ++ˢ
   "    P.p[i].c.forEach(function (cs, j) {\n" ++ˢ
   "      if (cs === null) return;\n" ++ˢ
   "      var el = svg.children[1 + j];\n" ++ˢ
   "      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r)); });\n" ++ˢ
   "    });\n" ++ˢ
   "  }\n" ++ˢ
-  "  // show frame `k`: rebuild from the first frame when going back, else apply the next edits\n" ++ˢ
+  "  // show frame `k` (a real time for a parametric animation): rebuild from the first frame when\n" ++ˢ
+  "  // going back, else apply the next edits\n" ++ˢ
   "  function frame(a, k) {\n" ++ˢ
   "    if (a.dataset.param) { pframe(a, k); return; }\n" ++ˢ
   "    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));\n" ++ˢ
@@ -299,8 +334,21 @@ animationSync =
   "  function sync(a, jump) {\n" ++ˢ
   "    if (!a) return;\n" ++ˢ
   "    clearInterval(a._timer);\n" ++ˢ
+  "    cancelAnimationFrame(a._raf);\n" ++ˢ
   "    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);\n" ++ˢ
   "    if (jump || ms === 0 || t === cur) { show(a, t); return; }\n" ++ˢ
+  "    if (a.dataset.param) {\n" ++ˢ
+  "      // continuous time: one tick every `ms` milliseconds, on every animation frame\n" ++ˢ
+  "      var t0 = null, c0 = cur;\n" ++ˢ
+  "      a._raf = requestAnimationFrame(function go(now) {\n" ++ˢ
+  "        if (t0 === null) t0 = now;\n" ++ˢ
+  "        cur = c0 + (t > c0 ? 1 : -1) * (now - t0) / ms;\n" ++ˢ
+  "        if (t > c0 ? cur >= t : cur <= t) cur = t;\n" ++ˢ
+  "        show(a, cur);\n" ++ˢ
+  "        if (cur !== t) a._raf = requestAnimationFrame(go);\n" ++ˢ
+  "      });\n" ++ˢ
+  "      return;\n" ++ˢ
+  "    }\n" ++ˢ
   "    a._timer = setInterval(function () {\n" ++ˢ
   "      cur += (t > cur ? 1 : -1);\n" ++ˢ
   "      show(a, cur);\n" ++ˢ
@@ -309,6 +357,19 @@ animationSync =
   "  }\n" ++ˢ
   "  function spin(a) {\n" ++ˢ
   "    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);\n" ++ˢ
+  "    if (a.dataset.param) {\n" ++ˢ
+  "      // continuous time: the phase is the real time in ticks, modulo the length of the loop\n" ++ˢ
+  "      var t0 = null;\n" ++ˢ
+  "      requestAnimationFrame(function go(now) {\n" ++ˢ
+  "        if (p > 1 && a.closest('section').classList.contains('present')) {\n" ++ˢ
+  "          if (t0 === null) t0 = now;\n" ++ˢ
+  "          a.dataset.phase = String(((now - t0) / Math.max(+a.dataset.ms, 1)) % p);\n" ++ˢ
+  "          draw(a);\n" ++ˢ
+  "        } else t0 = null;\n" ++ˢ
+  "        requestAnimationFrame(go);\n" ++ˢ
+  "      });\n" ++ˢ
+  "      return;\n" ++ˢ
+  "    }\n" ++ˢ
   "    setInterval(function () {\n" ++ˢ
   "      if (p > 1 && a.closest('section').classList.contains('present')) {\n" ++ˢ
   "        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);\n" ++ˢ

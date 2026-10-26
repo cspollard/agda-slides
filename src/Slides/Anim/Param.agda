@@ -12,14 +12,17 @@
 -- `atop` for `Par` and concatenation for `Seq` (`Slides.Anim.Timeline.timeline`), over
 -- the free scalar; each is laid out once.
 --
--- Agreement.  The frame the player shows at tick `k` is the layout evaluated at the
--- assignment `i ↦ (parameter of segment i at tick k)`.  For one segment that is
--- `leaf-agrees`: laying the renamed template out symbolically and evaluating is laying out
--- the template at the segment's own parameter, which is what `bodyAt` computes
--- (`Slides.Diagram.LayoutNatural.layout-subst`).  `atop` and the timeline are the same on
--- both sides, so the whole frame agrees; that last assembly (an induction over the
--- animation tracking tick offsets) is checked by the browser test over the `animref` deck
--- (`tests/browser/anim-ref.mjs`), not proved here.
+-- Agreement.  The frame the page shows at real time `τ`, `k ≤ τ < k+1`, is the symbolic
+-- layout of tick `k` evaluated *in ℚ* at the assignment `i ↦ (sample of segment i's track at
+-- τ - its start)`: `Slides.Anim.Continuous.frameAt`.  For one segment that is `leaf-agreesℚ`
+-- (and `leaf-agrees` for the discrete frames at ℕ): laying the renamed template out
+-- symbolically and evaluating is laying out the template at the segment's own parameter
+-- (`Slides.Diagram.LayoutNatural.layout-substWith`).  `atop` and the timeline are the same on
+-- both sides, so the whole frame agrees; that last assembly (an induction over the animation
+-- tracking tick offsets and the fractional part of `τ`) is checked by the browser test over
+-- the `animref` deck (`tests/browser/anim-ref.mjs`), not proved here.
+--
+-- The page gets the track's pieces, not samples: its size does not grow with the ticks.
 
 module Slides.Anim.Param where
 
@@ -36,11 +39,12 @@ open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; rename; subst; var)
+open import Slides.Diagram.Expr using (Expr; exprOps; eval; evalWith; rename; subst; var)
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Scalar using (natOps)
+open import Slides.Diagram.Scalar using (natOps; ratOps)
+open import Data.Rational using (ℚ)
 open import Slides.Diagram.Param using (Param; param)
-open import Slides.Diagram.LayoutNatural using (layout-subst)
+open import Slides.Diagram.LayoutNatural using (layout-subst; layout-substWith)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline)
@@ -51,17 +55,16 @@ record Leaf : Set where
   field
     idx    : ℕ          -- its variable
     start  : ℕ          -- the tick it starts at
-    params : List ℕ     -- its parameter, in whole units, on each of its ticks
+    track  : T.Track ℚ  -- its parameter over time
     tmpl   : Dia (Expr ⊤)
 
--- the parameter of a segment on each tick, as `bodyAt` takes it
-sampledParams : ∀ {S} → Seg S → List ℕ
-sampledParams s = map (λ i → units (proj₂ sampled i)) (applyUpTo id (proj₁ sampled))
-  where sampled = T.sample T.ℚLerp (track s)
+-- the pieces of a track, in order
+pieces : ∀ {A} → T.Track A → List (T.Piece A)
+pieces = T.foldT (λ p → p ∷ []) _++_
 
 leafOf : ℕ → ℕ → Seg ℕ → Maybe Leaf
 leafOf i t₀ s with content s
-... | template d  = just (leaf i t₀ (sampledParams s) d)
+... | template d  = just (leaf i t₀ (track s) d)
 ... | blackBox _  = nothing
 
 -- number the segments, from `i`, and give each its start tick, from `t₀`; the result is
@@ -83,10 +86,10 @@ instantiate l = mapDia (rename (λ _ → Leaf.idx l)) (Leaf.tmpl l)
 
 -- the symbolic frames: the frames of the animation, over the free scalar
 symbolicFrames : (AnimC ⋆ Leaf) → List (Dia (Expr ℕ))
-symbolicFrames = timeline atop (λ l → replicate (length (Leaf.params l)) (instantiate l))
+symbolicFrames = timeline atop (λ l → replicate (T.dur (Leaf.track l)) (instantiate l))
 
-segmentsOf : (AnimC ⋆ Leaf) → List (ℕ × List ℕ)
-segmentsOf = foldA (λ l → (Leaf.start l , Leaf.params l) ∷ []) _++_ _++_
+segmentsOf : (AnimC ⋆ Leaf) → List (ℕ × List (T.Piece ℚ))
+segmentsOf = foldA (λ l → (Leaf.start l , pieces (Leaf.track l)) ∷ []) _++_ _++_
 
 mkParam : (AnimC ⋆ Leaf) → Param
 mkParam a = param (map (LayoutWith.layout exprOps) (symbolicFrames a)) (segmentsOf a)
@@ -117,3 +120,9 @@ leaf-agrees : ∀ (l : Leaf) (ρ : ℕ → ℕ) →
   LayoutWith.layout natOps (mapDia (eval ρ) (instantiate l))
   ≡ LayoutWith.layout natOps (mapDia (eval (λ _ → ρ (Leaf.idx l))) (Leaf.tmpl l))
 leaf-agrees l ρ = layout-subst (λ _ → var (Leaf.idx l)) ρ (Leaf.tmpl l)
+
+-- the same in ℚ, the scalar of the continuous player
+leaf-agreesℚ : ∀ (l : Leaf) (ρ : ℕ → ℚ) →
+  LayoutWith.layout ratOps (mapDia (evalWith ratOps ρ) (instantiate l))
+  ≡ LayoutWith.layout ratOps (mapDia (evalWith ratOps (λ _ → ρ (Leaf.idx l))) (Leaf.tmpl l))
+leaf-agreesℚ l ρ = layout-substWith ratOps (λ _ → var (Leaf.idx l)) ρ (Leaf.tmpl l)
