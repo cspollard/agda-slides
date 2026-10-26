@@ -29,7 +29,7 @@
 -- `Slides.Diagram.Layout` in the scalar `dexprOps` (`Ops` from the first two layers): the
 -- Euclidean operations only occur *inside the scalars*, as leaves' formulas (`Place` never
 -- compares or divides: it takes sums, differences, maxima and percentages).  So
--- `Slides.Diagram.LayoutNatural` applies unchanged along `evalD` (`evalD-hom`).
+-- `Slides.Diagram.Layout.Properties` applies unchanged along `evalD` (`evalD-hom`).
 --
 -- As in `Slides.Diagram.Expr`: `DExpr V` is the free algebra (`foldT`), `substD` the
 -- fold into the term algebra, `evalD-substD` evaluation after substitution, and the weakening

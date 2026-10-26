@@ -7,8 +7,8 @@
 -- (`nth-++`), `merge` (`Par`) is the pointwise `mergeM` (`nth-merge`), the same algebra the
 -- continuous semantics uses (`Slides.Anim.Continuous.parAt`), and the frames of one segment are
 -- its body at the samples of its track (`nth-frames`).  Shared by the assembly proofs of the
--- continuous templates (`Slides.Anim.ParamCorrect`) and of the discrete ones
--- (`Slides.Anim.DParamCorrect`).
+-- continuous templates (`Slides.Anim.Param.Properties`) and of the discrete ones
+-- (`Slides.Anim.DParam.Properties`).
 
 module Slides.Anim.Nth where
 

@@ -2,7 +2,7 @@
 
 -- The boolean comparisons of ticks (`_<ᵇ_`, `_≤ᵇ_`, what the frame functions branch on) against
 -- the propositional order the proofs use.  Shared by the assembly proofs
--- (`Slides.Anim.Assembly`, `LeafAssembly`, `ContinuousAssembly`) and the phases (`PhasesCorrect`).
+-- (`Slides.Anim.Assembly` and its `Leaf` and `Continuous` parts) and the phases (`Slides.Anim.Phases.Properties`).
 
 module Slides.Anim.Arith where
 

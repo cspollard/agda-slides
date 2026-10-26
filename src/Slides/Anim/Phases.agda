@@ -1,8 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- What the backend ships for a parametric animation, as data.  `Slides.Backend.Diagram` only
--- prints this data as JSON; what it means is `Slides.Anim.PhasesCorrect` and
--- `Slides.Anim.PhasesReadings`.
+-- prints this data as JSON; what it means is `Slides.Anim.Phases.Properties` and
+-- `Slides.Anim.DPhases.Properties`.
 --
 -- The shipped structure (`data-param`, see `Slides.Backend.Diagram`) is a list of *phases*.  A
 -- phase starts at a tick and has, for each drawing command of the layout, an `Elem`: the

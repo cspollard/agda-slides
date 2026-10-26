@@ -16,7 +16,7 @@
 --
 -- This module is the data and the encoders, which is what the backend runs; what they mean
 -- (the readings `⟦_⟧` in ℚ, `⟦_⟧ᴺ`, `⟦_⟧ᴰ` in ℕ and the proofs that the folds are exact) is
--- `Slides.Anim.FormulaCorrect`.
+-- `Slides.Anim.Formula.Properties`.
 
 module Slides.Anim.Formula where
 

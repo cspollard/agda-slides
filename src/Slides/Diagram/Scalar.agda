@@ -19,7 +19,7 @@
 --
 -- Layouts keep positions in half units (see `Slides.Diagram.Place`), so no
 -- scalar needs a division by two: the "doubling trick".  What a scalar can
--- *prove* is a separate matter: `Slides.Diagram.Laws` states the laws of the
+-- *prove* is a separate matter: `Slides.Diagram.Place.Properties.Laws` states the laws of the
 -- layout operations for a scalar that is a commutative ring under `_≡_`
 -- (ℤ is; ℕ is not, so it runs but is not covered by those proofs).
 
@@ -81,7 +81,7 @@ ratOps = record
 
 -- Homomorphisms of scalars, per layer: a map that commutes with every operation of the
 -- layer (everything but `toℕ`, which only the final output step applies).  The equations
--- are exactly what `Slides.Diagram.LayoutNatural` needs; no order is required, because
+-- are exactly what `Slides.Diagram.Layout.Properties` needs; no order is required, because
 -- layout only *computes* with the operations, and each of them is preserved on the nose.
 -- The two layers are independent: the core one holds of the evaluation into ℕ, ℤ, ℚ and of
 -- `ι : ℕ → ℚ` (percentages that divide evenly), the sub one of an evaluation (the

@@ -22,7 +22,7 @@
 -- segment's layout.  But `atop` computes only sums, maxima and the differences `(a ⊔ b) - a`,
 -- `(a ⊔ b) - b`, whose minuend is the larger by construction.  So `atop` commutes with
 -- `mapLayout ι` on every pair of layouts, *with no hypothesis* (`atop-ι`, by
--- `Slides.Diagram.AtopNatural`), and the assembly of the timeline needs `Faithful` only for the
+-- `Slides.Diagram.Place.Properties.Atop`), and the assembly of the timeline needs `Faithful` only for the
 -- layouts of the leaf templates.  (The report's expectation that `atop` would need a
 -- `Faithful`-style hypothesis on the layouts was not borne out.)
 --
@@ -30,7 +30,7 @@
 -- the fractional parameters; that is checked in the browser.  `layout`-level `Faithful`
 -- hypotheses are on the *template's* layout in the one variable, exactly as in `leaf-tick`.
 
-module Slides.Anim.ContinuousAssembly where
+module Slides.Anim.Assembly.Continuous where
 
 open import Data.Bool using (true; false; if_then_else_; T)
 open import Data.List using (_∷_; _++_)
@@ -54,7 +54,7 @@ open import Slides.Diagram.Scalar using (natOps; ratOps)
 open import Slides.Diagram.NatQ using (ι; ι-+; ι-⊔; ι-∸)
 import Slides.Diagram.Place natOps as PN
 import Slides.Diagram.Place ratOps as PQ
-import Slides.Diagram.AtopNatural as AN
+import Slides.Diagram.Place.Properties.Atop as AN
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline; frames; length-dur; mergeM)

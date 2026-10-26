@@ -6,7 +6,7 @@
 --   * `dangling` resolves a connection inside its own diagram: a name declared
 --     next to a `connect`, not under it, is reported.
 
-module Slides.Examples.PairsScalar where
+module Slides.Examples.Pairs.Properties where
 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
@@ -15,7 +15,7 @@ open import Data.List using (_∷_; [])
 open import Slides.Diagram using (defaultStyle)
 open import Slides.Diagram.Layout using (module LayoutWith; compile)
 open import Slides.Diagram.Names using (dangling)
-import Slides.Diagram.NamesSound as Sound
+import Slides.Diagram.Names.Properties as Sound
 open import Slides.Diagram.Notation
 open import Slides.Diagram.Scalar using (Ops; intOps; natOps; ratOps)
 open import Data.Nat using (ℕ; _≡ᵇ_)

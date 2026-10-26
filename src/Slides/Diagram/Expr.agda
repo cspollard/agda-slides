@@ -244,7 +244,7 @@ evalWith-var O ρ v = refl
 -- (`subst-bind` below: it is also `_>>=_`, up to the free monad's own equality.)
 -- `subst σ` is `evalWith exprOps σ`: the unique `Ops`-map that sends each variable `v` to
 -- `σ v`.  So it is an `Ops`-homomorphism (`subst-hom`) on the nose, which is what lets
--- layout be natural along it (`Slides.Diagram.LayoutNatural`).
+-- layout be natural along it (`Slides.Diagram.Layout.Properties`).
 subst : ∀ {V W} → (V → Expr W) → Expr V → Expr W
 subst σ = evalWith exprOps σ
 

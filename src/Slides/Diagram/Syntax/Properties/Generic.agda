@@ -16,7 +16,7 @@
 --   * `Initiality`, Lambek's lemma and the translation fusion are available for
 --     `DiagramC S`, e.g. rendering after `translate` along a container morphism.
 
-module Slides.Diagram.Generic where
+module Slides.Diagram.Syntax.Properties.Generic where
 
 open import Level using (0ℓ; Lift)
 open import Data.Empty using (⊥)

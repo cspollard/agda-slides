@@ -1,12 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- The assembly of whole frames, for any language of template numbers: the symbolic frames of an
--- animation are its frames.  Continuous templates (`Slides.Anim.ParamCorrect`, `Expr`) and
--- discrete ones (`Slides.Anim.DParamCorrect`, `DExpr`) are instances; what they supply is
+-- animation are its frames.  Continuous templates (`Slides.Anim.Param.Properties`, `Expr`) and
+-- discrete ones (`Slides.Anim.DParam.Properties`, `DExpr`) are instances; what they supply is
 --
 --   * how a symbolic frame is interpreted at an assignment (`interp`: lay it out symbolically,
 --     evaluate at `ρ`), with `atop` interpreted as `atop` (`interp-atop`, layout is natural
---     along evaluation: `Slides.Diagram.LayoutNatural.atop-natural`);
+--     along evaluation: `Slides.Diagram.Layout.Properties.atop-natural`);
 --   * for one leaf, that the renamed template interpreted at `ρ` is the template laid out at the
 --     leaf's own parameter `ρ idx` (`inst-agrees`), and that the segment's body at a whole
 --     parameter is the template there (`body-ok`);
@@ -37,7 +37,7 @@
 -- with the tick shifted" and `merge` the pointwise `mergeM`, the same algebra the continuous
 -- semantics uses (`Slides.Anim.Continuous.parAt`); that part is `Slides.Anim.Assembly`.
 
-module Slides.Anim.LeafAssembly where
+module Slides.Anim.Assembly.Leaf where
 
 open import Data.Bool using (true; false; if_then_else_; _∧_; T)
 open import Data.Empty using (⊥; ⊥-elim)

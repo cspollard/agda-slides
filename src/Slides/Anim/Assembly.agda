@@ -7,7 +7,7 @@
 -- `Dia (Expr ℕ)`, for discrete ones `Dia (DExpr ℕ)`), each *interpreted* at an assignment as the
 -- layout in ℕ it stands for (`interp`: lay it out symbolically, evaluate at `ρ`), with `atop`
 -- of symbolic frames (`atopS`) interpreted as `atop` of layouts (`interp-atop`: layout is
--- natural along evaluation, `Slides.Diagram.LayoutNatural.atop-natural`).  That is the whole
+-- natural along evaluation, `Slides.Diagram.Layout.Properties.atop-natural`).  That is the whole
 -- interface; the rest (agreement is preserved by `merge`, by `++` with the tick shifted, and
 -- lists in agreement are equally long) is independent of which expression language the symbolic
 -- frames are over, so it is proved once.

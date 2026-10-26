@@ -147,8 +147,8 @@ Decisions that shaped it:
   diagrams out identically). A naturality theorem needs the map to be an `Ops`
   homomorphism (`IsOpsHom`): `intOps` floors percent ports, so ℤ→ℚ is not one, and ℕ→ℤ
   breaks on monus. For a homomorphism it is proved, `mapLayout h (layout d) ≡ layout
-  (mapDia h d)` (`Slides.Diagram.LayoutNatural`), and the evaluation of the free
-  scalar `Slides.Diagram.Expr` into ℕ is one. The earlier provable parts are in `Slides.Diagram.MapFusion`: `mapDia f` is
+  (mapDia h d)` (`Slides.Diagram.Layout.Properties`), and the evaluation of the free
+  scalar `Slides.Diagram.Expr` into ℕ is one. The earlier provable parts are in `Slides.Diagram.Syntax.Properties.MapFusion`: `mapDia f` is
   translation along a container morphism, so it is functorial (up to equality of programs)
   and folding after it is folding with the pulled-back algebra (`fold-mapDia`), for any
   renderer with congruent handlers. Transporting a *layout* along `f` additionally needs a
@@ -167,7 +167,7 @@ Decisions that shaped it:
   operation outside the translation law; it was removed.
 - **Stdlib has no ordered ring** (checked at `8326c7475`): no `IsOrderedRing`,
   ordered field or `sqrt` for ℕ. `Nonneg x` is `0# ⊔ x ≈ x`, the join-semilattice order.
-- **`Valid` is preserved by every operation** (`Slides.Diagram.Valid`), given an `IsOrdered`
+- **`Valid` is preserved by every operation** (`Slides.Diagram.Place.Properties.Valid`), given an `IsOrdered`
   record on the scalar (sum keeps non-negativity, `fromℕ` is non-negative, `⊔` idempotent;
   ℤ and ℚ have it). A term is valid when its sized leaves are (`WellSized`; a negative
   rectangle is not, so the hypothesis cannot be dropped). The same module proves the
@@ -180,11 +180,11 @@ The same pattern again. `AnimC = Seq | Par` (two children each) is a container a
 `Anim S T = AnimC ⋆ T` its free monad, with leaves `Seg S`: a track of a parameter
 (`Slides.Anim.Track`, itself the free monad on `Seq` over pieces with easings) and a
 diagram as a function of that parameter. `dur`, `footprint` and `timeline` are algebras
-(`foldA`); `foldA` is the generic fold (`Slides.Anim.Generic`), and `foldA-bind` is its
+(`foldA`); `foldA` is the generic fold (`Slides.Anim.Syntax.Properties.Generic`), and `foldA-bind` is its
 fusion with `>>=` (a tween is a bind). Laws are proved at the level they are true at:
 the swap law and `merge` on lists of frames (`Timeline`), `footprint` up to permutation,
-`atop` commutative up to permutation of draws (`Slides.Diagram.Commute`), laid-out `Par`
-associative and padding invisible on valid frames (`Slides.Anim.Laws`), tracks
+`atop` commutative up to permutation of draws (`Slides.Diagram.Place.Properties.Commute`), laid-out `Par`
+associative and padding invisible on valid frames (`Slides.Anim.Syntax.Properties.Laws`), tracks
 associative, and reversible, sampled exactly, for `Linear`, `Step` and `StepStart` pieces (`Track`; `Bezier` is approximate), and so are whole tracks whose pieces meet (`reverse-sample`: tick `k` reversed is tick `dur - k`, exactly). Time is whole ticks;
 the backend plays frames on a timer, an act per reveal step, or, for `Play = looping`,
 cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
@@ -219,19 +219,19 @@ the JavaScript is tested against exact ℚ values (`make test-anim-ref`, toleran
 float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
 evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
 `layout-substWith`, `leaf-agrees`). The assembly over a whole timeline is
-proved: `Slides.Anim.LeafAssembly` (one generic induction over the language of the template
-numbers, `assembly`), instantiated by `Slides.Anim.ParamCorrect` (`discrete-assembly`,
+proved: `Slides.Anim.Assembly.Leaf` (one generic induction over the language of the template
+numbers, `assembly`), instantiated by `Slides.Anim.Param.Properties` (`discrete-assembly`,
 `paramOf-assembly`: the shipped
 symbolic layout of tick `k`, evaluated at the parameters of the segments running at `k`, is
 the layout of the frame `render` shows; the induction reads lists of frames as partial
 functions of the tick, `++` and `merge` becoming the algebra of `Continuous`);
-`Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
+`Slides.Anim.Assembly.Continuous` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
 frame through `ι`, given `leaf-tick`'s exactness hypotheses for the segments running there;
-`atop` commutes with `ι` with no hypothesis, `Slides.Diagram.AtopNatural`);
-`Slides.Anim.FormulaCorrect` and `Slides.Anim.PhasesCorrect` (the shipped formulas, with closed
+`atop` commutes with `ι` with no hypothesis, `Slides.Diagram.Place.Properties.Atop`);
+`Slides.Anim.Formula.Properties` and `Slides.Anim.Phases.Properties` (the shipped formulas, with closed
 subformulas folded, mean the coordinates in ℚ, and grouping ticks into phases changes no
 frame: `pageFrame-sem`, proved once for any reading in `Over` and instantiated at ℚ and ℕ in
-`Slides.Anim.PhasesReadings`). The data and encoders the backend runs (`Formula`, `Phases`,
+`Slides.Anim.DPhases.Properties`). The data and encoders the backend runs (`Formula`, `Phases`,
 `DPhases`, `Share`, `SharePhases`) are separate modules from these proofs, so that a
 deck executable does not load the proofs. What is only tested: frames between whole ticks, the printing of the
 phases as JSON and its reading by the player (attribute order, float arithmetic).
@@ -249,7 +249,7 @@ morphism; `Faithful` is exactly the conjunction of the per-layer side conditions
 as formulas read in ℕ (`"d": 1` in `data-param`; `Formula.encD`, whose folds need no exactness
 condition: `encD-semN`, `enc-numN`). Layout never compares or divides, so it is natural along
 `evalD` unchanged (`EuclidNatural`); `DParamCorrect.discrete-assemblyD` is the assembly
-(an instance of `Slides.Anim.LeafAssembly`), `PhasesReadings.pageFrameD-sem` the shipped phases. A
+(an instance of `Slides.Anim.Assembly.Leaf`), `PhasesReadings.pageFrameD-sem` the shipped phases. A
 field layer (exact division by a literal) was not needed. The hero frame is written once over
 any scalar with the three layers (`PairsHero.Frame`); `heroT-correct` proves the template is
 the flipbook frame, and the Pairs deck's two hero loops are `heroD 26 seed`.

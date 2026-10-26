@@ -14,7 +14,7 @@
 -- Not proved: that the page's `ev` computes `⟦_⟧` (it does so in floating point; checked by
 -- `tests/browser/anim-ref.mjs`).
 
-module Slides.Anim.FormulaCorrect where
+module Slides.Anim.Formula.Properties where
 
 open import Data.Bool using (true; false; if_then_else_; T)
 open import Data.Fin using (zero) renaming (suc to fsuc)

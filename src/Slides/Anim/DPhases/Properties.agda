@@ -1,6 +1,6 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The two readings of the shipped phases: `Slides.Anim.PhasesCorrect.Over` at ℚ (continuous
+-- The two readings of the shipped phases: `Slides.Anim.Phases.Properties.Over` at ℚ (continuous
 -- templates) and at ℕ (discrete ones).
 --
 -- Continuous templates (`Slides.Anim.Phases.phasesOf`): the formulas are read in ℚ (`⟦_⟧`), the
@@ -17,7 +17,7 @@
 -- `pageFrame-sem` from the generic proof; `encodeDraw-sem`, `pageFrame-sem` (continuous) and
 -- `encodeDrawD-sem`, `pageFrameD-sem` (discrete) are those theorems under their old names.
 
-module Slides.Anim.PhasesReadings where
+module Slides.Anim.DPhases.Properties where
 
 open import Data.Bool using (true; false)
 open import Data.Empty using (⊥; ⊥-elim)
@@ -41,10 +41,10 @@ import Slides.Diagram.Euclid as Eu
 open import Slides.Diagram.NatQ using (ι)
 open import Slides.Diagram.Scalar using (ratOps)
 open import Slides.Anim.Formula
-open import Slides.Anim.FormulaCorrect
+open import Slides.Anim.Formula.Properties
 open import Slides.Anim.Phases
 open import Slides.Anim.DPhases using (slotFD)
-open import Slides.Anim.PhasesCorrect
+open import Slides.Anim.Phases.Properties
 
 ------------------------------------------------------------------------
 -- Continuous templates, read in ℚ

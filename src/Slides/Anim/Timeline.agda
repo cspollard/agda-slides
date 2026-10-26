@@ -11,7 +11,7 @@
 --     unit, without needing one: `merge [] ys = ys`.
 --
 -- So `timeline` is `foldA` into `(List F, ++, merge)`.  For the diagram language
--- take `F = Dia S` and `_⊙_ = atop`; the laws of `atop` (`Slides.Diagram.Laws`)
+-- take `F = Dia S` and `_⊙_ = atop`; the laws of `atop` (`Slides.Diagram.Place.Properties.Laws`)
 -- then transfer to the laws of `Par` once the frames are laid out.
 --
 -- Laws, with `_≡_` unless the frame operation is involved:

@@ -2,8 +2,8 @@
 
 -- The assembly of whole frames, continuous templates: the symbolic frames of `Slides.Anim.Param`
 -- are the frames of the animation (the discrete frames, `layout_ℕ`, of `timeline atop (frames
--- natOps) a`).  `Slides.Anim.LeafAssembly` proves it for any language of template numbers; this
--- module is the instance for `Expr` (`Slides.Anim.DParamCorrect` is the one for `DExpr`):
+-- natOps) a`).  `Slides.Anim.Assembly.Leaf` proves it for any language of template numbers; this
+-- module is the instance for `Expr` (`Slides.Anim.DParam.Properties` is the one for `DExpr`):
 --
 --     layout_ℕ (frame k of  timeline atop (frames natOps) a)
 --       ≡  mapLayout (eval ρ) (layout_Expr (symbolic frame k))
@@ -21,10 +21,10 @@
 --
 -- What is specific to continuous templates is one segment (`leaf-agrees`: laying the renamed
 -- template out symbolically and evaluating it is laying out the template at the segment's own
--- parameter, `Slides.Diagram.LayoutNatural.layout-subst`), that `atop` is natural along `eval`
+-- parameter, `Slides.Diagram.Layout.Properties.layout-subst`), that `atop` is natural along `eval`
 -- (`atop-natural`), and the statement for what `render` ships.
 
-module Slides.Anim.ParamCorrect where
+module Slides.Anim.Param.Properties where
 
 open import Data.Bool using (true; if_then_else_; _∧_; T)
 open import Data.List using ([]; _∷_; _++_; length; replicate; map; concat)
@@ -43,14 +43,14 @@ open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
 open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; var)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Diagram.LayoutNatural using (layout-subst; layout-eval; atop-natural)
+open import Slides.Diagram.Layout.Properties using (layout-subst; layout-eval; atop-natural)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline; frames; length-dur)
 open import Slides.Anim.Param
 import Slides.Diagram.Param as DP
 open import Slides.Anim.Nth public
-import Slides.Anim.LeafAssembly as LA
+import Slides.Anim.Assembly.Leaf as LA
 
 private
   layoutℕ : Dia ℕ → Layout ℕ

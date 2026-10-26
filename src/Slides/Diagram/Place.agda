@@ -2,7 +2,7 @@
 
 -- The layout operations: the semantics of the connectives of
 -- `Slides.Diagram.Syntax`, over any scalar `Ops S`.  `Slides.Diagram.Layout`
--- assembles them into an algebra, and `Slides.Diagram.Laws` states and proves
+-- assembles them into an algebra, and `Slides.Diagram.Place.Properties.Laws` states and proves
 -- their laws.
 --
 -- A `Layout` is a rectangle of known size, the drawing commands that fill it

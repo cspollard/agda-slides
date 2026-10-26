@@ -32,7 +32,7 @@
 -- Where the discrete (ℕ) and continuous (ℚ) readings differ, honestly.  ℚ's `-` is real
 -- subtraction where ℕ's is the monus, ℚ's percentage is exact where ℕ's rounds down, and the
 -- discrete parameter is floored.  So `100 ⊖ t` is negative in ℚ once `t > 100` (the frame has
--- a negative size, which `Slides.Diagram.Valid` excludes; a template should stay in the
+-- a negative size, which `Slides.Diagram.Place.Properties.Valid` excludes; a template should stay in the
 -- domain where its differences are non-negative) and a ℕ frame at the floor of a fractional
 -- sample differs from the ℚ frame at the sample itself.
 --
@@ -50,7 +50,7 @@
 -- Not proved: that the page's JavaScript (floating point easings, the formula evaluator)
 -- computes `frameAt`; it is tested at sampled times against the exact values
 -- (`tests/browser/anim-ref.mjs`).  The assembly over a whole timeline at whole ticks is
--- `Slides.Anim.ContinuousAssembly`; not proved is that for fractional `τ`, `k < τ < k+1`,
+-- `Slides.Anim.Assembly.Continuous`; not proved is that for fractional `τ`, `k < τ < k+1`,
 -- `frameAt a τ` is the symbolic layout of tick `k` evaluated at each segment's sample at
 -- `τ - start`.
 

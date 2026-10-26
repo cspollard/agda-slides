@@ -8,11 +8,11 @@
 -- the frame and then mapping the scalars is mapping the tick and then building (`frame-natural`).
 -- Along `evalD natD (λ _ → t) : DExpr ⊤ → ℕ`, which is such a homomorphism, the template at the
 -- variable `tickD` is the flipbook's frame at the tick `t` (`heroT-correct`).  So the shipped
--- template needs no separate trust: with `Slides.Anim.DParamCorrect.discrete-assemblyD` (the
+-- template needs no separate trust: with `Slides.Anim.DParam.Properties.discrete-assemblyD` (the
 -- frames of the animation are the symbolic layouts evaluated) the page's formulas are the
 -- flipbook frames.
 
-module Slides.Examples.PairsHeroNatural where
+module Slides.Examples.PairsHero.Properties where
 
 open import Data.Bool using (Bool; if_then_else_; true; false)
 open import Data.List using ([]; _∷_; zipWith; upTo; foldr)

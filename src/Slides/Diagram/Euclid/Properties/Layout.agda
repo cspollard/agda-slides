@@ -6,7 +6,7 @@
 -- scalars and nothing else: it never compares or divides.  So it only uses the first two layers
 -- of a scalar (`Ops`), and the Euclidean operations (`Slides.Diagram.Euclid`) occur only
 -- *inside* the scalars, in the formulas at the leaves.  Hence the naturality theorem of
--- `Slides.Diagram.LayoutNatural` applies unchanged along `evalD`, which is an `Ops`-homomorphism
+-- `Slides.Diagram.Layout.Properties` applies unchanged along `evalD`, which is an `Ops`-homomorphism
 -- (`Euclid.evalD-hom`); this module states the consequences the discrete assembly uses:
 --
 --   * `layout-evalD`: a diagram over discrete formulas, laid out symbolically and evaluated at
@@ -17,7 +17,7 @@
 --     evaluated in ℕ, as the template does (it is `weakenE-hom`, an `Ops`-homomorphism, composed
 --     with `evalD`).
 
-module Slides.Diagram.EuclidNatural where
+module Slides.Diagram.Euclid.Properties.Layout where
 
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality using (_≡_; cong; sym; trans)
@@ -27,7 +27,7 @@ open import Slides.Diagram.Syntax using (Dia; mapDia)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Expr using (Expr; exprOps; evalWith; evalWith-hom)
 open import Slides.Diagram.Euclid
-open import Slides.Diagram.LayoutNatural using (layout-natural; mapLayout-∘; mapLayout-cong)
+open import Slides.Diagram.Layout.Properties using (layout-natural; mapLayout-∘; mapLayout-cong)
 open import Slides.Diagram.Draw using (mapLayout)
 
 layout-evalD : ∀ {V S} (D : DiscreteOps S) (ρ : V → S) (d : Dia (DExpr V)) →

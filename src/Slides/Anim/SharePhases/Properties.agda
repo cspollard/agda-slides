@@ -21,7 +21,7 @@
 --     (`pageFrameS-sem-ℕ`, `⟦_⟧ᴺ` and the output `⟦_⟧ᴰ`), whose composition with
 --     `Slides.Anim.Phases.pageFrame-sem` and `Slides.Anim.DPhases.pageFrameD-sem` says that the
 --     shared page shows the symbolic layout of tick `k` evaluated at `ρ`: the continuous frame,
---     respectively the discrete one the flipbook shows (`DParamCorrect.discrete-assemblyD`).
+--     respectively the discrete one the flipbook shows (`Slides.Anim.DParam.Properties.discrete-assemblyD`).
 --
 -- The base command of a shared element has the numbers that a formula overwrites zeroed
 -- (`shareElem`, `zeroBase-sem`: the page sets the same numbers), so that elements that differ
@@ -33,7 +33,7 @@
 --
 -- Not proved: the printing as JSON and the page's evaluation of the program (see `Share`).
 
-module Slides.Anim.SharePhasesCorrect where
+module Slides.Anim.SharePhases.Properties where
 
 open import Data.Bool using (if_then_else_)
 open import Data.List using (List; []; _∷_; map; reverse; length)
@@ -49,11 +49,11 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label)
 open import Slides.Diagram.NatQ using (ι)
 open import Slides.Anim.Formula
-open import Slides.Anim.FormulaCorrect
+open import Slides.Anim.Formula.Properties
 open import Slides.Anim.Phases using (Elem; Kind; nums; entries; withNums)
-open import Slides.Anim.PhasesCorrect using (baseNum; pageNumsG; pageElemG; active; active-map)
+open import Slides.Anim.Phases.Properties using (baseNum; pageNumsG; pageElemG; active; active-map)
 open import Slides.Anim.Share
-open import Slides.Anim.ShareCorrect
+open import Slides.Anim.Share.Properties
 open import Slides.Anim.SharePhases
 open St using (defs)
 open SElem

@@ -6,7 +6,7 @@
 -- difference is the monus and whose "p percent of" rounds down; the continuous player
 -- (`Slides.Anim.Continuous`) evaluates the same formulas in ℚ (`ratOps`), whose difference is
 -- real subtraction and whose percentage is exact.  Both are `evalWith` of the same free
--- algebra, and layout is natural in each (`Slides.Diagram.LayoutNatural`), so a template's
+-- algebra, and layout is natural in each (`Slides.Diagram.Layout.Properties`), so a template's
 -- frame in either reading is the evaluation of *one* symbolic layout.  They agree exactly when
 -- the ℕ operations were exact, i.e. at the nodes where
 --
@@ -45,7 +45,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Expr
-open import Slides.Diagram.LayoutNatural using (layout-natural; layout-eval; mapLayout-∘)
+open import Slides.Diagram.Layout.Properties using (layout-natural; layout-eval; mapLayout-∘)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.NatQ
 open import Slides.Diagram.Scalar using (Ops; natOps; ratOps)

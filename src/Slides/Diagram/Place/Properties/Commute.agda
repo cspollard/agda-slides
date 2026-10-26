@@ -15,7 +15,7 @@
 -- overlap paint the same pixels in either order.  `≈ᵖ` is strictly coarser than
 -- `≈ᴸ` when parts overlap, which is why `Par` asks for independence.
 
-module Slides.Diagram.Commute where
+module Slides.Diagram.Place.Properties.Commute where
 
 open import Level using (0ℓ)
 open import Data.List using (List; []; _∷_; _++_; map)
@@ -35,7 +35,7 @@ open import Slides.Anim.Syntax using (AnimC; _∥ᵃ_)
 open import Slides.Anim.Timeline using (merge; timeline)
 open import Data.Container.FreeMonad using (_⋆_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
-open import Slides.Diagram.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
+open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
 
 module For {S : Set} (O : Ops S) (L : IsLawful O) where
   open Ops O

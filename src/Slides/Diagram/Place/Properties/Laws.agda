@@ -16,7 +16,7 @@
 -- (`Slides.Diagram.Equality`): a layout is plain data, so no function
 -- extensionality is needed, and the scalar's equality need not be `_≡_`.
 
-module Slides.Diagram.Laws where
+module Slides.Diagram.Place.Properties.Laws where
 
 open import Level using (0ℓ)
 open import Algebra using (CommutativeRing; IsCommutativeRing)

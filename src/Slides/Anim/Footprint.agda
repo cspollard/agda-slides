@@ -14,7 +14,7 @@
 --   * disjointness is decidable and symmetric
 --
 -- Commutativity of `Par` on the frames themselves (`atop` is commutative up to a
--- permutation of its draws and anchors) is `Slides.Diagram.Commute`.
+-- permutation of its draws and anchors) is `Slides.Diagram.Place.Properties.Commute`.
 
 module Slides.Anim.Footprint where
 

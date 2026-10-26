@@ -15,7 +15,7 @@
 
 open import Slides.Diagram.Scalar using (Ops)
 
-module Slides.Diagram.NamesSound {S : Set} (O : Ops S) where
+module Slides.Diagram.Names.Properties {S : Set} (O : Ops S) where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)

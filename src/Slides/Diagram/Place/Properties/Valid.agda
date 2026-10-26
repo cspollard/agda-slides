@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Valid layouts.  A layout is `Valid` when its width and height are non-negative
--- (`Slides.Diagram.Laws`); the unit laws of the empty diagram hold for exactly
+-- (`Slides.Diagram.Place.Properties.Laws`); the unit laws of the empty diagram hold for exactly
 -- those.  This module proves that every operation keeps a layout valid, so that
 -- the unit laws apply to anything built from valid parts, and lifts the layout
 -- laws to diagram terms.
@@ -11,7 +11,7 @@
 -- idempotent.  (A commutative ring with an associative, commutative maximum alone
 -- cannot prove these.)  ℤ and ℚ are ordered; ℕ is not covered (see `Laws`).
 
-module Slides.Diagram.Valid where
+module Slides.Diagram.Place.Properties.Valid where
 
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.Properties as ℤP
@@ -25,7 +25,7 @@ open import Relation.Binary using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; subst)
 
 open import Slides.Diagram.Scalar
-open import Slides.Diagram.Laws using (IsLawful; lawfulℤ; lawfulℚ; module Proofs)
+open import Slides.Diagram.Place.Properties.Laws using (IsLawful; lawfulℤ; lawfulℚ; module Proofs)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry using (top; middle; bottom; left; centred; right)
 import Slides.Diagram.Geometry as Geo
@@ -313,7 +313,7 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
 module ForInts = For intOps lawfulℤ orderedℤ
 module ForRats = For ratOps lawfulℚ orderedℚ
 
-import Slides.Diagram.Laws as Laws
+import Slides.Diagram.Place.Properties.Laws as Laws
 import Slides.Diagram.Place intOps as PI
 
 -- the hypotheses on sized leaves are needed: in ℤ a rectangle of width -1 is not valid

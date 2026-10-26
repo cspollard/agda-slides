@@ -1,6 +1,6 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of `Par` once frames are laid out (`Slides.Diagram.Laws`, `Commute`).
+-- Laws of `Par` once frames are laid out (`Slides.Diagram.Place.Properties.Laws`, `Commute`).
 --
 --   * `Par` is associative: merging laid-out frames is associative up to `≈ᴸ`
 --     (`mergeL-assoc`, from `⊙-assoc`; the unit laws of `merge` hold on the nose)
@@ -9,7 +9,7 @@
 --     `none` is invisible.  This is the place where the unit laws of `atop` are
 --     needed, and with them the `Valid` hypothesis.
 
-module Slides.Anim.Laws where
+module Slides.Anim.Syntax.Properties.Laws where
 
 open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo)
 import Data.List.Properties as LP
@@ -26,8 +26,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Scalar using (Ops; intOps; ratOps)
 import Slides.Diagram.Syntax as DS
-open import Slides.Diagram.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
-import Slides.Diagram.Commute as Commute
+open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
+import Slides.Diagram.Place.Properties.Commute as Commute
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline
 

@@ -10,7 +10,7 @@
 -- monad structure (`>>=` of animations is the generic bind, whose fusion with
 -- `foldA` is `foldA-bind`, proved in `Slides.Anim.Syntax`).
 
-module Slides.Anim.Generic where
+module Slides.Anim.Syntax.Properties.Generic where
 
 open import Level using (0ℓ)
 open import Data.Fin using (zero; suc)

@@ -23,7 +23,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    - *Parametric bodies* (built; see `docs/Design.md`, "Animations"). `Slides.Diagram.Expr`:
      `Expr V = ExprC ⋆ V`, the free `Ops`-algebra (a free monad) over variables, with
      `evalWith O ρ` its fold, an `Ops`-homomorphism by `refl` (`evalWith-hom`), and `subst`
-     the fold into `exprOps` (a homomorphism too, `evalWith-subst`). `Slides.Diagram.LayoutNatural`:
+     the fold into `exprOps` (a homomorphism too, `evalWith-subst`). `Slides.Diagram.Layout.Properties`:
      `layout-natural`, `mapLayout h (layout_S d) ≡ layout_T (mapDia h d)` for an `IsOpsHom`
      `h` (six equations, no order, no condition on `-`), proved for every operation of
      `Place`; `layout-eval`, `layout-subst`. `SegBody S = blackBox (ℚ → Dia S) | template
@@ -41,7 +41,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `none` padding) against the frames Agda computes from the functions; the intro deck's
      slider is a template.
      Left:
-     - (Proved, `Slides.Anim.ParamCorrect`: the frame at tick `k` is the symbolic layout at
+     - (Proved, `Slides.Anim.Param.Properties`: the frame at tick `k` is the symbolic layout at
        the assignment `i ↦ (parameter of segment i at tick k)`, `discrete-assembly`,
        `paramOf-assembly-canonical`, with the shipped segments identified.)
      - Built: layered signatures (core, sub) and the Euclidean layer, `SegBody.discrete`
@@ -64,7 +64,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `sampleAt-ι`, `leafAt-ι`, `leaf-tick` (with `Faithful`), `parAt-time`, `seqAt-*`,
      `animAt-dur`, `piece-hold`, `piece-start`. Tested only: the JavaScript (float easings,
      evaluator) against exact `frameAt` at every tick and quarter tick.
-     Proved at whole ticks, `Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: the
+     Proved at whole ticks, `Slides.Anim.Assembly.Continuous` (`frameAt-assembly`: the
      continuous frame is the discrete one through `ι` when the segments running at that tick
      satisfy `leaf-tick`'s hypotheses; `atop` needs none, `AtopNatural`) and
      `Slides.Anim.Formula`/`Phases` (shipped formulas and phases mean the symbolic frame).
@@ -75,19 +75,19 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      bodies stay discrete.
    - *`Expr` through the generic theory.* `Slides.Diagram.Expr` is already `ExprC ⋆ V`;
      route `evalWith` through `Container.FreeMonad.Algebraic` (`fold-agrees`, as in
-     `Slides.Diagram.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
+     `Slides.Diagram.Syntax.Properties.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
      from `Container.FreeMonad` (`Eq`, `bind-cong`, `join-assoc`).
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
-3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
-   `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
-   (`fold-agrees`); `Slides.Diagram.MapFusion` shows `mapDia f` is translation along the
+3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Syntax.Properties.Generic` and
+   `Slides.Anim.Syntax.Properties.Generic` show that `fold` and `foldA` are the generic fold
+   (`fold-agrees`); `Slides.Diagram.Syntax.Properties.MapFusion` shows `mapDia f` is translation along the
    container morphism `scalarMor f` (identity on positions), hence functorial up to
    equality of programs (`mapDia-id`, `mapDia-∘`) and `fold α (mapDia f d) ≈ fold (pull
    (scalarMor f) α) d` for congruent `α` (`fold-mapDia`). Left: monad laws for
    `Dia`-with-holes if templates are wanted; pulling `Layout` back along a scalar map
    needs the map to be an ordered-ring homomorphism (see `docs/Design.md`).
-4. **Laws left over for diagrams** (`Slides.Diagram.Laws`):
-   - Done in `Slides.Diagram.Valid` (for ℤ and ℚ, via an `IsOrdered` record: the sum keeps
+4. **Laws left over for diagrams** (`Slides.Diagram.Place.Properties.Laws`):
+   - Done in `Slides.Diagram.Place.Properties.Valid` (for ℤ and ℚ, via an `IsOrdered` record: the sum keeps
      non-negativity, `fromℕ` is non-negative, `⊔` idempotent): every operation keeps a layout
      `Valid` (`valid-layout`: a term whose sized leaves are non-negative, `WellSized`, is valid;
      the hypotheses are needed, `invalid-rectangle`); `↔ m ∥ ↔ n ≈ ↔ (m + n)` (and `↕`, `⊙`);
@@ -145,7 +145,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      is not rational `gcd` (the ℤ checks cost as much, 2 to 5 s per diagram): it is the
      layout evaluation itself, linear in diagram size, so only smaller diagrams would
      help; left as is.
-   - *RTS flags.* Clean check of `Slides.Examples.PairsScalar` (and its 85 s of imports),
+   - *RTS flags.* Clean check of `Slides.Examples.Pairs.Properties` (and its 85 s of imports),
      user time and peak RSS, machine loaded (noise about 10%): default 82 to 89 s,
      1.4 GB; `-A64m` 105 s; `-A256m` 90 s, 1.1 GB; `-A1g` 69 to 71 s, 1.5 to 2.2 GB;
      `-A2g` 68 s, 3 GB (swaps); `-A256m -n4m`, `-A256m -c`, `-A256m -G3` no gain;

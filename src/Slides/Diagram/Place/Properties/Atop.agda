@@ -2,7 +2,7 @@
 
 -- `atop` is natural along maps that are not `Ops`-homomorphisms.
 --
--- `Slides.Diagram.LayoutNatural` shows that layout is natural along an `IsOpsHom`, which
+-- `Slides.Diagram.Layout.Properties` shows that layout is natural along an `IsOpsHom`, which
 -- includes preserving `-` on all pairs.  The map of ℕ into ℚ (`Slides.Diagram.NatQ.ι`) is not
 -- one: it preserves `-` only where the minuend is the larger (the monus is not the difference
 -- otherwise), and `percentOf` only where it is exact.  But `atop` uses neither the
@@ -10,12 +10,12 @@
 -- `(a ⊔ b) - b`, never `a - b` for unrelated `a` and `b`, besides sums and maxima.  So the
 -- weakest hypothesis under which `atop` commutes with `mapLayout h` is that `h` preserves `+`
 -- and `⊔` and the two differences `(a ⊔ b) - a`, `(a ⊔ b) - b`, which is true of `ι` with no
--- condition on the layouts (`Slides.Anim.ContinuousAssembly.atop-ι`).
+-- condition on the layouts (`Slides.Anim.Assembly.Continuous.atop-ι`).
 
 open import Slides.Diagram.Scalar using (Ops)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
-module Slides.Diagram.AtopNatural {S T : Set} (O : Ops S) (P : Ops T) (h : S → T)
+module Slides.Diagram.Place.Properties.Atop {S T : Set} (O : Ops S) (P : Ops T) (h : S → T)
   (h-+ : ∀ a b → h (Ops._+_ O a b) ≡ Ops._+_ P (h a) (h b))
   (h-⊔ : ∀ a b → h (Ops._⊔_ O a b) ≡ Ops._⊔_ P (h a) (h b))
   (h-⊔-l : ∀ a b → h (Ops._-_ O (Ops._⊔_ O a b) a) ≡ Ops._-_ P (h (Ops._⊔_ O a b)) (h a))

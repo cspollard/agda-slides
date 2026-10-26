@@ -28,8 +28,8 @@
 -- extended) without making the result wrong.  What is proved depends on that check, not on the
 -- map: `Inv` says every entry of the memo names a true definition.
 --
--- Theorems (`Slides.Anim.ShareCorrect`, module `Sound`, for every *reading* of formulas:
--- `Reading`, instances at ℚ and ℕ in `Slides.Anim.SharePhasesCorrect`):
+-- Theorems (`Slides.Anim.Share.Properties`, module `Sound`, for every *reading* of formulas:
+-- `Reading`, instances at ℚ and ℕ in `Slides.Anim.SharePhases.Properties`):
 --
 --   * `share-impl`: for a formula `g`, any parameters `ρ` and any store `st` with `Inv st`,
 --     `share g st = (r , st′)` extends the store (`Ext`), keeps `Inv`, `r` refers only to

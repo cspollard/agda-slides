@@ -238,14 +238,14 @@ or right aligned.
 
 The layout is computed in a scalar (`Slides.Diagram.Scalar.Ops`): `LayoutWith O`
 for any `Ops S`, and, for decks, the same names at ℕ. ℤ and ℚ are also provided,
-and `Slides.Examples.PairsScalar` checks that the Pairs diagrams, taken to ℤ and
+and `Slides.Examples.Pairs.Properties` checks that the Pairs diagrams, taken to ℤ and
 ℚ by `mapDia` (the action of `Dia` on a change of scalar), lay out identically
 in all three. Sizes are in diagram units, but positions are kept in
 *half* units, so centring is `outer - inner` with no division and never rounds;
 the positions are halved once, when the layout becomes a `Diagram`. A layout is
 plain data (sizes, drawing commands, named anchors), not a function.
 
-`Slides.Diagram.Laws` proves, for any scalar whose `Ops` form a commutative ring
+`Slides.Diagram.Place.Properties.Laws` proves, for any scalar whose `Ops` form a commutative ring
 up to an equivalence `_≈_` with a congruent, commutative, associative maximum
 (`IsLawful`; ℤ and ℚ are, with `_≈_` = `_≡_`; ℕ is not, since its difference is
 the monus), that, up to `_≈ᴸ_` (`Slides.Diagram.Equality`, the scalar's `_≈_`
@@ -258,7 +258,7 @@ lifted pointwise to sizes, drawing commands and anchors):
 - `named` and `connect` leave a layout's size and anchors alone;
 - size fusion: the width and height of `layout d` are the fold of `sizeAlgebra`.
 
-`Slides.Diagram.NamesSound` proves that `dangling d ≡ []` implies every `connect`
+`Slides.Diagram.Names.Properties` proves that `dangling d ≡ []` implies every `connect`
 draws an arrow. `dangling` resolves a connection against the names declared
 *inside that connect's own diagram*, since that is all `connect` can see: a name
 declared next to the `connect` is reported.
@@ -315,7 +315,7 @@ checked as the deck typechecks (as `parI` checks footprints). `dur a` is the num
 tick, so a motion, a growing box or a fade is one `body`. Laws (`Seq` associative, the
 swap `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)`, `Par` commutative up to a permutation of
 drawing order, tracks associative and reversible) are in `Slides.Anim.Timeline`,
-`Footprint`, `Track` and `Slides.Diagram.Commute`; `plan/Animations.md` has the design
+`Footprint`, `Track` and `Slides.Diagram.Place.Properties.Commute`; `plan/Animations.md` has the design
 and what is open.
 
 ## JavaScript

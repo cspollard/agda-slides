@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- The assembly of whole frames for discrete templates: the symbolic frames of
--- `Slides.Anim.DParam` are the frames of the animation (cf. `Slides.Anim.ParamCorrect`, for
+-- `Slides.Anim.DParam` are the frames of the animation (cf. `Slides.Anim.Param.Properties`, for
 -- continuous templates read in ℕ).
 --
 -- Statement.  Let `a` be an animation whose segments are `template` or `discrete` (so that
@@ -14,8 +14,8 @@
 -- `ρ (idx) ≡ units (sample of its track at that tick)` (`DGoodL l k ρ`).  The right-hand side
 -- is what the page computes: the formulas of the tick, read in ℕ (`Slides.Anim.Formula.encD-semN`
 -- says that the shipped, folded formula is `evalD natD ρ`), and the left is the frame the
--- flipbook shows.  The proof is the one of `Slides.Anim.ParamCorrect`, the instance of
--- `Slides.Anim.LeafAssembly` for `Expr`, with `Slides.Diagram.EuclidNatural` for one segment: the
+-- flipbook shows.  The proof is the one of `Slides.Anim.Param.Properties`, the instance of
+-- `Slides.Anim.Assembly.Leaf` for `Expr`, with `Slides.Diagram.Euclid.Properties.Layout` for one segment: the
 -- Euclidean operations never reach the layout, they only live in the leaves' formulas.  So the
 -- tick-by-tick theorem (`discrete-assemblyD`), the numbering of the leaves and the canonical
 -- assignment (`assembly-canonical`) are the generic ones.
@@ -23,7 +23,7 @@
 -- `DGoodL` is satisfiable by `i ↦ (parameter of segment i at tick k)` (`canonical-good`,
 -- `assembly-canonical`, from the generic module).
 
-module Slides.Anim.DParamCorrect where
+module Slides.Anim.DParam.Properties where
 
 open import Data.Bool using ()
 open import Data.List using (replicate)
@@ -37,16 +37,16 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 open import Slides.Diagram.Euclid
-open import Slides.Diagram.EuclidNatural using (layout-evalD; layout-weakenE; layout-substD)
+open import Slides.Diagram.Euclid.Properties.Layout using (layout-evalD; layout-weakenE; layout-substD)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Diagram.LayoutNatural using (atop-natural)
+open import Slides.Diagram.Layout.Properties using (atop-natural)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (frames)
 open import Slides.Anim.Param using (Leaf)
 open import Slides.Anim.DParam
-import Slides.Anim.LeafAssembly as LA
+import Slides.Anim.Assembly.Leaf as LA
 
 private
   layoutℕ : Dia ℕ → Layout ℕ

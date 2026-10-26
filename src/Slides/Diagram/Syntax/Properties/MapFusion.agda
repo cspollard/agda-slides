@@ -16,16 +16,16 @@
 --     pulled back along the morphism (`pull`, `fold-translate`, `fold-mapDia`):
 --       fold α (mapDia f d) ≈ fold (pull (scalarMor f) α) d
 --     for any renderer `α` whose handlers respect pointwise-equal children
---     (`Congruent`, as in `Slides.Diagram.Generic`).  The pullback is the same
+--     (`Congruent`, as in `Slides.Diagram.Syntax.Properties.Generic`).  The pullback is the same
 --     renderer applied to the operation with rescaled sizes; no function
 --     extensionality is needed.
 --
 -- What does not follow is a pullback of `Layout` along `f` unless `f` is a ring
 -- homomorphism that respects the layout's order, since `⊔` and centring are
--- computed in the target scalar (`Slides.Diagram.Laws`); that is outside this module (for an
--- `Ops`-homomorphism it is `Slides.Diagram.LayoutNatural.layout-natural`).
+-- computed in the target scalar (`Slides.Diagram.Place.Properties.Laws`); that is outside this module (for an
+-- `Ops`-homomorphism it is `Slides.Diagram.Layout.Properties.layout-natural`).
 
-module Slides.Diagram.MapFusion where
+module Slides.Diagram.Syntax.Properties.MapFusion where
 
 open import Level using (0ℓ)
 open import Data.Fin using (zero; suc)

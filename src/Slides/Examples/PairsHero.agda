@@ -14,7 +14,7 @@
 -- template* (`heroT`, `heroD`): the pairs' data are literals (partially evaluated by Agda: a
 -- constant spin makes the angle a number, and the closed subformulas fold), and only the tick
 -- stays symbolic.  Nothing is written twice, and the template is the frame by naturality of
--- the construction along the evaluation homomorphism (`Slides.Examples.PairsHeroNatural`,
+-- the construction along the evaluation homomorphism (`Slides.Examples.PairsHero.Properties`,
 -- `heroT-correct`).
 
 module Slides.Examples.PairsHero where

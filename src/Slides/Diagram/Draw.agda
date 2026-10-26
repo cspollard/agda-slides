@@ -43,7 +43,7 @@ record Layout (S : Set) : Set where
     anchors : List (String × Box S)
 
 ------------------------------------------------------------------------
--- Change of scalar (the action on maps; see `Slides.Diagram.LayoutNatural`)
+-- Change of scalar (the action on maps; see `Slides.Diagram.Layout.Properties`)
 
 mapBox : ∀ {S T} → (S → T) → Box S → Box T
 mapBox f (box l t w h) = box (f l) (f t) (f w) (f h)

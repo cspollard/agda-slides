@@ -3,7 +3,7 @@
 -- What a shared program means, for every reading of formulas, and that sharing is sound: the
 -- theorems listed in the header of `Slides.Anim.Share` (which defines the program and `share`).
 
-module Slides.Anim.ShareCorrect where
+module Slides.Anim.Share.Properties where
 
 
 open import Data.Bool using (if_then_else_)

@@ -9,8 +9,8 @@
 -- discrete ones, `Slides.Anim.Formula`); only on two facts about each slot of a command: the
 -- formula's value is the number the slot stands for (`slot-val`, positions halved), and a slot that
 -- folded to a constant has the right base number (`slot-num`).  So the theorems are proved once,
--- in `Over`, given those two facts; `Slides.Anim.PhasesCorrect` instantiates it at ℚ
--- (continuous templates) and `Slides.Anim.DPhasesCorrect` at ℕ (discrete ones).  We prove
+-- in `Over`, given those two facts; `Slides.Anim.Phases.Properties` instantiates it at ℚ
+-- (continuous templates) and `Slides.Anim.DPhases.Properties` at ℕ (discrete ones).  We prove
 --
 --   * `encode-sem`: for a drawing command `dr` of a symbolic layout, `pageElem (encodeWith slot
 --     bval dr) ρ` is `dr` evaluated at `ρ` with positions halved (positions are in half units,
@@ -27,7 +27,7 @@
 -- attribute table `NUMS` in `assets/animation.js`, which must follow `nums`), and the floating
 -- point of `ev`.  Those are tested (`tests/browser`).
 
-module Slides.Anim.PhasesCorrect where
+module Slides.Anim.Phases.Properties where
 
 open import Data.Bool using (true; false; if_then_else_; T)
 open import Data.List using (List; []; _∷_; map)

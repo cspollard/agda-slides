@@ -16,7 +16,7 @@
 -- What is *required* of `h`: exactly the six equations of `IsOpsHom`.  No order, no
 -- injectivity and no condition on where `-` is applied: layout only computes with the
 -- operations, and each is preserved on the nose.  (That the layout is *valid*, with
--- sizes and offsets non-negative, is a different matter, `Slides.Diagram.Valid`.
+-- sizes and offsets non-negative, is a different matter, `Slides.Diagram.Place.Properties.Valid`.
 -- Preserving `-` is what the ℕ monus asks of an evaluation; for `Slides.Diagram.Expr`
 -- it holds because both sides interpret `-` by the same monus.)
 --
@@ -28,7 +28,7 @@
 -- so a template laid out once, symbolically, and evaluated, is the layout of the
 -- instance (`layout-eval`).
 
-module Slides.Diagram.LayoutNatural where
+module Slides.Diagram.Layout.Properties where
 
 open import Data.Fin using (zero; suc)
 open import Data.List using ([]; _∷_; map; _++_)

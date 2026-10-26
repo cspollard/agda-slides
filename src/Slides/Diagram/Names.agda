@@ -4,7 +4,7 @@
 -- `connect` cannot find.  `dangling d` lists the names that a `connect` refers
 -- to but that no `named` inside *that connect's own diagram* declares; such a
 -- connection draws nothing, so a deck can assert `dangling d ≡ []` (by `refl`)
--- and have a misspelled name fail to typecheck.  (`Slides.Diagram.NamesSound`
+-- and have a misspelled name fail to typecheck.  (`Slides.Diagram.Names.Properties`
 -- proves that this guarantees every connection is drawn.)
 --
 -- The declared names are listed in the order the layout keeps its anchors.
