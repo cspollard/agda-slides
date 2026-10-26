@@ -138,8 +138,11 @@ Decisions that shaped it:
   `mapDia` changes the scalar (`PairsScalar` checks that ℕ, ℤ and ℚ lay the Pairs
   diagrams out identically). A general naturality theorem is false as stated:
   `intOps` floors percent ports, so ℤ→ℚ is not an `Ops` homomorphism, and ℕ→ℤ breaks
-  on monus. A provable form is the fusion lemma for `mapDia` plus a per-operation
-  homomorphism check.
+  on monus. The provable parts are in `Slides.Diagram.MapFusion`: `mapDia f` is
+  translation along a container morphism, so it is functorial (up to equality of programs)
+  and folding after it is folding with the pulled-back algebra (`fold-mapDia`), for any
+  renderer with congruent handlers. Transporting a *layout* along `f` additionally needs a
+  per-operation homomorphism check (`⊔`, centring, percent ports).
 - **Half-unit positions** make centring exact in ℤ (`outer - inner`, no division);
   they are halved once, in `toElement`. This is why `Draw S` and the ℕ `Element`
   are different types: they are in different units, and `Showcase` writes `Element`s
