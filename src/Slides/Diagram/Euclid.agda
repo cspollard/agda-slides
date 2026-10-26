@@ -56,6 +56,7 @@ open import Container.Sum using (inl)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
+open import Slides.Diagram.Signature.Properties
 open import Slides.Diagram.Expr
 
 ------------------------------------------------------------------------

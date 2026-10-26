@@ -21,7 +21,7 @@ module Slides.Anim.Footprint where
 open import Data.List using (List; _++_)
 open import Data.Unit using (⊤; tt)
 open import Data.Product using (_,_; proj₁)
-open import Data.String using (String)
+open import Data.String using (String; _≟_)
 open import Relation.Nullary using (Dec)
 open import Relation.Nullary.Decidable using (True)
 open import Relation.Binary.PropositionalEquality using (sym)
