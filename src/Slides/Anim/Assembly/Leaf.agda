@@ -64,7 +64,8 @@ import Slides.Diagram.Place natOps as PN
 import Slides.Anim.Track as T
 import Slides.Anim.Track.Properties as TP
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (timeline; frames; length-dur)
+open import Slides.Anim.Timeline using (timeline; frames)
+open import Slides.Anim.Timeline.Properties using (length-dur)
 open import Slides.Anim.Param using (Leaf; leaf; leavesWith; symbolicFramesWith; segmentsOf; pieces)
 open import Slides.Anim.Nth
 open import Slides.Anim.Arith

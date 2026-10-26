@@ -53,85 +53,12 @@ module _ {F : Set} (_⊙_ : F → F → F) where
   merge (x ∷ xs) []       = x ∷ xs
   merge (x ∷ xs) (y ∷ ys) = (x ⊙ y) ∷ merge xs ys
 
-  merge-unitʳ : ∀ xs → merge xs [] ≡ xs
-  merge-unitʳ []       = refl
-  merge-unitʳ (x ∷ xs) = refl
-
-  merge-assoc : (∀ x y z → (x ⊙ y) ⊙ z ≡ x ⊙ (y ⊙ z)) →
-                ∀ xs ys zs → merge (merge xs ys) zs ≡ merge xs (merge ys zs)
-  merge-assoc assoc []       ys       zs       = refl
-  merge-assoc assoc (x ∷ xs) []       zs       = refl
-  merge-assoc assoc (x ∷ xs) (y ∷ ys) []       =
-    trans (merge-unitʳ (merge (x ∷ xs) (y ∷ ys))) (sym (cong (merge (x ∷ xs)) (merge-unitʳ (y ∷ ys))))
-  merge-assoc assoc (x ∷ xs) (y ∷ ys) (z ∷ zs) =
-    cong₂ _∷_ (assoc x y z) (merge-assoc assoc xs ys zs)
-
-  merge-comm : (∀ x y → x ⊙ y ≡ y ⊙ x) → ∀ xs ys → merge xs ys ≡ merge ys xs
-  merge-comm comm []       []       = refl
-  merge-comm comm []       (y ∷ ys) = refl
-  merge-comm comm (x ∷ xs) []       = refl
-  merge-comm comm (x ∷ xs) (y ∷ ys) = cong₂ _∷_ (comm x y) (merge-comm comm xs ys)
-
-  -- the swap law, at the level of lists
-  merge-swap : ∀ as bs cs ds → length as ≡ length cs →
-               merge (as ++ bs) (cs ++ ds) ≡ merge as cs ++ merge bs ds
-  merge-swap []       bs []       ds _ = refl
-  merge-swap []       bs (c ∷ cs) ds ()
-  merge-swap (a ∷ as) bs []       ds ()
-  merge-swap (a ∷ as) bs (c ∷ cs) ds h =
-    cong ((a ⊙ c) ∷_) (merge-swap as bs cs ds (ℕP.suc-injective h))
-
-  length-merge : ∀ xs ys → length (merge xs ys) ≡ length xs ⊔ length ys
-  length-merge []       ys       = refl
-  length-merge (x ∷ xs) []       = refl
-  length-merge (x ∷ xs) (y ∷ ys) = cong suc (length-merge xs ys)
-
   -- the timeline of an animation, from the frames of each leaf
   timeline : ∀ {T} → (T → List F) → AnimC ⋆ T → List F
   timeline leaf = foldA leaf _++_ merge
 
-  timeline-⨾ : ∀ {T} (leaf : T → List F) a b →
-               timeline leaf (a ⨾ b) ≡ timeline leaf a ++ timeline leaf b
-  timeline-⨾ leaf a b = refl
-
-  timeline-∥ : ∀ {T} (leaf : T → List F) a b →
-               timeline leaf (a ∥ᵃ b) ≡ merge (timeline leaf a) (timeline leaf b)
-  timeline-∥ leaf a b = refl
-
-  -- the serial/parallel swap, for animations
-  timeline-swap : ∀ {T} (leaf : T → List F) a b c d →
-                  length (timeline leaf a) ≡ length (timeline leaf c) →
-                  timeline leaf ((a ⨾ b) ∥ᵃ (c ⨾ d)) ≡ timeline leaf ((a ∥ᵃ c) ⨾ (b ∥ᵃ d))
-  timeline-swap leaf a b c d h = merge-swap (timeline leaf a) (timeline leaf b) (timeline leaf c) (timeline leaf d) h
-
-  -- the length of a timeline is the fold of the leaves' lengths
-  length-timeline : ∀ {T} (leaf : T → List F) (m : AnimC ⋆ T) →
-                    length (timeline leaf m) ≡ foldA (λ t → length (leaf t)) _+_ _⊔_ m
-  length-timeline leaf (pure t) = refl
-  length-timeline leaf (impure (Seq , k)) =
-    trans (LP.length-++ (timeline leaf (k zero)))
-          (cong₂ _+_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
-  length-timeline leaf (impure (Par , k)) =
-    trans (length-merge (timeline leaf (k zero)) (timeline leaf (k (suc zero))))
-          (cong₂ _⊔_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
 
 -- the diagram language: a segment shows its body at the parameter's value on each tick, frames overlay by `atop`
 frames : ∀ {S} → Ops S → Seg S → List (Dia S)
 frames O s = map (λ t → body O s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
   where sampled = T.sample T.ℚLerp (track s)
-
-frames-length : ∀ {S} (O : Ops S) (s : Seg S) → length (frames O s) ≡ ticks s
-frames-length O s =
-  trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
-               (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
-        (TP.sample-dur T.ℚLerp (track s))
-
--- the length of the timeline is the duration
-length-dur : ∀ {S} (O : Ops S) (m : Anim S (Seg S)) → length (timeline atop (frames O) m) ≡ dur m
-length-dur {S} O m = trans (length-timeline atop (frames O) m) (foldA-ext m)
-  where
-    foldA-ext : (m : Anim S (Seg S)) →
-                foldA (λ t → length (frames O t)) _+_ _⊔_ m ≡ dur m
-    foldA-ext (pure t)               = frames-length O t
-    foldA-ext (impure (Seq , k))     = cong₂ _+_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))
-    foldA-ext (impure (Par , k))     = cong₂ _⊔_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))

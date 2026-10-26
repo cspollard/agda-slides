@@ -46,7 +46,8 @@ open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Diagram.Layout.Properties using (layout-subst; layout-eval; atop-natural)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (timeline; frames; length-dur)
+open import Slides.Anim.Timeline using (timeline; frames)
+open import Slides.Anim.Timeline.Properties using (length-dur)
 open import Slides.Anim.Param
 import Slides.Diagram.Param as DP
 open import Slides.Anim.Nth public

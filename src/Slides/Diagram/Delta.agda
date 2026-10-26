@@ -19,9 +19,7 @@
 
 module Slides.Diagram.Delta where
 
-open import Data.List using (List; []; _∷_; _++_)
-open import Data.Maybe using ()
-import Data.Maybe.Properties as MaybeP
+open import Data.List using (List; []; _∷_)
 open import Data.Nat using (ℕ)
 import Data.Nat.Properties as ℕP
 import Data.Integer as ℤ
@@ -36,7 +34,6 @@ import Data.Unit.Properties as UP
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Relation.Nullary using (Dec; yes; no)
-open import Relation.Nullary.Decidable using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import Slides.Diagram
@@ -201,40 +198,6 @@ mutual
   patchL (_ ∷ _)   []       = []
 
 ------------------------------------------------------------------------
--- The round trip
-
-patchE-diffN : ∀ a b → patchE (diffN a b) a ≡ b
-patchE-diffN a b with a ≟ₑ b
-... | yes eq = eq
-... | no _ with setNums (trimNums (numsOf a) (numsOf b)) a ≟ₑ b
-...   | yes eq = eq
-...   | no _   = refl
-
-mutual
-  patchE-diffE : ∀ a b → patchE (diffE a b) a ≡ b
-  patchE-diffE (group xs) b = patchE-diffG xs b
-  patchE-diffE (rect v1 v2 v3 v4 v5) b = patchE-diffN (rect v1 v2 v3 v4 v5) b
-  patchE-diffE (circle v1 v2 v3 v4) b = patchE-diffN (circle v1 v2 v3 v4) b
-  patchE-diffE (line v1 v2 v3 v4 v5) b = patchE-diffN (line v1 v2 v3 v4 v5) b
-  patchE-diffE (arrow v1 v2 v3 v4 v5) b = patchE-diffN (arrow v1 v2 v3 v4 v5) b
-  patchE-diffE (label v1 v2 v3 v4 v5) b = patchE-diffN (label v1 v2 v3 v4 v5) b
-  patchE-diffE (path v1 v2) b = patchE-diffN (path v1 v2) b
-
-  patchE-diffG : ∀ xs b → patchE (diffG xs b) (group xs) ≡ b
-  patchE-diffG xs (group ys) = cong group (patchL-diffL xs ys)
-  patchE-diffG xs (rect v1 v2 v3 v4 v5) = patchE-diffN (group xs) (rect v1 v2 v3 v4 v5)
-  patchE-diffG xs (circle v1 v2 v3 v4) = patchE-diffN (group xs) (circle v1 v2 v3 v4)
-  patchE-diffG xs (line v1 v2 v3 v4 v5) = patchE-diffN (group xs) (line v1 v2 v3 v4 v5)
-  patchE-diffG xs (arrow v1 v2 v3 v4 v5) = patchE-diffN (group xs) (arrow v1 v2 v3 v4 v5)
-  patchE-diffG xs (label v1 v2 v3 v4 v5) = patchE-diffN (group xs) (label v1 v2 v3 v4 v5)
-  patchE-diffG xs (path v1 v2) = patchE-diffN (group xs) (path v1 v2)
-
-  patchL-diffL : ∀ xs ys → patchL (diffL xs ys) xs ≡ ys
-  patchL-diffL (x ∷ xs) (y ∷ ys) = cong₂ _∷_ (patchE-diffE x y) (patchL-diffL xs ys)
-  patchL-diffL (x ∷ xs) []       = refl
-  patchL-diffL []       ys       = refl
-
-------------------------------------------------------------------------
 -- A sequence of frames: the first and an edit from each frame to the next
 
 deltas : List Element → List (List Element) → List Edits
@@ -244,8 +207,3 @@ deltas e (f ∷ fs) = diffL e f ∷ deltas f fs
 replay : List Element → List Edits → List (List Element)
 replay e []       = []
 replay e (d ∷ ds) = patchL d e ∷ replay (patchL d e) ds
-
--- shipping the first frame and `deltas` loses nothing
-replay-deltas : ∀ e fs → replay e (deltas e fs) ≡ fs
-replay-deltas e []       = refl
-replay-deltas e (f ∷ fs) rewrite patchL-diffL e f = cong (f ∷_) (replay-deltas f fs)

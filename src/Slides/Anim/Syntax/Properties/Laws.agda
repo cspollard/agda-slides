@@ -29,8 +29,10 @@ import Slides.Diagram.Syntax as DS
 open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
 import Slides.Diagram.Place.Properties.Commute as Commute
 open import Slides.Anim.Syntax
+open import Slides.Anim.Syntax.Properties
 open import Slides.Anim.Timeline
 
+open import Slides.Anim.Timeline.Properties
 module For {S : Set} (O : Ops S) (L : IsLawful O) where
   open Ops O using (0#)
   open Proofs O L

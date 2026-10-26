@@ -59,7 +59,8 @@ import Slides.Diagram.Place.Properties.Atop as AN
 import Slides.Anim.Track as Tr
 import Slides.Anim.Track.Properties as TrP
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (timeline; frames; length-dur; mergeM)
+open import Slides.Anim.Timeline using (timeline; frames; mergeM)
+open import Slides.Anim.Timeline.Properties using (length-dur)
 open import Slides.Anim.Continuous
 open import Slides.Anim.Continuous.Properties
 open import Slides.Anim.Arith using (<ᵇ-true; <ᵇ-lt; <ᵇ-ge)
