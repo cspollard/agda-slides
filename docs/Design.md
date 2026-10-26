@@ -154,6 +154,12 @@ Decisions that shaped it:
   operation outside the translation law; it was removed.
 - **Stdlib has no ordered ring** (checked at `8326c7475`): no `IsOrderedRing`,
   ordered field or `sqrt` for ℕ. `Nonneg x` is `0# ⊔ x ≈ x`, the join-semilattice order.
+- **`Valid` is preserved by every operation** (`Slides.Diagram.Valid`), given an `IsOrdered`
+  record on the scalar (sum keeps non-negativity, `fromℕ` is non-negative, `⊔` idempotent;
+  ℤ and ℚ have it). A term is valid when its sized leaves are (`WellSized`; a negative
+  rectangle is not, so the hypothesis cannot be dropped). The same module proves the
+  combinators congruent for `≈ᴸ`, `↔ m ∥ ↔ n ≈ ↔ (m + n)`, the associativity and unit laws
+  on `Dia` terms, and `margin 0 0 0 0 d ≈ d`.
 
 ## Animations: `Slides.Anim.*`
 

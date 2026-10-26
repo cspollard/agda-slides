@@ -16,12 +16,15 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    translation along a container morphism only up to the scalar), and monad laws for
    `Dia`-with-holes if templates are wanted.
 3. **Laws left over for diagrams** (`Slides.Diagram.Laws`):
-   - `Valid` (non-negative size) is a hypothesis of the unit laws; prove that every
-     operation preserves it. This needs an ordered-ring record built on stdlib's
-     `IsJoinSemilattice` (stdlib has no ordered ring).
-   - `↔ m ∥ ↔ n ≈ ↔ (m + n)`.
-   - State the monoid laws on `Dia` terms (`fold α (a ∥ b)`), not only on the
-     layout combinators.
+   - Done in `Slides.Diagram.Valid` (for ℤ and ℚ, via an `IsOrdered` record: the sum keeps
+     non-negativity, `fromℕ` is non-negative, `⊔` idempotent): every operation keeps a layout
+     `Valid` (`valid-layout`: a term whose sized leaves are non-negative, `WellSized`, is valid;
+     the hypotheses are needed, `invalid-rectangle`); `↔ m ∥ ↔ n ≈ ↔ (m + n)` (and `↕`, `⊙`);
+     congruence of `besideA`/`aboveA`/`atop` in `≈ᴸ`; the associativity and unit laws on
+     `Dia` terms; `margin 0 0 0 0 d ≈ d`.
+   - Still open: `margin` composition (`margin a (margin b d) ≈ margin (a+b) d`: needs the
+     shift of a layout by a gap), laws for `hcat`/`vcat` with several elements, and unit laws
+     without `Valid` (false for a negative size, e.g. ℤ).
    - A scalar whose equality is not `_≡_` (a constructive real, or ℚ as unreduced
      pairs) as the first real test of the setoid generalisation.
    - Square roots and shapes on anchors (a `Shape` with ports taken from the
