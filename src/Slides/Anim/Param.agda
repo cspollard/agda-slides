@@ -18,9 +18,10 @@
 -- (and `leaf-agrees` for the discrete frames at ℕ): laying the renamed template out
 -- symbolically and evaluating is laying out the template at the segment's own parameter
 -- (`Slides.Diagram.LayoutNatural.layout-substWith`).  `atop` and the timeline are the same on
--- both sides, so the whole frame agrees; that last assembly (an induction over the animation
--- tracking tick offsets and the fractional part of `τ`) is checked by the browser test over
--- the `animref` deck (`tests/browser/anim-ref.mjs`), not proved here.
+-- both sides, so the whole frame agrees: that assembly, an induction over the animation
+-- tracking tick offsets, is `Slides.Anim.ParamCorrect` (discrete) and
+-- `Slides.Anim.ContinuousAssembly` (continuous, at whole ticks); fractional `τ` is checked by the
+-- browser test over the `animref` deck (`tests/browser/anim-ref.mjs`), not proved.
 --
 -- The page gets the track's pieces, not samples: its size does not grow with the ticks.
 

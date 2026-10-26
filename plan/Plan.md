@@ -41,10 +41,9 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `none` padding) against the frames Agda computes from the functions; the intro deck's
      slider is a template.
      Left:
-     - *The assembly of whole frames is tested, not proved*: that the frame at tick `k` is
-       the layout at the assignment `i ↦ (parameter of segment i at tick k)` follows from
-       `leaf-agrees` and `atop` commuting with `mapDia`, by an induction over the animation
-       that tracks tick offsets (`merge`, `++`, `replicate`); that induction is not written.
+     - (Proved, `Slides.Anim.ParamCorrect`: the frame at tick `k` is the symbolic layout at
+       the assignment `i ↦ (parameter of segment i at tick k)`, `discrete-assembly`,
+       `paramOf-assembly-canonical`, with the shipped segments identified.)
      - Bodies that need division, remainder or comparison of the parameter (the point-pair
        loops, `Pairs`) stay flipbook until `Expr` grows those, each with its homomorphism
        proof; `animateBoth` is still always a flipbook.
@@ -57,10 +56,15 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `sampleAt-ι`, `leafAt-ι`, `leaf-tick` (with `Faithful`), `parAt-time`, `seqAt-*`,
      `animAt-dur`, `piece-hold`, `piece-start`. Tested only: the JavaScript (float easings,
      evaluator) against exact `frameAt` at every tick and quarter tick.
-     Left: the assembly (`frameAt a τ` is the symbolic layout of tick `⌊τ⌋` at each
-     segment's sample at `τ - start`) and the whole-timeline form of `leaf-tick`
-     (needs `atop` to commute with `ι`); a template whose differences go negative draws a
-     negative size (no clamping in the page); black-box bodies stay discrete.
+     Proved at whole ticks, `Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: the
+     continuous frame is the discrete one through `ι` when the segments running at that tick
+     satisfy `leaf-tick`'s hypotheses; `atop` needs none, `AtopNatural`) and
+     `Slides.Anim.Formula`/`Phases` (shipped formulas and phases mean the symbolic frame).
+     Left: `frameAt a τ` for fractional `τ` (the symbolic layout of tick `⌊τ⌋` at each
+     segment's sample at `τ - start`, needs floor reasoning on `<ᵗ`); the JSON printing and the
+     player's reading of the phases (attribute table, floats) are tested only; a template
+     whose differences go negative draws a negative size (no clamping in the page); black-box
+     bodies stay discrete.
    - *`Expr` through the generic theory.* `Slides.Diagram.Expr` is already `ExprC ⋆ V`;
      route `evalWith` through `Container.FreeMonad.Algebraic` (`fold-agrees`, as in
      `Slides.Diagram.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws

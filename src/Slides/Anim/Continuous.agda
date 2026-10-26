@@ -49,9 +49,10 @@
 --
 -- Not proved: that the page's JavaScript (floating point easings, the formula evaluator)
 -- computes `frameAt`; it is tested at sampled times against the exact values
--- (`tests/browser/anim-ref.mjs`).  Nor is the assembly of the symbolic phases proved: that for
--- `k ≤ τ < k+1` `frameAt a τ` is the symbolic layout of tick `k` evaluated at each segment's
--- sample at `τ - start`.
+-- (`tests/browser/anim-ref.mjs`).  The assembly over a whole timeline at whole ticks is
+-- `Slides.Anim.ContinuousAssembly`; not proved is that for fractional `τ`, `k < τ < k+1`,
+-- `frameAt a τ` is the symbolic layout of tick `k` evaluated at each segment's sample at
+-- `τ - start`.
 
 module Slides.Anim.Continuous where
 
