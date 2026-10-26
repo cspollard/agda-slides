@@ -57,7 +57,7 @@ open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
-open import Relation.Nullary using (yes; no; ¬_)
+open import Relation.Nullary using (yes; no; ¬_; Dec)
 import Data.List.Relation.Binary.Lex.Strict as Lex
 import Data.Tree.AVL.Map as AVLMap
 import Data.Tree.AVL.Map.Membership.Propositional as AVLMem
@@ -783,3 +783,100 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   traverseM-realises H nothing  st I = I , ext-refl , nothingQ
   traverseM-realises H (just x) st I with H x st I
   ... | I₁ , x₁ , q₁ = I₁ , x₁ , justQ q₁
+
+  ----------------------------------------------------------------------
+  -- The unfolding: the tree a program stands for
+
+  -- Substituting the definitions into a reference gives a tree again (`>>=` of the formulas'
+  -- free monad: a variable, here a reference, is replaced by the formula it names).  Evaluating
+  -- the program is evaluating that tree: `unfold-sound`, the law "evaluation after substitution
+  -- is evaluation at the evaluated substitution" (`Slides.Diagram.Expr.evalWith-subst`,
+  -- `Slides.Diagram.Euclid.evalD-substD`) for the shipped syntax, proved by `env-def`'s
+  -- induction on the store.
+  argF : (ℕ → Formula) → Arg → Formula
+  argF e (anum n) = num n
+  argF e (apar i) = var i
+  argF e (aref i) = e i
+
+  nodeF : (ℕ → Formula) → Node → Formula
+  nodeF e (atom a)        = argF e a
+  nodeF e (un (oPct p) a) = pct p (argF e a)
+  nodeF e (un (oDiv d) a) = fdiv d (argF e a)
+  nodeF e (un (oMod d) a) = fmod d (argF e a)
+  nodeF e (un (oMul n) a) = fmul n (argF e a)
+  nodeF e (un oHlf a)     = hlf (argF e a)
+  nodeF e (bin oAdd a b)  = add (argF e a) (argF e b)
+  nodeF e (bin oSub a b)  = sub (argF e a) (argF e b)
+  nodeF e (bin oMax a b)  = max (argF e a) (argF e b)
+  nodeF e (quad a b c d)  = flt (argF e a) (argF e b) (argF e c) (argF e d)
+
+  -- the tree of definition `i` of a store (newest first)
+  unfold : List Node → ℕ → Formula
+  unfold []       i = num 0
+  unfold (d ∷ ds) i with i ℕP.≟ length ds
+  ... | yes _ = nodeF (unfold ds) d
+  ... | no  _ = unfold ds i
+
+  sem-argF : ∀ ρ {e : ℕ → Formula} {e′ : ℕ → A} a → (∀ j → sem (e j) ρ ≡ e′ j) →
+             sem (argF e a) ρ ≡ evalArg ρ e′ a
+  sem-argF ρ (anum n) h = s-num n ρ
+  sem-argF ρ (apar i) h = s-var i ρ
+  sem-argF ρ (aref i) h = h i
+
+  sem-nodeF : ∀ ρ {e : ℕ → Formula} {e′ : ℕ → A} nd → (∀ j → sem (e j) ρ ≡ e′ j) →
+              sem (nodeF e nd) ρ ≡ evalNode ρ e′ nd
+  sem-nodeF ρ (atom a)        h = sem-argF ρ a h
+  sem-nodeF ρ (un (oPct p) a) h = trans (s-pct p _ ρ) (cong (app1 (oPct p)) (sem-argF ρ a h))
+  sem-nodeF ρ (un (oDiv d) a) h = trans (s-fdiv d _ ρ) (cong (app1 (oDiv d)) (sem-argF ρ a h))
+  sem-nodeF ρ (un (oMod d) a) h = trans (s-fmod d _ ρ) (cong (app1 (oMod d)) (sem-argF ρ a h))
+  sem-nodeF ρ (un (oMul n) a) h = trans (s-fmul n _ ρ) (cong (app1 (oMul n)) (sem-argF ρ a h))
+  sem-nodeF ρ (un oHlf a)     h = trans (s-hlf _ ρ) (cong (app1 oHlf) (sem-argF ρ a h))
+  sem-nodeF ρ (bin oAdd a b)  h = trans (s-add _ _ ρ) (cong₂ (app2 oAdd) (sem-argF ρ a h) (sem-argF ρ b h))
+  sem-nodeF ρ (bin oSub a b)  h = trans (s-sub _ _ ρ) (cong₂ (app2 oSub) (sem-argF ρ a h) (sem-argF ρ b h))
+  sem-nodeF ρ (bin oMax a b)  h = trans (s-max _ _ ρ) (cong₂ (app2 oMax) (sem-argF ρ a h) (sem-argF ρ b h))
+  sem-nodeF ρ (quad a b c d)  h =
+    trans (s-flt _ _ _ _ ρ)
+   (trans (cong (λ z → app4 z _ _ _) (sem-argF ρ a h))
+   (trans (cong (λ z → app4 _ z _ _) (sem-argF ρ b h))
+   (trans (cong (λ z → app4 _ _ z _) (sem-argF ρ c h))
+          (cong (λ z → app4 _ _ _ z) (sem-argF ρ d h)))))
+
+  env-here : ∀ ρ d ds → env ρ (d ∷ ds) (length ds) ≡ evalNode ρ (env ρ ds) d
+  env-here ρ d ds = update-same (env ρ ds) (length ds) (evalNode ρ (env ρ ds) d)
+
+  env-there : ∀ ρ d ds i → ¬ (i ≡ length ds) → env ρ (d ∷ ds) i ≡ env ρ ds i
+  env-there ρ d ds i ¬p with i ℕP.≟ length ds
+  ... | yes q = ⊥-elim (¬p q)
+    where open import Data.Empty using (⊥-elim)
+  ... | no _  = refl
+
+  unfold-here : ∀ d ds → unfold (d ∷ ds) (length ds) ≡ nodeF (unfold ds) d
+  unfold-here d ds with length ds ℕP.≟ length ds
+  ... | yes _  = refl
+  ... | no ¬p  = ⊥-elim (¬p refl)
+    where open import Data.Empty using (⊥-elim)
+
+  unfold-there : ∀ d ds i → ¬ (i ≡ length ds) → unfold (d ∷ ds) i ≡ unfold ds i
+  unfold-there d ds i ¬p with i ℕP.≟ length ds
+  ... | yes q = ⊥-elim (¬p q)
+    where open import Data.Empty using (⊥-elim)
+  ... | no _  = refl
+
+  -- the tree of a definition evaluates to the definition's value
+  unfold-sound : ∀ ρ ds i → sem (unfold ds i) ρ ≡ env ρ ds i
+  unfold-sound ρ []       i = s-num 0 ρ
+  unfold-sound ρ (d ∷ ds) i = go (i ℕP.≟ length ds)
+    where
+      go : Dec (i ≡ length ds) → sem (unfold (d ∷ ds) i) ρ ≡ env ρ (d ∷ ds) i
+      go (yes refl) = trans (cong (λ f → sem f ρ) (unfold-here d ds))
+                            (trans (sem-nodeF ρ d (unfold-sound ρ ds)) (sym (env-here ρ d ds)))
+      go (no ¬p)    = trans (cong (λ f → sem f ρ) (unfold-there d ds i ¬p))
+                            (trans (unfold-sound ρ ds i) (sym (env-there ρ d ds i ¬p)))
+
+  -- Sharing a formula and then unfolding the reference gives a tree that means the formula, at
+  -- every assignment: the compact form and the tree form evaluate equal.
+  share-unfold : ∀ g ρ st → Inv st →
+    sem (argF (unfold (defs (proj₂ (share g st)))) (proj₁ (share g st))) ρ ≡ sem g ρ
+  share-unfold g ρ st I with share-impl g ρ st I
+  ... | result I′ x w val =
+    trans (sem-argF ρ (proj₁ (share g st)) (λ j → unfold-sound ρ (defs (proj₂ (share g st))) j)) val

@@ -65,17 +65,19 @@ function SlidesAnimation(shown) {
     return 0;
   }
   // a formula: a number, a string (the parameter of that segment, from `r`) or `[op, a, b]`;
+  // a negative number `-1 - i` is the definition `i` of the phase's program (`V`, see `pframe`:
+  // the shared subformulas, evaluated once per time step, oldest first).
   // `["h", a]` is half of `a`, positions being in half units.  A discrete template (`D`, see
   // `renderParamAnimation`) is read in the naturals: `-` clamps at 0, `%` rounds down, and there
   // are floor division `["/", n, a]`, remainder `["r", n, a]`, a literal factor `["*", n, a]` and
   // `["<", a, b, x, y]`, which is `x` if `a < b` else `y`
-  function ev(e, r, D) {
-    if (typeof e === 'number') return e;
+  function ev(e, r, D, V) {
+    if (typeof e === 'number') return e < 0 ? V[-1 - e] : e;
     if (typeof e === 'string') return r[+e];
-    var o = e[0], x = ev(e[1], r, D);
+    var o = e[0], x = ev(e[1], r, D, V);
     if (o === 'h') return x / 2;
-    if (o === '<') return x < ev(e[2], r, D) ? ev(e[3], r, D) : ev(e[4], r, D);
-    var y = ev(e[2], r, D);
+    if (o === '<') return x < ev(e[2], r, D, V) ? ev(e[3], r, D, V) : ev(e[4], r, D, V);
+    var y = ev(e[2], r, D, V);
     return o === '+' ? x + y : o === '-' ? (D ? Math.max(0, x - y) : x - y) : o === 'm' ? Math.max(x, y)
          : o === '/' ? Math.floor(y / x) : o === 'r' ? y % x : o === '*' ? x * y
          : D ? Math.floor(x * y / 100) : x * y / 100;
@@ -95,10 +97,14 @@ function SlidesAnimation(shown) {
       a._ph = i;
     }
     var r = P.v.map(function (v) { var x = track(v[1], (D ? k : t) - v[0]); return D ? Math.floor(x + 1e-9) : x; });
+    // the phase's program (`f`): the shared subformulas, each over the parameters and the earlier
+    // ones, evaluated once; then the numbers of the elements
+    var V = [];
+    (P.p[i].f || []).forEach(function (d) { V.push(ev(d, r, D, V)); });
     P.p[i].c.forEach(function (cs, j) {
       if (cs === null) return;
       var el = svg.children[1 + j];
-      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, D)); });
+      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, D, V)); });
     });
   }
   // show frame `k` (a real time for a parametric animation): rebuild from the first frame when
