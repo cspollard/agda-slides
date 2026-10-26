@@ -14,7 +14,7 @@ open import Data.List using (List; []; _∷_; _++_; reverse; [_]; map; length)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _∸_; _⊔_; _≤ᵇ_; _≟_)
 open import Data.Nat.Show using (show)
-open import Data.Product using (_×_; _,_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
 
 open import Data.XML.AST using (XMLM)
@@ -36,6 +36,9 @@ open import Slides.Backend.HTML using (hElement; padText)
 import Slides.Diagram.Draw as Dr
 open import Slides.Diagram.Expr using (Expr; ExprOp; eval)
 open import Slides.Diagram.Param using (Param; param)
+import Slides.Anim.Formula as F
+open F using (Formula)
+open import Slides.Anim.Phases using (Elem; phasesOf)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Data.Container.FreeMonad using (pure; impure)
@@ -264,89 +267,40 @@ renderAnimation d ds ms play =
 -- only what depends on a parameter (or is not whole) is shipped.  `data-n` is the number of
 -- ticks.  The size does not depend on the number of ticks: one phase holds for all of them.
 private
-  data Enc : Set where
-    const : ℕ → Enc
-    open′ : JSON → Enc
+  -- a formula as the JSON the player evaluates
+  formulaⱼ : Formula → JSON
+  formulaⱼ (F.num n)   = natⱼ n
+  formulaⱼ (F.var i)   = stringⱼ (num i)
+  formulaⱼ (F.add a b) = arrayⱼ (stringⱼ "+" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
+  formulaⱼ (F.sub a b) = arrayⱼ (stringⱼ "-" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
+  formulaⱼ (F.max a b) = arrayⱼ (stringⱼ "m" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
+  formulaⱼ (F.pct p a) = arrayⱼ (stringⱼ "%" ∷ natⱼ p ∷ formulaⱼ a ∷ [])
+  formulaⱼ (F.hlf a)   = arrayⱼ (stringⱼ "h" ∷ formulaⱼ a ∷ [])
 
-  encJ : Enc → JSON
-  encJ (const n) = natⱼ n
-  encJ (open′ j) = j
+  coordJ : Maybe Formula → JSON
+  coordJ nothing  = nullⱼ
+  coordJ (just f) = formulaⱼ f
 
-  bin : String → Enc → Enc → Enc
-  bin op a b = open′ (arrayⱼ (stringⱼ op ∷ encJ a ∷ encJ b ∷ []))
-
-  -- a closed difference is folded when it is not negative (it is exact then)
-  monus : Enc → Enc → Enc
-  monus (const a) (const b) = if b ≤ᵇ a then const (a ∸ b) else bin "-" (const a) (const b)
-  monus a         b         = bin "-" a b
-
-  -- ... and a closed percentage when it divides evenly
-  percent : ℕ → Enc → Enc
-  percent p (const a) = if ⌊ (a * p) % 100 ≟ 0 ⌋ then const ((a * p) / 100) else bin "%" (const p) (const a)
-  percent p a         = bin "%" (const p) a
-
-  enc : Expr ℕ → Enc
-  enc (pure v)                    = open′ (stringⱼ (num v))
-  enc (impure (E.Zero , _))       = const 0
-  enc (impure (E.Lit n , _))      = const n
-  enc (impure (E.Plus , k))       = plus (enc (k zero)) (enc (k (suc zero)))
-    where plus : Enc → Enc → Enc
-          plus (const a) (const b) = const (a + b)
-          plus a         b         = bin "+" a b
-  enc (impure (E.Monus , k))      = monus (enc (k zero)) (enc (k (suc zero)))
-  enc (impure (E.Max , k))        = maxE (enc (k zero)) (enc (k (suc zero)))
-    where maxE : Enc → Enc → Enc
-          maxE (const a) (const b) = const (a ⊔ b)
-          maxE a         b         = bin "m" a b
-  enc (impure (E.Pct p , k))      = percent p (enc (k tt))
-
-  -- positions are in half units
-  half : Enc → Enc
-  half (const a) = if ⌊ a % 2 ≟ 0 ⌋ then const (a / 2) else open′ (arrayⱼ (stringⱼ "h" ∷ natⱼ a ∷ []))
-  half (open′ j) = open′ (arrayⱼ (stringⱼ "h" ∷ j ∷ []))
-
-  isConst : Enc → Bool
-  isConst (const _) = true
-  isConst (open′ _) = false
-
-  allConst : List Enc → Bool
-  allConst []       = true
-  allConst (e ∷ es) = isConst e ∧ allConst es
-
-  coordJ : Enc → JSON
-  coordJ (const _) = nullⱼ
-  coordJ (open′ j) = j
-
-  -- the numbers of a drawing command, in the player's attribute order (`NUMS`)
-  coordsOf : Dr.Draw (Expr ℕ) → List Enc
-  coordsOf (Dr.rect x y w h _)    = half (enc x) ∷ half (enc y) ∷ enc w ∷ enc h ∷ []
-  coordsOf (Dr.circle x y r _)    = half (enc x) ∷ half (enc y) ∷ enc r ∷ []
-  coordsOf (Dr.line a b c d _)    = half (enc a) ∷ half (enc b) ∷ half (enc c) ∷ half (enc d) ∷ []
-  coordsOf (Dr.arrow a b c d _)   = half (enc a) ∷ half (enc b) ∷ half (enc c) ∷ half (enc d) ∷ []
-  coordsOf (Dr.label x y _ _ _)   = half (enc x) ∷ half (enc y) ∷ []
-
-  drawJ : Dr.Draw (Expr ℕ) → JSON
-  drawJ dr with coordsOf dr
-  ... | cs = if allConst cs then nullⱼ else arrayⱼ (map coordJ cs)
+  -- the numbers of a drawing command: `null` if all are constants, else an entry for each
+  -- (`null` for a constant)
+  elemCoordsⱼ : Elem → JSON
+  elemCoordsⱼ e with Elem.coords e
+  ... | nothing = nullⱼ
+  ... | just cs = arrayⱼ (map coordJ cs)
 
   -- the element at the all-zero assignment
-  baseElement : Dr.Draw (Expr ℕ) → Element
-  baseElement dr = PN.toElement (Dr.mapDraw (eval (λ _ → 0)) dr)
+  baseElement : Elem → Element
+  baseElement e = PN.toElement (Elem.base e)
 
-  phaseFields : String → Dr.Layout (Expr ℕ) → List (String × JSON)
-  phaseFields n l =
-      ("b" , arrayⱼ (map (λ dr → stringⱼ (elementString n (baseElement dr))) (Dr.Layout.draws l)))
-    ∷ ("c" , arrayⱼ (map drawJ (Dr.Layout.draws l)))
+  phaseFields : String → List Elem → List (String × JSON)
+  phaseFields n es =
+      ("b" , arrayⱼ (map (λ e → stringⱼ (elementString n (baseElement e))) es))
+    ∷ ("c" , arrayⱼ (map elemCoordsⱼ es))
     ∷ []
 
-  -- group the ticks into phases (adjacent ticks with the same encoding); `prev` is the
-  -- previous tick's encoding
-  phases : String → ℕ → String → List (Dr.Layout (Expr ℕ)) → List JSON
-  phases n k prev []       = []
-  phases n k prev (l ∷ ls) =
-    let fs = phaseFields n l ; key = renderJSON (objectFromList fs) in
-    if ⌊ key Str.≟ prev ⌋ then phases n (suc k) prev ls
-    else objectFromList (("s" , natⱼ k) ∷ fs) ∷ phases n (suc k) key ls
+  -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements)
+  phasesⱼ : String → List (Dr.Layout (Expr ℕ)) → List JSON
+  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOf ls)
 
   ratⱼ : ℚ.ℚ → JSON
   ratⱼ q with ℚ.↧ₙ q
@@ -371,7 +325,7 @@ renderParamAnimation d (param ls segs) ms play =
     ( ("data-n" , num (length ls))
     ∷ ("data-param" , renderJSON (objectFromList
          ( ("v" , arrayⱼ (map segmentJ segs))
-         ∷ ("p" , arrayⱼ (phases (Diagram.name d) 0 "" ls))
+         ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) ls))
          ∷ [] )))
     ∷ [] )
     ms play

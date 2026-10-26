@@ -18,9 +18,10 @@
 -- (and `leaf-agrees` for the discrete frames at ℕ): laying the renamed template out
 -- symbolically and evaluating is laying out the template at the segment's own parameter
 -- (`Slides.Diagram.LayoutNatural.layout-substWith`).  `atop` and the timeline are the same on
--- both sides, so the whole frame agrees; that last assembly (an induction over the animation
--- tracking tick offsets and the fractional part of `τ`) is checked by the browser test over
--- the `animref` deck (`tests/browser/anim-ref.mjs`), not proved here.
+-- both sides, so the whole frame agrees: that assembly, an induction over the animation
+-- tracking tick offsets, is `Slides.Anim.ParamCorrect` (discrete) and
+-- `Slides.Anim.ContinuousAssembly` (continuous, at whole ticks); fractional `τ` is checked by the
+-- browser test over the `animref` deck (`tests/browser/anim-ref.mjs`), not proved.
 --
 -- The page gets the track's pieces, not samples: its size does not grow with the ticks.
 
@@ -100,16 +101,18 @@ seqAll []           = nothing
 seqAll (a ∷ [])     = just a
 seqAll (a ∷ b ∷ as) = Maybe.map (a ⨾_) (seqAll (b ∷ as))
 
+-- no frames: the empty frame is not a parametric one
+nonEmptyParam : Param → Maybe Param
+nonEmptyParam p with Param.ticks p
+... | []    = nothing
+... | _ ∷ _ = just p
+
 -- the parametric encoding of acts played one after the other, if every segment is a template
 paramOf : List (Anim ℕ (Seg ℕ)) → Maybe Param
 paramOf acts =
   seqAll acts Maybe.>>= λ a →
   leaves 0 0 a Maybe.>>= λ { (_ , l) →
-  nonEmpty (mkParam l) }
-  where nonEmpty : Param → Maybe Param
-        nonEmpty p with Param.ticks p
-        ... | []    = nothing   -- no frames: the empty frame is not a parametric one
-        ... | _ ∷ _ = just p
+  nonEmptyParam (mkParam l) }
 
 ------------------------------------------------------------------------
 -- Agreement for one segment

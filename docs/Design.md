@@ -218,8 +218,18 @@ agree with `Track.sample`), `leaf-tick` (the continuous frame is the discrete on
 the JavaScript is tested against exact ℚ values (`make test-anim-ref`, tolerance 0.01 for
 float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
 evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
-`layout-substWith`, `leaf-agrees`, `leaf-agreesℚ`); the assembly over a whole timeline is
-tested, not proved (see `plan/Plan.md`).
+`layout-substWith`, `leaf-agrees`, `leaf-agreesℚ`). The assembly over a whole timeline is
+proved: `Slides.Anim.ParamCorrect` (`discrete-assembly`, `paramOf-assembly`: the shipped
+symbolic layout of tick `k`, evaluated at the parameters of the segments running at `k`, is
+the layout of the frame `render` shows; the induction reads lists of frames as partial
+functions of the tick, `++` and `merge` becoming the algebra of `Continuous`);
+`Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
+frame through `ι`, given `leaf-tick`'s exactness hypotheses for the segments running there;
+`atop` commutes with `ι` with no hypothesis, `Slides.Diagram.AtopNatural`);
+`Slides.Anim.Formula` and `Slides.Anim.Phases` (the shipped formulas, with closed
+subformulas folded, mean the coordinates in ℚ, and grouping ticks into phases changes no
+frame: `pageFrame-sem`). What is only tested: frames between whole ticks, the printing of the
+phases as JSON and its reading by the player (attribute order, float arithmetic).
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:
