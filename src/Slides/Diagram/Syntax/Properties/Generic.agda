@@ -30,7 +30,7 @@ open import Relation.Binary.PropositionalEquality.Core using (refl)
 open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
-open import Container.Interpret using (module Initiality)
+open import Container.Interpret.Properties using (module Initiality)
 open import Slides.Diagram.Syntax using (arity; DiagramC; Dia; Algebra; fold)
 
 module For (S : Set) where

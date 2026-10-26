@@ -30,7 +30,7 @@ open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (_≈ₓ_)
 
 open import Container.Polynomial using (Poly₀; Poly₁)
-open import Container.Interpret using (module Fusion)
+open import Container.Interpret.Properties using (module Fusion)
 open import Slides.Core
 open import Slides.Backend.Common
 
