@@ -6,6 +6,16 @@
 -- and sways to and fro along a fixed direction, a triangle wave, so the last frame
 -- runs into the first and nothing jumps.  The pairs are a deterministic function of
 -- a seed (a linear congruential generator), so the output is reproducible.
+--
+-- The frame is written *once*, over any scalar with the three layers of
+-- `Slides.Diagram.Euclid` (`Frame`: sum, monus, maximum, floor division, remainder, comparison
+-- and a literal factor), with the tick `t` a scalar.  At ℕ it is the frame the flipbook shows
+-- (`heroAt`, `hero`); over the free algebra `DExpr ⊤`, with `t` the variable, it is a *discrete
+-- template* (`heroT`, `heroD`): the pairs' data are literals (partially evaluated by Agda: a
+-- constant spin makes the angle a number, and the closed subformulas fold), and only the tick
+-- stays symbolic.  Nothing is written twice, and the template is the frame by naturality of
+-- the construction along the evaluation homomorphism (`Slides.Examples.PairsHeroNatural`,
+-- `heroT-correct`).
 
 module Slides.Examples.PairsHero where
 
@@ -17,11 +27,15 @@ open import Data.Product using (_×_; _,_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Integer using (+_)
 import Data.Rational as ℚ
+open import Data.Unit using (⊤)
 
 open import Slides.Diagram using (Style; withClass; defaultStyle)
 open import Slides.Diagram.Syntax using (Dia; disc; atop; named; connect; spacer)
-open import Slides.Diagram.Notation using (margin; side; east; west)
-open import Slides.Anim.Syntax using (Anim; Seg; tween; units)
+open import Slides.Diagram.Notation using (side; east; west)
+import Slides.Diagram.Notation as N
+open import Slides.Diagram.Scalar using (Ops)
+open import Slides.Diagram.Euclid using (DiscreteOps; natD; DExpr; dexprD; tickD; EuclidOps)
+open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenD; units)
 import Slides.Anim.Track as T
 
 W H period : ℕ
@@ -58,58 +72,105 @@ pairs (suc k) s = p ∷ pairs k s₉
       ; swayX = pick s₇ 0 2 <ᵇ 1; swayY = pick s₈ 0 2 <ᵇ 1; blue = pick s₉ 0 2 <ᵇ 1 }
 
 ------------------------------------------------------------------------
--- A frame
+-- A frame, over any scalar
 
--- the direction of angle `i` of 8: |dx|, |dy| in hundredths, and whether the line
--- through it rises to the right (so that "left" is the lower end)
-dir : ℕ → ℕ × ℕ × Bool
-dir 0 = 100 , 0   , false
-dir 1 = 92  , 38  , false
-dir 2 = 71  , 71  , false
-dir 3 = 38  , 92  , false
-dir 4 = 0   , 100 , false
-dir 5 = 38  , 92  , true
-dir 6 = 71  , 71  , true
-dir _ = 92  , 38  , true
+-- the lookup table of 8 entries by the angle: `sel i xs a` is `xs !! (a - i)`, the last entry
+-- for all larger `a`
+tabX tabY : List ℕ
+tabX = 100 ∷ 92 ∷ 71 ∷ 38 ∷ 0 ∷ 38 ∷ 71 ∷ 92 ∷ []
+tabY = 0 ∷ 38 ∷ 71 ∷ 92 ∷ 100 ∷ 92 ∷ 71 ∷ 38 ∷ []
 
--- the triangle wave: 0 up to 32 and back down over a period
-tri : ℕ → ℕ
-tri t = let m = t % period in if m <ᵇ 33 then m else period ∸ m
+module Frame {S : Set} (D : DiscreteOps S) where
+  private
+    O = DiscreteOps.ops D
+    Eu = DiscreteOps.euclid D
+  open Ops O renaming (_+_ to _⊕_; _-_ to _⊖_; fromℕ to lit)
+  open EuclidOps Eu
+  open N.NotationWith O using (margin)
 
--- a dot of radius `r` with its top left corner at (x, y), on a full-size layer
-dot : String → String → ℕ → ℕ → ℕ → Dia ℕ
-dot name cls r x y =
-  margin x y (W ∸ (x + 2 * r)) (H ∸ (y + 2 * r))
-    (named name (disc r (withClass cls defaultStyle)))
+  sel : ℕ → List ℕ → S → S
+  sel i []           a = lit 0
+  sel i (x ∷ [])     a = lit x
+  sel i (x ∷ y ∷ xs) a = lt a (lit (suc i)) (lit x) (sel (suc i) (y ∷ xs) a)
 
--- one pair at frame `t`
-pairAt : ℕ → ℕ → Pair → Dia ℕ
-pairAt t i p = connect ("a" ++ˢ si) east ("b" ++ˢ si) west (withClass "hero-link" defaultStyle)
-                 (atop (dot ("a" ++ˢ si) col 5 (lx ∸ 5) (ly ∸ 5)) (dot ("b" ++ˢ si) col 5 (rx ∸ 5) (ry ∸ 5)))
-  where
+  -- the direction of angle `i` of 8: |dx|, |dy| in hundredths (the lines through it rise to the
+  -- right for the angles 5, 6, 7, so that "left" is the lower end)
+  dirX dirY : S → S
+  dirX = sel 0 tabX
+  dirY = sel 0 tabY
+
+  -- the triangle wave: 0 up to 32 and back down over a period
+  tri : S → S
+  tri t = let m = modBy 63 t in lt m (lit 33) m (lit period ⊖ m)
+
+  -- a dot of radius `r` with its top left corner at (x, y), on a full-size layer
+  dot : String → String → ℕ → S → S → Dia S
+  dot name cls r x y =
+    margin x y (lit W ⊖ (x ⊕ lit (2 * r))) (lit H ⊖ (y ⊕ lit (2 * r)))
+      (named name (disc (lit r) (withClass cls defaultStyle)))
+
+  -- the quantities of one pair at tick `t`
+  record At (p : Pair) (t : S) : Set where
     open Pair p
-    si  = show i
-    col = if blue then "hero-b" else "hero-r"
-    -- the angle turns by `spin - 1` steps every four frames
-    ang = (angle + (if spin <ᵇ 1 then 8 ∸ (t / 4) % 8 else if spin <ᵇ 2 then 0 else (t / 4) % 8)) % 8
-    dxʰ = let (a , _ , _) = dir ang in a
-    dyʰ = let (_ , b , _) = dir ang in b
-    rising = let (_ , _ , r) = dir ang in r
-    dx = (radius * dxʰ) / 100
-    dy = (radius * dyʰ) / 100
-    -- the sway: along x and y by `amp * tri t / 32`
-    d  = (amp * tri t) / 32
-    ox = cx ∸ amp + (if swayX then d else amp ∸ d)
-    oy = cy ∸ amp + (if swayY then d else amp ∸ d)
-    lx = ox ∸ dx
-    rx = ox + dx
-    ly = if rising then oy + dy else oy ∸ dy
-    ry = if rising then oy ∸ dy else oy + dy
+    field
+      ang dx dy d ox oy lx rx ly ry : S
 
--- the whole picture at frame `t`: every pair on a layer of the canvas's size
+  -- the angle turns by `spin - 1` steps every four frames
+  angle′ : Pair → S → S
+  angle′ p t = modBy 7 (lit (Pair.angle p) ⊕ spin′)
+    where
+      q = modBy 7 (divBy 3 t)
+      spin′ = if Pair.spin p <ᵇ 1 then lit 8 ⊖ q else if Pair.spin p <ᵇ 2 then lit 0 else q
+
+  -- the sway: along x and y by `amp * tri t / 32`
+  swayD : Pair → S → S
+  swayD p t = divBy 31 (mulLit (Pair.amp p) (tri t))
+
+  at : (p : Pair) (t : S) → At p t
+  at p t = record
+    { ang = a ; dx = dx ; dy = dy ; d = d ; ox = ox ; oy = oy
+    ; lx = ox ⊖ dx ; rx = ox ⊕ dx
+    ; ly = lt a (lit 5) (oy ⊖ dy) (oy ⊕ dy) ; ry = lt a (lit 5) (oy ⊕ dy) (oy ⊖ dy) }
+    where
+      open Pair p using (cx; cy; radius; amp; swayX; swayY)
+      a  = angle′ p t
+      dx = divBy 99 (mulLit radius (dirX a))
+      dy = divBy 99 (mulLit radius (dirY a))
+      d  = swayD p t
+      ox = lit (cx ∸ amp) ⊕ (if swayX then d else lit amp ⊖ d)
+      oy = lit (cy ∸ amp) ⊕ (if swayY then d else lit amp ⊖ d)
+
+  -- one pair at tick `t`
+  pairAt : S → ℕ → Pair → Dia S
+  pairAt t i p = connect ("a" ++ˢ si) east ("b" ++ˢ si) west (withClass "hero-link" defaultStyle)
+                   (atop (dot ("a" ++ˢ si) col 5 (At.lx v ⊖ lit 5) (At.ly v ⊖ lit 5))
+                         (dot ("b" ++ˢ si) col 5 (At.rx v ⊖ lit 5) (At.ry v ⊖ lit 5)))
+    where
+      si  = show i
+      col = if Pair.blue p then "hero-b" else "hero-r"
+      v   = at p t
+
+  -- the whole picture at tick `t`: every pair on a layer of the canvas's size
+  -- (`n` pairs: the deck uses 26)
+  heroFrame : (n seed : ℕ) → S → Dia S
+  heroFrame n seed t = foldr atop (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo n) (pairs n seed))
+
+-- the frame the flipbook shows
 heroAt : (seed : ℕ) → ℕ → Dia ℕ
-heroAt seed t = foldr atop (spacer W H) (zipWith (pairAt t) (upTo 26) (pairs 26 seed))
+heroAt = Frame.heroFrame natD 26
 
 -- one period of the sway and spin, played as a loop
 hero : ℕ → Anim ℕ (Seg ℕ)
 hero seed = tween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → heroAt seed (units q))
+
+-- the same frame over the free algebra, with the tick as the variable: a discrete template
+-- (`n` pairs.  Symbolic layout is the cost: every pair is on a layer whose width is a formula
+-- (`x + (2r + (W - (x + 2r)))`, which only the evaluation makes `W`), and the layout of the next
+-- pair centres against the maximum of those formulas, so the size of the shipped formulas grows
+-- much faster than the number of pairs: see `docs/Design.md`)
+heroT : (n seed : ℕ) → Dia (DExpr ⊤)
+heroT n seed = Frame.heroFrame dexprD n seed tickD
+
+-- the same loop shipped as formulas
+heroD : (n seed : ℕ) → Anim ℕ (Seg ℕ)
+heroD n seed = tweenD period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (heroT n seed)

@@ -34,6 +34,7 @@ open import Data.Unit using (tt)
 
 open import Slides.Diagram.Syntax using (Dia; spacer; mapDia)
 open import Slides.Diagram.Expr using (Expr; evalWith; zero′)
+open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
 open import Data.Unit using (⊤)
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
@@ -63,14 +64,27 @@ units q = ℤ.∣ ℚ.⌊ q ⌋ ∣
 --     (`Slides.Anim.Param`).  It needs no more than `Ops S`: `Expr` is the free
 --     `Ops`-algebra, so there is exactly one way to evaluate it.
 --
+--   * `discrete d` is an open diagram `d : Dia (DExpr ⊤)` over the *Euclidean* signature
+--     (`Slides.Diagram.Euclid`): floor division, remainder, comparison, a literal factor of
+--     the tick.  Those operations have meaning in ℕ only, so the body is evaluated *in ℕ* at
+--     the whole tick `units q` (`evalD natD`) and the numbers are then injected into the scalar
+--     `S` (`fromℕ`).  So a discrete body has one frame per tick, and between two ticks it
+--     shows the frame of the tick before (`units` rounds down): there is no interpolation,
+--     and in ℚ (`ratOps`) the frame at time `q` is the frame of tick `⌊q⌋`.  It is shipped
+--     symbolically like a template, as formulas read in ℕ (`Slides.Anim.DParam`); a `template`
+--     and a `discrete` body can be played together (a template is a discrete one, read in ℕ,
+--     `Slides.Diagram.Euclid.evalD-weaken`), but then the whole animation is discrete.
+--
 -- `bodyAt` is what every consumer of segments uses.
 data SegBody (S : Set) : Set where
   blackBox : (ℚ → Dia S) → SegBody S
   template : Dia (Expr ⊤) → SegBody S
+  discrete : Dia (DExpr ⊤) → SegBody S
 
 bodyAt : ∀ {S} → Ops S → SegBody S → ℚ → Dia S
 bodyAt O (blackBox f) q = f q
 bodyAt O (template d) q = mapDia (evalWith O (λ _ → Ops.fromℕ O (units q))) d
+bodyAt O (discrete d) q = mapDia (λ e → Ops.fromℕ O (evalD natD (λ _ → units q) e)) d
 
 -- A segment: a diagram that depends on a parameter, which follows a track for as
 -- many ticks as the track lasts.  The track is explicit data (`Slides.Anim.Track`:
@@ -120,6 +134,10 @@ tween n a b e f = pure (seg (pure (T.piece n a b e)) (blackBox f))
 -- the same, as a template: the diagram is open in the parameter `t`
 tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (Expr ⊤) → Anim S (Seg S)
 tweenT n a b e d = pure (seg (pure (T.piece n a b e)) (template d))
+
+-- the same, as a discrete template: the diagram is open in the integer tick `t`
+tweenD : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (DExpr ⊤) → Anim S (Seg S)
+tweenD n a b e d = pure (seg (pure (T.piece n a b e)) (discrete d))
 
 -- a pause: an empty frame.  It is a template (constant, with the zero for its size), so
 -- padding keeps an animation of templates parametric.

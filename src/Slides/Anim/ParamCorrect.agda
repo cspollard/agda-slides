@@ -76,150 +76,13 @@ private
   layoutE : Dia (Expr ℕ) → Layout (Expr ℕ)
   layoutE = LayoutWith.layout exprOps
 
-------------------------------------------------------------------------
--- Lists of frames as partial functions of the tick
+open import Slides.Anim.Nth public
+import Slides.Anim.Assembly as Asm
 
-nth : ∀ {A : Set} → List A → ℕ → Maybe A
-nth []       _       = nothing
-nth (x ∷ xs) zero    = just x
-nth (x ∷ xs) (suc j) = nth xs j
-
-nth-++ : ∀ {A : Set} (xs ys : List A) j →
-         nth (xs ++ ys) j ≡ (if j <ᵇ length xs then nth xs j else nth ys (j ∸ length xs))
-nth-++ []       ys j       = refl
-nth-++ (x ∷ xs) ys zero    = refl
-nth-++ (x ∷ xs) ys (suc j) = nth-++ xs ys j
-
-private
-  mergeM-nothingʳ : ∀ {F : Set} (_⊙_ : F → F → F) m → mergeM _⊙_ m nothing ≡ m
-  mergeM-nothingʳ _⊙_ nothing  = refl
-  mergeM-nothingʳ _⊙_ (just x) = refl
-
-nth-merge : ∀ {F : Set} (_⊙_ : F → F → F) (xs ys : List F) j →
-            nth (merge _⊙_ xs ys) j ≡ mergeM _⊙_ (nth xs j) (nth ys j)
-nth-merge _⊙_ []       ys       j       = refl
-nth-merge _⊙_ (x ∷ xs) []       j       = sym (mergeM-nothingʳ _⊙_ (nth (x ∷ xs) j))
-nth-merge _⊙_ (x ∷ xs) (y ∷ ys) zero    = refl
-nth-merge _⊙_ (x ∷ xs) (y ∷ ys) (suc j) = nth-merge _⊙_ xs ys j
-
-nth-replicate : ∀ {A : Set} n (y : A) j → nth (replicate n y) j ≡ (if j <ᵇ n then just y else nothing)
-nth-replicate zero    y j       = refl
-nth-replicate (suc n) y zero    = refl
-nth-replicate (suc n) y (suc j) = nth-replicate n y j
-
-nth-applyUpTo : ∀ {A : Set} (f : ℕ → A) n j →
-                nth (applyUpTo f n) j ≡ (if j <ᵇ n then just (f j) else nothing)
-nth-applyUpTo f zero    j       = refl
-nth-applyUpTo f (suc n) zero    = refl
-nth-applyUpTo f (suc n) (suc j) = nth-applyUpTo (λ i → f (suc i)) n j
-
-nth-map : ∀ {A B : Set} (g : A → B) xs j → nth (map g xs) j ≡ Maybe.map g (nth xs j)
-nth-map g []       j       = refl
-nth-map g (x ∷ xs) zero    = refl
-nth-map g (x ∷ xs) (suc j) = nth-map g xs j
-
-private
-  map-if : ∀ {A B : Set} (g : A → B) b (x : A) →
-           Maybe.map g (if b then just x else nothing) ≡ (if b then just (g x) else nothing)
-  map-if g true  x = refl
-  map-if g false x = refl
-
--- the frames of a segment, tick by tick
-nth-frames : ∀ {S} (O : Ops S) (s : Seg S) j →
-             nth (frames O s) j
-             ≡ (if j <ᵇ proj₁ (T.sample T.ℚLerp (track s))
-                then just (body O s (proj₂ (T.sample T.ℚLerp (track s)) j)) else nothing)
-nth-frames O s j =
-  trans (nth-map (λ t → body O s (proj₂ (T.sample T.ℚLerp (track s)) t))
-                 (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))) j)
-  (trans (cong (Maybe.map (λ t → body O s (proj₂ (T.sample T.ℚLerp (track s)) t)))
-               (nth-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s))) j))
-         (map-if (λ t → body O s (proj₂ (T.sample T.ℚLerp (track s)) t)) (j <ᵇ proj₁ (T.sample T.ℚLerp (track s))) j))
-
-------------------------------------------------------------------------
--- Agreement of a list of frames with a list of symbolic frames
-
--- one frame against one symbolic frame, at the assignments satisfying `G`; a frame that is
--- there on one side is there on the other
-data Rel (G : (ℕ → ℕ) → Set) : Maybe (Dia ℕ) → Maybe (Dia (Expr ℕ)) → Set where
-  noFrame : Rel G nothing nothing
-  bothFrames : ∀ {x y} → (∀ ρ → G ρ → layoutℕ x ≡ mapLayout (eval ρ) (layoutE y)) → Rel G (just x) (just y)
-
-Rel-⇒ : ∀ {G G′ : (ℕ → ℕ) → Set} → (∀ ρ → G ρ → G′ ρ) → ∀ {a b} → Rel G′ a b → Rel G a b
-Rel-⇒ f noFrame     = noFrame
-Rel-⇒ f (bothFrames r) = bothFrames (λ ρ g → r ρ (f ρ g))
-
--- the frames of `xs` (from tick `t` on) are the symbolic frames `ys` evaluated at the
--- assignments in `G k`; `G` says which assignments are meant at the absolute tick `k`
-record Agree (G : ℕ → (ℕ → ℕ) → Set) (t : ℕ) (xs : List (Dia ℕ)) (ys : List (Dia (Expr ℕ))) : Set where
-  constructor agree
-  field at : ∀ j → Rel (G (t + j)) (nth xs j) (nth ys j)
-open Agree
-
-Agree-≡ : ∀ {G t t′ xs ys} → t ≡ t′ → Agree G t xs ys → Agree G t′ xs ys
-Agree-≡ refl a = a
-
--- `atop` of the frames is `atop` of the symbolic frames: layout is natural along evaluation
-Rel-mergeM : ∀ {G₁ G₂ : (ℕ → ℕ) → Set} {a b a′ b′} → Rel G₁ a a′ → Rel G₂ b b′ →
-             Rel (λ ρ → G₁ ρ × G₂ ρ) (mergeM atop a b) (mergeM atop a′ b′)
-Rel-mergeM noFrame         rb         = Rel-⇒ (λ ρ → proj₂) rb
-Rel-mergeM (bothFrames ra)    noFrame       = Rel-⇒ (λ ρ → proj₁) (bothFrames ra)
-Rel-mergeM (bothFrames {x} {x′} ra) (bothFrames {y} {y′} rb) = bothFrames λ ρ (g₁ , g₂) →
-  trans (cong₂ PN.atop (ra ρ g₁) (rb ρ g₂))
-        (sym (atop-natural exprOps natOps (eval ρ) (eval-hom ρ) (layoutE x′) (layoutE y′)))
-
--- `merge` of lists is `atop` frame by frame
-Agree-merge : ∀ {G₁ G₂ t xs xs′ ys ys′} → Agree G₁ t xs xs′ → Agree G₂ t ys ys′ →
-              Agree (λ k ρ → G₁ k ρ × G₂ k ρ) t (merge atop xs ys) (merge atop xs′ ys′)
-Agree-merge {G₁} {G₂} {t} {xs} {xs′} {ys} {ys′} a₁ a₂ = agree go
-  where
-    go : ∀ j → Rel (λ ρ → G₁ (t + j) ρ × G₂ (t + j) ρ) (nth (merge atop xs ys) j) (nth (merge atop xs′ ys′) j)
-    go j rewrite nth-merge atop xs ys j | nth-merge atop xs′ ys′ j = Rel-mergeM (at a₁ j) (at a₂ j)
-
--- lists in agreement are as long as each other
-private
-  len≤ : ∀ {A B : Set} (xs : List A) (ys : List B) →
-         (∀ j → nth ys j ≡ nothing → nth xs j ≡ nothing) → length xs ≤ length ys
-  len≤ []       ys       h = ℕ.z≤n
-  len≤ (x ∷ xs) []       h with h 0 refl
-  ... | ()
-  len≤ (x ∷ xs) (y ∷ ys) h = ℕ.s≤s (len≤ xs ys (λ j → h (suc j)))
-
-  Rel-nothingˡ : ∀ {G a b} → Rel G a b → a ≡ nothing → b ≡ nothing
-  Rel-nothingˡ noFrame     refl = refl
-  Rel-nothingˡ (bothFrames _) ()
-
-  Rel-nothingʳ : ∀ {G a b} → Rel G a b → b ≡ nothing → a ≡ nothing
-  Rel-nothingʳ noFrame     refl = refl
-  Rel-nothingʳ (bothFrames _) ()
-
-Agree-length : ∀ {G t xs ys} → Agree G t xs ys → length xs ≡ length ys
-Agree-length {G} {t} {xs} {ys} ag =
-  ℕP.≤-antisym (len≤ xs ys (λ j e → Rel-nothingʳ (at ag j) e))
-               (len≤ ys xs (λ j e → Rel-nothingˡ (at ag j) e))
-
--- `++` of lists is `++`, with the tick of the second part shifted by the length of the first
-nth-++′ : ∀ {A : Set} (xs ys : List A) j n → length xs ≡ n →
-          nth (xs ++ ys) j ≡ (if j <ᵇ n then nth xs j else nth ys (j ∸ n))
-nth-++′ xs ys j n refl = nth-++ xs ys j
-
-private
-  lt-false : ∀ {m n} → (m <ᵇ n) ≡ false → n ≤ m
-  lt-false {m} {n} e = ℕP.≮⇒≥ (λ h → subst T e (ℕP.<⇒<ᵇ h))
-
-Agree-++ : ∀ {G₁ G₂ t xs xs′ ys ys′} → Agree G₁ t xs xs′ → Agree G₂ (t + length xs) ys ys′ →
-           Agree (λ k ρ → G₁ k ρ × G₂ k ρ) t (xs ++ ys) (xs′ ++ ys′)
-Agree-++ {G₁} {G₂} {t} {xs} {xs′} {ys} {ys′} a₁ a₂ = agree λ j →
-  go j (length xs) refl (sym (Agree-length a₁))
-  where
-    go : ∀ j n → length xs ≡ n → length xs′ ≡ n →
-         Rel (λ ρ → G₁ (t + j) ρ × G₂ (t + j) ρ) (nth (xs ++ ys) j) (nth (xs′ ++ ys′) j)
-    go j n e e′ rewrite nth-++′ xs ys j n e | nth-++′ xs′ ys′ j n e′ with j <ᵇ n in eq
-    ... | true  = Rel-⇒ (λ ρ → proj₁) (at a₁ j)
-    ... | false = Rel-⇒ (λ ρ → proj₂)
-                    (subst (λ k → Rel (G₂ k) (nth ys (j ∸ n)) (nth ys′ (j ∸ n)))
-                           (trans (ℕP.+-assoc t n (j ∸ n)) (cong (t +_) (ℕP.m+[n∸m]≡n {n} {j} (lt-false eq))))
-                           (subst (λ m → Rel (G₂ (t + m + (j ∸ n))) (nth ys (j ∸ n)) (nth ys′ (j ∸ n))) e (at a₂ (j ∸ n))))
+-- the symbolic frames are over `Expr`: a frame is interpreted by evaluating its layout, and
+-- `atop` is interpreted as `atop` because layout is natural along evaluation
+open Asm.Over (Dia (Expr ℕ)) (λ y ρ → mapLayout (eval ρ) (layoutE y)) atop
+  (λ x y ρ → sym (atop-natural exprOps natOps (eval ρ) (eval-hom ρ) (layoutE x) (layoutE y)))
 
 ------------------------------------------------------------------------
 -- One segment
@@ -271,6 +134,7 @@ leaves-agree : ∀ (a : Anim ℕ (Seg ℕ)) i t₀ i′ l → leaves i t₀ a �
                Agree (GoodL l) t₀ (timeline atop (frames natOps) a) (symbolicFrames l)
 leaves-agree (pure (seg tr (template d))) i t₀ _ _ refl = leaf-Agree tr d i t₀
 leaves-agree (pure (seg tr (blackBox f))) i t₀ _ _ ()
+leaves-agree (pure (seg tr (discrete d))) i t₀ _ _ ()
 leaves-agree (impure (Seq , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (k zero)) _ eq
 ... | (i₁ , a′) , e₁ , r₁ with bind-just (leaves i₁ _ (k (suc zero))) _ r₁
 ... | (i₂ , b′) , e₂ , refl =
@@ -285,15 +149,6 @@ leaves-agree (impure (Par , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (
 ------------------------------------------------------------------------
 -- Tick by tick
 
-nth-in : ∀ {A : Set} (xs : List A) j → (j <ᵇ length xs) ≡ true → ∃ λ x → nth xs j ≡ just x
-nth-in []       j       ()
-nth-in (x ∷ xs) zero    h = x , refl
-nth-in (x ∷ xs) (suc j) h = nth-in xs j h
-
-private
-  Rel-just : ∀ {G F m} → Rel G (just F) m →
-             ∃ λ S → m ≡ just S × (∀ ρ → G ρ → layoutℕ F ≡ mapLayout (eval ρ) (layoutE S))
-  Rel-just (bothFrames {y = y} r) = y , refl , r
 
 -- Statement (A).  For an animation of templates (`leaves 0 0 a ≡ just (i′ , l)`), at every tick
 -- `k < dur a` the frame of `timeline atop (frames natOps) a` is the layout of the symbolic
@@ -326,6 +181,7 @@ numbered i i′ (impure (Par , c)) = ∃ λ i₁ → numbered i i₁ (c zero) ×
 leaves-numbered : ∀ (a : Anim ℕ (Seg ℕ)) i t₀ i′ l → leaves i t₀ a ≡ just (i′ , l) → numbered i i′ l
 leaves-numbered (pure (seg tr (template d))) i t₀ _ _ refl = refl , refl
 leaves-numbered (pure (seg tr (blackBox f))) i t₀ _ _ ()
+leaves-numbered (pure (seg tr (discrete d))) i t₀ _ _ ()
 leaves-numbered (impure (Seq , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (k zero)) _ eq
 ... | (i₁ , a′) , e₁ , r₁ with bind-just (leaves i₁ _ (k (suc zero))) _ r₁
 ... | (i₂ , b′) , e₂ , refl = i₁ , leaves-numbered (k zero) i t₀ i₁ a′ e₁ , leaves-numbered (k (suc zero)) i₁ _ i₂ b′ e₂

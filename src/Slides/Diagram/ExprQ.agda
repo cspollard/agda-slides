@@ -24,6 +24,7 @@
 module Slides.Diagram.ExprQ where
 
 open import Data.Fin using (zero; suc)
+open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.List using (List; []; _∷_; map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.Nat as ℕ using (ℕ; _≤_; _*_)
@@ -47,7 +48,8 @@ open import Slides.Diagram.Expr
 open import Slides.Diagram.LayoutNatural using (layout-natural; layout-eval; mapLayout-∘)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.NatQ
-open import Slides.Diagram.Scalar using (natOps; ratOps)
+open import Slides.Diagram.Scalar using (Ops; natOps; ratOps)
+open import Slides.Diagram.Signature using (Handler)
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 
 -- a percentage is exact when the ℕ result is the ℚ one
@@ -68,30 +70,63 @@ exact% p x h = ℚP.toℚᵘ-injective
     comm : ∀ a b → a ℤ.* b ≡ (b ℤ.* a) ℤ.* + 1
     comm = solve-∀
 
+------------------------------------------------------------------------
+-- ι, layer by layer
+--
+-- `ι : ℕ → ℚ` against the two layers of the scalar (`Slides.Diagram.Scalar`):
+--
+--   * core: `ι-0` and `ι-fromℕ` hold on the nose, `ι-+` and `ι-⊔` unconditionally
+--     (`Slides.Diagram.NatQ`), and the percentage under `Exact%`.  So `ι` is a
+--     homomorphism of the core layer on every node whose percentages are exact;
+--   * sub: the monus is the difference only where `b ≤ a` (`ι-∸`).
+--
+-- The side condition of one node, given the ℕ values of its arguments, is `CoreSide` /
+-- `SubSide`; those of the sum are copaired like the operations.  `Faithful` is all of the
+-- side conditions of a term, and nothing else.
+
+CoreSide : (o : CoreOp) → (coreArity o → ℕ) → Set
+CoreSide (Pct p) k = Exact% p (k tt)
+CoreSide Zero    k = ⊤
+CoreSide (Lit _) k = ⊤
+CoreSide Plus    k = ⊤
+CoreSide Max     k = ⊤
+
+SubSide : (o : SubOp) → (subArity o → ℕ) → Set
+SubSide Sub k = k (suc zero) ≤ k zero
+
+ExprSide : (s : ExprOp) → (exprArity s → ℕ) → Set
+ExprSide (inj₁ o) = CoreSide o
+ExprSide (inj₂ o) = SubSide o
+
+-- `ι` commutes with the handlers of the core layer where the side condition holds
+ι-core : ∀ o (k : coreArity o → ℕ) → CoreSide o k →
+         ι (coreH (Ops.core natOps) .Handler.handle o k) ≡ coreH (Ops.core ratOps) .Handler.handle o (λ q → ι (k q))
+ι-core Zero     k _  = refl
+ι-core (Lit n)  k _  = refl
+ι-core Plus     k _  = ι-+ (k zero) (k (suc zero))
+ι-core Max      k _  = ι-⊔ (k zero) (k (suc zero))
+ι-core (Pct p)  k ex = ex
+
+ι-sub : ∀ o (k : subArity o → ℕ) → SubSide o k →
+        ι (subH (Ops.sub natOps) .Handler.handle o k) ≡ subH (Ops.sub ratOps) .Handler.handle o (λ q → ι (k q))
+ι-sub Sub k h = ι-∸ (k zero) (k (suc zero)) h
+
+ι-node : ∀ s (k : exprArity s → ℕ) → ExprSide s k →
+         ι (opsH natOps .Handler.handle s k) ≡ opsH ratOps .Handler.handle s (λ q → ι (k q))
+ι-node (inj₁ o) = ι-core o
+ι-node (inj₂ o) = ι-sub o
+
 -- every node of `e` is exact at `ρ`
 Faithful : ∀ {V} → (V → ℕ) → Expr V → Set
-Faithful ρ (pure v)                = ⊤
-Faithful ρ (impure (Zero , _))     = ⊤
-Faithful ρ (impure (Lit _ , _))    = ⊤
-Faithful ρ (impure (Plus , k))     = Faithful ρ (k zero) × Faithful ρ (k (suc zero))
-Faithful ρ (impure (Monus , k))    =
-  Faithful ρ (k zero) × Faithful ρ (k (suc zero)) × eval ρ (k (suc zero)) ≤ eval ρ (k zero)
-Faithful ρ (impure (Max , k))      = Faithful ρ (k zero) × Faithful ρ (k (suc zero))
-Faithful ρ (impure (Pct p , k))    = Faithful ρ (k tt) × Exact% p (eval ρ (k tt))
+Faithful ρ (pure v)         = ⊤
+Faithful ρ (impure (s , k)) = (∀ q → Faithful ρ (k q)) × ExprSide s (λ q → eval ρ (k q))
 
 -- Exactness gives agreement of the two evaluations.
 faithful : ∀ {V} (ρ : V → ℕ) (e : Expr V) → Faithful ρ e → ι (eval ρ e) ≡ evalWith ratOps (ι ∘ ρ) e
-faithful ρ (pure v)                _ = refl
-faithful ρ (impure (Zero , _))     _ = refl
-faithful ρ (impure (Lit n , _))    _ = refl
-faithful ρ (impure (Plus , k))     (f₁ , f₂) =
-  trans (ι-+ (eval ρ (k zero)) (eval ρ (k (suc zero)))) (cong₂ ℚ._+_ (faithful ρ (k zero) f₁) (faithful ρ (k (suc zero)) f₂))
-faithful ρ (impure (Monus , k))    (f₁ , f₂ , h) =
-  trans (ι-∸ (eval ρ (k zero)) (eval ρ (k (suc zero))) h) (cong₂ ℚ._-_ (faithful ρ (k zero) f₁) (faithful ρ (k (suc zero)) f₂))
-faithful ρ (impure (Max , k))      (f₁ , f₂) =
-  trans (ι-⊔ (eval ρ (k zero)) (eval ρ (k (suc zero)))) (cong₂ ℚ._⊔_ (faithful ρ (k zero) f₁) (faithful ρ (k (suc zero)) f₂))
-faithful ρ (impure (Pct p , k))    (f , ex) =
-  trans ex (cong ((+ p / 100) ℚ.*_) (faithful ρ (k tt) f))
+faithful ρ (pure v)         _        = refl
+faithful ρ (impure (s , k)) (f , ex) =
+  trans (ι-node s (λ q → eval ρ (k q)) ex)
+        (opsH ratOps .Handler.respects s (λ q → faithful ρ (k q) (f q)))
 
 ------------------------------------------------------------------------
 -- Layouts: every coordinate exact

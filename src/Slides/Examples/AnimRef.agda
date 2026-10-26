@@ -41,7 +41,7 @@ open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label; L
 open import Slides.Anim.Continuous using (frameAt)
 open import Slides.Anim.Syntax using (dur)
 open import Slides.Examples.Intro using (mover; counter)
-open import Slides.Examples.PairsHero using (hero)
+open import Slides.Examples.PairsHero using (hero; heroD)
 
 private
   diagrams : List Diagram → Body
@@ -52,6 +52,13 @@ private
   steps = do
     animate "mover" 60 100 (parI natOps mover counter ∷ [])
     diagrams (frameDiagrams "ref-mover" 60 (timeline atop (frames natOps) (parI natOps mover counter)))
+
+  -- the same loop as a discrete template (formulas read in ℕ): the page's frame at every tick of
+  -- the full period must equal the frame Agda computes
+  dloop : Body
+  dloop = do
+    animateLoop "dhero" 100 100 (heroD 3 7)
+    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natOps) (heroD 3 7)))
 
   loop : Body
   loop = do
@@ -180,6 +187,7 @@ deck : Deck
 deck = do
   slide steps
   slide loop
+  slide dloop
   slide (tpair "tslide" slideT)
   slide (tpair "tlong" longT)
   slide (tpair "tvlong" vlongT)

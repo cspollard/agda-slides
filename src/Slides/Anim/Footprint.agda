@@ -39,6 +39,7 @@ open import Slides.Diagram.Syntax using (fold)
 open import Slides.Diagram.Names using (namesAlgebra; Usage; names-mapDia)
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Expr using (Expr; evalWith)
+open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
 open import Slides.Diagram.Syntax using (Dia)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
@@ -49,6 +50,7 @@ open import Slides.Anim.Syntax
 bodyUsage : ∀ {S} → SegBody S → ℚ → Usage
 bodyUsage (blackBox f) q = fold namesAlgebra (f q)
 bodyUsage (template d) q = fold namesAlgebra d
+bodyUsage (discrete d) q = fold namesAlgebra d
 
 footprint : ∀ {S} → Anim S (Seg S) → List String
 footprint = foldA (λ s → proj₁ (bodyUsage (content s) (T.start (track s)))) _++_ _++_
@@ -58,6 +60,11 @@ footprint = foldA (λ s → proj₁ (bodyUsage (content s) (T.start (track s))))
 bodyUsage-template : ∀ {S} (O : Ops S) (d : Dia (Expr ⊤)) (q q′ : ℚ) →
                      bodyUsage {S} (template d) q ≡ fold namesAlgebra (bodyAt O (template d) q′)
 bodyUsage-template O d q q′ = sym (names-mapDia (evalWith O (λ _ → Ops.fromℕ O (units q′))) d)
+
+-- and so does a discrete one
+bodyUsage-discrete : ∀ {S} (O : Ops S) (d : Dia (DExpr ⊤)) (q q′ : ℚ) →
+                     bodyUsage {S} (discrete d) q ≡ fold namesAlgebra (bodyAt O (discrete d) q′)
+bodyUsage-discrete O d q q′ = sym (names-mapDia (λ e → Ops.fromℕ O (evalD natD (λ _ → units q′) e)) d)
 
 footprint-⨾ : ∀ {S} (a b : Anim S (Seg S)) → footprint (a ⨾ b) ≡ footprint a ++ footprint b
 footprint-⨾ a b = refl

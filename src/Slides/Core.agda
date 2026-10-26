@@ -29,7 +29,7 @@ open import Data.Container.FreeMonad using (_⋆_)
 
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
-open import Slides.Diagram.Param using (Param)
+open import Slides.Diagram.Param using (AnyParam)
 
 ------------------------------------------------------------------------
 -- Inline markup
@@ -86,8 +86,9 @@ data ContentShape : Set where
   animation   : Diagram → List Diagram → (ms : ℕ) → Play → ContentShape
   -- the same animation of templates (`Slides.Anim.Param`): the frames as they are
   -- when the page cannot play them (`Slides.Lower`), and, for a page that can, the
-  -- symbolic layouts, from which the page computes each frame
-  paramAnimation : Diagram → List Diagram → Param → (ms : ℕ) → Play → ContentShape
+  -- symbolic layouts, from which the page computes each frame (continuous or
+  -- discrete templates, `Slides.Diagram.Param.AnyParam`)
+  paramAnimation : Diagram → List Diagram → AnyParam → (ms : ℕ) → Play → ContentShape
   -- JavaScript run once, when the slide holding it is first shown, with the
   -- slide element as `slide` (unchecked; carried in a `data-js` attribute)
   script      : String → ContentShape

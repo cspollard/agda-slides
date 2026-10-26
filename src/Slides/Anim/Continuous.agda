@@ -74,7 +74,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.NatQ using (ι; ι-≤ᵇ; ι-∸; ι-ratio)
 import Slides.Anim.Track as Tr
-open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; dur; Op; Seq; Par)
+open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete; dur; Op; Seq; Par)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.ExprQ using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Expr using (Expr; evalWith; exprOps)
@@ -220,6 +220,7 @@ parAt-dur _⊙_ A B = refl
 bodyAt′ : Tr.Track ℚ → SegBody ℕ → Maybe (Timed (Maybe (Dia ℚ)))
 bodyAt′ tr (template d) = just (leafAt tr d)
 bodyAt′ tr (blackBox _) = nothing
+bodyAt′ tr (discrete _) = nothing   -- no continuous reading: floor division is not exact
 
 segAt : Seg ℕ → Maybe (Timed (Maybe (Dia ℚ)))
 segAt s = bodyAt′ (track s) (content s)
@@ -246,6 +247,7 @@ segAt-dur s T eq = go (track s) (content s) T eq
     go : ∀ tr b T → bodyAt′ tr b ≡ just T → proj₁ T ≡ Tr.dur tr
     go tr (template d) _ refl = trans (sampleAt-dur Tr.ℚLerp tr) (Tr.sample-dur Tr.ℚLerp tr)
     go tr (blackBox _) _ ()
+    go tr (discrete _) _ ()
 
 -- the parts of a `lift2` that is there
 lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
