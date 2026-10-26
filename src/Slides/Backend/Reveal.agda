@@ -229,14 +229,41 @@ animationSync =
   "    var r = a.dataset.rests.split(',');\n" ++ˢ
   "    return +r[Math.min(n, r.length) - 1];\n" ++ˢ
   "  }\n" ++ˢ
+  "  var SVGNS = 'http://www.w3.org/2000/svg';\n" ++ˢ
+  "  var NUMS = { rect: ['x', 'y', 'width', 'height'], circle: ['cx', 'cy', 'r'], line: ['x1', 'y1', 'x2', 'y2'], text: ['x', 'y'] };\n" ++ˢ
+  "  function parse(s) {\n" ++ˢ
+  "    return document.importNode(new DOMParser().parseFromString(s, 'image/svg+xml').documentElement.firstChild, true);\n" ++ˢ
+  "  }\n" ++ˢ
+  "  // apply a list of edits to the children of `parent` (skipping `offset` of them)\n" ++ˢ
+  "  function patch(parent, items, offset) {\n" ++ˢ
+  "    var kids = parent.children, n = 0, rest = [];\n" ++ˢ
+  "    items.forEach(function (it) {\n" ++ˢ
+  "      if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }\n" ++ˢ
+  "      var el = kids[offset + n]; n++;\n" ++ˢ
+  "      if (it === 0) return;\n" ++ˢ
+  "      if (Array.isArray(it)) { NUMS[el.localName].forEach(function (k, j) { el.setAttribute(k, it[j]); }); return; }\n" ++ˢ
+  "      if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }\n" ++ˢ
+  "      patch(el, it.g, 0);\n" ++ˢ
+  "    });\n" ++ˢ
+  "    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);\n" ++ˢ
+  "    rest.forEach(function (s) { parent.appendChild(parse(s)); });\n" ++ˢ
+  "  }\n" ++ˢ
+  "  // show frame `k`: rebuild from the first frame when going back, else apply the next edits\n" ++ˢ
+  "  function frame(a, k) {\n" ++ˢ
+  "    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));\n" ++ˢ
+  "    var svg = a.querySelector(':scope > .frame svg');\n" ++ˢ
+  "    if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }\n" ++ˢ
+  "    if (k < a._at) { var fresh = a._base.cloneNode(true); svg.parentNode.replaceChild(fresh, svg); svg = fresh; a._at = 0; }\n" ++ˢ
+  "    for (; a._at < k; a._at++) patch(svg, d[a._at], 1);\n" ++ˢ
+  "  }\n" ++ˢ
   "  function geom(a) {\n" ++ˢ
-  "    var n = a.querySelectorAll(':scope > .frame').length, v = a.getAttribute('data-loop');\n" ++ˢ
+  "    var n = JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');\n" ++ˢ
   "    var p = v === null ? 1 : (v === '' ? n : +v);\n" ++ˢ
   "    return { n: n, p: p, steps: n / p };\n" ++ˢ
   "  }\n" ++ˢ
   "  function draw(a) {\n" ++ˢ
-  "    var g = geom(a), i = (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0));\n" ++ˢ
-  "    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });\n" ++ˢ
+  "    var g = geom(a);\n" ++ˢ
+  "    frame(a, (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0)));\n" ++ˢ
   "  }\n" ++ˢ
   "  function show(a, i) { a.dataset.cur = String(i); draw(a); }\n" ++ˢ
   "  function sync(a, jump) {\n" ++ˢ

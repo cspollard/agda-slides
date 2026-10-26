@@ -11,9 +11,11 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 2. **A JavaScript backend for animations** (the flipbook emits every frame as a full SVG:
    the Pairs deck's `index.html` is about 1.4 MB, mostly the two point-pair loops).
    Two stages, each with its proof:
-   - *Keyframes and diffs.* Emit the first frame and, per frame, the attributes that
-     change (frames of one animation share their structure). Law:
-     `patch (diff a b) a ≡ b`, and playback of the encoded frames equals the flipbook.
+   - *Keyframes and diffs.* Done (`Slides.Diagram.Delta`, shipped in `data-deltas`: the
+     Pairs deck's page is 1.47 MB → 0.30 MB; round trip `patchL (diffL a b) a ≡ b`,
+     `replay-deltas`). Left: shrink further (the JSON is escaped inside an attribute and
+     names every edit; numbers of unchanged runs could be run-length encoded), and a proof
+     that the JavaScript patcher agrees with `patchL` (it is tested, not proved).
    - *Parametric bodies.* Make a segment's body an open diagram (`DiagramC S ⋆ X`, with
      scalar expressions in the holes) instead of an opaque `ℚ → Dia S`; compile the track
      and the expressions to a small player that evaluates at any time (continuous time, size

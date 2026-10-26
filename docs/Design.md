@@ -188,6 +188,12 @@ the backend plays frames on a timer, an act per reveal step, or, for `Play = loo
 cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
 `Slides.Anim.Loop`; the player's `i ↦ (i+1) mod n` is proved to track it). Looping is a play
 mode of a finished timeline, not a term constructor: a loop has no `dur` in `(ℕ, +, max)`.
+Frames are shipped as the first frame and an edit from each frame to the next
+(`Slides.Diagram.Delta`: an edit changes nothing, only an element's numbers, or the element, or
+edits a group member by member; `patchL (diffL old new) old ≡ new` and `replay e (deltas e fs) ≡ fs`
+are proved, the checking of "only the numbers changed" being done by the diff itself), so the page
+holds one SVG and a JSON list of edits; the player rebuilds frame `k` from the first (a frame behind
+the current one is rebuilt from the start). The Pairs deck went from 1.47 MB to 0.30 MB.
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:

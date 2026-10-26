@@ -297,7 +297,8 @@ is one reveal step, which plays its frames, one every 400 ms, when it is reached
 waits on its last frame; stepping back plays them in reverse. The standalone backend (`plain.js`) plays them too, and shows the last step when printed. A backend with no JavaScript lowers an animation to a still of its final frame (`animationFinal` in `Slides.Lower`, composed like `stripNotes ⋙ animationFinal`). Without JavaScript the
 first frame stays. `animateLoop name width ms a` instead repeats the frames of one
 animation forever, one every `ms`, while its slide is shown (marching dashes, a
-heartbeat): frame `t mod n` at tick `t`. `animateBoth name width ms period acts` does both: `acts φ` are the
+heartbeat): frame `t mod n` at tick `t`. In the page an animation is its first frame and a list of edits to the next ones (so
+that a loop of many frames costs little); the frames themselves are not in the HTML. `animateBoth name width ms period acts` does both: `acts φ` are the
 acts at phase `φ` of a loop of `period` phases (typically the same diagram with a
 phase-dependent style), and each reveal step plays within the current phase while the
 phase advances underneath. Every phase must have acts of the same lengths; that is

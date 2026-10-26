@@ -78,7 +78,8 @@ const press = async ms => { await ev(() => Reveal.nextFragment()); await wait(ms
 
 console.log('-- steps over a loop');
 // stages: 3 reveal steps (rests 1,2,3 of 4 frames) under 8 phases: frame = phase * 4 + step
-const both = id => page.evaluate(id => { const a = document.getElementById(id); return { phase: +(a.dataset.phase || 0), cur: +a.dataset.cur, shown: Array.from(a.querySelectorAll(':scope > .frame')).findIndex(f => !f.hidden) }; }, id);
+// (`_at` is the frame the player has rebuilt from the first frame and the edits)
+const both = id => page.evaluate(id => { const a = document.getElementById(id); return { phase: +(a.dataset.phase || 0), cur: +a.dataset.cur, shown: a._at }; }, id);
 await go(5); await wait(300);
 const seenPhase = new Set();
 for (let k = 0; k < 14; k++) { const b = await both('d-stages-0-frames'); check('slide 6: frame is phase * 4 + step', b.shown === b.phase * 4 + b.cur, JSON.stringify(b)); seenPhase.add(b.phase); await wait(60); }

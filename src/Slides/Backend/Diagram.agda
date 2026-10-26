@@ -23,6 +23,12 @@ import Data.SVG as SVG
 
 open import Slides.Diagram
 open import Slides.Core using (Play; onSteps; looping; both)
+open import Slides.Diagram.Delta using (Edit; Edits; same; nums; new; grp; done; _∷_; deltas)
+open import Data.JSON.AST using (JSON; objectFromList; stringⱼ; numberⱼ; arrayⱼ; jsonNumber)
+open import Data.JSON.Print using (renderJSON)
+open import Data.XML.Print using (renderXML)
+import Data.Sign as Sign
+import Data.Integer as ℤ
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 
@@ -147,19 +153,48 @@ private
 renderDiagram : Diagram → XMLM A
 renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name d) ∷ []) (svgOf d ∷ [])
 
--- An animation is a flipbook: every frame is emitted, the first shown and the
--- others `hidden`, followed by one empty fragment per step.  The page script
--- (`animationSync` in `Slides.Backend.Reveal`) plays the frames between the
--- resting frames `data-rests`, one every `data-ms` milliseconds.  Without the
--- script the first frame stays.
+-- An animation is shipped as its first frame and an edit from each frame to the next
+-- (`Slides.Diagram.Delta`, which proves that replaying the edits gives back every
+-- frame), in `data-deltas` as JSON, followed by one empty fragment per step.  The
+-- page script (`animationSync` in `Slides.Backend.Reveal`) rebuilds the frame it
+-- wants from the first one and plays the frames between the resting frames
+-- `data-rests`, one every `data-ms` milliseconds.  Without the script the first
+-- frame stays.
+--
+-- An edit is JSON: `0` (unchanged), an array of numbers (the element's
+-- coordinates and sizes, see `numsOf`), a string (a replacement element, as an
+-- `<svg>` holding it), or `{"g": edits}` (a group edited member by member); a list
+-- of edits is an array, ending in `{"r": [strings]}` when elements are appended.
+private
+  natⱼ : ℕ → JSON
+  natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
+
+  elementString : String → Element → String
+  elementString n e = renderXML (SVG.svg (("xmlns" , "http://www.w3.org/2000/svg") ∷ []) (renderElement n e ∷ []))
+
+  mutual
+    editⱼ : String → Edit → JSON
+    editⱼ n same      = natⱼ 0
+    editⱼ n (nums ns) = arrayⱼ (map natⱼ ns)
+    editⱼ n (new e)   = stringⱼ (elementString n e)
+    editⱼ n (grp es)  = objectFromList (("g" , editsⱼ n es) ∷ [])
+
+    editsⱼ : String → Edits → JSON
+    editsⱼ n es = arrayⱼ (items n es)
+
+    items : String → Edits → List JSON
+    items n (done [])       = []
+    items n (done rest)     = objectFromList (("r" , arrayⱼ (map (λ e → stringⱼ (elementString n e)) rest)) ∷ []) ∷ []
+    items n (e ∷ es)        = editⱼ n e ∷ items n es
+
 renderAnimation : Diagram → List Diagram → ℕ → Play → XMLM A
 renderAnimation d ds ms play =
   hElement "div"
     ( ("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames")
-    ∷ ("data-ms" , num ms) ∷ playAttr play )
+    ∷ ("data-ms" , num ms) ∷ ("data-deltas" , renderJSON (arrayⱼ (map (editsⱼ (Diagram.name d)) (deltas (Diagram.elements d) (map Diagram.elements ds)))))
+    ∷ playAttr play )
     ( hElement "div" (("class" , "frame") ∷ []) (renderDiagram d ∷ [])
-    ∷ map (λ f → hElement "div" (("class" , "frame") ∷ ("hidden" , "") ∷ []) (renderDiagram f ∷ [])) ds
-    ++ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) (stepsOf play) )
+    ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) (stepsOf play) )
   where
     commas : List ℕ → String
     commas []       = ""

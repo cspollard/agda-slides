@@ -69,7 +69,9 @@ numbers the text gives, not the full figure.
     through a half turn and sways along a fixed direction over 64 frames. The sway is a
     triangle wave, so the last frame runs into the first and nothing jumps.
 
-    The deck has no JavaScript of its own: `pairs.js` is gone.
+    The deck has no JavaScript of its own: `pairs.js` is gone. An animation is shipped as its
+    first frame and edits to the next ones (`Slides.Diagram.Delta`), so the two 64-frame loops
+    add about 0.07 MB each rather than 0.7 MB.
 
 - **Configuration** is in `PairsMain.agda`. Where reveal.js comes from is an option
   (`Reveal.Source`): `cdn "6.0.2"` loads the pinned version from jsDelivr, so the

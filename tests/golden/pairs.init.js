@@ -20,14 +20,41 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
     var r = a.dataset.rests.split(',');
     return +r[Math.min(n, r.length) - 1];
   }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var NUMS = { rect: ['x', 'y', 'width', 'height'], circle: ['cx', 'cy', 'r'], line: ['x1', 'y1', 'x2', 'y2'], text: ['x', 'y'] };
+  function parse(s) {
+    return document.importNode(new DOMParser().parseFromString(s, 'image/svg+xml').documentElement.firstChild, true);
+  }
+  // apply a list of edits to the children of `parent` (skipping `offset` of them)
+  function patch(parent, items, offset) {
+    var kids = parent.children, n = 0, rest = [];
+    items.forEach(function (it) {
+      if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }
+      var el = kids[offset + n]; n++;
+      if (it === 0) return;
+      if (Array.isArray(it)) { NUMS[el.localName].forEach(function (k, j) { el.setAttribute(k, it[j]); }); return; }
+      if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }
+      patch(el, it.g, 0);
+    });
+    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);
+    rest.forEach(function (s) { parent.appendChild(parse(s)); });
+  }
+  // show frame `k`: rebuild from the first frame when going back, else apply the next edits
+  function frame(a, k) {
+    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));
+    var svg = a.querySelector(':scope > .frame svg');
+    if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }
+    if (k < a._at) { var fresh = a._base.cloneNode(true); svg.parentNode.replaceChild(fresh, svg); svg = fresh; a._at = 0; }
+    for (; a._at < k; a._at++) patch(svg, d[a._at], 1);
+  }
   function geom(a) {
-    var n = a.querySelectorAll(':scope > .frame').length, v = a.getAttribute('data-loop');
+    var n = JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');
     var p = v === null ? 1 : (v === '' ? n : +v);
     return { n: n, p: p, steps: n / p };
   }
   function draw(a) {
-    var g = geom(a), i = (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0));
-    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });
+    var g = geom(a);
+    frame(a, (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0)));
   }
   function show(a, i) { a.dataset.cur = String(i); draw(a); }
   function sync(a, jump) {

@@ -37,7 +37,7 @@ await page.waitForTimeout(300);
 const shown = id => page.evaluate(id => {
   const a = document.getElementById(id);
   const fs = Array.from(a.querySelectorAll(':scope > .frame'));
-  return { index: fs.findIndex(f => !f.hidden), visible: fs.filter(f => !f.hidden).length, text: fs.find(f => !f.hidden).textContent };
+  return { index: a._at, visible: fs.filter(f => !f.hidden).length, text: fs[0].textContent };
 }, id);
 const key = async k => { await page.keyboard.press(k); await page.waitForTimeout(500); };
 
