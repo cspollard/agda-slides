@@ -44,7 +44,7 @@ open import Data.Empty using (⊥; ⊥-elim)
 import Data.Nat.Properties as ℕP
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 
 ------------------------------------------------------------------------
 -- Easings
@@ -481,3 +481,134 @@ reverse-linear : ∀ {A} (L : Lerp A) → LerpFlip L → ∀ k d′ a b → k �
                  proj₂ (samplePiece L (piece (ℕ.suc d′) b a Linear)) k
                  ≡ proj₂ (samplePiece L (piece (ℕ.suc d′) a b Linear)) (ℕ.suc d′ ∸ k)
 reverse-linear L F = reverse-piece L F Linear tt
+
+------------------------------------------------------------------------
+-- Reversal of whole tracks
+--
+-- Across a boundary the original track is right-continuous (the later piece
+-- owns the tick where two pieces meet) while the reversed track gives that tick
+-- to the earlier piece, so the two samples agree there exactly when the pieces
+-- meet: the end of one is the start of the next.  A track is `Good` when every
+-- piece has positive length and an `Exact` easing and consecutive pieces meet.
+-- For a good track, tick `k` of the reversed track is tick `dur - k` of the
+-- original, for every `k` up to and including `dur` (`reverse-sample`).  Without
+-- continuity the statement fails exactly at the boundaries; zero-length pieces
+-- are never sampled inside a track and are excluded.
+
+-- the value a track ends at
+endT : ∀ {A} → Track A → A
+endT = foldT to (λ _ b → b)
+
+Good : ∀ {A} → Track A → Set
+Good (pure (piece d _ _ e)) = 0 ℕ.< d × Exact e
+Good (impure (_ , k))       = Good (k zero) × Good (k (suc zero)) × endT (k zero) ≡ start (k (suc zero))
+
+private
+  if-true′ : ∀ {X : Set} {x y : X} b → b ≡ true → (if b then x else y) ≡ x
+  if-true′ .true refl = refl
+
+  if-false′ : ∀ {X : Set} {x y : X} b → b ≡ false → (if b then x else y) ≡ y
+  if-false′ .false refl = refl
+
+  lt⇒< : ∀ k m → (k <ᵇ m) ≡ true → k ℕ.< m
+  lt⇒< ℕ.zero    (ℕ.suc m) _ = ℕ.s≤s ℕ.z≤n
+  lt⇒< (ℕ.suc k) (ℕ.suc m) h = ℕ.s≤s (lt⇒< k m h)
+
+  ≮⇒≥ : ∀ k m → (k <ᵇ m) ≡ false → m ℕ.≤ k
+  ≮⇒≥ k          ℕ.zero    _ = ℕ.z≤n
+  ≮⇒≥ (ℕ.suc k)  (ℕ.suc m) h = ℕ.s≤s (≮⇒≥ k m h)
+
+  -- sequencing at a tick, given the length of the first operand
+  seqS-at′ : ∀ {A} (L : Lerp A) (x y : Track A) n → dur x ≡ n → ∀ t →
+             proj₂ (seqS (sample L x) (sample L y)) t
+             ≡ (if t <ᵇ n then proj₂ (sample L x) t else proj₂ (sample L y) (t ∸ n))
+  seqS-at′ L x y .(dur x) refl t rewrite sample-dur L x = refl
+
+  seqS-at : ∀ {A} (L : Lerp A) (x y : Track A) t →
+            proj₂ (seqS (sample L x) (sample L y)) t
+            ≡ (if t <ᵇ dur x then proj₂ (sample L x) t else proj₂ (sample L y) (t ∸ dur x))
+  seqS-at L x y = seqS-at′ L x y (dur x) refl
+
+  -- after the first operand, the second
+  seq-hi : ∀ {A} (L : Lerp A) (x y : Track A) i →
+           proj₂ (seqS (sample L x) (sample L y)) (dur x + i) ≡ proj₂ (sample L y) i
+  seq-hi L x y i =
+    trans (seqS-at L x y (dur x + i))
+      (trans (if-false′ _ (ge⇒¬lt (dur x + i) (dur x) (ℕP.m≤m+n (dur x) i)))
+             (cong (proj₂ (sample L y)) (ℕP.m+n∸m≡n (dur x) i)))
+
+  dur-pos : ∀ {A} (t : Track A) → Good t → 0 ℕ.< dur t
+  dur-pos (pure (piece d _ _ _)) (h , _)       = h
+  dur-pos (impure (_ , k))       (ga , gb , _) =
+    ℕP.<-≤-trans (dur-pos (k zero) ga) (ℕP.m≤m+n (dur (k zero)) (dur (k (suc zero))))
+
+  -- a good track starts at its start, and holds its end after its length
+  sample-start : ∀ {A} (L : Lerp A) (t : Track A) → Good t → proj₂ (sample L t) 0 ≡ start t
+  sample-start L (pure (piece (ℕ.suc d) a b e)) _ = piece-start L d a b e
+  sample-start L (impure (_ , k)) (ga , gb , _) =
+    trans (seqS-at L (k zero) (k (suc zero)) 0)
+      (trans (if-true′ _ (lt-true 0 (dur (k zero)) (dur-pos (k zero) ga)))
+             (sample-start L (k zero) ga))
+
+  sample-end : ∀ {A} (L : Lerp A) (t : Track A) → proj₂ (sample L t) (dur t) ≡ endT t
+  sample-end L (pure (piece d a b e)) = piece-end L d a b e d ℕP.≤-refl
+  sample-end L (impure (_ , k)) =
+    trans (seq-hi L (k zero) (k (suc zero)) (dur (k (suc zero)))) (sample-end L (k (suc zero)))
+
+  sub-lem : ∀ n m j → (n + m) ∸ (m + j) ≡ n ∸ j
+  sub-lem n ℕ.zero    j = cong (_∸ j) (ℕP.+-identityʳ n)
+  sub-lem n (ℕ.suc m) j = trans (cong (_∸ ℕ.suc (m + j)) (ℕP.+-suc n m)) (sub-lem n m j)
+
+  lt-step : ∀ n j′ → ℕ.suc j′ ℕ.≤ n → n ∸ ℕ.suc j′ ℕ.< n
+  lt-step (ℕ.suc n) j′ _ = ℕ.s≤s (ℕP.m∸n≤m n j′)
+
+-- the inductive step: two good tracks that meet, with the claim for each
+private
+  reverse-seq : ∀ {A} (L : Lerp A) (a b : Track A) → Good a → Good b → endT a ≡ start b →
+                (∀ k → k ℕ.≤ dur a → proj₂ (sample L (reverseT a)) k ≡ proj₂ (sample L a) (dur a ∸ k)) →
+                (∀ k → k ℕ.≤ dur b → proj₂ (sample L (reverseT b)) k ≡ proj₂ (sample L b) (dur b ∸ k)) →
+                ∀ k → k ℕ.≤ dur a + dur b →
+                proj₂ (seqS (sample L (reverseT b)) (sample L (reverseT a))) k
+                ≡ proj₂ (seqS (sample L a) (sample L b)) (dur a + dur b ∸ k)
+  reverse-seq L a b ga gb cont iha ihb k h =
+    trans (seqS-at′ L (reverseT b) (reverseT a) m (reverseT-dur b) k) finish
+    where
+      n = dur a
+      m = dur b
+      orig : ℕ → _
+      orig = proj₂ (seqS (sample L a) (sample L b))
+
+      -- the part of the reversed track inside `reverseT a`, against the original near its end
+      tail : ∀ j → j ℕ.≤ n → proj₂ (sample L (reverseT a)) j ≡ orig (n ∸ j)
+      tail ℕ.zero _ =
+        trans (trans (iha 0 ℕ.z≤n) (sample-end L a))
+              (sym (trans (seqS-at L a b n)
+                    (trans (if-false′ _ (lt-irrefl n))
+                      (trans (cong (proj₂ (sample L b)) (ℕP.n∸n≡0 n))
+                        (trans (sample-start L b gb) (sym cont))))))
+      tail (ℕ.suc j′) jn =
+        trans (iha (ℕ.suc j′) jn)
+          (sym (trans (seqS-at L a b (n ∸ ℕ.suc j′))
+                (if-true′ _ (lt-true (n ∸ ℕ.suc j′) n (lt-step n j′ jn)))))
+
+      finish : (if k <ᵇ m then proj₂ (sample L (reverseT b)) k else proj₂ (sample L (reverseT a)) (k ∸ m))
+               ≡ orig (n + m ∸ k)
+      finish with k <ᵇ m in eq
+      ... | true =
+        let km = ℕP.<⇒≤ (lt⇒< k m eq) in
+        trans (ihb k km)
+              (sym (trans (cong orig (ℕP.+-∸-assoc n km)) (seq-hi L a b (m ∸ k))))
+      ... | false =
+        let mk  = ≮⇒≥ k m eq
+            jn  = subst (k ∸ m ℕ.≤_) (ℕP.m+n∸n≡m n m) (ℕP.∸-monoˡ-≤ m h)
+            idx = trans (cong (n + m ∸_) (sym (ℕP.m+[n∸m]≡n mk))) (sub-lem n m (k ∸ m))
+        in trans (tail (k ∸ m) jn) (sym (cong orig idx))
+
+-- tick `k` of the reversed track is tick `dur - k` of the original
+reverse-sample : ∀ {A} (L : Lerp A) → LerpFlip L → (t : Track A) → Good t → ∀ k → k ℕ.≤ dur t →
+                 proj₂ (sample L (reverseT t)) k ≡ proj₂ (sample L t) (dur t ∸ k)
+reverse-sample L F (pure (piece (ℕ.suc d′) a b e)) (_ , ex) k h = reverse-piece L F e ex k d′ a b h
+reverse-sample L F (pure (piece ℕ.zero _ _ _)) ()
+reverse-sample L F (impure (_ , k′)) (ga , gb , cont) =
+  reverse-seq L (k′ zero) (k′ (suc zero)) ga gb cont
+    (reverse-sample L F (k′ zero) ga) (reverse-sample L F (k′ (suc zero)) gb)
