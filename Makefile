@@ -1,4 +1,8 @@
-AGDA ?= agda
+# Agda's GC is ~30% of a clean check; a 1 GB allocation area cuts the user time of
+# a clean check of the Pairs modules by about 12% (see plan/Plan.md item 9) for about
+# 0.5 GB more peak memory.  Override (`make check AGDA_RTS=`) to use the defaults.
+AGDA_RTS ?= +RTS -A1g -RTS
+AGDA ?= agda $(AGDA_RTS)
 
 .PHONY: check clean
 

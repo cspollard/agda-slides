@@ -131,6 +131,29 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    `--erasure`, splitting the proof-only modules from the ones the decks import, and a
    documented minimum for RAM and the standard-library version (`v2.3`; an older checkout
    fails with a missing `Data.Bool.ListAction`).
+   - *Hot proofs and RTS (perf-hotproofs).* Measured with `--profile=definitions` on a
+     clean module, Agda 2.7.0.1. `Slides.Anim.Track.reversal` took 134 s of the module's
+     147 s: the `refl`s under `rewrite ... with` made the checker normalise rational
+     arithmetic (`1ℚ - 1ℚ`, `1ℚ - 0ℚ`, `gcd`). It now uses `cong` on `if_then_else_` and two
+     `abstract` constants (`sub-11`, `sub-10`): 16 ms, module 19 s. `Monadic`
+     (`Free⊣Forget-monadic`, 21 s; the whole module 35 s) was investigated but not
+     improved: the cost is the conversion check of the `WeakInverse` fields against the
+     type `ComparisonF` has (eta-expanding big records; re-elaborating `ComparisonF
+     Free⊣Forget` instead of the alias `K` costs 7 s by itself), and four restructurings
+     (explicit `comparison-equiv`, copatterns, `T` spelled out, `K` in the signature)
+     all gave the same or worse. `PairsScalar` (about 60 s of `_` checks, 2 to 7 s each)
+     is not rational `gcd` (the ℤ checks cost as much, 2 to 5 s per diagram): it is the
+     layout evaluation itself, linear in diagram size, so only smaller diagrams would
+     help; left as is.
+   - *RTS flags.* Clean check of `Slides.Examples.PairsScalar` (and its 85 s of imports),
+     user time and peak RSS, machine loaded (noise about 10%): default 82 to 89 s,
+     1.4 GB; `-A64m` 105 s; `-A256m` 90 s, 1.1 GB; `-A1g` 69 to 71 s, 1.5 to 2.2 GB;
+     `-A2g` 68 s, 3 GB (swaps); `-A256m -n4m`, `-A256m -c`, `-A256m -G3` no gain;
+     `-H4g` 64 to 70 s but 3.9 to 4.8 GB and sometimes swaps. The Makefile now defaults
+     `AGDA_RTS ?= +RTS -A1g -RTS` (override with `make check AGDA_RTS=`). A full
+     `make check` took 9 min 9 s (was 10 min 34 s; part of that is the `Track` fix).
+     A cold `make example talk plain showcase pairs` (Agda plus GHC `-O0`) took 9 min 16 s;
+     no GHC flag variants were measured.
 
 ## Risks
 
