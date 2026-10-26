@@ -17,6 +17,8 @@ open import Categories.Category.Core using (Category)
 
 open import Container.Lowering
 
+
+open import Container.Lowering.Properties
 Lowerings : Category (suc 0ℓ) 0ℓ 0ℓ
 Lowerings = record
   { Obj       = Container 0ℓ 0ℓ

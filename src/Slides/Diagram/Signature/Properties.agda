@@ -15,7 +15,8 @@ open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; setoid)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
-open import Container.Lowering using (translate; embed; lower-embed; lower-bind; _≈⋆_; sym≈; trans≈; bind-cong≈)
+open import Container.Lowering using (translate; embed)
+open import Container.Lowering.Properties using (lower-embed; lower-bind; _≈⋆_; sym≈; trans≈; bind-cong≈)
 open import Container.Polynomial using (Poly₀)
 import Container.Sum as Sum
 

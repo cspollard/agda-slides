@@ -38,7 +38,7 @@ open import Slides.Diagram.Expr using (eval; evalWith)
 import Slides.Diagram.Expr as E
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
 import Slides.Diagram.Euclid as Eu
-open import Slides.Diagram.NatQ.Properties using (ι)
+open import Slides.Diagram.NatQ using (ι)
 open import Slides.Diagram.Scalar using (ratOps)
 open import Slides.Anim.Formula
 open import Slides.Anim.Formula.Properties

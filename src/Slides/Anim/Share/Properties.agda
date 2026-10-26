@@ -31,6 +31,9 @@ open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; pct; hl
 open import Slides.Anim.Share
 open St
 
+module MM = AVLMem KeyOrder
+module MP = AVLMemP KeyOrder
+
 ------------------------------------------------------------------------
 -- Readings: what a program means
 

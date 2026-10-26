@@ -34,6 +34,7 @@ open import Categories.NaturalTransformation.Equivalence using (_≃_; ≃-isEqu
 open import Container.Polynomial
 open import Container.Polynomial.Morphism
 open import Container.Lowering
+open import Container.Lowering.Properties
 open import Container.Lowering.Category using (Lowerings)
 
 -- Equality of container morphisms: they act equally on every extension.

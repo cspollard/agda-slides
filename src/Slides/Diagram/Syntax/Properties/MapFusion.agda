@@ -37,7 +37,9 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality using (refl)
 open import Function using (id; _∘_)
 
-open import Container.Lowering using (_≈⋆_; translate; lower; embed; lower-embed; sym≈; trans≈)
+open import Container.Lowering using (translate; lower; embed)
+
+open import Container.Lowering.Properties using (_≈⋆_; lower-embed; sym≈; trans≈)
 open import Slides.Diagram.Syntax
 
 ------------------------------------------------------------------------
