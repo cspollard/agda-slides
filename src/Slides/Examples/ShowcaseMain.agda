@@ -2,7 +2,8 @@
 
 -- Executable: render `Slides.Examples.Showcase.showcase` with both backends,
 -- to `out/showcase/` (reveal.js) and `out/showcase-plain/` (standalone HTML),
--- and the same deck lowered without notes and diagrams to `out/showcase-lowered/`.
+-- the same deck lowered without notes and diagrams to `out/showcase-lowered/`, and
+-- lowered without notes and with animations as stills to `out/showcase-still/`.
 -- Build and run with `make showcase`.
 
 module Slides.Examples.ShowcaseMain where
@@ -15,7 +16,7 @@ open import IO using (Main; run; writeFile; _>>_)
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
 open import Container.Lowering using (_⋙_)
-open import Slides.Lower using (lowerDeck; stripNotes; diagramPlaceholder)
+open import Slides.Lower using (lowerDeck; stripNotes; diagramPlaceholder; animationFinal)
 open import Slides.Driver
 open import Slides.Examples.Showcase using (showcase)
 
@@ -38,4 +39,6 @@ main = run
   ( writeRevealDeck "out/showcase" revealConfig showcase
   >> writePlainDeck "out/showcase-plain" plainConfig showcase
   >> writePlainDeck "out/showcase-lowered" plainConfig
-       (lowerDeck (stripNotes ⋙ diagramPlaceholder) showcase) )
+       (lowerDeck (stripNotes ⋙ diagramPlaceholder) showcase)
+  >> writePlainDeck "out/showcase-still" plainConfig
+       (lowerDeck (stripNotes ⋙ animationFinal) showcase) )

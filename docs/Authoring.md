@@ -294,7 +294,7 @@ animate "mover" 60 400 (parI natOps mover counter ∷ [])
 
 emits every tick as a frame (all the same size). The list holds the *acts*: each act
 is one reveal step, which plays its frames, one every 400 ms, when it is reached and
-waits on its last frame; stepping back plays them in reverse. Without JavaScript the
+waits on its last frame; stepping back plays them in reverse. The standalone backend (`plain.js`) plays them too, and shows the last step when printed. A backend with no JavaScript lowers an animation to a still of its final frame (`animationFinal` in `Slides.Lower`, composed like `stripNotes ⋙ animationFinal`). Without JavaScript the
 first frame stays. `animateLoop name width ms a` instead repeats the frames of one
 animation forever, one every `ms`, while its slide is shown (marching dashes, a
 heartbeat): frame `t mod n` at tick `t`. `animateBoth name width ms period acts` does both: `acts φ` are the
@@ -352,10 +352,10 @@ lowerings form a category (`Container.Lowering.Category`).
 
 ```agda
 open import Container.Lowering using (_⋙_)
-open import Slides.Lower using (lowerDeck; stripNotes; diagramPlaceholder)
+open import Slides.Lower using (lowerDeck; stripNotes; animationFinal; diagramPlaceholder)
 
 plainer : Deck → Deck
-plainer = lowerDeck (stripNotes ⋙ diagramPlaceholder)
+plainer = lowerDeck (stripNotes ⋙ animationFinal ⋙ diagramPlaceholder)
 ```
 
 `lowerDeck` rewrites content wherever it occurs (slide bodies, columns, boxes,

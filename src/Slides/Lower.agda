@@ -18,6 +18,8 @@
 module Slides.Lower where
 
 open import Data.List using (List; []; _∷_; map)
+open import Data.Nat using (ℕ; zero; suc)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
@@ -28,6 +30,7 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Container.Lowering
 open import Container.Sum using (inl)
 open import Slides.Core
+open import Slides.Diagram using (Diagram)
 
 ------------------------------------------------------------------------
 -- Content lowerings
@@ -37,7 +40,7 @@ stripNotes : Lowering ContentC ContentC
 stripNotes (notes _) = pure tt
 stripNotes a         = ret a
 
--- Replace each diagram by a one-line placeholder naming it, for a backend
+-- Replace each diagram (and animation) by a one-line placeholder, for a backend
 -- without vector graphics.
 diagramPlaceholder : Lowering ContentC ContentC
 diagramPlaceholder (diagram d) =
@@ -45,6 +48,37 @@ diagramPlaceholder (diagram d) =
 diagramPlaceholder (animation d ds _ _) =
   impure (paragraph (text "[animation]" ∷ []) , pure)
 diagramPlaceholder a = ret a
+
+-- The frame an animation comes to rest on once all its steps have played: the
+-- last of the `rests` (within the first phase, for steps over a loop), and the
+-- first frame when there are no steps (a loop).  `nth` clamps to the last frame.
+nth : Diagram → List Diagram → ℕ → Diagram
+nth d []       _       = d
+nth d (f ∷ fs) zero    = d
+nth d (f ∷ fs) (suc n) = nth f fs n
+
+lastRest : List ℕ → ℕ
+lastRest []       = 0
+lastRest (n ∷ []) = n
+lastRest (_ ∷ ns) = lastRest ns
+
+finalFrame : Diagram → List Diagram → Play → Diagram
+finalFrame d ds (onSteps rs) = nth d ds (lastRest rs)
+finalFrame d ds looping      = d
+finalFrame d ds (both rs _)  = nth d ds (lastRest rs)
+
+finalFrame-looping : ∀ d ds → finalFrame d ds looping ≡ d
+finalFrame-looping d ds = refl
+
+finalFrame-no-steps : ∀ d ds → finalFrame d ds (onSteps []) ≡ d
+finalFrame-no-steps d []        = refl
+finalFrame-no-steps d (f ∷ fs)  = refl
+
+-- For a backend that cannot play animations (print, a script-free page): the
+-- animation as a still of its final frame, the picture the audience is left with.
+animationFinal : Lowering ContentC ContentC
+animationFinal (animation d ds _ p) = impure (diagram (finalFrame d ds p) , pure)
+animationFinal a                    = ret a
 
 ------------------------------------------------------------------------
 -- Lifting to the layout, block and deck levels

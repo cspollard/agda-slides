@@ -75,9 +75,17 @@ exponential: two `placed` commands in one block took more than two minutes, the
 showcase deck over 14 minutes. So features (`placed`, `diagram`) are ordinary
 layout commands, decks have one type `Deck`, and sequencing is the free monad's
 own `_>>=_`. A backend that cannot render a feature natively either lowers it
-(a `Lowering`; `Slides.Lower` has `stripNotes`, `diagramPlaceholder` and
-`lowerDeck`) or refuses; refusing needs `supports : Feature → Bool` and
+(a `Lowering`; `Slides.Lower` has `stripNotes`, `diagramPlaceholder`,
+`animationFinal` and `lowerDeck`) or refuses; refusing needs `supports : Feature → Bool` and
 `uses : Deck → List Feature`, not built until a backend lacks a feature.
+
+*Animations across backends.* `renderAnimation` (a flipbook of frames with `data-*`
+attributes) is shared by the reveal.js and standalone backends, and each carries the
+same small player: `animationSync` in `init.js`, and the same code in `assets/plain.js`
+(which also shows the last step when printing). A backend that cannot play them lowers
+the command with `animationFinal`, which replaces an animation by a still of the frame
+it rests on once all steps have played (`finalFrame`: the last rest, the first frame for
+a loop), or with `diagramPlaceholder`, which drops it to a one-line placeholder.
 
 ## HTML: `Slides.Backend.*`
 
