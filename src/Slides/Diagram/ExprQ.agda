@@ -25,7 +25,7 @@ module Slides.Diagram.ExprQ where
 
 open import Data.Fin using (zero; suc)
 open import Data.Sum.Base using (inj₁; inj₂)
-open import Data.List using (List; []; _∷_; map)
+open import Data.List using ([]; _∷_; map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.Nat as ℕ using (ℕ; _≤_; _*_)
 import Data.Nat.Properties as ℕP
@@ -35,7 +35,7 @@ import Data.Rational.Properties as ℚP
 import Data.Rational.Unnormalised.Properties as ℚᵘP
 open import Data.Rational.Unnormalised using (*≡*)
 open import Data.Integer.Tactic.RingSolver using (solve-∀)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₂)
 open import Data.Integer as ℤ using (+_)
 open import Data.Rational as ℚ using (ℚ; _/_)
 open import Data.Unit using (⊤; tt)

@@ -20,7 +20,7 @@ module Slides.Diagram.Laws where
 
 open import Level using (0ℓ)
 open import Algebra using (CommutativeRing; IsCommutativeRing)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin using (zero; suc)
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.Properties as ℤP
 import Data.Rational as ℚ
@@ -36,7 +36,7 @@ open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary using (Rel; IsEquivalence; Setoid)
 import Relation.Binary.Reasoning.Setoid as Reasoning
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong₂)
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar

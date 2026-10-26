@@ -12,7 +12,7 @@
 module Slides.Backend.Restyle where
 
 open import Level using (0ℓ)
-open import Data.List using (List; []; _∷_; _++_; map)
+open import Data.List using (_∷_; _++_; map; [])
 open import Data.List.Properties using (map-++)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
@@ -27,7 +27,7 @@ open import Categories.Functor.Algebra using (F-Algebra; F-Algebra-Morphism)
 
 open import Data.Container.FreeMonad using (_⋆_)
 open import Data.XML.AST using (XMLDoc)
-open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
+open import Data.XML.Equality using (_≈ₓ_)
 
 open import Container.Polynomial using (Poly₀; Poly₁)
 open import Container.Interpret using (module Fusion)

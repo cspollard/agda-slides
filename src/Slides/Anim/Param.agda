@@ -27,43 +27,43 @@
 
 module Slides.Anim.Param where
 
-open import Data.List using (List; []; _∷_; _++_; map; replicate; length; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; map; replicate)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Nat using (ℕ; suc; _+_)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_)
 open import Data.Fin using (zero; suc)
-open import Data.Unit using (⊤; tt)
-open import Function using (id)
+open import Data.Unit using (⊤)
+open import Function using ()
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
-open import Slides.Diagram.Draw using (Layout)
+open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; evalWith; rename; subst; var)
+open import Slides.Diagram.Expr using (Expr; exprOps; rename)
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Scalar using (natOps; ratOps)
+open import Slides.Diagram.Scalar using ()
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Param using (Param; param)
-open import Slides.Diagram.LayoutNatural using (layout-subst; layout-substWith)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (timeline)
 
--- a template segment placed in an animation
-record Leaf : Set where
+-- a template segment placed in an animation; `E` is the language of its template's numbers
+-- (`Expr` here, `DExpr` for discrete templates, `Slides.Anim.DParam`)
+record Leaf (E : Set → Set) : Set where
   constructor leaf
   field
     idx    : ℕ          -- its variable
     start  : ℕ          -- the tick it starts at
     track  : T.Track ℚ  -- its parameter over time
-    tmpl   : Dia (Expr ⊤)
+    tmpl   : Dia (E ⊤)
 
 -- the pieces of a track, in order
 pieces : ∀ {A} → T.Track A → List (T.Piece A)
 pieces = T.foldT (λ p → p ∷ []) _++_
 
-leafOf : ℕ → ℕ → Seg ℕ → Maybe Leaf
+leafOf : ℕ → ℕ → Seg ℕ → Maybe (Leaf Expr)
 leafOf i t₀ s with content s
 ... | template d  = just (leaf i t₀ (track s) d)
 ... | blackBox _  = nothing
@@ -71,29 +71,36 @@ leafOf i t₀ s with content s
 
 -- number the segments, from `i`, and give each its start tick, from `t₀`; the result is
 -- the next number and the same animation over leaves
-leaves : ℕ → ℕ → Anim ℕ (Seg ℕ) → Maybe (ℕ × (AnimC ⋆ Leaf))
-leaves i t₀ (pure s)               = Maybe.map (λ l → suc i , pure l) (leafOf i t₀ s)
-leaves i t₀ (impure (Seq , k))     =
-  leaves i t₀ (k zero) Maybe.>>= λ { (i₁ , a) →
-  leaves i₁ (t₀ + dur (k zero)) (k (suc zero)) Maybe.>>= λ { (i₂ , b) →
+-- (for any way `leafOf` of making a leaf of a segment: `Slides.Anim.DParam` uses it too)
+leavesWith : ∀ {L : Set} → (ℕ → ℕ → Seg ℕ → Maybe L) → ℕ → ℕ → Anim ℕ (Seg ℕ) → Maybe (ℕ × (AnimC ⋆ L))
+leavesWith leafOf i t₀ (pure s)               = Maybe.map (λ l → suc i , pure l) (leafOf i t₀ s)
+leavesWith leafOf i t₀ (impure (Seq , k))     =
+  leavesWith leafOf i t₀ (k zero) Maybe.>>= λ { (i₁ , a) →
+  leavesWith leafOf i₁ (t₀ + dur (k zero)) (k (suc zero)) Maybe.>>= λ { (i₂ , b) →
   just (i₂ , a ⨾ b) } }
-leaves i t₀ (impure (Par , k))     =
-  leaves i t₀ (k zero) Maybe.>>= λ { (i₁ , a) →
-  leaves i₁ t₀ (k (suc zero)) Maybe.>>= λ { (i₂ , b) →
+leavesWith leafOf i t₀ (impure (Par , k))     =
+  leavesWith leafOf i t₀ (k zero) Maybe.>>= λ { (i₁ , a) →
+  leavesWith leafOf i₁ t₀ (k (suc zero)) Maybe.>>= λ { (i₂ , b) →
   just (i₂ , a ∥ᵃ b) } }
 
+leaves : ℕ → ℕ → Anim ℕ (Seg ℕ) → Maybe (ℕ × (AnimC ⋆ Leaf Expr))
+leaves = leavesWith leafOf
+
 -- the template of a leaf, with its variable renamed to the leaf's own
-instantiate : Leaf → Dia (Expr ℕ)
+instantiate : Leaf Expr → Dia (Expr ℕ)
 instantiate l = mapDia (rename (λ _ → Leaf.idx l)) (Leaf.tmpl l)
 
 -- the symbolic frames: the frames of the animation, over the free scalar
-symbolicFrames : (AnimC ⋆ Leaf) → List (Dia (Expr ℕ))
-symbolicFrames = timeline atop (λ l → replicate (T.dur (Leaf.track l)) (instantiate l))
+symbolicFramesWith : ∀ {E : Set → Set} → (Leaf E → Dia (E ℕ)) → (AnimC ⋆ Leaf E) → List (Dia (E ℕ))
+symbolicFramesWith inst = timeline atop (λ l → replicate (T.dur (Leaf.track l)) (inst l))
 
-segmentsOf : (AnimC ⋆ Leaf) → List (ℕ × List (T.Piece ℚ))
+symbolicFrames : (AnimC ⋆ Leaf Expr) → List (Dia (Expr ℕ))
+symbolicFrames = symbolicFramesWith instantiate
+
+segmentsOf : ∀ {E : Set → Set} → (AnimC ⋆ Leaf E) → List (ℕ × List (T.Piece ℚ))
 segmentsOf = foldA (λ l → (Leaf.start l , pieces (Leaf.track l)) ∷ []) _++_ _++_
 
-mkParam : (AnimC ⋆ Leaf) → Param
+mkParam : (AnimC ⋆ Leaf Expr) → Param
 mkParam a = param (map (LayoutWith.layout exprOps) (symbolicFrames a)) (segmentsOf a)
 
 -- acts one after the other
@@ -114,19 +121,3 @@ paramOf acts =
   seqAll acts Maybe.>>= λ a →
   leaves 0 0 a Maybe.>>= λ { (_ , l) →
   nonEmptyParam (mkParam l) }
-
-------------------------------------------------------------------------
--- Agreement for one segment
-
--- Laying a segment's renamed template out symbolically and evaluating it at an assignment
--- is laying out the template at the segment's own parameter there.
-leaf-agrees : ∀ (l : Leaf) (ρ : ℕ → ℕ) →
-  LayoutWith.layout natOps (mapDia (eval ρ) (instantiate l))
-  ≡ LayoutWith.layout natOps (mapDia (eval (λ _ → ρ (Leaf.idx l))) (Leaf.tmpl l))
-leaf-agrees l ρ = layout-subst (λ _ → var (Leaf.idx l)) ρ (Leaf.tmpl l)
-
--- the same in ℚ, the scalar of the continuous player
-leaf-agreesℚ : ∀ (l : Leaf) (ρ : ℕ → ℚ) →
-  LayoutWith.layout ratOps (mapDia (evalWith ratOps ρ) (instantiate l))
-  ≡ LayoutWith.layout ratOps (mapDia (evalWith ratOps (λ _ → ρ (Leaf.idx l))) (Leaf.tmpl l))
-leaf-agreesℚ l ρ = layout-substWith ratOps (λ _ → var (Leaf.idx l)) ρ (Leaf.tmpl l)

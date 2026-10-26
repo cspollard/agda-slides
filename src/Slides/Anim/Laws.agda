@@ -17,7 +17,7 @@ open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [
 open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _⊔_; _<ᵇ_; _≤_; suc)
 import Data.Nat.Properties as ℕP
-open import Data.Product using (_,_; proj₁; proj₂)
+open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Bool using (true; false; T)
 open import Relation.Binary using (IsEquivalence)

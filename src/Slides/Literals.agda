@@ -17,7 +17,7 @@ open import Agda.Builtin.FromNat using (Number; fromNat) public
 open import Agda.Builtin.FromString using (IsString; fromString) public
 open import Data.List using (_∷_; [])
 open import Data.String using (String)
-open import Data.Unit using (⊤; tt) public
+open import Data.Unit using (⊤) public
 import Data.String.Literals
 import Data.Nat.Literals
 open import Data.Nat using (ℕ)

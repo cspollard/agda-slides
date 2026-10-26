@@ -10,7 +10,7 @@ open import Data.List using (_∷_; [])
 open import Slides.Math using (_≡_; _*_; _^_; _+_)
 open import Data.Nat using (ℕ)
 open import Slides.Diagram using (defaultStyle; filled)
-open import Slides.Diagram.Syntax using (Dia; rectangle; text; named)
+open import Slides.Diagram.Syntax using (rectangle; text; named)
 open import Slides.Diagram.Notation using (↔; _∥_)
 open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tweenT; _⨾_)
@@ -20,7 +20,7 @@ open import Data.Unit using (⊤)
 import Slides.Anim.Track as T
 open import Data.Rational using (_/_)
 open import Data.Integer using (+_)
-open import Slides.Anim.Footprint using (parI; ⊤-witness)
+open import Slides.Anim.Footprint using (parI)
 
 titleSlide : Body
 titleSlide = do

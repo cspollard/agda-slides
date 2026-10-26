@@ -17,12 +17,12 @@ open import Slides.Core using (Body; Deck)
 open import Slides.DSL
 open import Slides.Diagram using (Diagram)
 open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Anim.Footprint using (parI; ⊤-witness)
+open import Slides.Anim.Footprint using (parI)
 open import Slides.Anim.Render using (frameDiagrams)
 open import Slides.Anim.Timeline using (timeline; frames)
 open import Slides.Diagram.Syntax using (Dia; atop; rectangle; disc; text; named)
 open import Slides.Diagram.Notation using (_∥_; _═_; ↔)
-open import Slides.Diagram using (defaultStyle; filled; stroked)
+open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Expr using (Expr; exprOps; t; lit; _⊞_; _⊖_; _⊓_; pct)
 import Slides.Diagram.Notation as N
 open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenT; units; _⨾_; _∥ᵃ_; par)
@@ -31,7 +31,7 @@ open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _⊔_) renaming (_/
 open import Data.Unit using (⊤)
 open import Data.Product using (_,_)
 import Data.Rational as ℚ
-open import Data.Rational using (ℚ; 0ℚ; _/_)
+open import Data.Rational using (ℚ; _/_)
 import Data.Integer as ℤ
 open import Data.Integer using (ℤ; +_)
 import Data.Sign as Sign

@@ -11,8 +11,8 @@ module Slides.Spike.Reveal where
 open import Data.List using (List; []; _∷_)
 open import Data.Product using (_,_)
 open import Data.String using (String; _++_)
-open import Data.Unit using (⊤)
-open import IO using (IO; Main; run; writeFile; _>>_)
+open import Data.Unit using ()
+open import IO using (Main; run; writeFile; _>>_; IO)
 
 open import Data.XML.AST using (XMLM; XMLDoc)
 open import Data.XML.Print using (renderXML)

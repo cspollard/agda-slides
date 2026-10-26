@@ -17,14 +17,14 @@
 module Slides.DSL where
 
 open import Level using (0ℓ)
-open import Data.Bool using (Bool; true; false)
-open import Data.List using (List; []; _∷_; map)
+open import Data.Bool using (true; false)
+open import Data.List using (List; []; _∷_)
 open import Data.Maybe using (just; nothing)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
-open import Data.Sum using (inj₁; inj₂)
+open import Data.Sum using (inj₂)
 open import Data.String using (String)
-open import Data.Unit using (⊤; tt) public
+open import Data.Unit using (tt) public
 open import Data.Container.Core using (Container)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 import Data.Container.FreeMonad as FM

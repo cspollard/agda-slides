@@ -18,20 +18,20 @@ module Slides.Backend.Reveal where
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; true; false)
 open import Data.List using (List; []; _∷_; _++_; map; length)
-open import Data.Nat using (ℕ; zero; suc)
-open import Data.Nat.Show using (show)
+open import Data.Nat using (ℕ; suc)
+open import Data.Nat.Show using ()
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product using (_×_; _,_)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_)
 open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
-open import Data.Unit using (⊤; tt)
+open import Data.Unit using (tt)
 open import Function using (_∘_)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (_⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Data.Container.FreeMonad using (pure; impure)
 import Data.Container.FreeMonad as FM
 open import Data.List.Properties using (++-assoc)
-open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans; sym)
+open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong)
 import Data.List.Relation.Binary.Pointwise as PW
 
 open import Data.Container.Relation.Binary.Pointwise
@@ -47,8 +47,8 @@ import Data.Sign.Base as Sign
 import Data.Integer.Base as ℤ
 open import Data.JSON.Print using (renderJSON)
 
-open import Container.Polynomial using (Poly; Poly₀)
-open import Container.Sum using (copair)
+open import Container.Polynomial using ()
+open import Container.Sum using ()
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Steps using (steps)

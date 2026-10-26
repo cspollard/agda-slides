@@ -10,7 +10,7 @@
 
 module Slides.Backend.HTML where
 
-open import Data.Bool using (Bool; true; false; if_then_else_)
+open import Data.Bool using (Bool; true; if_then_else_)
 open import Data.List using (List; []; _∷_; null)
 open import Data.Bool.ListAction using (any)
 open import Data.Product using (_×_; _,_)

@@ -16,7 +16,7 @@
 module Slides.Core where
 
 open import Level using (0ℓ)
-open import Data.Bool using (Bool; false)
+open import Data.Bool using (Bool)
 open import Data.List using (List)
 open import Data.Maybe using (Maybe; nothing)
 open import Data.Nat using (ℕ)

@@ -18,7 +18,7 @@
 
 module Slides.Diagram.Generic where
 
-open import Level using (0ℓ; Lift; lift)
+open import Level using (0ℓ; Lift)
 open import Data.Empty using (⊥)
 open import Data.Product.Base using (_,_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
@@ -31,7 +31,7 @@ open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Container.Interpret using (module Initiality)
-open import Slides.Diagram.Syntax using (Op; arity; DiagramC; Dia; Algebra; fold)
+open import Slides.Diagram.Syntax using (arity; DiagramC; Dia; Algebra; fold)
 
 module For (S : Set) where
   module G = Alg 0ℓ 0ℓ (DiagramC S)

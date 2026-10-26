@@ -14,10 +14,10 @@
 
 module Slides.Anim.Assembly where
 
-open import Data.Bool using (Bool; true; false; if_then_else_; T)
+open import Data.Bool using (true; false; if_then_else_; T)
 open import Data.List using (List; []; _∷_; _++_; length)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≤_)
+open import Data.Nat as ℕ using (ℕ; suc; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
@@ -27,9 +27,9 @@ open import Slides.Diagram.Syntax using (Dia; atop)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
+open import Slides.Anim.Arith using (<ᵇ-ge)
 open import Slides.Anim.Nth
-open import Slides.Anim.Timeline using (merge)
-open import Slides.Anim.Continuous using (mergeM)
+open import Slides.Anim.Timeline using (merge; mergeM)
 
 private
   layoutℕ : Dia ℕ → Layout ℕ
@@ -103,10 +103,6 @@ module Over
     ℕP.≤-antisym (len≤ xs ys (λ j e → Rel-nothingʳ (at ag j) e))
                  (len≤ ys xs (λ j e → Rel-nothingˡ (at ag j) e))
 
-  private
-    lt-false : ∀ {m n} → (m <ᵇ n) ≡ false → n ≤ m
-    lt-false {m} {n} e = ℕP.≮⇒≥ (λ h → subst T e (ℕP.<⇒<ᵇ h))
-
   Agree-++ : ∀ {G₁ G₂ t xs xs′ ys ys′} → Agree G₁ t xs xs′ → Agree G₂ (t + length xs) ys ys′ →
              Agree (λ k ρ → G₁ k ρ × G₂ k ρ) t (xs ++ ys) (xs′ ++ ys′)
   Agree-++ {G₁} {G₂} {t} {xs} {xs′} {ys} {ys′} a₁ a₂ = agree λ j →
@@ -118,7 +114,7 @@ module Over
       ... | true  = Rel-⇒ (λ ρ → proj₁) (at a₁ j)
       ... | false = Rel-⇒ (λ ρ → proj₂)
                       (subst (λ k → Rel (G₂ k) (nth ys (j ∸ n)) (nth ys′ (j ∸ n)))
-                             (trans (ℕP.+-assoc t n (j ∸ n)) (cong (t +_) (ℕP.m+[n∸m]≡n {n} {j} (lt-false eq))))
+                             (trans (ℕP.+-assoc t n (j ∸ n)) (cong (t +_) (ℕP.m+[n∸m]≡n {n} {j} (<ᵇ-ge eq))))
                              (subst (λ m → Rel (G₂ (t + m + (j ∸ n))) (nth ys (j ∸ n)) (nth ys′ (j ∸ n))) e (at a₂ (j ∸ n))))
 
   -- one frame against a symbolic one, as the statement of the assembly theorem

@@ -20,12 +20,12 @@
 module Slides.Diagram.EuclidNatural where
 
 open import Function using (_∘_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; cong; sym; trans)
 
-open import Slides.Diagram.Scalar using (Ops; natOps; IsOpsHom)
+open import Slides.Diagram.Scalar using ()
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; evalWith; evalWith-hom)
+open import Slides.Diagram.Expr using (Expr; exprOps; evalWith; evalWith-hom)
 open import Slides.Diagram.Euclid
 open import Slides.Diagram.LayoutNatural using (layout-natural; mapLayout-∘; mapLayout-cong)
 open import Slides.Diagram.Draw using (mapLayout)

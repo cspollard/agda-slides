@@ -39,20 +39,20 @@
 module Slides.Diagram.Euclid where
 
 open import Level using (0ℓ)
-open import Data.Empty using (⊥-elim)
+open import Data.Empty using ()
 open import Data.Fin using (Fin; zero; suc)
-open import Data.Nat as ℕ using (ℕ; NonZero; _/_; _%_; _<ᵇ_; _*_)
+open import Data.Nat as ℕ using (ℕ; _/_; _%_; _<ᵇ_; _*_)
 open import Data.Bool using (if_then_else_)
 open import Data.Product using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Container.Core using (Container; Shape; Position; _▷_; _⇒_; shape; position)
+open import Data.Container.Core using (Shape; Position; _▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans)
 
-open import Container.Lowering using (translate)
-open import Container.Sum using (inl; inr)
+open import Container.Lowering using ()
+open import Container.Sum using (inl)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature

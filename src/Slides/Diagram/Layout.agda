@@ -21,7 +21,7 @@
 
 module Slides.Diagram.Layout where
 
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin using (zero; suc)
 open import Data.List using (map)
 open import Data.Nat using (ℕ)
 open import Data.Unit using (tt)

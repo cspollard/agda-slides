@@ -12,7 +12,7 @@
 module Slides.Diagram.Names where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin using (zero; suc)
 open import Data.Unit using (tt)
 open import Data.List using (List; []; _∷_; _++_; filterᵇ)
 open import Data.Product using (_×_; _,_; proj₂)

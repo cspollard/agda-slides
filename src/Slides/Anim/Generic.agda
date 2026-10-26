@@ -25,7 +25,7 @@ import Relation.Binary.PropositionalEquality.Properties as ≡P
 open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
-open import Slides.Anim.Syntax using (Op; Seq; Par; AnimC; foldA)
+open import Slides.Anim.Syntax using (Seq; Par; AnimC; foldA)
 
 private module G = Alg 0ℓ 0ℓ AnimC
 

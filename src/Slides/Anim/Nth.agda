@@ -12,19 +12,19 @@
 
 module Slides.Anim.Nth where
 
-open import Data.Bool using (Bool; true; false; if_then_else_; T)
+open import Data.Bool using (true; false; if_then_else_; T)
 open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Nat using (ℕ; zero; suc; _∸_; _<ᵇ_)
-open import Data.Product using (_,_; proj₁; proj₂; ∃)
+open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (merge; frames)
-open import Slides.Anim.Continuous using (mergeM)
+open import Slides.Anim.Timeline using (merge; frames; mergeM)
+
 
 ------------------------------------------------------------------------
 -- Lists of frames as partial functions of the tick
@@ -96,3 +96,9 @@ nth-in : ∀ {A : Set} (xs : List A) j → (j <ᵇ length xs) ≡ true → ∃ �
 nth-in []       j       ()
 nth-in (x ∷ xs) zero    h = x , refl
 nth-in (x ∷ xs) (suc j) h = nth-in xs j h
+
+-- the `Maybe` bind that succeeds has a successful first part (inverting `leaves`-like traversals)
+bind-just : ∀ {A B : Set} (m : Maybe A) (f : A → Maybe B) {y} → (m Maybe.>>= f) ≡ just y →
+            ∃ λ x → m ≡ just x × f x ≡ just y
+bind-just (just x) f eq = x , refl , eq
+bind-just nothing  f ()

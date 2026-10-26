@@ -9,13 +9,13 @@
 
 module Slides.Backend.Diagram where
 
-open import Data.Char using (Char)
-open import Data.List using (List; []; _∷_; _++_; reverse; [_]; map; length)
+open import Data.Char using ()
+open import Data.List using (List; []; _∷_; _++_; map; length; [_])
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _∸_; _⊔_; _≤ᵇ_; _≟_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
+open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
 open import Data.XML.AST using (XMLM)
 open import Data.XML.Sanitize using (element; textElement)
@@ -34,21 +34,21 @@ import Slides.Anim.Track as Tr
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 import Slides.Diagram.Draw as Dr
-open import Slides.Diagram.Expr using (Expr; ExprOp; eval)
-open import Slides.Diagram.Param using (Param; param; DParam; dparam; AnyParam; continuous; discrete)
+open import Slides.Diagram.Expr using (Expr)
+open import Slides.Diagram.Param using (param; dparam; AnyParam; continuous; discrete)
 open import Slides.Diagram.Euclid using (DExpr)
 import Slides.Anim.Formula as F
 open F using (Formula)
-open import Slides.Anim.Phases using (Elem; phasesOf)
+open import Slides.Anim.Phases using (phasesOf)
 open import Slides.Anim.DPhases using (phasesOfD)
 open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oAdd; oSub; oMax)
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
-open import Data.Container.FreeMonad using (pure; impure)
-open import Data.Bool using (Bool; true; false; _∧_; if_then_else_)
-open import Data.Fin using (zero; suc)
-open import Data.Unit using (tt)
+open import Data.Container.FreeMonad using ()
+open import Data.Bool using (_∧_; if_then_else_)
+open import Data.Fin using (suc)
+open import Data.Unit using ()
 import Slides.Diagram.Expr as E
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Data.String as Str

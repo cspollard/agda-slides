@@ -24,7 +24,7 @@ open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
 import Data.List.Properties as L
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Unary.Any using (here; there)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using (just; nothing)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; Σ; ∃)
 open import Data.String using (String; _≟_)
 open import Data.Unit using (⊤; tt)

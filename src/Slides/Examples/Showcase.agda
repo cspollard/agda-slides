@@ -16,7 +16,7 @@ open import Slides.Resources
 import Slides.Math as M
 open import Data.Nat using (ℕ)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; _⨾_)
-open import Slides.Diagram.Syntax using (Dia; text)
+open import Slides.Diagram.Syntax using (text)
 
 resources : Resources
 resources = record

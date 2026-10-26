@@ -218,17 +218,22 @@ agree with `Track.sample`), `leaf-tick` (the continuous frame is the discrete on
 the JavaScript is tested against exact ℚ values (`make test-anim-ref`, tolerance 0.01 for
 float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
 evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
-`layout-substWith`, `leaf-agrees`, `leaf-agreesℚ`). The assembly over a whole timeline is
-proved: `Slides.Anim.ParamCorrect` (`discrete-assembly`, `paramOf-assembly`: the shipped
+`layout-substWith`, `leaf-agrees`). The assembly over a whole timeline is
+proved: `Slides.Anim.LeafAssembly` (one generic induction over the language of the template
+numbers, `assembly`), instantiated by `Slides.Anim.ParamCorrect` (`discrete-assembly`,
+`paramOf-assembly`: the shipped
 symbolic layout of tick `k`, evaluated at the parameters of the segments running at `k`, is
 the layout of the frame `render` shows; the induction reads lists of frames as partial
 functions of the tick, `++` and `merge` becoming the algebra of `Continuous`);
 `Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
 frame through `ι`, given `leaf-tick`'s exactness hypotheses for the segments running there;
 `atop` commutes with `ι` with no hypothesis, `Slides.Diagram.AtopNatural`);
-`Slides.Anim.Formula` and `Slides.Anim.Phases` (the shipped formulas, with closed
+`Slides.Anim.FormulaCorrect` and `Slides.Anim.PhasesCorrect` (the shipped formulas, with closed
 subformulas folded, mean the coordinates in ℚ, and grouping ticks into phases changes no
-frame: `pageFrame-sem`). What is only tested: frames between whole ticks, the printing of the
+frame: `pageFrame-sem`, proved once for any reading in `Over` and instantiated at ℚ and ℕ in
+`Slides.Anim.PhasesReadings`). The data and encoders the backend runs (`Formula`, `Phases`,
+`DPhases`, `Share`, `SharePhases`) are separate modules from these proofs, so that a
+deck executable does not load the proofs. What is only tested: frames between whole ticks, the printing of the
 phases as JSON and its reading by the player (attribute order, float arithmetic).
 *Layered scalars and discrete templates.* The scalar signature is a sum of containers
 (`Slides.Diagram.Signature`, `Expr`): `CoreC` (zero, literal, plus, max, `pct p`) `⊎` `SubC`
@@ -244,7 +249,7 @@ morphism; `Faithful` is exactly the conjunction of the per-layer side conditions
 as formulas read in ℕ (`"d": 1` in `data-param`; `Formula.encD`, whose folds need no exactness
 condition: `encD-semN`, `enc-numN`). Layout never compares or divides, so it is natural along
 `evalD` unchanged (`EuclidNatural`); `DParamCorrect.discrete-assemblyD` is the assembly
-(shared induction in `Slides.Anim.Assembly`), `DPhases.pageFrameD-sem` the shipped phases. A
+(an instance of `Slides.Anim.LeafAssembly`), `PhasesReadings.pageFrameD-sem` the shipped phases. A
 field layer (exact division by a literal) was not needed. The hero frame is written once over
 any scalar with the three layers (`PairsHero.Frame`); `heroT-correct` proves the template is
 the flipbook frame, and the Pairs deck's two hero loops are `heroD 26 seed`.
@@ -266,12 +271,12 @@ numbers of the elements are nodes over it (`SharePhases`); the page evaluates th
 once per time step, in order, then the numbers. 1,004 definitions for 26 pairs, 18,849
 characters of phases (against 42,732 of edits), the Pairs page 240,278 to 188,951 bytes (each loop 16.9 KB of `data-param`, 25 KB with its markup, against 51 KB as edits); the layout and compile of the deck take about 10 s. Mathematically the
 program is a Kleisli family and its meaning the evaluation of the tree obtained by
-substitution: `Share.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
+substitution: `ShareCorrect.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
 store, the law `evalWith-subst` for the shipped syntax), `share-unfold` (the unfolding of the
 shared reference of `g` evaluates equal to `g`, every assignment), and `share-impl`,
 `output-realises` (the shared output reads as the formula, for every reading `Reading` with a
 `Semantics`: instances at ℚ and ℕ), chained through traversals by stability along store
-extensions (`Realises`, `Stable`); `SharePhases.pageFrameS-sem` is that sharing changes no
+extensions (`Realises`, `Stable`); `SharePhasesCorrect.pageFrameS-sem` is that sharing changes no
 frame the page draws, with `zeroBase-sem` for the base numbers a formula overwrites (shipped as
 0 so that equal strings are shipped once). Not adopted: simplifying `a + 0` in the encoder (the
 overlay hero has no zero shifts) and inlining single-use definitions (about 16% of the

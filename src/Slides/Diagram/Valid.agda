@@ -18,16 +18,16 @@ import Data.Integer.Properties as ℤP
 import Data.Rational as ℚ
 import Data.Rational.Properties as ℚP
 open import Data.Nat using (ℕ)
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.List using ([]; _∷_; map; _++_)
 open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_; proj₂)
 open import Relation.Binary using (IsEquivalence)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong₂; cong; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; subst)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Laws using (IsLawful; lawfulℤ; lawfulℚ; module Proofs)
 open import Slides.Diagram.Draw
-open import Slides.Diagram.Geometry using (VAlign; top; middle; bottom; Align; left; centred; right)
+open import Slides.Diagram.Geometry using (top; middle; bottom; left; centred; right)
 import Slides.Diagram.Geometry as Geo
 import Slides.Diagram.Layout as Lay
 open import Relation.Nullary using (¬_)

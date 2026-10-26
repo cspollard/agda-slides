@@ -15,18 +15,18 @@
 module Slides.Examples.PairsHeroNatural where
 
 open import Data.Bool using (Bool; if_then_else_; true; false)
-open import Data.List using (List; []; _∷_; zipWith; upTo; foldr)
-open import Data.Nat as ℕ using (ℕ; suc; _<ᵇ_; _∸_; _*_)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.List using ([]; _∷_; zipWith; upTo; foldr)
+open import Data.Nat as ℕ using (suc; _<ᵇ_; _∸_; _*_; ℕ)
+open import Data.String using () renaming (_++_ to _++ˢ_)
 open import Data.Nat.Show using (show)
-open import Data.List using (List)
+open import Data.List using ()
 open import Slides.Diagram using (withClass; defaultStyle)
 open import Slides.Diagram.Notation using (east; west)
-open import Data.Unit using (⊤)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Data.Unit using ()
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans)
 
 open import Slides.Diagram.Scalar
-open import Slides.Diagram.Syntax using (Dia; mapDia; overlay; spacer; connect; named; disc; place)
+open import Slides.Diagram.Syntax using (Dia; mapDia; overlay; spacer; connect)
 open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Euclid
 open import Slides.Examples.PairsHero

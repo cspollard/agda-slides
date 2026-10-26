@@ -28,11 +28,11 @@
 module Slides.Diagram.MapFusion where
 
 open import Level using (0ℓ)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin using (zero; suc)
 open import Data.Product.Base using (_,_)
 open import Data.Unit using (tt)
 open import Data.Container.Core using (_⇒_; _▷_; shape; position)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Data.Container.FreeMonad using (_⋆_; impure)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality using (refl)
 open import Function using (id; _∘_)

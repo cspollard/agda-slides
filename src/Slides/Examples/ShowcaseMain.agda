@@ -11,7 +11,7 @@ module Slides.Examples.ShowcaseMain where
 open import Data.Bool using (true)
 open import Data.List using (_∷_; [])
 open import Data.Maybe using (just)
-open import IO using (Main; run; writeFile; _>>_)
+open import IO using (Main; run; _>>_)
 
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
