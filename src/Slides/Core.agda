@@ -52,10 +52,14 @@ Text = List Inline
 
 -- How an animation's frames are played: one act per reveal step, resting on the
 -- given frames (nondecreasing; one reveal fragment per entry), or forever in a
--- cycle (`looping`) while the slide is shown (frame `t mod n`, see `Slides.Anim.Loop`).
+-- cycle (`looping`) while the slide is shown (frame `t mod n`, see `Slides.Anim.Loop`),
+-- or `both`: the loop runs under the steps (frame `phase * n + step`).
 data Play : Set where
   onSteps : List ℕ → Play
   looping : Play
+  -- both at once: steps `rests` of a single phase, over a loop of `period` phases;
+  -- the frames are the phases one after the other, each a full copy of the steps
+  both    : List ℕ → (period : ℕ) → Play
 
 data ContentShape : Set where
   heading     : (level : ℕ) → Text → ContentShape
@@ -75,7 +79,9 @@ data ContentShape : Set where
   -- `onSteps rests`, showing step `k` plays the frames from where step `k-1` rested
   -- to `rests !! (k-1)`, one every `ms`; going back plays them in reverse.  Step 0
   -- rests on the first frame.  With `looping` the frames repeat in order, one every
-  -- `ms`, from the moment the slide is shown.
+  -- `ms`, from the moment the slide is shown.  `both rests p` lays `p` phases of the
+  -- steps end to end (`rests` index within one phase): step `k` plays within the
+  -- current phase while the phase itself advances every `ms`.
   animation   : Diagram → List Diagram → (ms : ℕ) → Play → ContentShape
   -- JavaScript run once, when the slide holding it is first shown, with the
   -- slide element as `slide` (unchecked; carried in a `data-js` attribute)

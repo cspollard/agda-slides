@@ -61,7 +61,7 @@ check('canvas has painted pixels', await ev(() => {
 }));
 
 console.log('-- marching arrows (loops)');
-const cur = id => page.evaluate(id => +document.getElementById(id).dataset.cur, id);
+const cur = id => page.evaluate(id => +(document.getElementById(id).dataset.phase || 0), id);
 for (const [i, id] of [[1, 'd-problem-0-frames'], [4, 'd-pipeline-0-frames']]) {
   await go(i); await wait(300);
   const seen = new Set();
@@ -80,7 +80,21 @@ const shown = id => page.evaluate(id => {
 }, id);
 const press = async ms => { await ev(() => Reveal.nextFragment()); await wait(ms); };
 
+console.log('-- steps over a loop');
+// stages: 3 reveal steps (rests 1,2,3 of 4 frames) under 8 phases: frame = phase * 4 + step
+const both = id => page.evaluate(id => { const a = document.getElementById(id); return { phase: +(a.dataset.phase || 0), cur: +a.dataset.cur, shown: Array.from(a.querySelectorAll(':scope > .frame')).findIndex(f => !f.hidden) }; }, id);
+await go(5); await wait(300);
+const seenPhase = new Set();
+for (let k = 0; k < 14; k++) { const b = await both('d-stages-0-frames'); check('slide 6: frame is phase * 4 + step', b.shown === b.phase * 4 + b.cur, JSON.stringify(b)); seenPhase.add(b.phase); await wait(60); }
+check('slide 6: the loop runs under the steps', seenPhase.size >= 3, [...seenPhase].join(','));
+await press(600);
+const afterPress = await both('d-stages-0-frames');
+eq('slide 6: a step still lights a stage', afterPress.cur, 1);
+check('slide 6: and the loop keeps going', afterPress.phase !== (await (async () => { await wait(200); return (await both('d-stages-0-frames')).phase; })()) );
+await go(0); await wait(100);
+
 console.log('-- histogram (an animation)');
+// (reveal shows every fragment of a slide reached from a later one)
 await go(2); await wait(300);
 eq('slide 3: starts empty', (await shown('bump-0-frames')).text[0], 'N = 0 events');
 const heights = r => page.evaluate(r => Array.from(document.querySelectorAll(`#bump-0-frames > .frame:not([hidden]) ${r}`)).reduce((a, e) => a + +e.getAttribute('height'), 0), r);

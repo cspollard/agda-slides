@@ -22,7 +22,7 @@ open import Data.XML.Sanitize using (element; textElement)
 import Data.SVG as SVG
 
 open import Slides.Diagram
-open import Slides.Core using (Play; onSteps; looping)
+open import Slides.Core using (Play; onSteps; looping; both)
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 
@@ -168,6 +168,8 @@ renderAnimation d ds ms play =
     playAttr : Play → List (String × String)
     playAttr (onSteps rs) = ("data-rests" , commas rs) ∷ []
     playAttr looping       = ("data-loop" , "") ∷ []
+    playAttr (both rs p)   = ("data-rests" , commas rs) ∷ ("data-loop" , num p) ∷ []
     stepsOf : Play → List ℕ
     stepsOf (onSteps rs) = rs
     stepsOf looping       = []
+    stepsOf (both rs p)   = rs

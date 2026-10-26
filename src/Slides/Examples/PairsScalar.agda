@@ -34,9 +34,9 @@ _ : Z.compile "d-problem" 100 (mapDia (Ops.fromℕ intOps) (problemDia 0)) ≡ c
 _ = refl
 _ : Z.compile "d-pipeline" 100 (mapDia (Ops.fromℕ intOps) (pipelineDia 0)) ≡ compile "d-pipeline" 100 (pipelineDia 0)
 _ = refl
-_ : Z.compile "d-stages" 100 (mapDia (Ops.fromℕ intOps) (stagesDia (_≡ᵇ 2))) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2))
+_ : Z.compile "d-stages" 100 (mapDia (Ops.fromℕ intOps) (stagesDia (_≡ᵇ 2) 0)) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2) 0)
 _ = refl
-_ : Z.compile "d-chain" 100 (mapDia (Ops.fromℕ intOps) (chainDia 4)) ≡ compile "d-chain" 100 (chainDia 4)
+_ : Z.compile "d-chain" 100 (mapDia (Ops.fromℕ intOps) (chainDia 4 0)) ≡ compile "d-chain" 100 (chainDia 4 0)
 _ = refl
 _ : Z.compile "d-results" 100 (mapDia (Ops.fromℕ intOps) (resultsDia one)) ≡ compile "d-results" 100 (resultsDia one)
 _ = refl
@@ -47,9 +47,9 @@ _ : Q.compile "d-problem" 100 (mapDia (Ops.fromℕ ratOps) (problemDia 0)) ≡ c
 _ = refl
 _ : Q.compile "d-pipeline" 100 (mapDia (Ops.fromℕ ratOps) (pipelineDia 0)) ≡ compile "d-pipeline" 100 (pipelineDia 0)
 _ = refl
-_ : Q.compile "d-stages" 100 (mapDia (Ops.fromℕ ratOps) (stagesDia (_≡ᵇ 2))) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2))
+_ : Q.compile "d-stages" 100 (mapDia (Ops.fromℕ ratOps) (stagesDia (_≡ᵇ 2) 0)) ≡ compile "d-stages" 100 (stagesDia (_≡ᵇ 2) 0)
 _ = refl
-_ : Q.compile "d-chain" 100 (mapDia (Ops.fromℕ ratOps) (chainDia 4)) ≡ compile "d-chain" 100 (chainDia 4)
+_ : Q.compile "d-chain" 100 (mapDia (Ops.fromℕ ratOps) (chainDia 4 0)) ≡ compile "d-chain" 100 (chainDia 4 0)
 _ = refl
 _ : Q.compile "d-results" 100 (mapDia (Ops.fromℕ ratOps) (resultsDia one)) ≡ compile "d-results" 100 (resultsDia one)
 _ = refl
@@ -63,10 +63,10 @@ _ : N.Draws (problemDia 0)
 _ = N.soundness (problemDia 0) refl
 _ : N.Draws (pipelineDia 0)
 _ = N.soundness (pipelineDia 0) refl
-_ : N.Draws (stagesDia (_≡ᵇ 2))
-_ = N.soundness (stagesDia (_≡ᵇ 2)) refl
-_ : N.Draws (chainDia 4)
-_ = N.soundness (chainDia 4) refl
+_ : N.Draws (stagesDia (_≡ᵇ 2) 0)
+_ = N.soundness (stagesDia (_≡ᵇ 2) 0) refl
+_ : N.Draws (chainDia 4 0)
+_ = N.soundness (chainDia 4 0) refl
 
 -- "b" is declared next to the connection, not under it: it draws nothing
 scoped : Dia ℕ

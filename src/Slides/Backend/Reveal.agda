@@ -217,7 +217,9 @@ scriptLoader =
 -- Plays animations (`.animation`, see `renderAnimation`).  The step is the number
 -- of visible `.anim-step` fragments; it rests on frame 0 at step 0 and on
 -- `rests[step-1]` after, and the page moves one frame towards the target every
--- `data-ms` milliseconds (forward or backward).  Changing slide jumps.
+-- `data-ms` milliseconds (forward or backward).  A `data-loop` animation also
+-- advances a phase every `data-ms` while its slide is shown; the frame shown is
+-- `phase * steps + step`.  Changing slide jumps.
 animationSync : String
 animationSync =
   "(function () {\n" ++ˢ
@@ -227,12 +229,18 @@ animationSync =
   "    var r = a.dataset.rests.split(',');\n" ++ˢ
   "    return +r[Math.min(n, r.length) - 1];\n" ++ˢ
   "  }\n" ++ˢ
-  "  function show(a, i) {\n" ++ˢ
-  "    a.dataset.cur = String(i);\n" ++ˢ
+  "  function geom(a) {\n" ++ˢ
+  "    var n = a.querySelectorAll(':scope > .frame').length, v = a.getAttribute('data-loop');\n" ++ˢ
+  "    var p = v === null ? 1 : (v === '' ? n : +v);\n" ++ˢ
+  "    return { n: n, p: p, steps: n / p };\n" ++ˢ
+  "  }\n" ++ˢ
+  "  function draw(a) {\n" ++ˢ
+  "    var g = geom(a), i = (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0));\n" ++ˢ
   "    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });\n" ++ˢ
   "  }\n" ++ˢ
+  "  function show(a, i) { a.dataset.cur = String(i); draw(a); }\n" ++ˢ
   "  function sync(a, jump) {\n" ++ˢ
-  "    if (!a || a.hasAttribute('data-loop')) return;\n" ++ˢ
+  "    if (!a) return;\n" ++ˢ
   "    clearInterval(a._timer);\n" ++ˢ
   "    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);\n" ++ˢ
   "    if (jump || ms === 0 || t === cur) { show(a, t); return; }\n" ++ˢ
@@ -243,10 +251,12 @@ animationSync =
   "    }, ms);\n" ++ˢ
   "  }\n" ++ˢ
   "  function spin(a) {\n" ++ˢ
-  "    var n = a.querySelectorAll(':scope > .frame').length, ms = Math.max(+a.dataset.ms, 16);\n" ++ˢ
+  "    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);\n" ++ˢ
   "    setInterval(function () {\n" ++ˢ
-  "      if (n > 1 && a.closest('section').classList.contains('present'))\n" ++ˢ
-  "        show(a, ((+(a.dataset.cur || 0)) + 1) % n);\n" ++ˢ
+  "      if (p > 1 && a.closest('section').classList.contains('present')) {\n" ++ˢ
+  "        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);\n" ++ˢ
+  "        draw(a);\n" ++ˢ
+  "      }\n" ++ˢ
   "    }, ms);\n" ++ˢ
   "  }\n" ++ˢ
   "  document.querySelectorAll('.animation[data-loop]').forEach(spin);\n" ++ˢ

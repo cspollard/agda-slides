@@ -175,47 +175,45 @@ infoCard on i w h tsize bsize title body note =
               ∷ lines 17 note (cls "dim")
               ∷ []))))
 
-arrowAm : Style
-arrowAm = cls "flow am"
 
 -- the diagram with the stages `lit` shown highlighted
-stagesDia : (ℕ → Bool) → Dia ℕ
-stagesDia lit =
+stagesDia : (ℕ → Bool) → ℕ → Dia ℕ
+stagesDia lit ph =
   margin 10 20 10 30
     (⟨ infoCard (lit 1) "st1" 330 200 28 22 "1  Pretrain" ("train (ω, φ) jointly" ∷ "on sets of size 1 and 2" ∷ []) ("cheap: tiny sets" ∷ [])
      ∷ infoCard (lit 2) "st2" 330 200 28 22 "2  Cache" ("freeze t_ω, embed every set" ∷ "store the mean T̄ once" ∷ []) ("one pass, parallel" ∷ [])
      ∷ infoCard (lit 3) "st3" 330 200 28 22 "3  Finetune" ("update the head φ only" ∷ "on cached T̄, any N" ∷ []) ("cost ≈ independent of N" ∷ [])
      ∷ [] ⟩ₕ 45
-     ▹[ arrowAm ] ("st1" ⟶ "st2" ∷ "st2" ⟶ "st3" ∷ []))
+     ▹[ flow ph "am" ] ("st1" ⟶ "st2" ∷ "st2" ⟶ "st3" ∷ []))
 
 -- one reveal step lights up the next stage
-stageActs : List (Anim ℕ (Seg ℕ))
-stageActs = (hold 1 (stagesDia (λ _ → false)) ⨾ hold 1 (stagesDia (_≡ᵇ 1)))
-          ∷ hold 1 (stagesDia (_≡ᵇ 2))
-          ∷ hold 1 (stagesDia (_≡ᵇ 3))
-          ∷ []
+stageActs : ℕ → List (Anim ℕ (Seg ℕ))
+stageActs ph = (hold 1 (stagesDia (λ _ → false) ph) ⨾ hold 1 (stagesDia (_≡ᵇ 1) ph))
+             ∷ hold 1 (stagesDia (_≡ᵇ 2) ph)
+             ∷ hold 1 (stagesDia (_≡ᵇ 3) ph)
+             ∷ []
 
 ------------------------------------------------------------------------
 -- Slide 7: why pairs are enough
 
 -- the diagram with the first `k` links lit
-chainDia : ℕ → Dia ℕ
-chainDia k =
+chainDia : ℕ → ℕ → Dia ℕ
+chainDia k ph =
   margin 10 20 15 20
     (⟨ infoCard (1 ≤ᵇ k) "c1" 235 150 24 21 "N = 1" ("t* = g ∘ t_ω" ∷ []) []
      ∷ infoCard (2 ≤ᵇ k) "c2" 235 150 24 19 "N = 2" ("g(y₁) + g(y₂)" ∷ "= h(y₁ + y₂)" ∷ []) []
      ∷ infoCard (3 ≤ᵇ k) "c3" 235 150 24 21 "Cauchy" ("g is affine" ∷ []) []
      ∷ infoCard (4 ≤ᵇ k) "c4" 235 150 24 19 "every N" ("mean-pool is" ∷ "sufficient" ∷ []) []
      ∷ [] ⟩ₕ 45
-     ▹[ arrowAm ] ("c1" ⟶ "c2" ∷ "c2" ⟶ "c3" ∷ "c3" ⟶ "c4" ∷ []))
+     ▹[ flow ph "am" ] ("c1" ⟶ "c2" ∷ "c2" ⟶ "c3" ∷ "c3" ⟶ "c4" ∷ []))
 
 -- one reveal step lights one more link; earlier ones stay lit
-chainActs : List (Anim ℕ (Seg ℕ))
-chainActs = (hold 1 (chainDia 0) ⨾ hold 1 (chainDia 1))
-          ∷ hold 1 (chainDia 2)
-          ∷ hold 1 (chainDia 3)
-          ∷ hold 1 (chainDia 4)
-          ∷ []
+chainActs : ℕ → List (Anim ℕ (Seg ℕ))
+chainActs ph = (hold 1 (chainDia 0 ph) ⨾ hold 1 (chainDia 1 ph))
+             ∷ hold 1 (chainDia 2 ph)
+             ∷ hold 1 (chainDia 3 ph)
+             ∷ hold 1 (chainDia 4 ph)
+             ∷ []
 
 ------------------------------------------------------------------------
 -- Growing: a parameter `q` runs from 0 to 1 along an ease-out curve, and the
@@ -324,9 +322,9 @@ _ : dangling (problemDia 0) ≡ []
 _ = refl
 _ : dangling (pipelineDia 0) ≡ []
 _ = refl
-_ : dangling (stagesDia (λ _ → false)) ≡ []
+_ : dangling (stagesDia (λ _ → false) 0) ≡ []
 _ = refl
-_ : dangling (chainDia 0) ≡ []
+_ : dangling (chainDia 0 0) ≡ []
 _ = refl
 
 ------------------------------------------------------------------------
@@ -420,7 +418,7 @@ pairs = do
   slide (do
     heading 2 "PAIRS: train on pairs, finetune on aggregates"
     classed "small" (p■ "Pretraining Aggregators for Inference at aRbitrary Set-sizes")
-    animate "d-stages" 100 0 stageActs
+    animateBoth "d-stages" 100 90 8 stageActs
     classed "callout"
       (p■ "Training memory and compute no longer depend on the largest set size."))
 
@@ -432,7 +430,7 @@ pairs = do
           p■ ("If a mean-pooled statistic is sufficient at every " ∷ inlineMath N
             ∷ ", a network trained to be sufficient at " ∷ inlineMath (M.rel M.elem N (M.raw "\\{1, 2\\}"))
             ∷ " is sufficient at every " ∷ inlineMath N ∷ ", and the two statistics differ by an affine map." ∷ []))
-    animate "d-chain" 100 0 chainActs
+    animateBoth "d-chain" 100 90 8 chainActs
     classed "small"
       (p■ ("At N = 2 the constraint is the additive equation " ∷ inlineMath cauchy
         ∷ ". Mean-pool sufficiency holds exactly when the marginals are an exponential family; errors in pair training degrade gracefully." ∷ [])))

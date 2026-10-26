@@ -20,12 +20,18 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"fade","slideNumber":t
     var r = a.dataset.rests.split(',');
     return +r[Math.min(n, r.length) - 1];
   }
-  function show(a, i) {
-    a.dataset.cur = String(i);
+  function geom(a) {
+    var n = a.querySelectorAll(':scope > .frame').length, v = a.getAttribute('data-loop');
+    var p = v === null ? 1 : (v === '' ? n : +v);
+    return { n: n, p: p, steps: n / p };
+  }
+  function draw(a) {
+    var g = geom(a), i = (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0));
     a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });
   }
+  function show(a, i) { a.dataset.cur = String(i); draw(a); }
   function sync(a, jump) {
-    if (!a || a.hasAttribute('data-loop')) return;
+    if (!a) return;
     clearInterval(a._timer);
     var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);
     if (jump || ms === 0 || t === cur) { show(a, t); return; }
@@ -36,10 +42,12 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"fade","slideNumber":t
     }, ms);
   }
   function spin(a) {
-    var n = a.querySelectorAll(':scope > .frame').length, ms = Math.max(+a.dataset.ms, 16);
+    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);
     setInterval(function () {
-      if (n > 1 && a.closest('section').classList.contains('present'))
-        show(a, ((+(a.dataset.cur || 0)) + 1) % n);
+      if (p > 1 && a.closest('section').classList.contains('present')) {
+        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);
+        draw(a);
+      }
     }, ms);
   }
   document.querySelectorAll('.animation[data-loop]').forEach(spin);

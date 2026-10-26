@@ -170,7 +170,10 @@ associative, reversible and sampled exactly for `Linear` (`Track`). Time is whol
 the backend plays frames on a timer, an act per reveal step, or, for `Play = looping`,
 cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
 `Slides.Anim.Loop`; the player's `i ↦ (i+1) mod n` is proved to track it). Looping is a play
-mode of a finished timeline, not a term constructor: a loop has no `dur` in `(ℕ, +, max)`. Design and open items:
+mode of a finished timeline, not a term constructor: a loop has no `dur` in `(ℕ, +, max)`.
+Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
+frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
+checks by computation that every phase has acts of the same lengths. Design and open items:
 `plan/Animations.md`.
 
 ## Tests and build time

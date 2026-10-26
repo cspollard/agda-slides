@@ -8,9 +8,9 @@
 
 module Slides.Anim.Loop where
 
-open import Data.Nat using (ℕ; zero; suc; _+_; _<_; NonZero)
-open import Data.Nat.DivMod using (_%_; m%n<n; m<n⇒m%n≡m; [m+n]%n≡m%n; m%n%n≡m%n; %-distribˡ-+)
-open import Data.Nat.Properties using (+-comm)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _<_; _≤_; NonZero; s≤s)
+open import Data.Nat.DivMod using (_%_; m%n<n; m<n⇒m%n≡m; [m+n]%n≡m%n; [m+kn]%n≡m%n; m%n%n≡m%n; %-distribˡ-+)
+open import Data.Nat.Properties using (*-monoˡ-≤; +-monoˡ-≤; ≤-trans)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong)
 
 -- the frame index shown at tick `t` of a loop of `n` frames
@@ -28,6 +28,18 @@ phase-id n t = m<n⇒m%n≡m
 -- one period later it is the same frame
 phase-period : ∀ n {{_ : NonZero n}} t → phase n (t + n) ≡ phase n t
 phase-period n t = [m+n]%n≡m%n t n
+
+-- Steps over a loop (`Slides.Core.both`): `p` phases of `n` step frames lie end to end,
+-- the frame shown at step `i` of phase `φ` being `i + φ * n`.  It is in range, and
+-- the step is recovered as the index modulo `n`.
+index : (n φ i : ℕ) → ℕ
+index n φ i = i + φ * n
+
+index< : ∀ n p φ i → φ < p → i < n → index n φ i < p * n
+index< n p φ i hφ hi = ≤-trans (+-monoˡ-≤ (φ * n) hi) (*-monoˡ-≤ n hφ)
+
+index-step : ∀ n {{_ : NonZero n}} φ i → i < n → index n φ i % n ≡ i
+index-step n φ i hi = trans ([m+kn]%n≡m%n i φ n) (m<n⇒m%n≡m hi)
 
 -- the player's step `i ↦ (i + 1) mod n` tracks it: after `t` ticks from frame 0 it
 -- shows frame `t mod n`

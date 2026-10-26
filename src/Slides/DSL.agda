@@ -33,7 +33,8 @@ open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
 open import Slides.Anim.Syntax using (Anim; Seg)
-open import Slides.Anim.Render using (render; renderLoop)
+open import Slides.Anim.Render using (render; renderLoop; renderBoth; uniform?)
+open import Relation.Nullary.Decidable using (True)
 open import Slides.Core using ()
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; animation; script; mount; classed)
 import Slides.Core as Core
@@ -229,3 +230,10 @@ background c = record defaultSlide { background = just c }
 
 transition : String → SlideOptions
 transition t = record defaultSlide { transition = just t }
+
+-- `animateBoth name width ms period acts`: the acts of `animate` (one per reveal
+-- step) with a loop of `period` phases running underneath; `acts φ` is the list of
+-- acts at phase `φ` (see `renderBoth`: every phase has acts of the same lengths).
+animateBoth : String → ℕ → ℕ → (period : ℕ) → (acts : ℕ → List (Anim ℕ (Seg ℕ))) →
+              {{_ : True (uniform? period acts)}} → Body
+animateBoth n pct ms period acts = liftContent (Content.cmd (renderBoth n pct ms period acts))

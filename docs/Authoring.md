@@ -297,8 +297,11 @@ is one reveal step, which plays its frames, one every 400 ms, when it is reached
 waits on its last frame; stepping back plays them in reverse. Without JavaScript the
 first frame stays. `animateLoop name width ms a` instead repeats the frames of one
 animation forever, one every `ms`, while its slide is shown (marching dashes, a
-heartbeat): frame `t mod n` at tick `t`. A looping animation has no steps, and a slide
-can hold both kinds but not one animation that is both. `dur a` is the number of ticks. A tween
+heartbeat): frame `t mod n` at tick `t`. `animateBoth name width ms period acts` does both: `acts φ` are the
+acts at phase `φ` of a loop of `period` phases (typically the same diagram with a
+phase-dependent style), and each reveal step plays within the current phase while the
+phase advances underneath. Every phase must have acts of the same lengths; that is
+checked as the deck typechecks (as `parI` checks footprints). `dur a` is the number of ticks. A tween
 `tween n from to easing body` moves a parameter along an easing (`Linear`, `Step`,
 `StepStart`, `Bezier x₁ y₁ x₂ y₂` in hundredths, as CSS) and shows `body` of it on each
 tick, so a motion, a growing box or a fade is one `body`. Laws (`Seq` associative, the

@@ -63,8 +63,7 @@ numbers the text gives, not the full figure.
   - Slides 2 and 5: the flow arrows' dashes march along them, a `loop`
     (`marching f` runs the phase `0 … 7` once through; `flow ph` puts the class `ph<k>`
     on the arrow and the stylesheet offsets the dashes by `k/8` of a period).
-    Slides 6 and 7 keep static dashes: a step animation and a loop do not combine in
-    one animation.
+    On slides 6 and 7 the same march runs under the reveal steps (`animateBoth`).
   - Free-running decoration is `assets/pairs/pairs.js`, loaded with
     `RevealConfig.scriptFiles`. Each slide calls one function from a `script`
     command; it runs once, when the slide is first shown, and only advances while
