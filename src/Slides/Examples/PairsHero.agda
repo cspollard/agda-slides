@@ -30,7 +30,7 @@ import Data.Rational as ℚ
 open import Data.Unit using (⊤)
 
 open import Slides.Diagram using (Style; withClass; defaultStyle)
-open import Slides.Diagram.Syntax using (Dia; disc; atop; named; connect; spacer)
+open import Slides.Diagram.Syntax using (Dia; disc; named; connect; spacer; place; overlay)
 open import Slides.Diagram.Notation using (side; east; west)
 import Slides.Diagram.Notation as N
 open import Slides.Diagram.Scalar using (Ops)
@@ -86,7 +86,6 @@ module Frame {S : Set} (D : DiscreteOps S) where
     Eu = DiscreteOps.euclid D
   open Ops O renaming (_+_ to _⊕_; _-_ to _⊖_; fromℕ to lit)
   open EuclidOps Eu
-  open N.NotationWith O using (margin)
 
   sel : ℕ → List ℕ → S → S
   sel i []           a = lit 0
@@ -106,8 +105,7 @@ module Frame {S : Set} (D : DiscreteOps S) where
   -- a dot of radius `r` with its top left corner at (x, y), on a full-size layer
   dot : String → String → ℕ → S → S → Dia S
   dot name cls r x y =
-    margin x y (lit W ⊖ (x ⊕ lit (2 * r))) (lit H ⊖ (y ⊕ lit (2 * r)))
-      (named name (disc (lit r) (withClass cls defaultStyle)))
+    place (lit W) (lit H) x y (named name (disc (lit r) (withClass cls defaultStyle)))
 
   -- the quantities of one pair at tick `t`
   record At (p : Pair) (t : S) : Set where
@@ -143,8 +141,9 @@ module Frame {S : Set} (D : DiscreteOps S) where
   -- one pair at tick `t`
   pairAt : S → ℕ → Pair → Dia S
   pairAt t i p = connect ("a" ++ˢ si) east ("b" ++ˢ si) west (withClass "hero-link" defaultStyle)
-                   (atop (dot ("a" ++ˢ si) col 5 (At.lx v ⊖ lit 5) (At.ly v ⊖ lit 5))
-                         (dot ("b" ++ˢ si) col 5 (At.rx v ⊖ lit 5) (At.ry v ⊖ lit 5)))
+                   (overlay (lit W) (lit H)
+                      (dot ("a" ++ˢ si) col 5 (At.lx v ⊖ lit 5) (At.ly v ⊖ lit 5))
+                      (dot ("b" ++ˢ si) col 5 (At.rx v ⊖ lit 5) (At.ry v ⊖ lit 5)))
     where
       si  = show i
       col = if Pair.blue p then "hero-b" else "hero-r"
@@ -153,7 +152,7 @@ module Frame {S : Set} (D : DiscreteOps S) where
   -- the whole picture at tick `t`: every pair on a layer of the canvas's size
   -- (`n` pairs: the deck uses 26)
   heroFrame : (n seed : ℕ) → S → Dia S
-  heroFrame n seed t = foldr atop (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo n) (pairs n seed))
+  heroFrame n seed t = foldr (overlay (lit W) (lit H)) (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo n) (pairs n seed))
 
 -- the frame the flipbook shows
 heroAt : (seed : ℕ) → ℕ → Dia ℕ

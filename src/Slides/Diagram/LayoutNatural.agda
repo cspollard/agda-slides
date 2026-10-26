@@ -106,6 +106,12 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
       (map-comm (mapDraw h) (PS.shiftDraw dx dy) (mapDraw h) (PT.shiftDraw (h dx) (h dy)) (shiftDraw-natural dx dy) (Layout.draws d))
       (map-comm (mapAnchor h) (PS.shiftAnchor dx dy) (mapAnchor h) (PT.shiftAnchor (h dx) (h dy)) (shiftAnchor-natural dx dy) (Layout.anchors d))
 
+  place-natural : ∀ w ht x y d →
+    mapLayout h (PS.place w ht x y d) ≡ PT.place (h w) (h ht) (h x) (h y) (mapLayout h d)
+  place-natural w ht x y d =
+    trans (inFrame-natural w ht (OS.dbl x) (OS.dbl y) d)
+          (cong₂ (λ a b → PT.inFrame (h w) (h ht) a b (mapLayout h d)) (h-dbl x) (h-dbl y))
+
   overlay-natural : ∀ w ht a b →
     mapLayout h (PS.overlay w ht a b) ≡ PT.overlay (h w) (h ht) (mapLayout h a) (mapLayout h b)
   overlay-natural w ht a b =
@@ -281,6 +287,11 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
     trans (labelAbove-natural (LS.layout (k zero)) (LS.layout (k (suc zero)))) (cong₂ PT.labelAbove (layout-natural (k zero)) (layout-natural (k (suc zero))))
   layout-natural (impure (LabelBelow , k))       =
     trans (labelBelow-natural (LS.layout (k zero)) (LS.layout (k (suc zero)))) (cong₂ PT.labelBelow (layout-natural (k zero)) (layout-natural (k (suc zero))))
+  layout-natural (impure (Overlay w ht , k))     =
+    trans (overlay-natural w ht (LS.layout (k zero)) (LS.layout (k (suc zero))))
+          (cong₂ (PT.overlay (h w) (h ht)) (layout-natural (k zero)) (layout-natural (k (suc zero))))
+  layout-natural (impure (Place w ht x y , k))   =
+    trans (place-natural w ht x y (LS.layout (k tt))) (cong (PT.place (h w) (h ht) (h x) (h y)) (layout-natural (k tt)))
   layout-natural (impure (Named n , k))          =
     trans (named-natural n (LS.layout (k tt))) (cong (PT.named n) (layout-natural (k tt)))
   layout-natural (impure (Connect a pa b pb s , k)) =

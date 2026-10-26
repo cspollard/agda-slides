@@ -42,7 +42,7 @@ open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
   using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
-        ; Beside; Above; Atop; LabelAbove; LabelBelow; Named; Connect
+        ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect
         ; VAlign; top; middle; bottom; Align; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
 import Slides.Diagram.Layout as Lay
@@ -519,6 +519,8 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   sizeAlgebra LabelBelow k =
     0# ⊔ (proj₁ (k (suc zero)) ⊔ proj₁ (k zero))
       , proj₂ (k zero) + (proj₂ (k (suc zero)) + proj₂ (k zero))
+  sizeAlgebra (Place w h _ _) _ = w , h
+  sizeAlgebra (Overlay w h) _ = w , h
   sizeAlgebra (Named _) k = k tt
   sizeAlgebra (Connect _ _ _ _ _) k = k tt
 
@@ -566,6 +568,8 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
     h₀ = proj₂ (size-fusion (k zero))
     w₁ = proj₁ (size-fusion (k (suc zero)))
     h₁ = proj₂ (size-fusion (k (suc zero)))
+  size-fusion (impure (Place _ _ _ _ , _))   = R.refl , R.refl
+  size-fusion (impure (Overlay _ _ , _))     = R.refl , R.refl
   size-fusion (impure (Named n , k)) = size-fusion (k tt)
   size-fusion (impure (Connect a pa b pb s , k)) =
     R.trans (R.reflexive (proj₁ sz)) (proj₁ ih) , R.trans (R.reflexive (proj₁ (proj₂ sz))) (proj₂ ih)

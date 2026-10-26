@@ -47,6 +47,8 @@ module LayoutWith {S : Set} (O : Ops S) where
   layoutAlgebra Atop                k = P.atop (k zero) (k (suc zero))
   layoutAlgebra LabelAbove          k = P.labelAbove (k zero) (k (suc zero))
   layoutAlgebra LabelBelow          k = P.labelBelow (k zero) (k (suc zero))
+  layoutAlgebra (Place w h x y)     k = P.place w h x y (k tt)
+  layoutAlgebra (Overlay w h)       k = P.overlay w h (k zero) (k (suc zero))
   layoutAlgebra (Named n)           k = P.named n (k tt)
   layoutAlgebra (Connect a pa b pb s) k = P.connectP a pa b pb s (k tt)
 

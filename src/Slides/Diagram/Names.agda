@@ -44,6 +44,8 @@ private
   usageAlgebra Atop                   k = both (k zero) (k (suc zero))
   usageAlgebra LabelAbove             k = both (k zero) (k (suc zero))
   usageAlgebra LabelBelow             k = both (k (suc zero)) (k zero)
+  usageAlgebra (Place _ _ _ _)        k = k tt
+  usageAlgebra (Overlay _ _)          k = both (k zero) (k (suc zero))
   usageAlgebra (Named n)              k with k tt
   ... | (d , u) = n ∷ d , u
   usageAlgebra (Connect a _ b _ _)    k with k tt
@@ -75,6 +77,10 @@ names-mapDia f (impure (LabelAbove , k))
   rewrite names-mapDia f (k zero) | names-mapDia f (k (suc zero)) = refl
 names-mapDia f (impure (LabelBelow , k))
   rewrite names-mapDia f (k zero) | names-mapDia f (k (suc zero)) = refl
+names-mapDia f (impure (Overlay _ _ , k))
+  rewrite names-mapDia f (k zero) | names-mapDia f (k (suc zero)) = refl
+names-mapDia f (impure (Place _ _ _ _ , k))
+  rewrite names-mapDia f (k tt) = refl
 names-mapDia f (impure (Named n , k))
   rewrite names-mapDia f (k tt) = refl
 names-mapDia f (impure (Connect a _ b _ _ , k))

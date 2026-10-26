@@ -57,6 +57,12 @@ inFrame w h dx dy d = layout w h
   (map (shiftDraw dx dy) (Layout.draws d))
   (map (shiftAnchor dx dy) (Layout.anchors d))
 
+-- the layout at an absolute position (x, y), in units, of a frame of a given size: no centring
+-- and no complementary margins, so a layer whose children are placed by their coordinates has a
+-- size that does not depend on them
+place : S → S → S → S → Layout S → Layout S
+place w h x y d = inFrame w h (dbl x) (dbl y) d
+
 -- two layouts in one frame, the second drawn over the first
 overlay : S → S → Layout S → Layout S → Layout S
 overlay w h a b = layout w h (Layout.draws a ++ Layout.draws b) (Layout.anchors a ++ Layout.anchors b)

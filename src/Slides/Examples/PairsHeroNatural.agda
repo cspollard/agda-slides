@@ -26,7 +26,7 @@ open import Data.Unit using (⊤)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
 open import Slides.Diagram.Scalar
-open import Slides.Diagram.Syntax using (Dia; mapDia; atop; spacer; connect; named; disc)
+open import Slides.Diagram.Syntax using (Dia; mapDia; overlay; spacer; connect; named; disc; place)
 open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Euclid
 open import Slides.Examples.PairsHero
@@ -132,20 +132,17 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
               (trans (h-+ _ _) (cong₂ O₂._+_ oyN dyN)) (trans (h-- _ _) (cong₂ O₂._-_ oyN dyN)))
 
   dot-natural : ∀ name cls r x y → mapDia h (F₁.dot name cls r x y) ≡ F₂.dot name cls r (h x) (h y)
-  dot-natural name cls r x y
-    rewrite h-- (O₁.fromℕ W) (x O₁.+ O₁.fromℕ (2 * r)) | h-+ x (O₁.fromℕ (2 * r)) | h-fromℕ W | h-fromℕ (r ℕ.+ (r ℕ.+ 0))
-          | h-- (O₁.fromℕ H) (y O₁.+ O₁.fromℕ (2 * r)) | h-+ y (O₁.fromℕ (2 * r)) | h-fromℕ H | h-0 | h-fromℕ r
-          | h-fromℕ (r ℕ.+ (r ℕ.+ 0)) = refl
+  dot-natural name cls r x y rewrite h-fromℕ W | h-fromℕ H | h-fromℕ r = refl
 
   pair-natural : ∀ t i p → mapDia h (F₁.pairAt t i p) ≡ F₂.pairAt (h t) i p
-  pair-natural t i p = trans (cong₂ G eqA eqB) refl
+  pair-natural t i p = cong₄ G (h-fromℕ W) (h-fromℕ H) eqA eqB
     where
       n = at-natural p t
       si = show i
       col = if Pair.blue p then "hero-b" else "hero-r"
       v₁ = F₁.at p t
-      G : Dia T → Dia T → Dia T
-      G a b = connect ("a" ++ˢ si) east ("b" ++ˢ si) west (withClass "hero-link" defaultStyle) (atop a b)
+      G : T → T → Dia T → Dia T → Dia T
+      G w ht a b = connect ("a" ++ˢ si) east ("b" ++ˢ si) west (withClass "hero-link" defaultStyle) (overlay w ht a b)
       eqA : mapDia h (F₁.dot ("a" ++ˢ si) col 5 (F₁.At.lx v₁ O₁.- O₁.fromℕ 5) (F₁.At.ly v₁ O₁.- O₁.fromℕ 5))
             ≡ F₂.dot ("a" ++ˢ si) col 5 (F₂.At.lx (F₂.at p (h t)) O₂.- O₂.fromℕ 5) (F₂.At.ly (F₂.at p (h t)) O₂.- O₂.fromℕ 5)
       eqA = trans (dot-natural _ _ 5 _ _)
@@ -162,11 +159,11 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
   frame-natural : ∀ n seed t → mapDia h (F₁.heroFrame n seed t) ≡ F₂.heroFrame n seed (h t)
   frame-natural n seed t = go (upTo n) (pairs n seed)
     where
-      go : ∀ is ps → mapDia h (foldr atop (spacer (O₁.fromℕ W) (O₁.fromℕ H)) (zipWith (F₁.pairAt t) is ps))
-                     ≡ foldr atop (spacer (O₂.fromℕ W) (O₂.fromℕ H)) (zipWith (F₂.pairAt (h t)) is ps)
+      go : ∀ is ps → mapDia h (foldr (overlay (O₁.fromℕ W) (O₁.fromℕ H)) (spacer (O₁.fromℕ W) (O₁.fromℕ H)) (zipWith (F₁.pairAt t) is ps))
+                     ≡ foldr (overlay (O₂.fromℕ W) (O₂.fromℕ H)) (spacer (O₂.fromℕ W) (O₂.fromℕ H)) (zipWith (F₂.pairAt (h t)) is ps)
       go []       ps       = cong₂ spacer (h-fromℕ W) (h-fromℕ H)
       go (i ∷ is) []       = cong₂ spacer (h-fromℕ W) (h-fromℕ H)
-      go (i ∷ is) (p ∷ ps) = cong₂ atop (pair-natural t i p) (go is ps)
+      go (i ∷ is) (p ∷ ps) = cong₄ overlay (h-fromℕ W) (h-fromℕ H) (pair-natural t i p) (go is ps)
 
 -- the template at the tick variable, evaluated at the tick `t`, is the flipbook frame
 heroT-correct : ∀ n seed t → mapDia (evalD natD (λ _ → t)) (heroT n seed) ≡ Frame.heroFrame natD n seed t
