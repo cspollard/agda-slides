@@ -53,7 +53,8 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Bool using (true; false)
 import Slides.Diagram.Place as Place
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom)
+open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; subst; subst-hom; evalWith-subst)
+open import Function using (_∘_)
 
 private
   mapPair : ∀ {S T : Set} → (S → T) → S × S → T × T
@@ -64,6 +65,9 @@ private
              (∀ x → f′ (g x) ≡ g′ (f x)) → ∀ xs → map f′ (map g xs) ≡ map g′ (map f xs)
   map-comm f g f′ g′ eq []       = refl
   map-comm f g f′ g′ eq (x ∷ xs) = cong₂ _∷_ (eq x) (map-comm f g f′ g′ eq xs)
+
+  cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {a a′ b b′ c c′} → a ≡ a′ → b ≡ b′ → c ≡ c′ → f a b c ≡ f a′ b′ c′
+  cong₃ f refl refl refl = refl
 
   cong₄ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
           a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
@@ -290,3 +294,62 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
 layout-eval : ∀ {V} (ρ : V → ℕ) (d : Dia (Expr V)) →
   mapLayout (eval ρ) (LayoutWith.layout exprOps d) ≡ LayoutWith.layout natOps (mapDia (eval ρ) d)
 layout-eval ρ = layout-natural exprOps natOps (eval ρ) (eval-hom ρ)
+
+------------------------------------------------------------------------
+-- `mapLayout` is a functor (up to pointwise-equal maps)
+
+mapDraw-cong : ∀ {S T : Set} {f g : S → T} → (∀ x → f x ≡ g x) → ∀ d → mapDraw f d ≡ mapDraw g d
+mapDraw-cong eq (rect x y w ht s)  = cong₄ (λ a b c d → rect a b c d s) (eq x) (eq y) (eq w) (eq ht)
+mapDraw-cong eq (circle x y r s)   = cong₃ (λ a b c → circle a b c s) (eq x) (eq y) (eq r)
+mapDraw-cong eq (line a b c d s)   = cong₄ (λ p q r t → line p q r t s) (eq a) (eq b) (eq c) (eq d)
+mapDraw-cong eq (arrow a b c d s)  = cong₄ (λ p q r t → arrow p q r t s) (eq a) (eq b) (eq c) (eq d)
+mapDraw-cong eq (label x y n t s)  = cong₂ (λ a b → label a b n t s) (eq x) (eq y)
+
+mapAnchor-cong : ∀ {S T : Set} {f g : S → T} → (∀ x → f x ≡ g x) → ∀ a → mapAnchor f a ≡ mapAnchor g a
+mapAnchor-cong eq (n , box l t w h) = cong₄ (λ a b c d → n , box a b c d) (eq l) (eq t) (eq w) (eq h)
+
+map-cong : ∀ {A B : Set} {f g : A → B} → (∀ x → f x ≡ g x) → ∀ xs → map f xs ≡ map g xs
+map-cong eq []       = refl
+map-cong eq (x ∷ xs) = cong₂ _∷_ (eq x) (map-cong eq xs)
+
+mapLayout-cong : ∀ {S T : Set} {f g : S → T} → (∀ x → f x ≡ g x) → ∀ l → mapLayout f l ≡ mapLayout g l
+mapLayout-cong eq l =
+  cong₄ layout (eq (Layout.width l)) (eq (Layout.height l))
+        (map-cong (mapDraw-cong eq) (Layout.draws l)) (map-cong (mapAnchor-cong eq) (Layout.anchors l))
+
+mapLayout-∘ : ∀ {S T U : Set} (g : T → U) (f : S → T) (l : Layout S) →
+              mapLayout g (mapLayout f l) ≡ mapLayout (g ∘ f) l
+mapLayout-∘ g f l =
+  cong₂ (layout (g (f (Layout.width l))) (g (f (Layout.height l))))
+        (map-comm′ (mapDraw f) (mapDraw g) (mapDraw (g ∘ f)) mapDraw-∘ (Layout.draws l))
+        (map-comm′ (mapAnchor f) (mapAnchor g) (mapAnchor (g ∘ f)) mapAnchor-∘ (Layout.anchors l))
+  where
+    mapDraw-∘ : ∀ d → mapDraw g (mapDraw f d) ≡ mapDraw (g ∘ f) d
+    mapDraw-∘ (rect x y w ht s)  = refl
+    mapDraw-∘ (circle x y r s)   = refl
+    mapDraw-∘ (line a b c d s)   = refl
+    mapDraw-∘ (arrow a b c d s)  = refl
+    mapDraw-∘ (label x y n t s)  = refl
+    mapAnchor-∘ : ∀ a → mapAnchor g (mapAnchor f a) ≡ mapAnchor (g ∘ f) a
+    mapAnchor-∘ (n , box l t w h) = refl
+    map-comm′ : ∀ {A B C : Set} (u : A → B) (v : B → C) (w : A → C) → (∀ x → v (u x) ≡ w x) →
+                ∀ xs → map v (map u xs) ≡ map w xs
+    map-comm′ u v w eq []       = refl
+    map-comm′ u v w eq (x ∷ xs) = cong₂ _∷_ (eq x) (map-comm′ u v w eq xs)
+
+------------------------------------------------------------------------
+-- Substituting into a template and then evaluating
+
+-- Laying out a template whose variables are replaced by formulas `σ v` and then evaluating at
+-- `ρ` is laying out the template at the assignment `v ↦ eval ρ (σ v)`.  (For a segment placed in
+-- an animation, `σ` sends the segment's parameter to its own variable, and `ρ` gives every
+-- segment's parameter at a tick.)
+layout-subst : ∀ {V W} (σ : V → Expr W) (ρ : W → ℕ) (d : Dia (Expr V)) →
+  LayoutWith.layout natOps (mapDia (eval ρ) (mapDia (subst σ) d))
+  ≡ LayoutWith.layout natOps (mapDia (eval (λ v → eval ρ (σ v))) d)
+layout-subst σ ρ d =
+  trans (sym (layout-natural exprOps natOps (eval ρ) (eval-hom ρ) (mapDia (subst σ) d)))
+  (trans (cong (mapLayout (eval ρ)) (sym (layout-natural exprOps exprOps (subst σ) (subst-hom σ) d)))
+  (trans (mapLayout-∘ (eval ρ) (subst σ) (LayoutWith.layout exprOps d))
+  (trans (mapLayout-cong (evalWith-subst natOps ρ σ) (LayoutWith.layout exprOps d))
+         (layout-natural exprOps natOps (eval (λ v → eval ρ (σ v))) (eval-hom _) d))))

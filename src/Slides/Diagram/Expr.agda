@@ -36,8 +36,8 @@ open import Data.Nat using (ℕ)
 open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (Container; _▷_)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import Slides.Diagram.Scalar using (Ops; natOps; IsOpsHom)
 
@@ -109,13 +109,6 @@ evalWith O ρ (impure (Pct p , k))      = Ops.percentOf O p (evalWith O ρ (k tt
 eval : ∀ {V} → (V → ℕ) → Expr V → ℕ
 eval = evalWith natOps
 
--- substitution
-subst : ∀ {V W} → (V → Expr W) → Expr V → Expr W
-subst σ e = e >>= σ
-
-rename : ∀ {V W} → (V → W) → Expr V → Expr W
-rename f = subst (λ v → pure (f v))
-
 ------------------------------------------------------------------------
 -- The `Ops` structure
 
@@ -136,3 +129,32 @@ eval-hom = evalWith-hom natOps
 -- evaluating a variable is the assignment (the generators)
 evalWith-var : ∀ {V S} (O : Ops S) (ρ : V → S) v → evalWith O ρ (var v) ≡ ρ v
 evalWith-var O ρ v = refl
+
+------------------------------------------------------------------------
+-- Substitution: the free monad's bind, as the fold into `exprOps`
+
+-- `subst σ` is `evalWith exprOps σ`: the unique `Ops`-map that sends each variable `v` to
+-- `σ v`.  So it is an `Ops`-homomorphism (`subst-hom`) on the nose, which is what lets
+-- layout be natural along it (`Slides.Diagram.LayoutNatural`).
+subst : ∀ {V W} → (V → Expr W) → Expr V → Expr W
+subst σ = evalWith exprOps σ
+
+rename : ∀ {V W} → (V → W) → Expr V → Expr W
+rename f = subst (λ v → var (f v))
+
+subst-hom : ∀ {V W} (σ : V → Expr W) → IsOpsHom exprOps exprOps (subst σ)
+subst-hom σ = evalWith-hom exprOps σ
+
+-- evaluating after substituting is evaluating with the evaluated substitution
+evalWith-subst : ∀ {V W S} (O : Ops S) (ρ : W → S) (σ : V → Expr W) (e : Expr V) →
+                 evalWith O ρ (subst σ e) ≡ evalWith O (λ v → evalWith O ρ (σ v)) e
+evalWith-subst O ρ σ (pure v)                 = refl
+evalWith-subst O ρ σ (impure (Zero , _))      = refl
+evalWith-subst O ρ σ (impure (Lit n , _))     = refl
+evalWith-subst O ρ σ (impure (Plus , k))      =
+  cong₂ (Ops._+_ O) (evalWith-subst O ρ σ (k zero)) (evalWith-subst O ρ σ (k (suc zero)))
+evalWith-subst O ρ σ (impure (Monus , k))     =
+  cong₂ (Ops._-_ O) (evalWith-subst O ρ σ (k zero)) (evalWith-subst O ρ σ (k (suc zero)))
+evalWith-subst O ρ σ (impure (Max , k))       =
+  cong₂ (Ops._⊔_ O) (evalWith-subst O ρ σ (k zero)) (evalWith-subst O ρ σ (k (suc zero)))
+evalWith-subst O ρ σ (impure (Pct p , k))     = cong (Ops.percentOf O p) (evalWith-subst O ρ σ (k tt))
