@@ -456,14 +456,27 @@ Exact : Easing → Set
 Exact (Bezier _ _ _ _) = ⊥
 Exact _                = ⊤
 
+private
+  -- the constants, proved once and kept opaque so no rational arithmetic is
+  -- normalised while checking `reversal`
+  abstract
+    sub-11 : 1ℚ ℚ.- 1ℚ ≡ 0ℚ
+    sub-11 = refl
+    sub-10 : 1ℚ ℚ.- 0ℚ ≡ 1ℚ
+    sub-10 = refl
+
+  rev-step : ∀ b → (if b then 1ℚ else 0ℚ) ≡ 1ℚ ℚ.- (if b then 0ℚ else 1ℚ)
+  rev-step true  = sym sub-10
+  rev-step false = sym sub-11
+
+  rev-start : ∀ b → (if b then 0ℚ else 1ℚ) ≡ 1ℚ ℚ.- (if b then 1ℚ else 0ℚ)
+  rev-start true  = sym sub-11
+  rev-start false = sym sub-10
+
 reversal : ∀ e → Exact e → ∀ x → progress e (1ℚ ℚ.- x) ≡ 1ℚ ℚ.- progress (reverseE e) x
 reversal Linear    _ x = refl
-reversal Step      _ x rewrite s₁ x with x ≤ᵇ 0ℚ
-... | true  = refl
-... | false = refl
-reversal StepStart _ x rewrite s₂ x with 1ℚ ≤ᵇ x
-... | true  = refl
-... | false = refl
+reversal Step      _ x = trans (cong (λ b → if b then 1ℚ else 0ℚ) (s₁ x)) (rev-step (x ≤ᵇ 0ℚ))
+reversal StepStart _ x = trans (cong (λ b → if b then 0ℚ else 1ℚ) (s₂ x)) (rev-start (1ℚ ≤ᵇ x))
 reversal (Bezier _ _ _ _) ()
 
 -- a piece played backwards (ends swapped, easing reversed) at tick `k` is the
