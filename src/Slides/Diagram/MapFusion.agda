@@ -22,7 +22,8 @@
 --
 -- What does not follow is a pullback of `Layout` along `f` unless `f` is a ring
 -- homomorphism that respects the layout's order, since `⊔` and centring are
--- computed in the target scalar (`Slides.Diagram.Laws`); that is outside this module.
+-- computed in the target scalar (`Slides.Diagram.Laws`); that is outside this module (for an
+-- `Ops`-homomorphism it is `Slides.Diagram.LayoutNatural.layout-natural`).
 
 module Slides.Diagram.MapFusion where
 

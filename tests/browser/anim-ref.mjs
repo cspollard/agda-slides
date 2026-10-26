@@ -49,7 +49,7 @@ for (const [name, r] of Object.entries(result)) {
   // the template animations (named `t…`) are shipped as formulas, the others as edits
   check(`${name}: shipped ${r.param ? `as formulas (${r.phases} phases)` : 'as edits'}, ${r.size} characters`, r.param === name.startsWith('t'));
 }
-check('animations found', Object.keys(result).length === 6);
+check('animations found', Object.keys(result).length === 8);
 check('no page errors', errors.length === 0, errors.join('; '));
 await browser.close();
 console.log(failures === 0 ? 'all anim-ref tests passed' : `${failures} failure(s)`);

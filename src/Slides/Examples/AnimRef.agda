@@ -62,12 +62,17 @@ private
   orange = filled "#c96" defaultStyle
   blue  = filled "#69c" defaultStyle
 
--- a blue sliding right along an easing
+-- a box sliding right along an easing
 slideF slideT : Anim ℕ (Seg ℕ)
 slideF = tween 6 (+ 0 / 1) (+ 120 / 1) ease (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
 slideT = tweenT 6 (+ 0 / 1) (+ 120 / 1) ease (E.↔ t ∥ named "slider" (rectangle (lit 40) (lit 30) orange))
 
--- a blue that grows (a percentage), a circle that follows it, and a bar that shrinks to
+-- the same over 60 ticks: the formulas are the same size, the edits grow with the frames
+longF longT : Anim ℕ (Seg ℕ)
+longF = tween 60 (+ 0 / 1) (+ 120 / 1) ease (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
+longT = tweenT 60 (+ 0 / 1) (+ 120 / 1) ease (E.↔ t ∥ named "slider" (rectangle (lit 40) (lit 30) orange))
+
+-- a box that grows (a percentage), a circle that follows it, and a bar that shrinks to
 -- nothing (a difference that bottoms out) against a cap (a maximum); two acts in a row
 growF growT : Anim ℕ (Seg ℕ)
 growF =
@@ -95,11 +100,21 @@ private
     animate n 60 100 (tpl ∷ [])
     diagrams (frameDiagrams ("ref-" ++ˢ n) 60 (timeline atop (frames natOps) f))
 
+private
+  steps60 : Body
+  steps60 = do
+    animate "elong" 60 100 (longF ∷ [])
+    diagrams (frameDiagrams "ref-elong" 60 (timeline atop (frames natOps) longF))
+
 deck : Deck
 deck = do
   slide steps
   slide loop
   slide (pair "tslide" slideF slideT)
+  slide (pair "tlong" longF longT)
   slide (pair "tgrow" growF growT)
   slide (pair "tboth" bothF bothT)
   slide (pair "tpad" padF padT)
+  -- the 60-tick slider again, shipped as edits, for the size comparison
+  slide steps60
+

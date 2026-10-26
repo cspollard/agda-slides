@@ -144,9 +144,11 @@ Decisions that shaped it:
   as the caption's laid-out height.
 - **Scalar in the syntax.** `Dia S` carries sizes of type `S` (decks use ℕ), so
   `mapDia` changes the scalar (`PairsScalar` checks that ℕ, ℤ and ℚ lay the Pairs
-  diagrams out identically). A general naturality theorem is false as stated:
-  `intOps` floors percent ports, so ℤ→ℚ is not an `Ops` homomorphism, and ℕ→ℤ breaks
-  on monus. The provable parts are in `Slides.Diagram.MapFusion`: `mapDia f` is
+  diagrams out identically). A naturality theorem needs the map to be an `Ops`
+  homomorphism (`IsOpsHom`): `intOps` floors percent ports, so ℤ→ℚ is not one, and ℕ→ℤ
+  breaks on monus. For a homomorphism it is proved, `mapLayout h (layout d) ≡ layout
+  (mapDia h d)` (`Slides.Diagram.LayoutNatural`), and the evaluation of the free
+  scalar `Slides.Diagram.Expr` into ℕ is one. The earlier provable parts are in `Slides.Diagram.MapFusion`: `mapDia f` is
   translation along a container morphism, so it is functorial (up to equality of programs)
   and folding after it is folding with the pulled-back algebra (`fold-mapDia`), for any
   renderer with congruent handlers. Transporting a *layout* along `f` additionally needs a
@@ -194,6 +196,19 @@ edits a group member by member; `patchL (diffL old new) old ≡ new` and `replay
 are proved, the checking of "only the numbers changed" being done by the diff itself), so the page
 holds one SVG and a JSON list of edits; the player rebuilds frame `k` from the first (a frame behind
 the current one is rebuilt from the start). The Pairs deck went from 1.47 MB to 0.24 MB. `tests/browser/anim-ref.mjs` checks every frame the page rebuilds against the frame Agda computes (`make test-anim-ref`).
+*Templates.* A segment's body is `SegBody S`: a function (`blackBox`, a flipbook) or a
+`template`, an open diagram `Dia (Expr ⊤)` whose sizes are formulas in the parameter `t`.
+`Expr V` is the free `Ops`-algebra over variables, a free monad on a container (`evalWith`
+is its fold, a homomorphism by construction; `bodyAt` evaluates a template in any scalar
+`Ops S`). When every segment of an animation is a template, `Slides.Anim.Param` numbers the
+segments (one variable each, so segments in `Par` keep independent parameters), lays the
+frames out once in `Expr ℕ` and the backend ships the formulas (`data-param`: phases of ticks
+sharing a shape, each element's numbers as formulas with closed subformulas evaluated, plus
+each segment's parameter per tick) instead of edits; the player evaluates them (a 30-line
+evaluator, no layout). Layout is natural along an `Ops`-homomorphism, so the evaluated
+symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
+`layout-subst`, `leaf-agrees`); the assembly over a whole timeline is checked by
+`make test-anim-ref`, not proved (see `plan/Plan.md`).
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:

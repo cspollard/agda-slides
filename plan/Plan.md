@@ -19,28 +19,43 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      equals the frame Agda computed, on a steps animation and a 64-frame loop); the two
      copies of the player share their frame code (`tests/check_players.py`). A *proof*
      about JavaScript is out of reach; stage 2 shrinks what the player has to be trusted with.
-   - *Parametric bodies* (not started). The design, from what is already in the library:
-     1. `Draw S` and `Layout S` are already polymorphic in the scalar, and `LayoutWith`
-        takes any `Ops S`. So take `S = Expr`, the free `Ops`-algebra (zero, sum,
-        difference, maximum, `fromℕ`, `percentOf`) with one more leaf, the parameter `t`
-        (and `units t`). `Ops Expr` is the initial algebra, `eval t : Expr → ℕ` is an
-        `Ops`-homomorphism by construction.
-     2. A segment body is a template `Dia Expr` (the open diagram) instead of an opaque
-        `ℚ → Dia ℕ`: `data Body = opaque (ℚ → Dia ℕ) | template (Dia Expr)`, with
-        `bodyAt` so that every consumer of segments is unchanged. Bodies that stay
-        functions keep the flipbook.
-     3. Lay the template out once, symbolically: `layout_Expr tmpl : Layout Expr`, every
-        coordinate an expression in `t`. The player evaluates those expressions at any
-        time: size independent of the frame count, continuous time.
-     4. The theorem is naturality of the layout under an `Ops`-homomorphism `h`:
-        `Layout.map h (layout_S d) ≡ layout_S′ (mapDia h d)` (one proof, by `fold`
-        fusion; this is the "pull `Layout` back along a scalar map" item), hence
-        `evalLayout t (layout_Expr tmpl) ≡ layout_ℕ (mapDia (eval t) tmpl)`, which is
-        `bodyAt` at `t`. The JavaScript is then a tiny expression evaluator and the
-        element printer, not a layout engine.
-     What stays flipbook: bodies that need division, remainder or comparison of the
-     parameter (the point-pair loops), until `Expr` grows those (each with its homomorphism
-     proof).
+   - *Parametric bodies* (built; see `docs/Design.md`, "Animations"). `Slides.Diagram.Expr`:
+     `Expr V = ExprC ⋆ V`, the free `Ops`-algebra (a free monad) over variables, with
+     `evalWith O ρ` its fold, an `Ops`-homomorphism by `refl` (`evalWith-hom`), and `subst`
+     the fold into `exprOps` (a homomorphism too, `evalWith-subst`). `Slides.Diagram.LayoutNatural`:
+     `layout-natural`, `mapLayout h (layout_S d) ≡ layout_T (mapDia h d)` for an `IsOpsHom`
+     `h` (six equations, no order, no condition on `-`), proved for every operation of
+     `Place`; `layout-eval`, `layout-subst`. `SegBody S = blackBox (ℚ → Dia S) | template
+     (Dia (Expr ⊤))` (the type is `SegBody`, not `Body`, which `Slides.Core` has; the
+     constructor is `blackBox`, `opaque` being an Agda keyword), `bodyAt O`, `tweenT`; `hold`
+     and `tween` build `blackBox`, `none` (padding) is a template. `Slides.Anim.Param`
+     numbers the segments, renames each template's parameter to its own variable, and lays
+     out the animation's frames once, symbolically (`atop` for `Par`, as in the timeline);
+     `leaf-agrees` proves a segment's symbolic layout evaluates to its instance. When every
+     segment is a template `render`/`renderLoop` emit `paramAnimation`, and the backend ships
+     `data-param` (formulas grouped into phases, per-segment parameters) with a 30-line
+     evaluator in both players; otherwise the delta encoding, byte for byte as before.
+     `make test-anim-ref` checks every tick of five template animations (a slide, a 60-tick
+     slide, grow/shrink with percent, monus and maximum, `Par` of unequal lengths, `par` with
+     `none` padding) against the frames Agda computes from the functions; the intro deck's
+     slider is a template.
+     Left:
+     - *The assembly of whole frames is tested, not proved*: that the frame at tick `k` is
+       the layout at the assignment `i ↦ (parameter of segment i at tick k)` follows from
+       `leaf-agrees` and `atop` commuting with `mapDia`, by an induction over the animation
+       that tracks tick offsets (`merge`, `++`, `replicate`); that induction is not written.
+     - *Ship the track, not the samples.* The page gets each segment's parameter on every
+       tick (`units` of the sampled track) so it needs no easing code and stays exact; a
+       smaller, continuous-time page needs the easing evaluated in JavaScript and an `Expr`
+       over ℚ (floor is not an `Ops` operation). For the 60-tick slider the formulas are
+       420 characters and the edits already 329 (numbers as differences), so this stage is
+       about the model (one layout, independent of frame count, any `t`) more than size;
+       the size win needs the track.
+     - Bodies that need division, remainder or comparison of the parameter (the point-pair
+       loops, `Pairs`) stay flipbook until `Expr` grows those, each with its homomorphism
+       proof; `animateBoth` is still always a flipbook.
+     - `toℕ` of `exprOps` is the value at the all-zero assignment (it is not part of
+       `IsOpsHom`; layout never applies it).
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
 3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
