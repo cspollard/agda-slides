@@ -30,12 +30,12 @@ private
   steps : Body
   steps = do
     animate "mover" 60 100 (parI natOps mover counter ∷ [])
-    diagrams (frameDiagrams "ref-mover" 60 (timeline atop frames (parI natOps mover counter)))
+    diagrams (frameDiagrams "ref-mover" 60 (timeline atop (frames natOps) (parI natOps mover counter)))
 
   loop : Body
   loop = do
     animateLoop "hero" 100 100 (hero 7)
-    diagrams (frameDiagrams "ref-hero" 100 (timeline atop frames (hero 7)))
+    diagrams (frameDiagrams "ref-hero" 100 (timeline atop (frames natOps) (hero 7)))
 
 deck : Deck
 deck = do

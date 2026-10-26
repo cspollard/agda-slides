@@ -27,6 +27,7 @@ open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Slides.Core using (ContentShape; animation; Play; onSteps; looping; both)
 open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Diagram.Syntax using (Dia; atop; spacer)
+open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Diagram.Layout using (compile)
 open import Slides.Anim.Syntax using (Anim; Seg)
 open import Slides.Anim.Timeline using (timeline; frames)
@@ -73,12 +74,12 @@ private
 -- the acts one after the other; each act is one step
 render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
 render name pct ms acts =
-  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop frames a)) acts)))
-        (concat (map (timeline atop frames) acts))
+  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natOps) a)) acts)))
+        (concat (map (timeline atop (frames natOps)) acts))
 
 -- one animation, repeating
 renderLoop : (name : String) (percent ms : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-renderLoop name pct ms a = shape name pct ms looping (timeline atop frames a)
+renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a)
 
 -- Steps over a loop: `acts φ` are the acts at phase `φ` of a loop of `period` phases
 -- (a phase typically only restyles the diagram: an arrow's dashes, a pulse).  Each
@@ -87,7 +88,7 @@ renderLoop name pct ms a = shape name pct ms looping (timeline atop frames a)
 -- holds, and the deck does not typecheck when it does not).
 private
   lengths : List (Anim ℕ (Seg ℕ)) → List ℕ
-  lengths = map (λ a → length (timeline atop frames a))
+  lengths = map (λ a → length (timeline atop (frames natOps) a))
 
 Uniform : ℕ → (ℕ → List (Anim ℕ (Seg ℕ))) → Set
 Uniform period acts = All (λ φ → lengths (acts φ) ≡ lengths (acts 0)) (upTo period)
@@ -99,4 +100,4 @@ renderBoth : (name : String) (percent ms period : ℕ) (acts : ℕ → List (Ani
              {{_ : True (uniform? period acts)}} → ContentShape
 renderBoth name pct ms period acts =
   shape name pct ms (both (restsOf 0 (lengths (acts 0))) period)
-        (concat (map (λ φ → concat (map (timeline atop frames) (acts φ))) (upTo period)))
+        (concat (map (λ φ → concat (map (timeline atop (frames natOps)) (acts φ))) (upTo period)))

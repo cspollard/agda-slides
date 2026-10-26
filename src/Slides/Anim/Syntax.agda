@@ -32,7 +32,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 open import Data.Bool using (T)
 open import Data.Unit using (tt)
 
-open import Slides.Diagram.Syntax using (Dia; spacer)
+open import Slides.Diagram.Syntax using (Dia; spacer; mapDia)
+open import Slides.Diagram.Expr using (Expr; evalWith)
+open import Data.Unit using (⊤)
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
 open import Data.Rational as ℚ using (ℚ; 0ℚ)
@@ -47,18 +49,45 @@ data Op : Set where
 AnimC : Container 0ℓ 0ℓ
 AnimC = Op ▷ (λ _ → Fin 2)
 
+-- a parameter as a whole number of the scalar's units (rounded down, negatives clamp)
+units : ℚ → ℕ
+units q = ℤ.∣ ℚ.⌊ q ⌋ ∣
+
+-- The body of a segment: a diagram as a function of the parameter.
+--
+--   * `blackBox f` is any function `ℚ → Dia S`.  It can only be sampled (a flipbook).
+--   * `template d` is an open diagram `d : Dia (Expr ⊤)`: its sizes are formulas in the
+--     one variable `t` (`Slides.Diagram.Expr`), instantiated at a value of the
+--     parameter by evaluating them in the scalar `S` with `t := fromℕ (units q)`.  A
+--     template can be laid out once, symbolically, and shipped as formulas
+--     (`Slides.Anim.Param`).  It needs no more than `Ops S`: `Expr` is the free
+--     `Ops`-algebra, so there is exactly one way to evaluate it.
+--
+-- `bodyAt` is what every consumer of segments uses.
+data SegBody (S : Set) : Set where
+  blackBox : (ℚ → Dia S) → SegBody S
+  template : Dia (Expr ⊤) → SegBody S
+
+bodyAt : ∀ {S} → Ops S → SegBody S → ℚ → Dia S
+bodyAt O (blackBox f) q = f q
+bodyAt O (template d) q = mapDia (evalWith O (λ _ → Ops.fromℕ O (units q))) d
+
 -- A segment: a diagram that depends on a parameter, which follows a track for as
 -- many ticks as the track lasts.  The track is explicit data (`Slides.Anim.Track`:
 -- pieces with easings, steps for discontinuities); the body is the diagram as a
--- function of the parameter, so reflow (a spacer that grows) and paint (an
--- opacity in a style) are both just uses of the parameter.  A diagram held for
+-- function of the parameter (`SegBody`), so reflow (a spacer that grows) and paint
+-- (an opacity in a style) are both just uses of the parameter.  A diagram held for
 -- `n` ticks is the constant track.
 record Seg (S : Set) : Set where
   constructor seg
   field
-    track : T.Track ℚ
-    body  : ℚ → Dia S
+    track   : T.Track ℚ
+    content : SegBody S
 open Seg public
+
+-- the diagram at a value of the parameter
+body : ∀ {S} → Ops S → Seg S → ℚ → Dia S
+body O s = bodyAt O (content s)
 
 ticks : ∀ {S} → Seg S → ℕ
 ticks s = T.dur (track s)
@@ -82,15 +111,15 @@ a ∥ᵃ b = impure (Par , pick2 a b)
 
 -- A segment as a one-leaf animation
 hold : ∀ {S} → ℕ → Dia S → Anim S (Seg S)
-hold n d = pure (seg (pure (T.piece n 0ℚ 0ℚ T.Linear)) (λ _ → d))
-
--- a parameter as a whole number of the scalar's units (rounded down, negatives clamp)
-units : ℚ → ℕ
-units q = ℤ.∣ ℚ.⌊ q ⌋ ∣
+hold n d = pure (seg (pure (T.piece n 0ℚ 0ℚ T.Linear)) (blackBox (λ _ → d)))
 
 -- a parameter moving from `a` to `b` in `n` ticks along an easing
 tween : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → (ℚ → Dia S) → Anim S (Seg S)
-tween n a b e f = pure (seg (pure (T.piece n a b e)) f)
+tween n a b e f = pure (seg (pure (T.piece n a b e)) (blackBox f))
+
+-- the same, as a template: the diagram is open in the parameter `t`
+tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (Expr ⊤) → Anim S (Seg S)
+tweenT n a b e d = pure (seg (pure (T.piece n a b e)) (template d))
 
 -- a pause: an empty frame, which needs the scalar's zero
 none : ∀ {S} → Ops S → ℕ → Anim S (Seg S)
