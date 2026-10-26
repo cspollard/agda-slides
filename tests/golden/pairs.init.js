@@ -40,8 +40,37 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
     while (kids.length > offset + n) parent.removeChild(kids[offset + n]);
     rest.forEach(function (s) { parent.appendChild(parse(s)); });
   }
+  // A parametric animation (`data-param`, see `renderParamAnimation`): a formula is a number, a
+  // string (the parameter of that segment, from `r`) or `[op, a, b]`; `["h", a]` is half of `a`,
+  // positions being in half units.
+  function ev(e, r) {
+    if (typeof e === 'number') return e;
+    if (typeof e === 'string') return r[+e];
+    var o = e[0], x = ev(e[1], r);
+    if (o === 'h') return Math.floor(x / 2);
+    var y = ev(e[2], r);
+    return o === '+' ? x + y : o === '-' ? Math.max(0, x - y) : o === 'm' ? Math.max(x, y) : Math.floor(x * y / 100);
+  }
+  // show tick `k`: swap in the elements of its phase, then set every number that depends on a parameter
+  function pframe(a, k) {
+    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;
+    while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;
+    var svg = a.querySelector(':scope > .frame svg');
+    if (a._ph !== i) {
+      while (svg.children.length > 1) svg.removeChild(svg.lastChild);
+      P.p[i].b.forEach(function (s) { svg.appendChild(parse(s)); });
+      a._ph = i;
+    }
+    var r = P.v.map(function (v) { return v[1][k - v[0]] || 0; });
+    P.p[i].c.forEach(function (cs, j) {
+      if (cs === null) return;
+      var el = svg.children[1 + j];
+      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r)); });
+    });
+  }
   // show frame `k`: rebuild from the first frame when going back, else apply the next edits
   function frame(a, k) {
+    if (a.dataset.param) { pframe(a, k); return; }
     var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));
     var svg = a.querySelector(':scope > .frame svg');
     if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }
@@ -49,7 +78,7 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
     for (; a._at < k; a._at++) patch(svg, d[a._at], 1);
   }
   function geom(a) {
-    var n = JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');
+    var n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');
     var p = v === null ? 1 : (v === '' ? n : +v);
     return { n: n, p: p, steps: n / p };
   }

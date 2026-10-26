@@ -13,7 +13,10 @@ open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Syntax using (Dia; rectangle; text; named)
 open import Slides.Diagram.Notation using (↔; _∥_)
 open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
+open import Slides.Anim.Syntax using (Anim; Seg; hold; tweenT; _⨾_)
+open import Slides.Diagram.Expr using (exprOps; t; lit)
+import Slides.Diagram.Notation as N
+open import Data.Unit using (⊤)
 import Slides.Anim.Track as T
 open import Data.Rational using (_/_)
 open import Data.Integer using (+_)
@@ -58,10 +61,14 @@ animated = do
   notes "A free monad of Seq and Par over frames; each tick is a fragment."
 
 -- a box sliding right with an ease-in-out curve: the position is a parameter
--- that follows an explicit track, sampled once per tick
+-- that follows an explicit track, sampled once per tick.  The body is a template, a
+-- diagram whose sizes are formulas in the parameter `t`, so the page ships the formulas
+-- and not the frames (`Slides.Anim.Param`).
+private module E = N.NotationWith (exprOps {⊤})
+
 slide′ : Anim ℕ (Seg ℕ)
-slide′ = tween 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
-           (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 (filled "#c96" defaultStyle)))
+slide′ = tweenT 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
+           (E.↔ t ∥ named "slider" (rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle)))
 
 eased : Body
 eased = do
