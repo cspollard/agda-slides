@@ -161,13 +161,18 @@ renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name
 -- `data-rests`, one every `data-ms` milliseconds.  Without the script the first
 -- frame stays.
 --
--- An edit is JSON: `0` (unchanged), an array of numbers (the element's
--- coordinates and sizes, see `numsOf`), a string (a replacement element, as an
+-- An edit is JSON: `0` (unchanged; `-k`, `k` unchanged elements in a row), an array of
+-- numbers (the changes of the element's coordinates and sizes, see `numsOf`, from the
+-- old values; the rest are unchanged), a string (a replacement element, as an
 -- `<svg>` holding it), or `{"g": edits}` (a group edited member by member); a list
 -- of edits is an array, ending in `{"r": [strings]}` when elements are appended.
 private
   natⱼ : ℕ → JSON
   natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
+
+  intⱼ : ℤ.ℤ → JSON
+  intⱼ (ℤ.+ n)    = natⱼ n
+  intⱼ (ℤ.-[1+ m ]) = numberⱼ (jsonNumber Sign.- (suc m) [] (ℤ.+ 0))
 
   elementString : String → Element → String
   elementString n e = renderXML (SVG.svg (("xmlns" , "http://www.w3.org/2000/svg") ∷ []) (renderElement n e ∷ []))
@@ -175,7 +180,7 @@ private
   mutual
     editⱼ : String → Edit → JSON
     editⱼ n same      = natⱼ 0
-    editⱼ n (nums ns) = arrayⱼ (map natⱼ ns)
+    editⱼ n (nums ns) = arrayⱼ (map intⱼ ns)
     editⱼ n (new e)   = stringⱼ (elementString n e)
     editⱼ n (grp es)  = objectFromList (("g" , editsⱼ n es) ∷ [])
 
@@ -183,9 +188,19 @@ private
     editsⱼ n es = arrayⱼ (items n es)
 
     items : String → Edits → List JSON
-    items n (done [])       = []
-    items n (done rest)     = objectFromList (("r" , arrayⱼ (map (λ e → stringⱼ (elementString n e)) rest)) ∷ []) ∷ []
-    items n (e ∷ es)        = editⱼ n e ∷ items n es
+    items n = go 0
+      where
+        -- `k` unchanged elements seen so far: a run of two or more is one number `-k`
+        flush : ℕ → List JSON → List JSON
+        flush 0             r = r
+        flush 1             r = natⱼ 0 ∷ r
+        flush k@(suc (suc _)) r = numberⱼ (jsonNumber Sign.- k [] (ℤ.+ 0)) ∷ r
+
+        go : ℕ → Edits → List JSON
+        go k (done [])   = flush k []
+        go k (done rest) = flush k (objectFromList (("r" , arrayⱼ (map (λ e → stringⱼ (elementString n e)) rest)) ∷ []) ∷ [])
+        go k (same ∷ es) = go (suc k) es
+        go k (e ∷ es)    = flush k (editⱼ n e ∷ go 0 es)
 
 renderAnimation : Diagram → List Diagram → ℕ → Play → XMLM A
 renderAnimation d ds ms play =

@@ -178,6 +178,20 @@ test-plain-anim:
 	cd tests/browser && npm install --silent
 	node tests/browser/plain-anim.mjs out
 
+# The page player against the frames Agda computes (`animref` renders a deck of
+# animations and their reference frames, standalone, to out/animref/).
+.PHONY: animref test-anim-ref
+animref:
+	mkdir -p out/animref $(BUILD_DIR)
+	cp assets/plain.css assets/plain.js assets/slides.css out/animref/
+	$(COMPILE) src/Slides/Examples/AnimRefMain.agda
+	mv AnimRefMain $(BUILD_DIR)/AnimRefMain 2>/dev/null || true
+	$(BUILD_DIR)/AnimRefMain
+
+test-anim-ref: animref
+	cd tests/browser && npm install --silent
+	node tests/browser/anim-ref.mjs out
+
 # Drive the "It Just Takes Two" deck (needs `make pairs` first; also drives the
 # local-copy build if `make pairs-local` has been run).
 .PHONY: test-pairs

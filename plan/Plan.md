@@ -11,17 +11,36 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 2. **A JavaScript backend for animations** (the flipbook emits every frame as a full SVG:
    the Pairs deck's `index.html` is about 1.4 MB, mostly the two point-pair loops).
    Two stages, each with its proof:
-   - *Keyframes and diffs.* Done (`Slides.Diagram.Delta`, shipped in `data-deltas`: the
-     Pairs deck's page is 1.47 MB → 0.30 MB; round trip `patchL (diffL a b) a ≡ b`,
-     `replay-deltas`). Left: shrink further (the JSON is escaped inside an attribute and
-     names every edit; numbers of unchanged runs could be run-length encoded), and a proof
-     that the JavaScript patcher agrees with `patchL` (it is tested, not proved).
-   - *Parametric bodies.* Make a segment's body an open diagram (`DiagramC S ⋆ X`, with
-     scalar expressions in the holes) instead of an opaque `ℚ → Dia S`; compile the track
-     and the expressions to a small player that evaluates at any time (continuous time, size
-     independent of the frame count). Theorem: the compiled player at tick `t` agrees with
-     `frames` at `t` (`Slides.Anim.Generic`, one level up). Bodies that stay Agda functions
-     keep the flipbook. This is also what the open-diagrams item below needs.
+   - *Keyframes and diffs.* Done (`Slides.Diagram.Delta`, shipped in `data-deltas`: round
+     trip `patchL (diffL a b) a ≡ b`, `replay-deltas`). Numbers are shipped as differences
+     from the old ones (trailing zeros dropped) and the JSON collapses runs of unchanged
+     elements: the Pairs page is 1.47 MB → 0.24 MB. The page
+     player is checked against Agda (`make test-anim-ref`: every frame the player rebuilds
+     equals the frame Agda computed, on a steps animation and a 64-frame loop); the two
+     copies of the player share their frame code (`tests/check_players.py`). A *proof*
+     about JavaScript is out of reach; stage 2 shrinks what the player has to be trusted with.
+   - *Parametric bodies* (not started). The design, from what is already in the library:
+     1. `Draw S` and `Layout S` are already polymorphic in the scalar, and `LayoutWith`
+        takes any `Ops S`. So take `S = Expr`, the free `Ops`-algebra (zero, sum,
+        difference, maximum, `fromℕ`, `percentOf`) with one more leaf, the parameter `t`
+        (and `units t`). `Ops Expr` is the initial algebra, `eval t : Expr → ℕ` is an
+        `Ops`-homomorphism by construction.
+     2. A segment body is a template `Dia Expr` (the open diagram) instead of an opaque
+        `ℚ → Dia ℕ`: `data Body = opaque (ℚ → Dia ℕ) | template (Dia Expr)`, with
+        `bodyAt` so that every consumer of segments is unchanged. Bodies that stay
+        functions keep the flipbook.
+     3. Lay the template out once, symbolically: `layout_Expr tmpl : Layout Expr`, every
+        coordinate an expression in `t`. The player evaluates those expressions at any
+        time: size independent of the frame count, continuous time.
+     4. The theorem is naturality of the layout under an `Ops`-homomorphism `h`:
+        `Layout.map h (layout_S d) ≡ layout_S′ (mapDia h d)` (one proof, by `fold`
+        fusion; this is the "pull `Layout` back along a scalar map" item), hence
+        `evalLayout t (layout_Expr tmpl) ≡ layout_ℕ (mapDia (eval t) tmpl)`, which is
+        `bodyAt` at `t`. The JavaScript is then a tiny expression evaluator and the
+        element printer, not a layout engine.
+     What stays flipbook: bodies that need division, remainder or comparison of the
+     parameter (the point-pair loops), until `Expr` grows those (each with its homomorphism
+     proof).
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
 3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
    `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold

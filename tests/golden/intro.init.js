@@ -30,9 +30,10 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
     var kids = parent.children, n = 0, rest = [];
     items.forEach(function (it) {
       if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }
+      if (typeof it === 'number' && it < 0) { n -= it; return; }
       var el = kids[offset + n]; n++;
       if (it === 0) return;
-      if (Array.isArray(it)) { NUMS[el.localName].forEach(function (k, j) { el.setAttribute(k, it[j]); }); return; }
+      if (Array.isArray(it)) { it.forEach(function (v, j) { var k = NUMS[el.localName][j]; el.setAttribute(k, +el.getAttribute(k) + v); }); return; }
       if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }
       patch(el, it.g, 0);
     });
@@ -77,6 +78,7 @@ Reveal.initialize(Object.assign({"hash":true,"transition":"slide","slideNumber":
       }
     }, ms);
   }
+  document.querySelectorAll('.animation').forEach(function (a) { a._show = function (k) { frame(a, k); }; });
   document.querySelectorAll('.animation[data-loop]').forEach(spin);
   function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }
   Reveal.on('ready', function (e) { all(e.currentSlide); });

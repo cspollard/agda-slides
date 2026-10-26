@@ -19,11 +19,14 @@
 
 module Slides.Diagram.Delta where
 
-open import Data.List using (List; []; _∷_; map)
+open import Data.List using (List; []; _∷_; map; _++_; drop; length)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe.Properties as MaybeP
 open import Data.Nat using (ℕ)
 import Data.Nat.Properties as ℕP
+import Data.Integer as ℤ
+import Data.Integer.Properties as ℤP
+open import Data.Integer using (ℤ)
 open import Data.Product using (_×_; _,_)
 import Data.Product.Properties as ProdP
 open import Data.String using (String)
@@ -154,20 +157,37 @@ numsOf (label x y _ _ _)  = x ∷ y ∷ []
 numsOf (group _)          = []
 numsOf (path v1 v2)         = []
 
--- put numbers back (missing ones leave the old value)
-setNums : List ℕ → Element → Element
-setNums (x ∷ y ∷ w ∷ h ∷ _) (rect _ _ _ _ s)   = rect x y w h s
-setNums (x ∷ y ∷ r ∷ _)     (circle _ _ _ s)   = circle x y r s
-setNums (a ∷ b ∷ c ∷ d ∷ _) (line _ _ _ _ s)   = line a b c d s
-setNums (a ∷ b ∷ c ∷ d ∷ _) (arrow _ _ _ _ s)  = arrow a b c d s
-setNums (x ∷ y ∷ _)         (label _ _ z t s)  = label x y z t s
-setNums _                   e                  = e
+-- put numbers back
+setAll : List ℕ → Element → Element
+setAll (x ∷ y ∷ w ∷ h ∷ _) (rect _ _ _ _ s)   = rect x y w h s
+setAll (x ∷ y ∷ r ∷ _)     (circle _ _ _ s)   = circle x y r s
+setAll (a ∷ b ∷ c ∷ d ∷ _) (line _ _ _ _ s)   = line a b c d s
+setAll (a ∷ b ∷ c ∷ d ∷ _) (arrow _ _ _ _ s)  = arrow a b c d s
+setAll (x ∷ y ∷ _)         (label _ _ z t s)  = label x y z t s
+setAll _                   e                  = e
+
+-- Numbers are edited by differences from the old ones (a moving dot changes its
+-- coordinates by a few units): the first differences only, the rest are zero.
+addNums : List ℤ → List ℕ → List ℕ
+addNums []       ns       = ns
+addNums (_ ∷ _)  []       = []
+addNums (d ∷ ds) (n ∷ ns) = ℤ.∣ (ℤ.+ n) ℤ.+ d ∣ ∷ addNums ds ns
+
+setNums : List ℤ → Element → Element
+setNums ds e = setAll (addNums ds (numsOf e)) e
+
+-- the differences from the old numbers to the new, without the trailing zeros
+trimNums : List ℕ → List ℕ → List ℤ
+trimNums (a ∷ as) (b ∷ bs) with trimNums as bs | (ℤ.+ b) ℤ.- (ℤ.+ a) ℤP.≟ ℤ.0ℤ
+... | [] | yes _ = []
+... | r  | _     = ((ℤ.+ b) ℤ.- (ℤ.+ a)) ∷ r
+trimNums _ _ = []
 
 mutual
   -- how to turn one element into another
   data Edit : Set where
     same : Edit
-    nums : List ℕ → Edit      -- the same element with these numbers (`numsOf`)
+    nums : List ℤ → Edit      -- the same element, its numbers (`numsOf`) shifted by these
     new  : Element → Edit
     grp  : Edits → Edit       -- a group whose members are edited
 
@@ -182,8 +202,8 @@ infixr 5 _∷_
 diffN : Element → Element → Edit
 diffN a b with a ≟ₑ b
 ... | yes _ = same
-... | no _ with setNums (numsOf b) a ≟ₑ b
-...   | yes _ = nums (numsOf b)
+... | no _ with setNums (trimNums (numsOf a) (numsOf b)) a ≟ₑ b
+...   | yes _ = nums (trimNums (numsOf a) (numsOf b))
 ...   | no _  = new b
 
 mutual
@@ -229,7 +249,7 @@ mutual
 patchE-diffN : ∀ a b → patchE (diffN a b) a ≡ b
 patchE-diffN a b with a ≟ₑ b
 ... | yes eq = eq
-... | no _ with setNums (numsOf b) a ≟ₑ b
+... | no _ with setNums (trimNums (numsOf a) (numsOf b)) a ≟ₑ b
 ...   | yes eq = eq
 ...   | no _   = refl
 

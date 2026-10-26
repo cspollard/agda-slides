@@ -37,9 +37,10 @@
     var kids = parent.children, n = 0, rest = [];
     items.forEach(function (it) {
       if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }
+      if (typeof it === 'number' && it < 0) { n -= it; return; }
       var el = kids[offset + n]; n++;
       if (it === 0) return;
-      if (Array.isArray(it)) { NUMS[el.localName].forEach(function (k, j) { el.setAttribute(k, it[j]); }); return; }
+      if (Array.isArray(it)) { it.forEach(function (v, j) { var k = NUMS[el.localName][j]; el.setAttribute(k, +el.getAttribute(k) + v); }); return; }
       if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }
       patch(el, it.g, 0);
     });
@@ -83,6 +84,8 @@
   function syncAll(slide, jump) {
     Array.prototype.forEach.call(slide.querySelectorAll('.animation'), function (a) { sync(a, jump); });
   }
+  // for tests: show frame `k` directly
+  Array.prototype.forEach.call(document.querySelectorAll('.animation'), function (a) { a._show = function (k) { frame(a, k); }; });
   Array.prototype.forEach.call(document.querySelectorAll('.animation[data-loop]'), function (a) {
     var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);
     setInterval(function () {

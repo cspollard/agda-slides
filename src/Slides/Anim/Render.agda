@@ -54,16 +54,21 @@ length-restsOf : ∀ acc ls → length (restsOf acc ls) ≡ length ls
 length-restsOf acc []       = refl
 length-restsOf acc (l ∷ ls) = cong suc (length-restsOf (acc + l) ls)
 
--- the `animation` command for frames played in a given mode: `name-i` is the id of
--- frame `i`, `percent` the displayed width, `ms` the time per frame.  A zero-length
--- animation is one empty frame.
+-- the diagrams of the frames, all of one size: `name-i` is the id of frame `i`,
+-- `percent` the displayed width.  A zero-length animation is one empty frame.
+frameDiagrams : String → ℕ → List (Dia ℕ) → List Diagram
+frameDiagrams name pct fs with compileFrames name pct 0 fs
+... | []     = compile (name ++ˢ "-0") pct (spacer 0 0) ∷ []
+... | d ∷ ds = map (resize w h) (d ∷ ds)
+  where w = maxWidth (d ∷ ds)
+        h = maxHeight (d ∷ ds)
+
+-- the `animation` command for frames played in a given mode: `ms` is the time per frame
 private
   shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → ContentShape
-  shape name pct ms play fs with compileFrames name pct 0 fs
+  shape name pct ms play fs with frameDiagrams name pct fs
   ... | []     = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) [] ms play
-  ... | d ∷ ds = animation (resize w h d) (map (resize w h) ds) ms play
-    where w = maxWidth (d ∷ ds)
-          h = maxHeight (d ∷ ds)
+  ... | d ∷ ds = animation d ds ms play
 
 -- the acts one after the other; each act is one step
 render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape

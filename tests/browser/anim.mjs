@@ -66,13 +66,12 @@ same('back to the first act\'s rest', await actShown(), [2]);
 // the eased slider: six frames, the box moves right, slowly then quickly then slowly
 const sliderSlide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s => s.querySelector('#slider-0-frames')));
 await page.evaluate(i => Reveal.slide(i), sliderSlide);
-// the box's x at each frame: its first value, then every edit that gives it numbers
+// the box's x at each frame, as the player draws it
 const xs = await page.evaluate(() => {
   const a = document.getElementById('slider-0-frames');
-  const kids = [...(a._base || a.querySelector('svg')).children].slice(1);
-  const i = kids.findIndex(k => k.localName === 'rect');
-  const out = [+kids[i].getAttribute('x')];
-  JSON.parse(a.dataset.deltas).forEach(d => out.push(Array.isArray(d[i]) ? d[i][0] : out[out.length - 1]));
+  const n = JSON.parse(a.dataset.deltas).length + 1;
+  const out = [];
+  for (let k = 0; k < n; k++) { a._show(k); out.push(+a.querySelector(':scope > .frame rect').getAttribute('x')); }
   return out;
 });
 same('six slider frames', xs.length, 6);

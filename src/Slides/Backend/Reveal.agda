@@ -239,9 +239,10 @@ animationSync =
   "    var kids = parent.children, n = 0, rest = [];\n" ++ˢ
   "    items.forEach(function (it) {\n" ++ˢ
   "      if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }\n" ++ˢ
+  "      if (typeof it === 'number' && it < 0) { n -= it; return; }\n" ++ˢ
   "      var el = kids[offset + n]; n++;\n" ++ˢ
   "      if (it === 0) return;\n" ++ˢ
-  "      if (Array.isArray(it)) { NUMS[el.localName].forEach(function (k, j) { el.setAttribute(k, it[j]); }); return; }\n" ++ˢ
+  "      if (Array.isArray(it)) { it.forEach(function (v, j) { var k = NUMS[el.localName][j]; el.setAttribute(k, +el.getAttribute(k) + v); }); return; }\n" ++ˢ
   "      if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }\n" ++ˢ
   "      patch(el, it.g, 0);\n" ++ˢ
   "    });\n" ++ˢ
@@ -286,6 +287,7 @@ animationSync =
   "      }\n" ++ˢ
   "    }, ms);\n" ++ˢ
   "  }\n" ++ˢ
+  "  document.querySelectorAll('.animation').forEach(function (a) { a._show = function (k) { frame(a, k); }; });\n" ++ˢ
   "  document.querySelectorAll('.animation[data-loop]').forEach(spin);\n" ++ˢ
   "  function all(slide) { if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, true); }); }\n" ++ˢ
   "  Reveal.on('ready', function (e) { all(e.currentSlide); });\n" ++ˢ
