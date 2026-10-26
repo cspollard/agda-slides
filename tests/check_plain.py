@@ -27,4 +27,14 @@ check("navigation script ran: exactly one active slide",
 check("fragments preserved", dom.count('class="fragment') >= source.count('class="fragment'))
 check("no unclosed-element nesting: slides are siblings",
       len(re.findall(r'<section class="slide', dom)) == len(re.findall(r'</section>', dom)))
+# a deck lowered with `animationFinal` has no animations left, only stills
+if "lowered" in path:
+    check("lowered deck: no animation elements", 'class="animation' not in source)
+    check("lowered deck: animations became placeholders", source.count('[animation]') == 2)
+if "still" in path:
+    check("still deck: no animation elements", 'class="animation' not in source)
+    check("still deck: animations became their final frames",
+          'id="steps-2"' in source and 'id="blink-0"' in source)
+    check("still deck: only the final frame is kept",
+          'id="steps-0"' not in source and 'id="steps-1"' not in source)
 sys.exit(1 if failures else 0)

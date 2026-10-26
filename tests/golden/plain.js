@@ -1,5 +1,6 @@
 // Minimal navigation for the standalone HTML backend: arrow keys / space
 // step through fragments and slides; the slide number lives in the URL hash.
+// It also plays animations.
 (function () {
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var bar = document.querySelector('.progress');
@@ -20,6 +21,68 @@
     });
   }
 
+  // Animations (`.animation`, see `renderAnimation`): the same player as the
+  // reveal.js backend's `animationSync`.  The step is the number of visible
+  // `.anim-step` fragments; the page moves one frame per `data-ms` towards the
+  // frame that step rests on, and a `data-loop` animation also advances a phase
+  // every `data-ms` while its slide is shown (frame = phase * steps + step).
+  function geom(a) {
+    var n = a.querySelectorAll(':scope > .frame').length, v = a.getAttribute('data-loop');
+    var p = v === null ? 1 : (v === '' ? n : +v);
+    return { n: n, p: p, steps: n / p };
+  }
+  function draw(a) {
+    var g = geom(a), i = (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0));
+    a.querySelectorAll(':scope > .frame').forEach(function (f, k) { f.hidden = (k !== i); });
+  }
+  function target(a) {
+    var n = a.querySelectorAll('.anim-step.visible').length;
+    if (n === 0) return 0;
+    var r = a.dataset.rests.split(',');
+    return +r[Math.min(n, r.length) - 1];
+  }
+  function sync(a, jump) {
+    clearInterval(a._timer);
+    var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);
+    function at(i) { a.dataset.cur = String(i); draw(a); }
+    if (jump || ms === 0 || t === cur) { at(t); return; }
+    a._timer = setInterval(function () {
+      cur += (t > cur ? 1 : -1);
+      at(cur);
+      if (cur === t) clearInterval(a._timer);
+    }, ms);
+  }
+  function syncAll(slide, jump) {
+    Array.prototype.forEach.call(slide.querySelectorAll('.animation'), function (a) { sync(a, jump); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.animation[data-loop]'), function (a) {
+    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);
+    setInterval(function () {
+      if (p > 1 && a.closest('.slide').classList.contains('active')) {
+        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);
+        draw(a);
+      }
+    }, ms);
+  });
+  // printing shows every fragment, so show every animation at its last step
+  window.addEventListener('beforeprint', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.animation'), function (a) {
+      a._printed = [a.dataset.cur, a.dataset.phase];
+      var r = a.dataset.rests;
+      a.dataset.cur = r ? r.split(',').pop() : '0';
+      a.dataset.phase = '0';
+      draw(a);
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.animation'), function (a) {
+      if (!a._printed) return;
+      a.dataset.cur = a._printed[0] || '0';
+      if (a._printed[1] !== undefined) a.dataset.phase = a._printed[1];
+      draw(a);
+    });
+  });
+
   function show(i, revealAll) {
     current = Math.max(0, Math.min(slides.length - 1, i));
     slides.forEach(function (s, j) { s.classList.toggle('active', j === current); });
@@ -31,13 +94,14 @@
     if (bar) bar.style.width = (100 * (current + 1) / slides.length) + '%';
     history.replaceState(null, '', '#' + (current + 1));
     runScripts(slides[current]);
+    syncAll(slides[current], true);
   }
 
   function next() {
     var hidden = fragments(slides[current]).filter(function (f) {
       return !f.classList.contains('visible');
     });
-    if (hidden.length) hidden[0].classList.add('visible');
+    if (hidden.length) { hidden[0].classList.add('visible'); syncAll(slides[current], false); }
     else if (current < slides.length - 1) show(current + 1, false);
   }
 
@@ -45,7 +109,7 @@
     var shown = fragments(slides[current]).filter(function (f) {
       return f.classList.contains('visible');
     });
-    if (shown.length) shown[shown.length - 1].classList.remove('visible');
+    if (shown.length) { shown[shown.length - 1].classList.remove('visible'); syncAll(slides[current], false); }
     else if (current > 0) show(current - 1, true);
   }
 

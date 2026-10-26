@@ -6,6 +6,7 @@ module Slides.Examples.Showcase where
 
 open import Data.List using (_∷_; [])
 open import Data.Product using (_,_)
+open import Data.String using (String)
 
 open import Slides.Core using (Deck; emph; strong; codeSpan; inlineMath; link)
 open import Slides.DSL
@@ -13,6 +14,9 @@ open import Slides.Components
 open import Slides.Diagram
 open import Slides.Resources
 import Slides.Math as M
+open import Data.Nat using (ℕ)
+open import Slides.Anim.Syntax using (Anim; Seg; hold; _⨾_)
+open import Slides.Diagram.Syntax using (Dia; text)
 
 resources : Resources
 resources = record
@@ -32,6 +36,10 @@ gauss = M.sum (M.var "i" M.≡ 0) "n" "i" M.≡ M.frac ("n" M.* M.paren ("n" M.+
 -- e^{iπ} + 1 = 0
 euler : M.Math
 euler = (M.var "e" M.^ ("i" M.* M.greek M.pi)) M.+ 1 M.≡ 0
+
+-- a word that changes, one act per step
+word : String → Anim ℕ (Seg ℕ)
+word w = hold 1 (text 40 w defaultStyle)
 
 showcase : Deck
 showcase = do
@@ -103,6 +111,10 @@ showcase = do
             placed 60 62 30 25 (Content.diagram (record
               { name = "inset" ; width = 100 ; height = 50 ; percent = 100
               ; elements = rect 5 5 90 40 (stroked "#e5e" defaultStyle) ∷ [] })))
+
+  slide (do heading 2 "Animations"
+            animate "steps" 40 100 ((word "one" ⨾ word "two") ∷ word "three" ∷ [])
+            animateLoop "blink" 20 200 (word "tick" ⨾ word "tock"))
 
   slide (do heading 2 "Scripting"
             paragraph "The next line is written by JavaScript."
