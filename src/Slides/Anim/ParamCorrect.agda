@@ -199,11 +199,11 @@ Agree-length {G} {t} {xs} {ys} ag =
                (len≤ ys xs (λ j e → Rel-nothingˡ (at ag j) e))
 
 -- `++` of lists is `++`, with the tick of the second part shifted by the length of the first
-private
-  nth-++′ : ∀ {A : Set} (xs ys : List A) j n → length xs ≡ n →
-            nth (xs ++ ys) j ≡ (if j <ᵇ n then nth xs j else nth ys (j ∸ n))
-  nth-++′ xs ys j n refl = nth-++ xs ys j
+nth-++′ : ∀ {A : Set} (xs ys : List A) j n → length xs ≡ n →
+          nth (xs ++ ys) j ≡ (if j <ᵇ n then nth xs j else nth ys (j ∸ n))
+nth-++′ xs ys j n refl = nth-++ xs ys j
 
+private
   lt-false : ∀ {m n} → (m <ᵇ n) ≡ false → n ≤ m
   lt-false {m} {n} e = ℕP.≮⇒≥ (λ h → subst T e (ℕP.<⇒<ᵇ h))
 
@@ -285,12 +285,12 @@ leaves-agree (impure (Par , k)) i t₀ i′ l eq with bind-just (leaves i t₀ (
 ------------------------------------------------------------------------
 -- Tick by tick
 
-private
-  nth-in : ∀ {A : Set} (xs : List A) j → (j <ᵇ length xs) ≡ true → ∃ λ x → nth xs j ≡ just x
-  nth-in []       j       ()
-  nth-in (x ∷ xs) zero    h = x , refl
-  nth-in (x ∷ xs) (suc j) h = nth-in xs j h
+nth-in : ∀ {A : Set} (xs : List A) j → (j <ᵇ length xs) ≡ true → ∃ λ x → nth xs j ≡ just x
+nth-in []       j       ()
+nth-in (x ∷ xs) zero    h = x , refl
+nth-in (x ∷ xs) (suc j) h = nth-in xs j h
 
+private
   Rel-just : ∀ {G F m} → Rel G (just F) m →
              ∃ λ S → m ≡ just S × (∀ ρ → G ρ → layoutℕ F ≡ mapLayout (eval ρ) (layoutE S))
   Rel-just (bothFrames {y = y} r) = y , refl , r

@@ -223,10 +223,10 @@ bodyAt′ tr (blackBox _) = nothing
 segAt : Seg ℕ → Maybe (Timed (Maybe (Dia ℚ)))
 segAt s = bodyAt′ (track s) (content s)
 
-private
-  lift2 : ∀ {A : Set} → (A → A → A) → Maybe A → Maybe A → Maybe A
-  lift2 f (just x) (just y) = just (f x y)
-  lift2 f _        _        = nothing
+-- both parts, or nothing
+lift2 : ∀ {A : Set} → (A → A → A) → Maybe A → Maybe A → Maybe A
+lift2 f (just x) (just y) = just (f x y)
+lift2 f _        _        = nothing
 
 animAt : Anim ℕ (Seg ℕ) → Maybe (Timed (Maybe (Dia ℚ)))
 animAt a = foldA segAt (lift2 seqAt) (lift2 (parAt atop)) a
@@ -246,12 +246,12 @@ segAt-dur s T eq = go (track s) (content s) T eq
     go tr (template d) _ refl = trans (sampleAt-dur Tr.ℚLerp tr) (Tr.sample-dur Tr.ℚLerp tr)
     go tr (blackBox _) _ ()
 
-private
-  lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
+-- the parts of a `lift2` that is there
+lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
                ∃₂ λ a b → x ≡ just a × y ≡ just b × f a b ≡ T
-  lift2-just f (just a) (just b) refl = a , b , refl , refl , refl
-  lift2-just f (just a) nothing  ()
-  lift2-just f nothing  y        ()
+lift2-just f (just a) (just b) refl = a , b , refl , refl , refl
+lift2-just f (just a) nothing  ()
+lift2-just f nothing  y        ()
 
 animAt-dur : ∀ a T → animAt a ≡ just T → proj₁ T ≡ dur a
 animAt-dur (pure s) T eq = segAt-dur s T eq
