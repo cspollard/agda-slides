@@ -111,6 +111,13 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
 7. **Generic stretch.** Fullness and faithfulness of `Poly-⇒`; naturality of the sum
    isomorphism in the setoid argument; indexed containers for typed slide state;
    layout as a symmetric monoidal structure.
+8. **Update parsnip** (do this once the shared-formulas work is merged, so the two do not
+   mix). Bump the `parsnip` submodule from the pinned commit (`9ac93f3`) to its current
+   upstream `main`; rebuild and check that `make check`, `make test` (goldens: the XML/SVG
+   printer's output must not change unless intended), and the browser tests pass; fix any
+   API drift in `Slides.Backend.*` (`Data.XML.*`, `Data.SVG`, `Data.JSON.*`); update the
+   pinned commit noted under "Risks". Worktrees need a plain copy of `parsnip/` (the
+   submodule is empty in a fresh worktree).
 
 ## Risks
 
