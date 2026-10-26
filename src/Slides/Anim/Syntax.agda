@@ -33,7 +33,7 @@ open import Data.Bool using (T)
 open import Data.Unit using (tt)
 
 open import Slides.Diagram.Syntax using (Dia; spacer; mapDia)
-open import Slides.Diagram.Expr using (Expr; evalWith)
+open import Slides.Diagram.Expr using (Expr; evalWith; zero′)
 open import Data.Unit using (⊤)
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
@@ -121,9 +121,10 @@ tween n a b e f = pure (seg (pure (T.piece n a b e)) (blackBox f))
 tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (Expr ⊤) → Anim S (Seg S)
 tweenT n a b e d = pure (seg (pure (T.piece n a b e)) (template d))
 
--- a pause: an empty frame, which needs the scalar's zero
+-- a pause: an empty frame.  It is a template (constant, with the zero for its size), so
+-- padding keeps an animation of templates parametric.
 none : ∀ {S} → Ops S → ℕ → Anim S (Seg S)
-none O n = hold n (spacer 0# 0#) where open Ops O
+none O n = pure (seg (pure (T.piece n 0ℚ 0ℚ T.Linear)) (template (spacer zero′ zero′)))
 
 ------------------------------------------------------------------------
 -- Duration: the algebra into (ℕ, +, max)

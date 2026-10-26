@@ -26,7 +26,8 @@ const result = await page.evaluate(() => {
   const res = {};
   for (const a of document.querySelectorAll('.animation')) {
     const name = a.id.replace(/-0-frames$/, "");
-    const n = JSON.parse(a.dataset.deltas).length + 1;
+    const param = a.dataset.param !== undefined;
+    const n = param ? +a.dataset.n : JSON.parse(a.dataset.deltas).length + 1;
     const refs = [...document.querySelectorAll(`[id^="ref-${name}-"]`)].filter(e => e.classList.contains('diagram'));
     let bad = [], order = [];
     // forwards, then straight back to the start and to the middle (rebuilding from the first frame)
@@ -38,15 +39,17 @@ const result = await page.evaluate(() => {
       const want = refs[k] && norm(refs[k].querySelector('svg'));
       if (got !== want) bad.push(k);
     }
-    res[name] = { frames: n, refs: refs.length, bad };
+    res[name] = { frames: n, refs: refs.length, bad, param, phases: param ? JSON.parse(a.dataset.param).p.length : 0, size: (a.dataset.param || a.dataset.deltas).length };
   }
   return res;
 });
 for (const [name, r] of Object.entries(result)) {
   check(`${name}: ${r.frames} frames, ${r.refs} references`, r.frames === r.refs, `${r.frames} vs ${r.refs}`);
   check(`${name}: the player agrees with Agda on every frame`, r.bad.length === 0, `differs at ${r.bad.slice(0, 8)}`);
+  // the template animations (named `t…`) are shipped as formulas, the others as edits
+  check(`${name}: shipped ${r.param ? `as formulas (${r.phases} phases)` : 'as edits'}, ${r.size} characters`, r.param === name.startsWith('t'));
 }
-check('animations found', Object.keys(result).length === 2);
+check('animations found', Object.keys(result).length === 6);
 check('no page errors', errors.length === 0, errors.join('; '));
 await browser.close();
 console.log(failures === 0 ? 'all anim-ref tests passed' : `${failures} failure(s)`);

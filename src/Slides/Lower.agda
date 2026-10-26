@@ -47,6 +47,8 @@ diagramPlaceholder (diagram d) =
   impure (paragraph (text "[diagram]" ∷ []) , pure)
 diagramPlaceholder (animation d ds _ _) =
   impure (paragraph (text "[animation]" ∷ []) , pure)
+diagramPlaceholder (paramAnimation d ds _ _ _) =
+  impure (paragraph (text "[animation]" ∷ []) , pure)
 diagramPlaceholder a = ret a
 
 -- The frame an animation comes to rest on once all its steps have played: the
@@ -78,6 +80,7 @@ finalFrame-no-steps d (f ∷ fs)  = refl
 -- animation as a still of its final frame, the picture the audience is left with.
 animationFinal : Lowering ContentC ContentC
 animationFinal (animation d ds _ p) = impure (diagram (finalFrame d ds p) , pure)
+animationFinal (paramAnimation d ds _ _ p) = impure (diagram (finalFrame d ds p) , pure)
 animationFinal a                    = ret a
 
 ------------------------------------------------------------------------

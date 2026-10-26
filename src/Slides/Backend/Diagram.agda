@@ -12,7 +12,7 @@ module Slides.Backend.Diagram where
 open import Data.Char using (Char)
 open import Data.List using (List; []; _∷_; _++_; reverse; [_]; map; length)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _*_; _/_; suc)
+open import Data.Nat using (ℕ; _*_; _/_; suc; _+_; _∸_; _⊔_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
@@ -24,13 +24,25 @@ import Data.SVG as SVG
 open import Slides.Diagram
 open import Slides.Core using (Play; onSteps; looping; both)
 open import Slides.Diagram.Delta using (Edit; Edits; same; nums; new; grp; done; _∷_; deltas)
-open import Data.JSON.AST using (JSON; objectFromList; stringⱼ; numberⱼ; arrayⱼ; jsonNumber)
+open import Data.JSON.AST using (JSON; objectFromList; stringⱼ; numberⱼ; arrayⱼ; jsonNumber; nullⱼ)
 open import Data.JSON.Print using (renderJSON)
 open import Data.XML.Print using (renderXML)
 import Data.Sign as Sign
 import Data.Integer as ℤ
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
+import Slides.Diagram.Draw as Dr
+open import Slides.Diagram.Expr using (Expr; ExprOp; eval)
+open import Slides.Diagram.Param using (Param; param)
+open import Slides.Diagram.Scalar using (natOps)
+import Slides.Diagram.Place natOps as PN
+open import Data.Container.FreeMonad using (pure; impure)
+open import Data.Bool using (Bool; true; false; _∧_; if_then_else_)
+open import Data.Fin using (zero; suc)
+open import Data.Unit using (tt)
+import Slides.Diagram.Expr as E
+open import Relation.Nullary.Decidable using (⌊_⌋)
+import Data.String as Str
 
 private
   variable
@@ -202,12 +214,12 @@ private
         go k (same ∷ es) = go (suc k) es
         go k (e ∷ es)    = flush k (editⱼ n e ∷ go 0 es)
 
-renderAnimation : Diagram → List Diagram → ℕ → Play → XMLM A
-renderAnimation d ds ms play =
+-- the element of an animation, with the attributes that depend on how it is encoded
+animationWith : Diagram → List (String × String) → ℕ → Play → XMLM A
+animationWith d extra ms play =
   hElement "div"
-    ( ("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames")
-    ∷ ("data-ms" , num ms) ∷ ("data-deltas" , renderJSON (arrayⱼ (map (editsⱼ (Diagram.name d)) (deltas (Diagram.elements d) (map Diagram.elements ds)))))
-    ∷ playAttr play )
+    ( ("class" , "animation") ∷ ("id" , Diagram.name d ++ˢ "-frames") ∷ ("data-ms" , num ms)
+    ∷ extra ++ playAttr play )
     ( hElement "div" (("class" , "frame") ∷ []) (renderDiagram d ∷ [])
     ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) (stepsOf play) )
   where
@@ -223,3 +235,107 @@ renderAnimation d ds ms play =
     stepsOf (onSteps rs) = rs
     stepsOf looping       = []
     stepsOf (both rs p)   = rs
+
+renderAnimation : Diagram → List Diagram → ℕ → Play → XMLM A
+renderAnimation d ds ms play =
+  animationWith d
+    (("data-deltas" , renderJSON (arrayⱼ (map (editsⱼ (Diagram.name d)) (deltas (Diagram.elements d) (map Diagram.elements ds))))) ∷ [])
+    ms play
+
+------------------------------------------------------------------------
+-- A parametric animation (`Slides.Diagram.Param`) is shipped as formulas.
+--
+-- `data-param` is JSON `{"v": segments, "p": phases}`.  `segments` has, for each segment,
+-- `[start tick, [parameter on each tick]]`.  A *phase* is a run of ticks whose layouts have
+-- the same shape and the same formulas (a segment starting or ending changes it):
+-- `{"s": first tick, "b": elements, "c": coordinates}`, with `b` the elements as `<svg>`
+-- strings (the numbers that depend on a parameter at the all-zero assignment) and `c`, for
+-- each element, `null` if all its numbers are constants, else its numbers in the order of
+-- the player's attribute table, each `null` (a constant) or a formula.  A formula is a
+-- number, a string `"i"` (the parameter of segment `i`), or an array `[op, a, b]` with `op`
+-- one of `"+"`, `"-"` (the monus), `"m"` (maximum), `"%"` (`[ "%", p, a ]` is `p` percent of
+-- `a`), and `["h", a]`, half of `a` rounded down (positions are in half units).  Closed
+-- subformulas are evaluated here, so only what depends on a parameter is shipped.
+-- `data-n` is the number of ticks.
+private
+  data Enc : Set where
+    const : ℕ → Enc
+    open′ : JSON → Enc
+
+  encJ : Enc → JSON
+  encJ (const n) = natⱼ n
+  encJ (open′ j) = j
+
+  bin : String → (ℕ → ℕ → ℕ) → Enc → Enc → Enc
+  bin op f (const a) (const b) = const (f a b)
+  bin op f a         b         = open′ (arrayⱼ (stringⱼ op ∷ encJ a ∷ encJ b ∷ []))
+
+  enc : Expr ℕ → Enc
+  enc (pure v)                    = open′ (stringⱼ (num v))
+  enc (impure (E.Zero , _))       = const 0
+  enc (impure (E.Lit n , _))      = const n
+  enc (impure (E.Plus , k))       = bin "+" _+_ (enc (k zero)) (enc (k (suc zero)))
+  enc (impure (E.Monus , k))      = bin "-" _∸_ (enc (k zero)) (enc (k (suc zero)))
+  enc (impure (E.Max , k))        = bin "m" _⊔_ (enc (k zero)) (enc (k (suc zero)))
+  enc (impure (E.Pct p , k))      = bin "%" (λ p a → (a * p) / 100) (const p) (enc (k tt))
+
+  half : Enc → Enc
+  half (const a) = const (a / 2)
+  half (open′ j) = open′ (arrayⱼ (stringⱼ "h" ∷ j ∷ []))
+
+  isConst : Enc → Bool
+  isConst (const _) = true
+  isConst (open′ _) = false
+
+  allConst : List Enc → Bool
+  allConst []       = true
+  allConst (e ∷ es) = isConst e ∧ allConst es
+
+  coordJ : Enc → JSON
+  coordJ (const _) = nullⱼ
+  coordJ (open′ j) = j
+
+  -- the numbers of a drawing command, in the player's attribute order (`NUMS`)
+  coordsOf : Dr.Draw (Expr ℕ) → List Enc
+  coordsOf (Dr.rect x y w h _)    = half (enc x) ∷ half (enc y) ∷ enc w ∷ enc h ∷ []
+  coordsOf (Dr.circle x y r _)    = half (enc x) ∷ half (enc y) ∷ enc r ∷ []
+  coordsOf (Dr.line a b c d _)    = half (enc a) ∷ half (enc b) ∷ half (enc c) ∷ half (enc d) ∷ []
+  coordsOf (Dr.arrow a b c d _)   = half (enc a) ∷ half (enc b) ∷ half (enc c) ∷ half (enc d) ∷ []
+  coordsOf (Dr.label x y _ _ _)   = half (enc x) ∷ half (enc y) ∷ []
+
+  drawJ : Dr.Draw (Expr ℕ) → JSON
+  drawJ dr with coordsOf dr
+  ... | cs = if allConst cs then nullⱼ else arrayⱼ (map coordJ cs)
+
+  -- the element at the all-zero assignment
+  baseElement : Dr.Draw (Expr ℕ) → Element
+  baseElement dr = PN.toElement (Dr.mapDraw (eval (λ _ → 0)) dr)
+
+  phaseFields : String → Dr.Layout (Expr ℕ) → List (String × JSON)
+  phaseFields n l =
+      ("b" , arrayⱼ (map (λ dr → stringⱼ (elementString n (baseElement dr))) (Dr.Layout.draws l)))
+    ∷ ("c" , arrayⱼ (map drawJ (Dr.Layout.draws l)))
+    ∷ []
+
+  -- group the ticks into phases (adjacent ticks with the same encoding); `prev` is the
+  -- previous tick's encoding
+  phases : String → ℕ → String → List (Dr.Layout (Expr ℕ)) → List JSON
+  phases n k prev []       = []
+  phases n k prev (l ∷ ls) =
+    let fs = phaseFields n l ; key = renderJSON (objectFromList fs) in
+    if ⌊ key Str.≟ prev ⌋ then phases n (suc k) prev ls
+    else objectFromList (("s" , natⱼ k) ∷ fs) ∷ phases n (suc k) key ls
+
+  segmentJ : ℕ × List ℕ → JSON
+  segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map natⱼ ps) ∷ [])
+
+renderParamAnimation : Diagram → Param → ℕ → Play → XMLM A
+renderParamAnimation d (param ls segs) ms play =
+  animationWith d
+    ( ("data-n" , num (length ls))
+    ∷ ("data-param" , renderJSON (objectFromList
+         ( ("v" , arrayⱼ (map segmentJ segs))
+         ∷ ("p" , arrayⱼ (phases (Diagram.name d) 0 "" ls))
+         ∷ [] )))
+    ∷ [] )
+    ms play

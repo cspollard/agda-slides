@@ -24,7 +24,10 @@ open import Data.Nat using (ℕ; _⊔_; _+_; _∸_; suc)
 open import Data.Nat.Show using (show)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
-open import Slides.Core using (ContentShape; animation; Play; onSteps; looping; both)
+open import Slides.Core using (ContentShape; animation; paramAnimation; Play; onSteps; looping; both)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Slides.Diagram.Param using (Param)
+open import Slides.Anim.Param using (paramOf)
 open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Diagram.Syntax using (Dia; atop; spacer)
 open import Slides.Diagram.Scalar using (natOps)
@@ -66,20 +69,24 @@ frameDiagrams name pct fs with compileFrames name pct 0 fs
 
 -- the `animation` command for frames played in a given mode: `ms` is the time per frame
 private
-  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → ContentShape
-  shape name pct ms play fs with frameDiagrams name pct fs
+  -- `mp` is the parametric encoding of the same frames, when there is one
+  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → Maybe Param → ContentShape
+  shape name pct ms play fs mp with frameDiagrams name pct fs
   ... | []     = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) [] ms play
-  ... | d ∷ ds = animation d ds ms play
+  ... | d ∷ ds with mp
+  ...   | nothing = animation d ds ms play
+  ...   | just pa = paramAnimation d ds pa ms play
 
 -- the acts one after the other; each act is one step
 render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
 render name pct ms acts =
   shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natOps) a)) acts)))
         (concat (map (timeline atop (frames natOps)) acts))
+        (paramOf acts)
 
 -- one animation, repeating
 renderLoop : (name : String) (percent ms : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a)
+renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a) (paramOf (a ∷ []))
 
 -- Steps over a loop: `acts φ` are the acts at phase `φ` of a loop of `period` phases
 -- (a phase typically only restyles the diagram: an arrow's dashes, a pulse).  Each
@@ -101,3 +108,4 @@ renderBoth : (name : String) (percent ms period : ℕ) (acts : ℕ → List (Ani
 renderBoth name pct ms period acts =
   shape name pct ms (both (restsOf 0 (lengths (acts 0))) period)
         (concat (map (λ φ → concat (map (timeline atop (frames natOps)) (acts φ))) (upTo period)))
+        nothing
