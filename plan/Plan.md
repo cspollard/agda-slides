@@ -44,32 +44,22 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
        the layout at the assignment `i ↦ (parameter of segment i at tick k)` follows from
        `leaf-agrees` and `atop` commuting with `mapDia`, by an induction over the animation
        that tracks tick offsets (`merge`, `++`, `replicate`); that induction is not written.
-     - *Ship the track, not the samples.* The page gets each segment's parameter on every
-       tick (`units` of the sampled track) so it needs no easing code and stays exact; a
-       smaller, continuous-time page needs the easing evaluated in JavaScript and an `Expr`
-       over ℚ (floor is not an `Ops` operation). For the 60-tick slider the formulas are
-       420 characters and the edits already 329 (numbers as differences), so this stage is
-       about the model (one layout, independent of frame count, any `t`) more than size;
-       the size win needs the track.
      - Bodies that need division, remainder or comparison of the parameter (the point-pair
        loops, `Pairs`) stay flipbook until `Expr` grows those, each with its homomorphism
        proof; `animateBoth` is still always a flipbook.
      - `toℕ` of `exprOps` is the value at the all-zero assignment (it is not part of
        `IsOpsHom`; layout never applies it).
-   - *Continuous time* (next; replaces "ship the track" above). A template animation
-     compiles to a small simulator: the page gets the track (pieces with easings: data, so
-     a few numbers per piece) and the symbolic layout over a rational-valued `Expr`, and
-     evaluates it at the real time `τ` of each `requestAnimationFrame`, so the size is
-     independent of the number of ticks and motion is smooth at any frame rate. Needs:
-     (1) `Expr` over ℚ (`ratOps`) with the parameter sampled by `Track.sample`, so the
-     semantics is `layout_ℚ` at the sampled parameter, drawn without flooring (the tick
-     semantics is its restriction to whole ticks: a theorem, the integer frames are the
-     continuous ones at `τ = k` after rounding); (2) the easings (`Linear`, `Step`,
-     `StepStart`, `Bezier`) evaluated in JavaScript floats, which cannot be proved equal to
-     the exact ℚ ones, so agreement is tested at sampled times with a tolerance and the
-     piece boundaries (where `Step` jumps) exactly; (3) the same expression evaluator,
-     now at floats. Black-box bodies keep the flipbook/edit encoding, where time stays
-     discrete.
+   - *Continuous time* (built). A template animation ships the tracks (pieces with easings)
+     and the symbolic layout; the page evaluates at the real time of each
+     `requestAnimationFrame` (`Slides.Anim.Continuous`, `Slides.Diagram.NatQ`/`ExprQ`; players
+     in `plain.js` and `animationSync`). Size is independent of the tick count. Proved:
+     `sampleAt-ι`, `leafAt-ι`, `leaf-tick` (with `Faithful`), `parAt-time`, `seqAt-*`,
+     `animAt-dur`, `piece-hold`, `piece-start`. Tested only: the JavaScript (float easings,
+     evaluator) against exact `frameAt` at every tick and quarter tick.
+     Left: the assembly (`frameAt a τ` is the symbolic layout of tick `⌊τ⌋` at each
+     segment's sample at `τ - start`) and the whole-timeline form of `leaf-tick`
+     (needs `atop` to commute with `ι`); a template whose differences go negative draws a
+     negative size (no clamping in the page); black-box bodies stay discrete.
    - *`Expr` through the generic theory.* `Slides.Diagram.Expr` is already `ExprC ⋆ V`;
      route `evalWith` through `Container.FreeMonad.Algebraic` (`fold-agrees`, as in
      `Slides.Diagram.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
