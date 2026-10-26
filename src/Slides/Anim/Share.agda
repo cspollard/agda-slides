@@ -247,23 +247,33 @@ intern nd st with M.lookup (memo st) (key nd)
 Sh : Set → Set
 Sh A = St → A × St
 
+-- (Each intermediate result is a *parameter* of a helper, not a `let`: the compiled code shares
+-- a parameter, and recomputes a `let`-bound application at each use, which is exponential in
+-- the depth of the formula.)
 un¹ : Op1 → Sh Arg → Sh Arg
-un¹ o f st =
-  let r = f st in intern (un o (proj₁ r)) (proj₂ r)
+un¹ o f st = un¹′ o (f st)
+  where un¹′ : Op1 → Arg × St → Arg × St
+        un¹′ o r = intern (un o (proj₁ r)) (proj₂ r)
 
 bin² : Op2 → Sh Arg → Sh Arg → Sh Arg
-bin² o f g st =
-  let r₁ = f st
-      r₂ = g (proj₂ r₁)
-  in intern (bin o (proj₁ r₁) (proj₁ r₂)) (proj₂ r₂)
+bin² o f g st = step₁ (f st)
+  where
+    step₂ : Arg × St → Arg × St → Arg × St
+    step₂ r₁ r₂ = intern (bin o (proj₁ r₁) (proj₁ r₂)) (proj₂ r₂)
+    step₁ : Arg × St → Arg × St
+    step₁ r₁ = step₂ r₁ (g (proj₂ r₁))
 
 quad⁴ : Sh Arg → Sh Arg → Sh Arg → Sh Arg → Sh Arg
-quad⁴ f g h k st =
-  let r₁ = f st
-      r₂ = g (proj₂ r₁)
-      r₃ = h (proj₂ r₂)
-      r₄ = k (proj₂ r₃)
-  in intern (quad (proj₁ r₁) (proj₁ r₂) (proj₁ r₃) (proj₁ r₄)) (proj₂ r₄)
+quad⁴ f g h k st = step₁ (f st)
+  where
+    step₄ : Arg × St → Arg × St → Arg × St → Arg × St → Arg × St
+    step₄ r₁ r₂ r₃ r₄ = intern (quad (proj₁ r₁) (proj₁ r₂) (proj₁ r₃) (proj₁ r₄)) (proj₂ r₄)
+    step₃ : Arg × St → Arg × St → Arg × St → Arg × St
+    step₃ r₁ r₂ r₃ = step₄ r₁ r₂ r₃ (k (proj₂ r₃))
+    step₂ : Arg × St → Arg × St → Arg × St
+    step₂ r₁ r₂ = step₃ r₁ r₂ (h (proj₂ r₂))
+    step₁ : Arg × St → Arg × St
+    step₁ r₁ = step₂ r₁ (g (proj₂ r₁))
 
 -- the formula as a reference (a leaf is not defined: it is its own argument)
 share : Formula → Sh Arg
@@ -282,8 +292,12 @@ share (flt a b x y) = quad⁴ (share a) (share b) (share x) (share y)
 -- the output of a coordinate: the root of a position is a half (`Slides.Anim.Formula.half`) and
 -- is not defined, the rest is a reference
 output : Formula → Sh Node
-output (hlf a) st = let r = share a st in un oHlf (proj₁ r) , proj₂ r
-output g       st = let r = share g st in atom (proj₁ r) , proj₂ r
+output (hlf a) st = hlfOut (share a st)
+  where hlfOut : Arg × St → Node × St
+        hlfOut r = un oHlf (proj₁ r) , proj₂ r
+output g       st = atomOut (share g st)
+  where atomOut : Arg × St → Node × St
+        atomOut r = atom (proj₁ r) , proj₂ r
 
 -- the definitions as the page evaluates them: in order, the oldest first
 program : St → List Node
@@ -292,14 +306,18 @@ program st = reverse (defs st)
 -- sharing through one store across the parts of a structure
 traverseL : ∀ {X Y : Set} → (X → Sh Y) → List X → Sh (List Y)
 traverseL f []       st = [] , st
-traverseL f (x ∷ xs) st =
-  let r₁ = f x st
-      r₂ = traverseL f xs (proj₂ r₁)
-  in proj₁ r₁ ∷ proj₁ r₂ , proj₂ r₂
+traverseL f (x ∷ xs) st = step₁ (f x st)
+  where
+    step₂ : _ → _ → _
+    step₂ r₁ r₂ = proj₁ r₁ ∷ proj₁ r₂ , proj₂ r₂
+    step₁ : _ → _
+    step₁ r₁ = step₂ r₁ (traverseL f xs (proj₂ r₁))
 
 traverseM : ∀ {X Y : Set} → (X → Sh Y) → Maybe X → Sh (Maybe Y)
 traverseM f nothing  st = nothing , st
-traverseM f (just x) st = let r = f x st in just (proj₁ r) , proj₂ r
+traverseM f (just x) st = wrap (f x st)
+  where wrap : _ → _
+        wrap r = just (proj₁ r) , proj₂ r
 
 ------------------------------------------------------------------------
 -- Readings: what a program means
@@ -688,8 +706,13 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   ----------------------------------------------------------------------
   -- Outputs, and sharing through one store across a structure
 
-  OutQ : (ℕ → A) → List Node → Formula → Node → Set
-  OutQ ρ ds g nd = WfNode (length ds) nd × evalOut ρ (env ρ ds) nd ≡ refOut g ρ
+  -- the node `nd` is the output of `g`, against the definitions `ds`
+  record OutQ (ρ : ℕ → A) (ds : List Node) (g : Formula) (nd : Node) : Set where
+    constructor outq
+    field
+      wfn : WfNode (length ds) nd
+      val : evalOut ρ (env ρ ds) nd ≡ refOut g ρ
+  open OutQ
 
   -- A computation `f` *realises* a relation `Q` (between its argument and its result, relative to
   -- the definitions) when it keeps the invariant, extends the store and the relation holds at
@@ -703,8 +726,8 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   Stable Q = ∀ {ds′ ds x y} → Ext ds′ ds → Q ds x y → Q ds′ x y
 
   OutQ-stable : ∀ ρ → Stable (OutQ ρ)
-  OutQ-stable ρ {ds′} {ds} {g} {nd} x (w , val) =
-    WfNode-mono {nd = nd} (ext-length x) w , trans (evalOut-ext ρ nd x w) val
+  OutQ-stable ρ {ds′} {ds} {g} {nd} x (outq w val) =
+    outq (WfNode-mono {nd = nd} (ext-length x) w) (trans (evalOut-ext ρ nd x w) val)
 
   private
     out-other : ∀ g ρ → refOut g ρ ≡ out (sem g ρ) → ∀ st → Inv st →
@@ -712,11 +735,11 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
       × OutQ ρ (defs (proj₂ (share g st))) g (atom (proj₁ (share g st)))
     out-other g ρ rg st I with share-impl g ρ st I
     ... | result I′ x w val =
-      I′ , x , wfLen I′ {proj₁ (share g st)} w , trans (cong out val) (sym rg)
+      I′ , x , outq (wfLen I′ {proj₁ (share g st)} w) (trans (cong out val) (sym rg))
 
   output-realises : ∀ ρ → Realises (OutQ ρ) output
   output-realises ρ (hlf a) st I with share-impl a ρ st I
-  ... | result I′ x w val = I′ , x , wfLen I′ {proj₁ (share a st)} w , cong outHlf val
+  ... | result I′ x w val = I′ , x , outq (wfLen I′ {proj₁ (share a st)} w) (cong outHlf val)
   output-realises ρ (num n)       st I = out-other (num n) ρ refl st I
   output-realises ρ (var i)       st I = out-other (var i) ρ refl st I
   output-realises ρ (add a b)     st I = out-other (add a b) ρ refl st I

@@ -41,6 +41,8 @@ import Slides.Anim.Formula as F
 open F using (Formula)
 open import Slides.Anim.Phases using (Elem; phasesOf)
 open import Slides.Anim.DPhases using (phasesOfD)
+open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oAdd; oSub; oMax)
+open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Data.Container.FreeMonad using (pure; impure)
@@ -269,50 +271,60 @@ renderAnimation d ds ms play =
 -- only what depends on a parameter (or is not whole) is shipped.  `data-n` is the number of
 -- ticks.  The size does not depend on the number of ticks: one phase holds for all of them.
 private
-  -- a formula as the JSON the player evaluates
-  formulaⱼ : Formula → JSON
-  formulaⱼ (F.num n)   = natⱼ n
-  formulaⱼ (F.var i)   = stringⱼ (num i)
-  formulaⱼ (F.add a b) = arrayⱼ (stringⱼ "+" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.sub a b) = arrayⱼ (stringⱼ "-" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.max a b) = arrayⱼ (stringⱼ "m" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
-  formulaⱼ (F.pct p a) = arrayⱼ (stringⱼ "%" ∷ natⱼ p ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.hlf a)   = arrayⱼ (stringⱼ "h" ∷ formulaⱼ a ∷ [])
-  -- the Euclidean nodes of a discrete template (`Slides.Anim.Formula`, read in ℕ); the divisor
-  -- is shipped as it is, `d + 1`
-  formulaⱼ (F.fdiv d a)     = arrayⱼ (stringⱼ "/" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.fmod d a)     = arrayⱼ (stringⱼ "r" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.fmul n a)     = arrayⱼ (stringⱼ "*" ∷ natⱼ n ∷ formulaⱼ a ∷ [])
-  formulaⱼ (F.flt a b x y)  = arrayⱼ (stringⱼ "<" ∷ formulaⱼ a ∷ formulaⱼ b ∷ formulaⱼ x ∷ formulaⱼ y ∷ [])
+  -- an argument: a number, the parameter `"i"` of a segment, or a reference to a definition of
+  -- the phase's program, which is the negative number `-1 - i` for definition `i`
+  argⱼ : Arg → JSON
+  argⱼ (anum n) = natⱼ n
+  argⱼ (apar i) = stringⱼ (num i)
+  argⱼ (aref i) = intⱼ (ℤ.-[1+ i ])
 
-  coordJ : Maybe Formula → JSON
+  -- a node as the JSON the player evaluates (`Slides.Anim.Share.Node`: an operation on
+  -- arguments).  The Euclidean operations are those of a discrete template (read in ℕ); the
+  -- divisor is shipped as it is, `d + 1`
+  nodeⱼ : Node → JSON
+  nodeⱼ (atom a)               = argⱼ a
+  nodeⱼ (un (oPct p) a)        = arrayⱼ (stringⱼ "%" ∷ natⱼ p ∷ argⱼ a ∷ [])
+  nodeⱼ (un oHlf a)            = arrayⱼ (stringⱼ "h" ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oDiv d) a)        = arrayⱼ (stringⱼ "/" ∷ natⱼ (suc d) ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oMod d) a)        = arrayⱼ (stringⱼ "r" ∷ natⱼ (suc d) ∷ argⱼ a ∷ [])
+  nodeⱼ (un (oMul n) a)        = arrayⱼ (stringⱼ "*" ∷ natⱼ n ∷ argⱼ a ∷ [])
+  nodeⱼ (bin oAdd a b)         = arrayⱼ (stringⱼ "+" ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (bin oSub a b)         = arrayⱼ (stringⱼ "-" ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (bin oMax a b)         = arrayⱼ (stringⱼ "m" ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (quad a b x y)         = arrayⱼ (stringⱼ "<" ∷ argⱼ a ∷ argⱼ b ∷ argⱼ x ∷ argⱼ y ∷ [])
+
+  coordJ : Maybe Node → JSON
   coordJ nothing  = nullⱼ
-  coordJ (just f) = formulaⱼ f
+  coordJ (just f) = nodeⱼ f
 
   -- the numbers of a drawing command: `null` if all are constants, else an entry for each
   -- (`null` for a constant)
-  elemCoordsⱼ : Elem → JSON
-  elemCoordsⱼ e with Elem.coords e
+  elemCoordsⱼ : SElem → JSON
+  elemCoordsⱼ e with SElem.coords e
   ... | nothing = nullⱼ
   ... | just cs = arrayⱼ (map coordJ cs)
 
   -- the element at the all-zero assignment
-  baseElement : Elem → Element
-  baseElement e = PN.toElement (Elem.base e)
+  baseElement : SElem → Element
+  baseElement e = PN.toElement (SElem.base e)
 
-  phaseFields : String → List Elem → List (String × JSON)
-  phaseFields n es =
+  -- a phase: its elements, and its program (the definitions the numbers refer to, oldest first),
+  -- evaluated once per time step before the elements (`Slides.Anim.SharePhases`)
+  phaseFields : String → SBody → List (String × JSON)
+  phaseFields n (sbody prog es) =
       ("b" , arrayⱼ (map (λ e → stringⱼ (elementString n (baseElement e))) es))
     ∷ ("c" , arrayⱼ (map elemCoordsⱼ es))
+    ∷ ("f" , arrayⱼ (map nodeⱼ prog))
     ∷ []
 
-  -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements)
+  -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements), with
+  -- the formulas of each phase shared (`Slides.Anim.SharePhases.sharePhases`)
   phasesⱼ : String → List (Dr.Layout (Expr ℕ)) → List JSON
-  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOf ls)
+  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOf ls))
 
   -- the same for discrete templates (`Slides.Anim.DPhases.phasesOfD`)
   phasesⱼᴰ : String → List (Dr.Layout (DExpr ℕ)) → List JSON
-  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOfD ls)
+  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOfD ls))
 
   ratⱼ : ℚ.ℚ → JSON
   ratⱼ q with ℚ.↧ₙ q
