@@ -23,7 +23,7 @@
 module Slides.Anim.Track where
 
 open import Level using (0ℓ)
-open import Data.Bool using (Bool; true; false; if_then_else_)
+open import Data.Bool using (Bool; true; false; if_then_else_; T)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Integer as ℤ using (ℤ; +_)
 open import Data.Integer.Tactic.RingSolver using (solve-∀)
@@ -40,7 +40,7 @@ open import Relation.Nullary using (yes; no)
 open import Tactic.RingSolver.Core.AlmostCommutativeRing using (fromCommutativeRing)
 import Tactic.RingSolver.NonReflective as NR
 open import Data.Unit using (⊤; tt)
-open import Data.Empty using (⊥)
+open import Data.Empty using (⊥; ⊥-elim)
 import Data.Nat.Properties as ℕP
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
@@ -315,7 +315,7 @@ reverseT-dur (impure (_ , k)) =
 -- the reversed piece (ends swapped) at tick `k` equals the piece at tick `d - k`.
 -- (At a boundary inside a track the original is right-continuous and the reversed
 -- track left-continuous, so the statement is for one piece.  `Bezier` is
--- approximate and `Step` needs the order on `ℚ`; both are left out.)
+-- approximate; see `reverse-piece` for the easings that reverse exactly.)
 
 private
   pos∸ : ∀ d k → k ≤ d → + (d ∸ k) ≡ + d ℤ.- + k
@@ -396,9 +396,88 @@ LerpFlip {A} L = ∀ q (a b : A) → Lerp.lerp L (1ℚ ℚ.- q) a b ≡ Lerp.ler
 ℚLerpFlip : LerpFlip ℚLerp
 ℚLerpFlip = flip-ℚ
 
--- a linear piece played backwards (its ends swapped) at tick `k` is the piece at tick `d - k`
+------------------------------------------------------------------------
+-- Reversing an easing
+--
+-- Playing a piece backwards swaps its ends and reverses its easing.  `Linear`,
+-- `Step` and `StepStart` reverse exactly: progress of the reversed easing is the
+-- complement of progress of the original at the complementary time
+-- (`progress e (1 - x) = 1 - progress (reverseE e) x`).  `Bezier` reverses only
+-- approximately (the progress is found by bisection), so it is excluded.
+
+private
+  T⇒≡ : ∀ {a b : Bool} → (T a → T b) → (T b → T a) → a ≡ b
+  T⇒≡ {true}  {true}  _ _ = refl
+  T⇒≡ {true}  {false} f _ = ⊥-elim (f tt)
+  T⇒≡ {false} {true}  _ g = ⊥-elim (g tt)
+  T⇒≡ {false} {false} _ _ = refl
+
+  ≤ᵇ-iff : ∀ {p q} → (T (p ℚ.≤ᵇ q) → p ℚ.≤ q) × (p ℚ.≤ q → T (p ℚ.≤ᵇ q))
+  ≤ᵇ-iff = ℚP.≤ᵇ⇒≤ , ℚP.≤⇒≤ᵇ
+
+  sub₂ : ∀ {a b c d} → a ≡ c → b ≡ d → a ℚ.≤ b → c ℚ.≤ d
+  sub₂ refl refl h = h
+
+  e₁ : ∀ x → 1ℚ ℚ.+ (x ℚ.+ ℚ.- 1ℚ) ≡ x
+  e₁ = solve 1 (λ x → (Κ 1ℚ :+ (x :+ ⊝ Κ 1ℚ)) ⊜ x) refl
+  e₂ : ∀ x → (1ℚ ℚ.+ ℚ.- x) ℚ.+ (x ℚ.+ ℚ.- 1ℚ) ≡ 0ℚ
+  e₂ = solve 1 (λ x → ((Κ 1ℚ :+ ⊝ x) :+ (x :+ ⊝ Κ 1ℚ)) ⊜ Κ 0ℚ) refl
+  e₃ : ∀ x → 1ℚ ℚ.+ (x ℚ.+ ℚ.- x) ≡ 1ℚ
+  e₃ = solve 1 (λ x → (Κ 1ℚ :+ (x :+ ⊝ x)) ⊜ Κ 1ℚ) refl
+  e₄ : ∀ x → 1ℚ ℚ.+ (0ℚ ℚ.+ ℚ.- x) ≡ 1ℚ ℚ.- x
+  e₄ = solve 1 (λ x → (Κ 1ℚ :+ (Κ 0ℚ :+ ⊝ x)) ⊜ (Κ 1ℚ :+ ⊝ x)) refl
+  e₅ : ∀ x → (1ℚ ℚ.+ ℚ.- x) ℚ.+ x ≡ 1ℚ
+  e₅ = solve 1 (λ x → ((Κ 1ℚ :+ ⊝ x) :+ x) ⊜ Κ 1ℚ) refl
+  e₆ : ∀ x → 0ℚ ℚ.+ x ≡ x
+  e₆ = solve 1 (λ x → (Κ 0ℚ :+ x) ⊜ x) refl
+  e₇ : ∀ x → 1ℚ ℚ.+ ℚ.- x ≡ 1ℚ ℚ.- x
+  e₇ x = refl
+  e₈ : ∀ x → x ℚ.+ ℚ.- x ≡ 0ℚ
+  e₈ = solve 1 (λ x → (x :+ ⊝ x) ⊜ Κ 0ℚ) refl
+
+  -- 1 ≤ 1 - x  ⇔  x ≤ 0
+  a→ : ∀ x → 1ℚ ℚ.≤ 1ℚ ℚ.- x → x ℚ.≤ 0ℚ
+  a→ x h = sub₂ (e₁ x) (e₂ x) (ℚP.+-mono-≤ h (ℚP.≤-refl {x ℚ.+ ℚ.- 1ℚ}))
+  a← : ∀ x → x ℚ.≤ 0ℚ → 1ℚ ℚ.≤ 1ℚ ℚ.- x
+  a← x h = sub₂ (e₃ x) (e₄ x) (ℚP.+-mono-≤ (ℚP.≤-refl {1ℚ}) (ℚP.+-mono-≤ h (ℚP.≤-refl {ℚ.- x})))
+  -- 1 - x ≤ 0  ⇔  1 ≤ x
+  b→ : ∀ x → 1ℚ ℚ.- x ℚ.≤ 0ℚ → 1ℚ ℚ.≤ x
+  b→ x h = sub₂ (e₅ x) (e₆ x) (ℚP.+-mono-≤ h (ℚP.≤-refl {x}))
+  b← : ∀ x → 1ℚ ℚ.≤ x → 1ℚ ℚ.- x ℚ.≤ 0ℚ
+  b← x h = sub₂ (e₇ x) (e₈ x) (ℚP.+-mono-≤ h (ℚP.≤-refl {ℚ.- x}))
+
+  s₁ : ∀ x → (1ℚ ≤ᵇ (1ℚ ℚ.- x)) ≡ (x ≤ᵇ 0ℚ)
+  s₁ x = T⇒≡ (λ t → proj₂ ≤ᵇ-iff (a→ x (proj₁ ≤ᵇ-iff t))) (λ t → proj₂ ≤ᵇ-iff (a← x (proj₁ ≤ᵇ-iff t)))
+  s₂ : ∀ x → ((1ℚ ℚ.- x) ≤ᵇ 0ℚ) ≡ (1ℚ ≤ᵇ x)
+  s₂ x = T⇒≡ (λ t → proj₂ ≤ᵇ-iff (b→ x (proj₁ ≤ᵇ-iff t))) (λ t → proj₂ ≤ᵇ-iff (b← x (proj₁ ≤ᵇ-iff t)))
+
+-- the easings that reverse exactly
+Exact : Easing → Set
+Exact (Bezier _ _ _ _) = ⊥
+Exact _                = ⊤
+
+reversal : ∀ e → Exact e → ∀ x → progress e (1ℚ ℚ.- x) ≡ 1ℚ ℚ.- progress (reverseE e) x
+reversal Linear    _ x = refl
+reversal Step      _ x rewrite s₁ x with x ≤ᵇ 0ℚ
+... | true  = refl
+... | false = refl
+reversal StepStart _ x rewrite s₂ x with 1ℚ ≤ᵇ x
+... | true  = refl
+... | false = refl
+reversal (Bezier _ _ _ _) ()
+
+-- a piece played backwards (ends swapped, easing reversed) at tick `k` is the
+-- piece at tick `d - k`
+reverse-piece : ∀ {A} (L : Lerp A) → LerpFlip L → ∀ e → Exact e → ∀ k d′ a b → k ≤ ℕ.suc d′ →
+                proj₂ (samplePiece L (piece (ℕ.suc d′) b a (reverseE e))) k
+                ≡ proj₂ (samplePiece L (piece (ℕ.suc d′) a b e)) (ℕ.suc d′ ∸ k)
+reverse-piece L F e ex k d′ a b h =
+  sym (trans (cong (λ x → Lerp.lerp L (progress e x) a b) (ratio-compl k d′ h))
+       (trans (cong (λ x → Lerp.lerp L x a b) (reversal e ex (ratio k (ℕ.suc d′))))
+              (F (progress (reverseE e) (ratio k (ℕ.suc d′))) a b)))
+
+-- (for `Linear`, `reverseE` is the identity)
 reverse-linear : ∀ {A} (L : Lerp A) → LerpFlip L → ∀ k d′ a b → k ≤ ℕ.suc d′ →
                  proj₂ (samplePiece L (piece (ℕ.suc d′) b a Linear)) k
                  ≡ proj₂ (samplePiece L (piece (ℕ.suc d′) a b Linear)) (ℕ.suc d′ ∸ k)
-reverse-linear L F k d′ a b h =
-  sym (trans (cong (λ x → Lerp.lerp L x a b) (ratio-compl k d′ h)) (F (ratio k (ℕ.suc d′)) a b))
+reverse-linear L F = reverse-piece L F Linear tt

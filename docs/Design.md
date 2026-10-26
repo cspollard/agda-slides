@@ -166,7 +166,7 @@ fusion with `>>=` (a tween is a bind). Laws are proved at the level they are tru
 the swap law and `merge` on lists of frames (`Timeline`), `footprint` up to permutation,
 `atop` commutative up to permutation of draws (`Slides.Diagram.Commute`), laid-out `Par`
 associative and padding invisible on valid frames (`Slides.Anim.Laws`), tracks
-associative, reversible and sampled exactly for `Linear` (`Track`). Time is whole ticks;
+associative, and reversible, sampled exactly, for `Linear`, `Step` and `StepStart` pieces (`Track`; `Bezier` is approximate). Time is whole ticks;
 the backend plays frames on a timer, an act per reveal step, or, for `Play = looping`,
 cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
 `Slides.Anim.Loop`; the player's `i ↦ (i+1) mod n` is proved to track it). Looping is a play
