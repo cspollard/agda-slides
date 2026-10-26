@@ -264,7 +264,7 @@ program (`Slides.Anim.Share`: a store of definitions, each over the parameters a
 ones, hash-consed through an AVL memo that is only a hint, checked before use), and the
 numbers of the elements are nodes over it (`SharePhases`); the page evaluates the definitions
 once per time step, in order, then the numbers. 1,004 definitions for 26 pairs, 18,849
-characters of phases (against 42,732 of edits), page 240,278 to 192 KB bytes. Mathematically the
+characters of phases (against 42,732 of edits), the Pairs page 240,278 to 188,951 bytes (each loop 16.9 KB of `data-param`, 25 KB with its markup, against 51 KB as edits); the layout and compile of the deck take about 10 s. Mathematically the
 program is a Kleisli family and its meaning the evaluation of the tree obtained by
 substitution: `Share.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
 store, the law `evalWith-subst` for the shipped syntax), `share-unfold` (the unfolding of the

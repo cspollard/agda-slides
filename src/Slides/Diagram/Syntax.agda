@@ -7,6 +7,10 @@
 --   * primitives (no sub-diagrams): rectangles, text, spacers, …
 --   * binary connectives, which place two diagrams relative to each other:
 --     beside, above, atop, and the two that keep a caption's room free
+--   * absolute placement: `Place` (a child at `(x, y)` of a frame of declared size) and
+--     `Overlay` (two children at the corner of a declared frame): no centring, so the
+--     coordinates do not depend on the size of a neighbour; this is what keeps the symbolic
+--     layout of a template small (`Slides.Examples.PairsHero`, `docs/Design.md`)
 --   * annotations (one sub-diagram) that do not change the picture's geometry:
 --     `Named`, `Connect`
 --

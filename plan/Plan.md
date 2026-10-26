@@ -47,11 +47,12 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      - Built: layered signatures (core, sub) and the Euclidean layer, `SegBody.discrete`
        (discrete templates, `Slides.Diagram.Euclid`, `Slides.Anim.DParam`, `DParamCorrect`,
        `DPhases`, `Formula.encD`), tested by `anim-ref` (`dhero`, every tick of the period).
-       The point-pair loops *can* be templates (`PairsHero.heroD`, `heroT-correct`) but are
-       not shipped as such: 3 pairs ship 779 KB of formulas against 43 KB of edits for all 26
-       (symbolic layout centres every layer against a maximum of formula widths). Left:
-       share subformulas (a `let`/DAG in the shipped formulas) or a layout without
-       full-size layers (absolute placement); canonical-assignment/`paramOf`-level discrete
+       The point-pair loops are templates (`PairsHero.heroD`, `heroT-correct`) and the Pairs deck
+       ships them so: symbolic layout is linear (absolute placement, `Place`/`Overlay`) and the
+       formulas of a phase are shared (`Slides.Anim.Share`, `SharePhases`: value numbering into
+       a straight-line program, `share-impl`, `unfold-sound`, `pageFrameS-sem`), 18.8 KB for 26
+       pairs against 42.7 KB of edits (3 pairs were 779 KB before). Left: simplifying `a + 0`,
+       inlining single-use definitions (about 16%), canonical-assignment/`paramOf`-level discrete
        theorems (as `paramOf-assembly-canonical`); `animateBoth` is still always a flipbook
        (its phases are a style, not a template parameter).
      - `toℕ` of `exprOps` is the value at the all-zero assignment (it is not part of

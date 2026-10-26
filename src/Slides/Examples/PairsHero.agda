@@ -102,7 +102,8 @@ module Frame {S : Set} (D : DiscreteOps S) where
   tri : S → S
   tri t = let m = modBy 63 t in lt m (lit 33) m (lit period ⊖ m)
 
-  -- a dot of radius `r` with its top left corner at (x, y), on a full-size layer
+  -- a dot of radius `r` with its top left corner at (x, y), on a layer of the canvas's size
+  -- (`place`: absolute position, a frame of declared size)
   dot : String → String → ℕ → S → S → Dia S
   dot name cls r x y =
     place (lit W) (lit H) x y (named name (disc (lit r) (withClass cls defaultStyle)))
@@ -149,7 +150,8 @@ module Frame {S : Set} (D : DiscreteOps S) where
       col = if Pair.blue p then "hero-b" else "hero-r"
       v   = at p t
 
-  -- the whole picture at tick `t`: every pair on a layer of the canvas's size
+  -- the whole picture at tick `t`: every pair on a layer of the canvas's size, the layers
+  -- overlaid in a frame of that size
   -- (`n` pairs: the deck uses 26)
   heroFrame : (n seed : ℕ) → S → Dia S
   heroFrame n seed t = foldr (overlay (lit W) (lit H)) (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo n) (pairs n seed))
@@ -163,10 +165,11 @@ hero : ℕ → Anim ℕ (Seg ℕ)
 hero seed = tween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → heroAt seed (units q))
 
 -- the same frame over the free algebra, with the tick as the variable: a discrete template
--- (`n` pairs.  Symbolic layout is the cost: every pair is on a layer whose width is a formula
--- (`x + (2r + (W - (x + 2r)))`, which only the evaluation makes `W`), and the layout of the next
--- pair centres against the maximum of those formulas, so the size of the shipped formulas grows
--- much faster than the number of pairs: see `docs/Design.md`)
+-- (`n` pairs).  The frame is an overlay of placed dots on a canvas of declared size (`dot`,
+-- `pairAt`, `heroFrame`), so no coordinate depends on the size of another element: the symbolic
+-- layout is linear in `n` (placing each pair by margins against `W - (x + 2r)` and centring the
+-- layers against the maximum of their widths made it cubic: 779 KB of formulas for 3 pairs, see
+-- `docs/Design.md`), and the formulas of a phase are shared when shipped (`Slides.Anim.Share`)
 heroT : (n seed : ℕ) → Dia (DExpr ⊤)
 heroT n seed = Frame.heroFrame dexprD n seed tickD
 

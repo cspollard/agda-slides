@@ -23,6 +23,10 @@
 --     shared page shows the symbolic layout of tick `k` evaluated at `ρ`: the continuous frame,
 --     respectively the discrete one the flipbook shows (`DParamCorrect.discrete-assemblyD`).
 --
+-- The base command of a shared element has the numbers that a formula overwrites zeroed
+-- (`shareElem`, `zeroBase-sem`: the page sets the same numbers), so that elements that differ
+-- only in those numbers ship the same `<svg>` string, once (`Slides.Backend.Diagram`).
+--
 -- Hypotheses: none beyond the readings being the folds `Semantics` says they are (the instances
 -- below are by definition, `refl`), and that `ref`, what a phase's formula is read as, is
 -- `refOut` (`Slides.Anim.Share.Semantics.refOut`: a half at the root of a position is a real half).

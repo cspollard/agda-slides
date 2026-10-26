@@ -285,7 +285,11 @@ lowers it or refuses the deck; see `docs/Design.md`.
 A body that needs floor division, remainder or comparison of the tick is written once over any
 scalar with the `DiscreteOps` of `Slides.Diagram.Euclid` and used as `tweenD n a b easing d`
 (`d : Dia (DExpr ⊤)`, the tick the variable `tickD`); see `Slides.Examples.PairsHero`. It plays one
-frame per whole tick. An animation is a term of `Anim ℕ (Seg ℕ)` (`Slides.Anim.Syntax`): a free monad over
+frame per whole tick. Keep a template's layout small: place children at absolute positions on a
+canvas of declared size (`place w h x y d`, `overlay w h a b`) rather than by margins against
+the size of a neighbour (a size that is a formula in the tick is copied into every coordinate
+that is positioned relative to it); the shipped formulas share common subformulas
+(`Slides.Anim.Share`). An animation is a term of `Anim ℕ (Seg ℕ)` (`Slides.Anim.Syntax`): a free monad over
 `Seq` (`a ⨾ b`, one after the other) and `Par` (together), whose leaves are
 `hold n d`, the diagram `d` shown for `n` ticks. `par O a b` pads the shorter side with
 an empty pause; `parI natOps a b` additionally requires that the two sides declare no

@@ -37,7 +37,10 @@
 --   * `output-impl`: the same for the *output* of a coordinate (`output`), where the top node of
 --     a position is a real half (`hlf`) and the rest is read as it was;
 --   * `env-def`: the value the evaluation assigns to a definition is the node evaluated at the
---     values of the earlier ones: the unfolding of the DAG;
+--     values of the earlier ones; `unfold`, `unfold-sound`: the tree obtained by substituting
+--     the definitions (the unfolding of the DAG) evaluates to the value of the definition, and
+--     `share-unfold`: the unfolding of the reference `share g` returns evaluates equal to `g`
+--     at every assignment (the compact form and the tree form mean the same);
 --   * `shareAll-impl`: for a list of coordinates, shared through one store: the claims hold of
 --     every element at the final store (the earlier ones keep their values: `Ext`).
 --
