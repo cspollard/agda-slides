@@ -33,14 +33,29 @@ module Slides.Anim.Phases where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.List using (List; []; _∷_; map; length)
+import Data.List.Relation.Unary.All as All
+open All using (All; []; _∷_)
+open import Data.Empty using (⊥-elim)
+open import Data.Bool using (T)
+open import Data.Unit using (tt)
+import Slides.Anim.ParamCorrect as PC
+open PC using (nth)
 open import Data.Maybe using (Maybe; just; nothing)
+import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _/_; _%_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ; 0ℚ)
 open import Data.Integer using (+_)
 open import Data.String using (String)
 open import Data.Unit using (⊤; tt)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
+open import Relation.Binary using (DecidableEquality)
+open import Relation.Nullary using (yes; no)
+open import Relation.Nullary.Decidable using (map′; ⌊_⌋)
+import Data.Nat.Properties as ℕP
+import Data.Maybe.Properties as MP
+import Data.List.Properties as LP
+open import Slides.Diagram.DrawEq using (drawEq?)
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label; mapDraw; Layout)
 open import Slides.Diagram.Expr using (Expr; eval; evalWith)
@@ -234,3 +249,177 @@ encodeDraw-sem dr ρ =
     L₁≡T : L₁ ≡ map (target ρ) ns
     L₁≡T = trans (cong (λ bs → pageNums bs (entries cs) ρ) (nums-mapDraw (eval (λ _ → 0)) dr))
                  (go (allNum (map slotF ns)) refl)
+
+------------------------------------------------------------------------
+-- Equality of what is shipped
+
+formulaEq? : DecidableEquality Formula
+formulaEq? (num a₁) (num a₂) = map′ (cong num) (λ { refl → refl }) (ℕP._≟_ a₁ a₂)
+formulaEq? (num _) (var _) = no λ ()
+formulaEq? (num _) (add _ _) = no λ ()
+formulaEq? (num _) (sub _ _) = no λ ()
+formulaEq? (num _) (max _ _) = no λ ()
+formulaEq? (num _) (pct _ _) = no λ ()
+formulaEq? (num _) (hlf _) = no λ ()
+formulaEq? (var _) (num _) = no λ ()
+formulaEq? (var a₁) (var a₂) = map′ (cong var) (λ { refl → refl }) (ℕP._≟_ a₁ a₂)
+formulaEq? (var _) (add _ _) = no λ ()
+formulaEq? (var _) (sub _ _) = no λ ()
+formulaEq? (var _) (max _ _) = no λ ()
+formulaEq? (var _) (pct _ _) = no λ ()
+formulaEq? (var _) (hlf _) = no λ ()
+formulaEq? (add _ _) (num _) = no λ ()
+formulaEq? (add _ _) (var _) = no λ ()
+formulaEq? (add a₁ b₁) (add a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+... | yes refl | yes refl = yes refl
+... | no ¬p   | _        = no λ { refl → ¬p refl }
+... | _       | no ¬q    = no λ { refl → ¬q refl }
+formulaEq? (add _ _) (sub _ _) = no λ ()
+formulaEq? (add _ _) (max _ _) = no λ ()
+formulaEq? (add _ _) (pct _ _) = no λ ()
+formulaEq? (add _ _) (hlf _) = no λ ()
+formulaEq? (sub _ _) (num _) = no λ ()
+formulaEq? (sub _ _) (var _) = no λ ()
+formulaEq? (sub _ _) (add _ _) = no λ ()
+formulaEq? (sub a₁ b₁) (sub a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+... | yes refl | yes refl = yes refl
+... | no ¬p   | _        = no λ { refl → ¬p refl }
+... | _       | no ¬q    = no λ { refl → ¬q refl }
+formulaEq? (sub _ _) (max _ _) = no λ ()
+formulaEq? (sub _ _) (pct _ _) = no λ ()
+formulaEq? (sub _ _) (hlf _) = no λ ()
+formulaEq? (max _ _) (num _) = no λ ()
+formulaEq? (max _ _) (var _) = no λ ()
+formulaEq? (max _ _) (add _ _) = no λ ()
+formulaEq? (max _ _) (sub _ _) = no λ ()
+formulaEq? (max a₁ b₁) (max a₂ b₂) with formulaEq? a₁ a₂ | formulaEq? b₁ b₂
+... | yes refl | yes refl = yes refl
+... | no ¬p   | _        = no λ { refl → ¬p refl }
+... | _       | no ¬q    = no λ { refl → ¬q refl }
+formulaEq? (max _ _) (pct _ _) = no λ ()
+formulaEq? (max _ _) (hlf _) = no λ ()
+formulaEq? (pct _ _) (num _) = no λ ()
+formulaEq? (pct _ _) (var _) = no λ ()
+formulaEq? (pct _ _) (add _ _) = no λ ()
+formulaEq? (pct _ _) (sub _ _) = no λ ()
+formulaEq? (pct _ _) (max _ _) = no λ ()
+formulaEq? (pct a₁ b₁) (pct a₂ b₂) with ℕP._≟_ a₁ a₂ | formulaEq? b₁ b₂
+... | yes refl | yes refl = yes refl
+... | no ¬p   | _        = no λ { refl → ¬p refl }
+... | _       | no ¬q    = no λ { refl → ¬q refl }
+formulaEq? (pct _ _) (hlf _) = no λ ()
+formulaEq? (hlf _) (num _) = no λ ()
+formulaEq? (hlf _) (var _) = no λ ()
+formulaEq? (hlf _) (add _ _) = no λ ()
+formulaEq? (hlf _) (sub _ _) = no λ ()
+formulaEq? (hlf _) (max _ _) = no λ ()
+formulaEq? (hlf _) (pct _ _) = no λ ()
+formulaEq? (hlf a₁) (hlf a₂) = map′ (cong hlf) (λ { refl → refl }) (formulaEq? a₁ a₂)
+
+elemEq? : DecidableEquality Elem
+elemEq? (elem b₁ c₁) (elem b₂ c₂) with drawEq? ℕP._≟_ b₁ b₂ | MP.≡-dec (LP.≡-dec (MP.≡-dec formulaEq?)) c₁ c₂
+... | yes refl | yes refl = yes refl
+... | no ¬p   | _        = no λ { refl → ¬p refl }
+... | _       | no ¬q    = no λ { refl → ¬q refl }
+
+elemsEq? : DecidableEquality (List Elem)
+elemsEq? = LP.≡-dec elemEq?
+
+------------------------------------------------------------------------
+-- Grouping ticks into phases
+
+-- `runs prev k xs`: the entries of `xs`, which start at tick `k`, that differ from the one
+-- emitted before them (`prev`), with the tick they are at
+module _ {A : Set} (_≟_ : DecidableEquality A) where
+
+  runs : Maybe A → ℕ → List A → List (ℕ × A)
+  runs prev k []       = []
+  runs prev k (a ∷ as) with prev
+  ... | nothing = (k , a) ∷ runs (just a) (suc k) as
+  ... | just p  = if ⌊ a ≟ p ⌋ then runs prev (suc k) as else (k , a) ∷ runs (just a) (suc k) as
+
+-- What the page picks at tick `t`: the last phase whose start is at most `t` (it starts from
+-- the first phase, whatever its start)
+pick : ∀ {A : Set} → A → List (ℕ × A) → ℕ → A
+pick cur []             t = cur
+pick cur ((s , a) ∷ ps) t = if s ℕ.≤ᵇ t then pick a ps t else cur
+
+active : ∀ {A : Set} → List (ℕ × A) → ℕ → Maybe A
+active []             t = nothing
+active ((s , a) ∷ ps) t = just (pick a ps t)
+
+-- the phases start at or after the first tick
+runs-start : ∀ {A : Set} (_≟_ : DecidableEquality A) prev k (xs : List A) →
+             All (λ p → k ℕ.≤ proj₁ p) (runs _≟_ prev k xs)
+runs-start _≟_ prev k []       = []
+runs-start _≟_ prev k (x ∷ xs) with prev
+... | nothing = ℕP.≤-refl ∷ All.map (ℕP.≤-trans (ℕP.n≤1+n k)) (runs-start _≟_ (just x) (suc k) xs)
+... | just p  with x ≟ p
+...   | yes _ = All.map (ℕP.≤-trans (ℕP.n≤1+n k)) (runs-start _≟_ (just p) (suc k) xs)
+...   | no _  = ℕP.≤-refl ∷ All.map (ℕP.≤-trans (ℕP.n≤1+n k)) (runs-start _≟_ (just x) (suc k) xs)
+
+private
+  pick-none : ∀ {A : Set} (cur : A) ps t → All (λ p → suc t ℕ.≤ proj₁ p) ps → pick cur ps t ≡ cur
+  pick-none cur []             t []        = refl
+  pick-none cur ((s , a) ∷ ps) t (h ∷ _) with s ℕ.≤ᵇ t in e
+  ... | true  = ⊥-elim (ℕP.<-irrefl refl (ℕP.<-≤-trans h (ℕP.≤ᵇ⇒≤ s t (subst T (sym e) tt))))
+  ... | false = refl
+
+  ≤ᵇ-true : ∀ {m n} → m ℕ.≤ n → (m ℕ.≤ᵇ n) ≡ true
+  ≤ᵇ-true {m} {n} h = go (m ℕ.≤ᵇ n) (ℕP.≤⇒≤ᵇ h) where
+    go : ∀ b → T b → b ≡ true
+    go true _ = refl
+
+  -- after `cur`, the entries of the ticks `k, k+1, …` are those that `pick` finds
+  runs-pick : ∀ {A : Set} (_≟_ : DecidableEquality A) (cur : A) k (xs : List A) j {x} →
+              nth xs j ≡ just x → pick cur (runs _≟_ (just cur) k xs) (k + j) ≡ x
+  runs-pick _≟_ cur k []       j       ()
+  runs-pick _≟_ cur k (y ∷ ys) j       h with y ≟ cur
+  runs-pick _≟_ cur k (y ∷ ys) zero    refl | yes e =
+    trans (pick-none cur _ (k + 0) (All.map (λ {p} q → ℕP.<-≤-trans (subst (ℕ._< suc k) (sym (ℕP.+-identityʳ k)) (ℕP.n<1+n k)) q)
+                                       (runs-start _≟_ (just cur) (suc k) ys)))
+          (sym e)
+  runs-pick _≟_ cur k (y ∷ ys) (suc j) {x} h | yes e =
+    subst (λ t → pick cur (runs _≟_ (just cur) (suc k) ys) t ≡ x) (sym (ℕP.+-suc k j)) (runs-pick _≟_ cur (suc k) ys j h)
+  runs-pick _≟_ cur k (y ∷ ys) zero    refl | no _ rewrite ℕP.+-identityʳ k | ≤ᵇ-true (ℕP.≤-refl {k}) =
+    pick-none y _ k (runs-start _≟_ (just y) (suc k) ys)
+  runs-pick _≟_ cur k (y ∷ ys) (suc j) {x} h | no _ rewrite ≤ᵇ-true (ℕP.m≤m+n k (suc j)) =
+    subst (λ t → pick y (runs _≟_ (just y) (suc k) ys) t ≡ x) (sym (ℕP.+-suc k j)) (runs-pick _≟_ y (suc k) ys j h)
+
+-- Grouping into phases does not change what is in force at any tick.
+phases-active : ∀ {A : Set} (_≟_ : DecidableEquality A) (xs : List A) j {x} →
+                nth xs j ≡ just x → active (runs _≟_ nothing 0 xs) j ≡ just x
+phases-active _≟_ []       j ()
+phases-active _≟_ (y ∷ ys) zero    refl = cong just (pick-none y _ 0 (runs-start _≟_ (just y) 1 ys))
+phases-active _≟_ (y ∷ ys) (suc j) h    = cong just (runs-pick _≟_ y 1 ys j h)
+
+------------------------------------------------------------------------
+-- The shipped phases of a list of symbolic layouts
+
+tickElems : Layout (Expr ℕ) → List Elem
+tickElems l = map encodeDraw (Layout.draws l)
+
+-- the phases of the symbolic frames, one layout per tick
+phasesOf : List (Layout (Expr ℕ)) → List (ℕ × List Elem)
+phasesOf ls = runs elemsEq? nothing 0 (map tickElems ls)
+
+-- what the page draws at tick `k`, at the parameters `ρ`
+pageFrame : List (ℕ × List Elem) → ℕ → (ℕ → ℚ) → Maybe (List (Draw ℚ))
+pageFrame ps k ρ = Maybe.map (map (λ e → pageElem e ρ)) (active ps k)
+
+private
+  map-cong : ∀ {A B : Set} {f g : A → B} → (∀ x → f x ≡ g x) → ∀ xs → map f xs ≡ map g xs
+  map-cong e []       = refl
+  map-cong e (x ∷ xs) = cong₂ _∷_ (e x) (map-cong e xs)
+
+-- At tick `k < length ls`, the page draws the symbolic layout of tick `k` evaluated at `ρ` in ℚ,
+-- positions halved: the grouping into phases, the encoding of the formulas (folded when
+-- exact) and the base elements lose nothing.
+pageFrame-sem : ∀ (ls : List (Layout (Expr ℕ))) k L → nth ls k ≡ just L → ∀ ρ →
+                pageFrame (phasesOf ls) k ρ
+                ≡ just (map (λ dr → halve (mapDraw (evalWith ratOps ρ) dr)) (Layout.draws L))
+pageFrame-sem ls k L h ρ
+  rewrite phases-active elemsEq? (map tickElems ls) k
+            (trans (PC.nth-map tickElems ls k) (cong (Maybe.map tickElems) h)) =
+  cong just (trans (map-map (λ e → pageElem e ρ) encodeDraw (Layout.draws L))
+                   (map-cong (λ dr → encodeDraw-sem dr ρ) (Layout.draws L)))
