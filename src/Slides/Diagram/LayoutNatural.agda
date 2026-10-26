@@ -53,7 +53,7 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Bool using (true; false)
 import Slides.Diagram.Place as Place
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; subst; subst-hom; evalWith-subst)
+open import Slides.Diagram.Expr using (Expr; exprOps; eval; eval-hom; evalWith; evalWith-hom; subst; subst-hom; evalWith-subst)
 open import Function using (_∘_)
 
 private
@@ -343,13 +343,19 @@ mapLayout-∘ g f l =
 -- Laying out a template whose variables are replaced by formulas `σ v` and then evaluating at
 -- `ρ` is laying out the template at the assignment `v ↦ eval ρ (σ v)`.  (For a segment placed in
 -- an animation, `σ` sends the segment's parameter to its own variable, and `ρ` gives every
--- segment's parameter at a tick.)
+-- segment's parameter at a tick.)  True in any scalar: `layout-subst` is the instance at ℕ, the
+-- discrete frames; the instance at ℚ (`ratOps`) is the continuous ones.
+layout-substWith : ∀ {V W S} (O : Ops S) (σ : V → Expr W) (ρ : W → S) (d : Dia (Expr V)) →
+  LayoutWith.layout O (mapDia (evalWith O ρ) (mapDia (subst σ) d))
+  ≡ LayoutWith.layout O (mapDia (evalWith O (λ v → evalWith O ρ (σ v))) d)
+layout-substWith O σ ρ d =
+  trans (sym (layout-natural exprOps O (evalWith O ρ) (evalWith-hom O ρ) (mapDia (subst σ) d)))
+  (trans (cong (mapLayout (evalWith O ρ)) (sym (layout-natural exprOps exprOps (subst σ) (subst-hom σ) d)))
+  (trans (mapLayout-∘ (evalWith O ρ) (subst σ) (LayoutWith.layout exprOps d))
+  (trans (mapLayout-cong (evalWith-subst O ρ σ) (LayoutWith.layout exprOps d))
+         (layout-natural exprOps O (evalWith O (λ v → evalWith O ρ (σ v))) (evalWith-hom O _) d))))
+
 layout-subst : ∀ {V W} (σ : V → Expr W) (ρ : W → ℕ) (d : Dia (Expr V)) →
   LayoutWith.layout natOps (mapDia (eval ρ) (mapDia (subst σ) d))
   ≡ LayoutWith.layout natOps (mapDia (eval (λ v → eval ρ (σ v))) d)
-layout-subst σ ρ d =
-  trans (sym (layout-natural exprOps natOps (eval ρ) (eval-hom ρ) (mapDia (subst σ) d)))
-  (trans (cong (mapLayout (eval ρ)) (sym (layout-natural exprOps exprOps (subst σ) (subst-hom σ) d)))
-  (trans (mapLayout-∘ (eval ρ) (subst σ) (LayoutWith.layout exprOps d))
-  (trans (mapLayout-cong (evalWith-subst natOps ρ σ) (LayoutWith.layout exprOps d))
-         (layout-natural exprOps natOps (eval (λ v → eval ρ (σ v))) (eval-hom _) d))))
+layout-subst = layout-substWith natOps

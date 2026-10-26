@@ -202,13 +202,24 @@ the current one is rebuilt from the start). The Pairs deck went from 1.47 MB to 
 is its fold, a homomorphism by construction; `bodyAt` evaluates a template in any scalar
 `Ops S`). When every segment of an animation is a template, `Slides.Anim.Param` numbers the
 segments (one variable each, so segments in `Par` keep independent parameters), lays the
-frames out once in `Expr ℕ` and the backend ships the formulas (`data-param`: phases of ticks
-sharing a shape, each element's numbers as formulas with closed subformulas evaluated, plus
-each segment's parameter per tick) instead of edits; the player evaluates them (a 30-line
-evaluator, no layout). Layout is natural along an `Ops`-homomorphism, so the evaluated
-symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
-`layout-subst`, `leaf-agrees`); the assembly over a whole timeline is checked by
-`make test-anim-ref`, not proved (see `plan/Plan.md`).
+frames out once in `Expr ℕ` and the backend ships a *simulator* (`data-param`): each segment's
+track as pieces `[ticks, from, to, easing]`, and phases of ticks sharing a shape, each element's
+numbers as formulas (closed subformulas evaluated when exact). The page plays in *continuous
+time*: at the real time `τ` (ticks; `requestAnimationFrame`, one tick per `data-ms`) it
+evaluates the easings in floats, the formulas in floating point without rounding, and sets
+fractional coordinates; its size does not depend on the number of ticks. The specification is
+`Slides.Anim.Continuous`: `sampleAt` is the track algebra into `ℕ × (ℚ → A)` (right-continuous
+pieces, `Seq` offsets time, `Par` the same `τ`), a template's parameter is a ℚ (`Expr` is
+unchanged, evaluated with `evalWith ratOps`; no floor operation), `frameAt` the layout in ℚ.
+ℚ differs from the discrete reading: `-` is real subtraction (negative sizes are outside
+`Valid`), percentages are exact, the parameter is not floored. `sampleAt-ι` (whole ticks
+agree with `Track.sample`), `leaf-tick` (the continuous frame is the discrete one through
+`ι` when the template is `Faithful`, `Slides.Diagram.ExprQ`), and the time laws are proved;
+the JavaScript is tested against exact ℚ values (`make test-anim-ref`, tolerance 0.01 for
+float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
+evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
+`layout-substWith`, `leaf-agrees`, `leaf-agreesℚ`); the assembly over a whole timeline is
+tested, not proved (see `plan/Plan.md`).
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:
