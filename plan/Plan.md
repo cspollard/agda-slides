@@ -44,9 +44,16 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      - (Proved, `Slides.Anim.ParamCorrect`: the frame at tick `k` is the symbolic layout at
        the assignment `i ↦ (parameter of segment i at tick k)`, `discrete-assembly`,
        `paramOf-assembly-canonical`, with the shipped segments identified.)
-     - Bodies that need division, remainder or comparison of the parameter (the point-pair
-       loops, `Pairs`) stay flipbook until `Expr` grows those, each with its homomorphism
-       proof; `animateBoth` is still always a flipbook.
+     - Built: layered signatures (core, sub) and the Euclidean layer, `SegBody.discrete`
+       (discrete templates, `Slides.Diagram.Euclid`, `Slides.Anim.DParam`, `DParamCorrect`,
+       `DPhases`, `Formula.encD`), tested by `anim-ref` (`dhero`, every tick of the period).
+       The point-pair loops *can* be templates (`PairsHero.heroD`, `heroT-correct`) but are
+       not shipped as such: 3 pairs ship 779 KB of formulas against 43 KB of edits for all 26
+       (symbolic layout centres every layer against a maximum of formula widths). Left:
+       share subformulas (a `let`/DAG in the shipped formulas) or a layout without
+       full-size layers (absolute placement); canonical-assignment/`paramOf`-level discrete
+       theorems (as `paramOf-assembly-canonical`); `animateBoth` is still always a flipbook
+       (its phases are a style, not a template parameter).
      - `toℕ` of `exprOps` is the value at the all-zero assignment (it is not part of
        `IsOpsHom`; layout never applies it).
    - *Continuous time* (built). A template animation ships the tracks (pieces with easings)

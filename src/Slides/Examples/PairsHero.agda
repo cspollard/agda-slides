@@ -147,21 +147,26 @@ module Frame {S : Set} (D : DiscreteOps S) where
       v   = at p t
 
   -- the whole picture at tick `t`: every pair on a layer of the canvas's size
-  heroFrame : (seed : ℕ) → S → Dia S
-  heroFrame seed t = foldr atop (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo 26) (pairs 26 seed))
+  -- (`n` pairs: the deck uses 26)
+  heroFrame : (n seed : ℕ) → S → Dia S
+  heroFrame n seed t = foldr atop (spacer (lit W) (lit H)) (zipWith (pairAt t) (upTo n) (pairs n seed))
 
 -- the frame the flipbook shows
 heroAt : (seed : ℕ) → ℕ → Dia ℕ
-heroAt = Frame.heroFrame natD
+heroAt = Frame.heroFrame natD 26
 
 -- one period of the sway and spin, played as a loop
 hero : ℕ → Anim ℕ (Seg ℕ)
 hero seed = tween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → heroAt seed (units q))
 
 -- the same frame over the free algebra, with the tick as the variable: a discrete template
-heroT : ℕ → Dia (DExpr ⊤)
-heroT seed = Frame.heroFrame dexprD seed tickD
+-- (`n` pairs.  Symbolic layout is the cost: every pair is on a layer whose width is a formula
+-- (`x + (2r + (W - (x + 2r)))`, which only the evaluation makes `W`), and the layout of the next
+-- pair centres against the maximum of those formulas, so the size of the shipped formulas grows
+-- much faster than the number of pairs: see `docs/Design.md`)
+heroT : (n seed : ℕ) → Dia (DExpr ⊤)
+heroT n seed = Frame.heroFrame dexprD n seed tickD
 
 -- the same loop shipped as formulas
-heroD : ℕ → Anim ℕ (Seg ℕ)
-heroD seed = tweenD period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (heroT seed)
+heroD : (n seed : ℕ) → Anim ℕ (Seg ℕ)
+heroD n seed = tweenD period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (heroT n seed)

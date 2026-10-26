@@ -159,8 +159,8 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
                 (trans (h-- _ _) (cong₂ O₂._-_ (AtNat.rxN n) (h-fromℕ 5)))
                 (trans (h-- _ _) (cong₂ O₂._-_ (AtNat.ryN n) (h-fromℕ 5))))
 
-  frame-natural : ∀ seed t → mapDia h (F₁.heroFrame seed t) ≡ F₂.heroFrame seed (h t)
-  frame-natural seed t = go (upTo 26) (pairs 26 seed)
+  frame-natural : ∀ n seed t → mapDia h (F₁.heroFrame n seed t) ≡ F₂.heroFrame n seed (h t)
+  frame-natural n seed t = go (upTo n) (pairs n seed)
     where
       go : ∀ is ps → mapDia h (foldr atop (spacer (O₁.fromℕ W) (O₁.fromℕ H)) (zipWith (F₁.pairAt t) is ps))
                      ≡ foldr atop (spacer (O₂.fromℕ W) (O₂.fromℕ H)) (zipWith (F₂.pairAt (h t)) is ps)
@@ -169,6 +169,6 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
       go (i ∷ is) (p ∷ ps) = cong₂ atop (pair-natural t i p) (go is ps)
 
 -- the template at the tick variable, evaluated at the tick `t`, is the flipbook frame
-heroT-correct : ∀ seed t → mapDia (evalD natD (λ _ → t)) (heroT seed) ≡ heroAt seed t
-heroT-correct seed t =
-  Natural.frame-natural dexprD natD (evalD natD (λ _ → t)) (evalD-hom natD _) (evalD-euclid-hom natD _) seed tickD
+heroT-correct : ∀ n seed t → mapDia (evalD natD (λ _ → t)) (heroT n seed) ≡ Frame.heroFrame natD n seed t
+heroT-correct n seed t =
+  Natural.frame-natural dexprD natD (evalD natD (λ _ → t)) (evalD-hom natD _) (evalD-euclid-hom natD _) n seed tickD

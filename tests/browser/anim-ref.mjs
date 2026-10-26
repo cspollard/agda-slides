@@ -87,8 +87,8 @@ const result = await page.evaluate(() => {
 });
 for (const [name, r] of Object.entries(result)) {
   if (r.param) {
-    check(`${name}: ${r.refs} reference ${r.discrete && !r.refs ? 'frames' : 'times'} from Agda (${r.frames} ticks)`, (r.refs > 0 && r.refs >= r.frames) || (r.discrete === r.frames));
-    check(`${name}: the simulator agrees with Agda at ${r.checked} times (worst error ${r.worst.toFixed(5)}; at ${r.nBoundary} piece boundaries ${r.boundaryWorst.toExponential(1)})`, r.bad.length === 0, `differs at ${r.bad.slice(0, 8)}`);
+    check(`${name}: ${r.refs || r.discrete} reference ${r.discrete && !r.refs ? 'frames (every tick of the period, compared exactly)' : 'times'} from Agda (${r.frames} ticks)`, (r.refs > 0 && r.refs >= r.frames) || (r.discrete === r.frames));
+    check(`${name}: the simulator agrees with Agda at ${r.checked || r.discrete} ${r.checked ? 'times' : 'ticks'} (worst error ${r.worst.toFixed(5)}; at ${r.nBoundary} piece boundaries ${r.boundaryWorst.toExponential(1)})`, r.bad.length === 0, `differs at ${r.bad.slice(0, 8)}`);
     check(`${name}: shipped as a simulator (${r.phases} phases), ${r.size} characters`, true);
   } else {
     check(`${name}: ${r.frames} frames, ${r.refs} references`, r.frames === r.refs, `${r.frames} vs ${r.refs}`);

@@ -230,6 +230,26 @@ frame through `ι`, given `leaf-tick`'s exactness hypotheses for the segments ru
 subformulas folded, mean the coordinates in ℚ, and grouping ticks into phases changes no
 frame: `pageFrame-sem`). What is only tested: frames between whole ticks, the printing of the
 phases as JSON and its reading by the player (attribute order, float arithmetic).
+*Layered scalars and discrete templates.* The scalar signature is a sum of containers
+(`Slides.Diagram.Signature`, `Expr`): `CoreC` (zero, literal, plus, max, `pct p`) `⊎` `SubC`
+(`sub`: monus in ℕ, real subtraction in ℤ/ℚ, so `ι : ℕ → ℚ` preserves the core layer but the
+difference only where `b ≤ a`). `Ops = CoreOps + SubOps`, `IsOpsHom = IsCoreHom + IsSubHom`;
+`evalWith` is the fold of the copairing of the layers' handlers (`Handler`, `_⊕_`, which is
+`Container.Sum.copair`); weakening a layer is translation along `inl`/`inr`, a monad
+morphism; `Faithful` is exactly the conjunction of the per-layer side conditions
+(`CoreSide`, `SubSide`). A further layer, `Slides.Diagram.Euclid` (`DivBy`, `ModBy`, `Lt`,
+`MulLit`), is read in ℕ only (floor division is not exact division) and gives `DExpr`, the
+*discrete templates*: `SegBody.discrete` bodies are evaluated in ℕ at the whole tick
+(`evalD natD`), have one frame per tick (the frame of `⌊τ⌋` between ticks) and are shipped
+as formulas read in ℕ (`"d": 1` in `data-param`; `Formula.encD`, whose folds need no exactness
+condition: `encD-semN`, `enc-numN`). Layout never compares or divides, so it is natural along
+`evalD` unchanged (`EuclidNatural`); `DParamCorrect.discrete-assemblyD` is the assembly
+(shared induction in `Slides.Anim.Assembly`), `DPhases.pageFrameD-sem` the shipped phases. A
+field layer (exact division by a literal) was not needed. The hero frame is written once over
+any scalar with the three layers (`PairsHero.Frame`); `heroT-correct` proves the template is
+the flipbook frame. It is *not used* in the Pairs deck: laying the pairs out symbolically costs
+far more than the edits (each pair sits on a layer whose width is a formula, and the next pair
+centres against a maximum of those), see `plan/Plan.md`.
 Steps and loop combine as a product: `both rests p` lays `p` phases of the steps end to end,
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:
