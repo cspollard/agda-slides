@@ -135,6 +135,10 @@ tween n a b e f = pure (seg (pure (T.piece n a b e)) (blackBox f))
 tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (Expr ⊤) → Anim S (Seg S)
 tweenT n a b e d = pure (seg (pure (T.piece n a b e)) (template d))
 
+-- the same, as a discrete template: the diagram is open in the integer tick `t`
+tweenD : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (DExpr ⊤) → Anim S (Seg S)
+tweenD n a b e d = pure (seg (pure (T.piece n a b e)) (discrete d))
+
 -- a pause: an empty frame.  It is a template (constant, with the zero for its size), so
 -- padding keeps an animation of templates parametric.
 none : ∀ {S} → Ops S → ℕ → Anim S (Seg S)

@@ -26,8 +26,10 @@ open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
 open import Slides.Core using (ContentShape; animation; paramAnimation; Play; onSteps; looping; both)
 open import Data.Maybe using (Maybe; just; nothing)
-open import Slides.Diagram.Param using (Param)
+import Data.Maybe as Maybe
+open import Slides.Diagram.Param using (AnyParam; continuous; discrete)
 open import Slides.Anim.Param using (paramOf)
+open import Slides.Anim.DParam using (dparamOf)
 open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Diagram.Syntax using (Dia; atop; spacer)
 open import Slides.Diagram.Scalar using (natOps)
@@ -70,23 +72,31 @@ frameDiagrams name pct fs with compileFrames name pct 0 fs
 -- the `animation` command for frames played in a given mode: `ms` is the time per frame
 private
   -- `mp` is the parametric encoding of the same frames, when there is one
-  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → Maybe Param → ContentShape
+  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → Maybe AnyParam → ContentShape
   shape name pct ms play fs mp with frameDiagrams name pct fs
   ... | []     = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) [] ms play
   ... | d ∷ ds with mp
   ...   | nothing = animation d ds ms play
   ...   | just pa = paramAnimation d ds pa ms play
 
+-- the parametric encoding, if there is one: continuous templates (every segment a `template`)
+-- are shipped as such, else discrete ones (some segment `discrete`, the others of either
+-- kind); an animation with a function body stays a flipbook
+anyParamOf : List (Anim ℕ (Seg ℕ)) → Maybe AnyParam
+anyParamOf acts with paramOf acts
+... | just p  = just (continuous p)
+... | nothing = Maybe.map discrete (dparamOf acts)
+
 -- the acts one after the other; each act is one step
 render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
 render name pct ms acts =
   shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natOps) a)) acts)))
         (concat (map (timeline atop (frames natOps)) acts))
-        (paramOf acts)
+        (anyParamOf acts)
 
 -- one animation, repeating
 renderLoop : (name : String) (percent ms : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a) (paramOf (a ∷ []))
+renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a) (anyParamOf (a ∷ []))
 
 -- Steps over a loop: `acts φ` are the acts at phase `φ` of a loop of `period` phases
 -- (a phase typically only restyles the diagram: an arrow's dashes, a pulse).  Each

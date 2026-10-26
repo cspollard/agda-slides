@@ -180,6 +180,10 @@ dexprOps = record { core = termCoreD ; sub = termSubD ; toℕ = evalD natD (λ _
 dexprD : ∀ {V} → DiscreteOps (DExpr V)
 dexprD = record { ops = dexprOps ; euclid = termEuclid }
 
+-- the tick of a discrete template
+tickD : DExpr ⊤
+tickD = pure tt
+
 -- homomorphisms of the Euclidean layer
 record IsEuclidHom {S T : Set} (O : EuclidOps S) (P : EuclidOps T) (h : S → T) : Set where
   private module O = EuclidOps O

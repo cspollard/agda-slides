@@ -87,7 +87,7 @@ const result = await page.evaluate(() => {
 });
 for (const [name, r] of Object.entries(result)) {
   if (r.param) {
-    check(`${name}: ${r.refs} reference times from Agda (${r.frames} ticks)`, r.refs > 0 && r.refs >= r.frames);
+    check(`${name}: ${r.refs} reference ${r.discrete && !r.refs ? 'frames' : 'times'} from Agda (${r.frames} ticks)`, (r.refs > 0 && r.refs >= r.frames) || (r.discrete === r.frames));
     check(`${name}: the simulator agrees with Agda at ${r.checked} times (worst error ${r.worst.toFixed(5)}; at ${r.nBoundary} piece boundaries ${r.boundaryWorst.toExponential(1)})`, r.bad.length === 0, `differs at ${r.bad.slice(0, 8)}`);
     check(`${name}: shipped as a simulator (${r.phases} phases), ${r.size} characters`, true);
   } else {
@@ -95,7 +95,7 @@ for (const [name, r] of Object.entries(result)) {
     check(`${name}: the player agrees with Agda on every frame`, r.bad.length === 0, `differs at ${r.bad.slice(0, 8)}`);
     check(`${name}: shipped as edits, ${r.size} characters`, true);
   }
-  check(`${name}: shipped ${r.param ? 'as formulas' : 'as edits'} as expected`, r.param === name.startsWith('t'));
+  check(`${name}: shipped ${r.param ? 'as formulas' : 'as edits'} as expected`, r.param === (name.startsWith('t') || name.startsWith('d')));
 }
 // size does not grow with the ticks: the formulas of the 60-tick and the 600-tick slider have the same length
 const L60 = result.tlong, L600 = result.tvlong;
@@ -103,7 +103,7 @@ check('formulas: 60 and 600 ticks ship the same number of characters', L60 && L6
 check('whole data: the 600-tick slider is at most 3 characters larger than the 60-tick one', L60 && L600 && L600.size - L60.size <= 3, `${L60 && L60.size} vs ${L600 && L600.size}`);
 check('the 60-tick slider as formulas is smaller than as edits', L60 && result.elong && L60.size < result.elong.size, `${L60 && L60.size} vs ${result.elong && result.elong.size}`);
 check('a discrete reference was compared for the whole-step slider', result.twhole && result.twhole.discrete === 6);
-check('animations found', Object.keys(result).length === 11, String(Object.keys(result).length));
+check('animations found', Object.keys(result).length === 12, String(Object.keys(result).length));
 check('no page errors', errors.length === 0, errors.join('; '));
 await browser.close();
 console.log(failures === 0 ? 'all anim-ref tests passed' : `${failures} failure(s)`);

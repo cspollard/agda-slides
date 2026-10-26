@@ -35,10 +35,12 @@ open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 import Slides.Diagram.Draw as Dr
 open import Slides.Diagram.Expr using (Expr; ExprOp; eval)
-open import Slides.Diagram.Param using (Param; param)
+open import Slides.Diagram.Param using (Param; param; DParam; dparam; AnyParam; continuous; discrete)
+open import Slides.Diagram.Euclid using (DExpr)
 import Slides.Anim.Formula as F
 open F using (Formula)
 open import Slides.Anim.Phases using (Elem; phasesOf)
+open import Slides.Anim.DPhases using (phasesOfD)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Data.Container.FreeMonad using (pure; impure)
@@ -276,6 +278,12 @@ private
   formulaⱼ (F.max a b) = arrayⱼ (stringⱼ "m" ∷ formulaⱼ a ∷ formulaⱼ b ∷ [])
   formulaⱼ (F.pct p a) = arrayⱼ (stringⱼ "%" ∷ natⱼ p ∷ formulaⱼ a ∷ [])
   formulaⱼ (F.hlf a)   = arrayⱼ (stringⱼ "h" ∷ formulaⱼ a ∷ [])
+  -- the Euclidean nodes of a discrete template (`Slides.Anim.Formula`, read in ℕ); the divisor
+  -- is shipped as it is, `d + 1`
+  formulaⱼ (F.fdiv d a)     = arrayⱼ (stringⱼ "/" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
+  formulaⱼ (F.fmod d a)     = arrayⱼ (stringⱼ "r" ∷ natⱼ (suc d) ∷ formulaⱼ a ∷ [])
+  formulaⱼ (F.fmul n a)     = arrayⱼ (stringⱼ "*" ∷ natⱼ n ∷ formulaⱼ a ∷ [])
+  formulaⱼ (F.flt a b x y)  = arrayⱼ (stringⱼ "<" ∷ formulaⱼ a ∷ formulaⱼ b ∷ formulaⱼ x ∷ formulaⱼ y ∷ [])
 
   coordJ : Maybe Formula → JSON
   coordJ nothing  = nullⱼ
@@ -302,6 +310,10 @@ private
   phasesⱼ : String → List (Dr.Layout (Expr ℕ)) → List JSON
   phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOf ls)
 
+  -- the same for discrete templates (`Slides.Anim.DPhases.phasesOfD`)
+  phasesⱼᴰ : String → List (Dr.Layout (DExpr ℕ)) → List JSON
+  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (phasesOfD ls)
+
   ratⱼ : ℚ.ℚ → JSON
   ratⱼ q with ℚ.↧ₙ q
   ... | 1 = intⱼ (ℚ.↥ q)
@@ -319,13 +331,28 @@ private
   segmentJ : ℕ × List (Tr.Piece ℚ.ℚ) → JSON
   segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map pieceⱼ ps) ∷ [])
 
-renderParamAnimation : Diagram → Param → ℕ → Play → XMLM A
-renderParamAnimation d (param ls segs) ms play =
+-- A discrete parametric animation is the same object with `"d": 1`: the page reads its formulas
+-- in ℕ (a difference clamps at 0, `"%"` rounds down, `"/"`, `"r"`, `"*"`, `"<"` are floor
+-- division, remainder, a literal factor, and `["<", a, b, x, y]` is `x` if `a < b` else `y`) and
+-- shows, at real time `τ`, the frame of the whole tick `⌊τ⌋`, with every segment's parameter
+-- the floor of its track's value at that whole tick.
+renderParamAnimation : Diagram → AnyParam → ℕ → Play → XMLM A
+renderParamAnimation d (continuous (param ls segs)) ms play =
   animationWith d
     ( ("data-n" , num (length ls))
     ∷ ("data-param" , renderJSON (objectFromList
          ( ("v" , arrayⱼ (map segmentJ segs))
          ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) ls))
+         ∷ [] )))
+    ∷ [] )
+    ms play
+renderParamAnimation d (discrete (dparam ls segs)) ms play =
+  animationWith d
+    ( ("data-n" , num (length ls))
+    ∷ ("data-param" , renderJSON (objectFromList
+         ( ("d" , natⱼ 1)
+         ∷ ("v" , arrayⱼ (map segmentJ segs))
+         ∷ ("p" , arrayⱼ (phasesⱼᴰ (Diagram.name d) ls))
          ∷ [] )))
     ∷ [] )
     ms play
