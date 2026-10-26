@@ -17,6 +17,7 @@ open import Data.String using (String)
 -- Colours are any CSS colour; unset means "the slide's text colour" for
 -- strokes and text, and no fill for shapes.
 record Style : Set where
+  constructor mkStyle
   field
     stroke      : Maybe String
     fill        : Maybe String
