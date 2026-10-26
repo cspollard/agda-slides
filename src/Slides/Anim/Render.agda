@@ -18,8 +18,7 @@ import Data.List.Relation.Unary.All as All
 open import Data.Nat.Properties using (_≟_)
 open import Relation.Nullary using (Dec)
 open import Relation.Nullary.Decidable using (True)
-open import Data.Unit using ()
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Data.Nat using (ℕ; _⊔_; _+_; _∸_; suc)
 open import Data.Nat.Show using (show)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
@@ -55,10 +54,6 @@ private
 restsOf : ℕ → List ℕ → List ℕ
 restsOf acc []       = []
 restsOf acc (l ∷ ls) = (acc + l ∸ 1) ∷ restsOf (acc + l) ls
-
-length-restsOf : ∀ acc ls → length (restsOf acc ls) ≡ length ls
-length-restsOf acc []       = refl
-length-restsOf acc (l ∷ ls) = cong suc (length-restsOf (acc + l) ls)
 
 -- the diagrams of the frames, all of one size: `name-i` is the id of frame `i`,
 -- `percent` the displayed width.  A zero-length animation is one empty frame.

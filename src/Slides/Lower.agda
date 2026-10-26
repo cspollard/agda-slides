@@ -19,11 +19,8 @@ module Slides.Lower where
 
 open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; zero; suc)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-open import Data.Maybe using ()
 open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
-open import Data.String using () renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure)
 
@@ -68,13 +65,6 @@ finalFrame : Diagram → List Diagram → Play → Diagram
 finalFrame d ds (onSteps rs) = nth d ds (lastRest rs)
 finalFrame d ds looping      = d
 finalFrame d ds (both rs _)  = nth d ds (lastRest rs)
-
-finalFrame-looping : ∀ d ds → finalFrame d ds looping ≡ d
-finalFrame-looping d ds = refl
-
-finalFrame-no-steps : ∀ d ds → finalFrame d ds (onSteps []) ≡ d
-finalFrame-no-steps d []        = refl
-finalFrame-no-steps d (f ∷ fs)  = refl
 
 -- For a backend that cannot play animations (print, a script-free page): the
 -- animation as a still of its final frame, the picture the audience is left with.
