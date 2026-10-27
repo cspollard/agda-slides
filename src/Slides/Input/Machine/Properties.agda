@@ -109,6 +109,16 @@ module _ {C : Set} (d : DecidableEquality C) where
 ------------------------------------------------------------------------
 -- Lifting along a command map
 
+liftE-iso : ∀ {C D} (h : D → Maybe C) {M N : Machine C} → MIso M N → MIso (liftE h M) (liftE h N)
+liftE-iso h {M} {N} I = record
+  { to = to I ; from = from I ; from-to = from-to I ; to-from = to-from I
+  ; to-init = to-init I ; to-view = to-view I ; to-step = λ q x → s q x }
+  where
+    s : ∀ q x → to I (maybe′ (step M q) q (h x)) ≡ maybe′ (step N (to I q)) (to I q) (h x)
+    s q x with h x
+    ... | just y  = to-step I q y
+    ... | nothing = refl
+
 liftE-idle : ∀ {C D} (h : D → Maybe C) → MIso idle (liftE h idle)
 liftE-idle h = record
   { to = λ q → q ; from = λ q → q ; from-to = λ _ → refl ; to-from = λ _ → refl
