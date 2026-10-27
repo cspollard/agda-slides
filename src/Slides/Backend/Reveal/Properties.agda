@@ -75,5 +75,5 @@ present-renderDeck : ∀ {C} (b : Supports C) → NavTotal b → ∀ d →
 present-renderDeck b nt = renderDeckBy-cong (steps-pipeline b (nt next))
 
 present-reveal : ∀ {C} (b : Supports C) (nt : NavTotal b) cfg d →
-                 present b nt cfg d ≡ doctype ++ˢ renderXML (page cfg (renderDeck d))
-present-reveal b nt cfg d = cong (λ f → doctype ++ˢ renderXML (page cfg f)) (present-renderDeck b nt d)
+                 present b nt cfg d ≡ prologue ++ˢ renderXML (page cfg (renderDeck d))
+present-reveal b nt cfg d = cong (λ f → prologue ++ˢ renderXML (page cfg f)) (present-renderDeck b nt d)

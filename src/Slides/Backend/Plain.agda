@@ -110,9 +110,9 @@ page cfg slides =
                      ∷ scriptTag (k ++ˢ "contrib/auto-render.min.js") ∷ []
 
 -- `index.html`: a backend `b` presents a deck when it supports all of `Nav` (see
--- `Slides.Backend.Reveal.present`).  The doctype prefix is constant and unverified.
+-- `Slides.Backend.Reveal.present`).  The prologue (doctype and generator comment) is constant and unverified.
 present : ∀ {C} (b : Supports C) → NavTotal b → PlainConfig → Deck → String
-present b _ cfg d = doctype ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
+present b _ cfg d = prologue ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
 
 renderPlain : PlainConfig → Deck → String
 renderPlain = present (plainSupports (Shape BlockC)) (plainSupports-total (Shape BlockC))

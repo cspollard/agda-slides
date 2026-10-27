@@ -298,6 +298,7 @@ animationSync =
 -- JSON), the script loader, and the deck's own scripts.
 initScript : Mode → RevealConfig → String
 initScript m cfg =
+  scriptNote ++ˢ
   "Reveal.initialize(Object.assign(" ++ˢ renderJSON (options m cfg) ++ˢ
   ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n" ++ˢ
   scriptLoader ++ˢ
@@ -307,9 +308,9 @@ initScript m cfg =
 -- `index.html`: a backend `b` presents a deck when it supports all of `Nav`
 -- (`Slides.Input.Supports`): each slide body is elaborated (`pause` is `await next`), its
 -- awaited commands are lowered to `b`'s and the steps it gives are shown (`presentBody`).
--- The doctype prefix is constant and unverified.
+-- The prologue (doctype and generator comment) is constant and unverified.
 present : ∀ {C} (b : Supports C) → NavTotal b → RevealConfig → Deck → String
-present b _ cfg d = doctype ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
+present b _ cfg d = prologue ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
 
 renderReveal : RevealConfig → Deck → String
 renderReveal = present (revealSupports (Shape BlockC)) (revealSupports-total (Shape BlockC))
