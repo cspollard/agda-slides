@@ -64,7 +64,9 @@ module _ {C : Set} (b : Supports C) where
     cong (λ w → impure (inj₁ (inj₁ c) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
   lowerCmdBody-lowerDeck (impure (inj₁ (inj₂ l) , k)) =
     cong (λ w → impure (inj₁ (inj₂ l) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
-  lowerCmdBody-lowerDeck (impure (inj₂ c , k)) with inj b c in e
+  lowerCmdBody-lowerDeck (impure (inj₂ (inj₂ l) , k)) =
+    cong (λ w → impure (inj₂ (inj₂ l) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
+  lowerCmdBody-lowerDeck (impure (inj₂ (inj₁ c) , k)) with inj b c in e
   ... | just s  rewrite e =
     cong (λ w → impure (inj₂ (inj₁ s) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
   ... | nothing rewrite e = lowerCmdBody-lowerDeck (k tt)
@@ -98,7 +100,8 @@ module _ {C : Set} (b : Supports C) where
       cong (λ w → wrapC m c >>= λ _ → w) (steps-lowered m (k tt))
     steps-lowered m (impure (inj₁ (inj₂ l) , k)) =
       cong (λ w → proj₂ (stepL m l) >>= λ _ → w) (steps-lowered (proj₁ (stepL m l)) (k tt))
-    steps-lowered m (impure (inj₂ c , k)) with inj b c in e
+    steps-lowered m (impure (inj₂ (inj₂ _) , k)) = steps-lowered m (k tt)
+    steps-lowered m (impure (inj₂ (inj₁ c) , k)) with inj b c in e
     ... | just s  rewrite e =
       trans (steps-lowered (m ∨ isNextS b s) (k tt))
             (cong (λ n → goBy isNext n (k tt)) (cong (m ∨_) (isNextS-supported c s e)))

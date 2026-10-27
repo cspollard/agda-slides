@@ -24,6 +24,7 @@ open import Data.List.Membership.Propositional.Properties using (∈-cartesianPr
 open import Data.Nat.Base using (ℕ)
 open import Data.Nat.Properties using (_≟_)
 open import Data.Product.Base using (_×_; _,_)
+open import Data.String.Base using (String)
 open import Data.Product.Properties using (≡-dec)
 open import Relation.Nullary.Decidable using (True)
 open import Relation.Binary.Definitions using (DecidableEquality)
@@ -177,10 +178,12 @@ keys-cover (n , m) = ∈-cartesianProduct⁺ (names-cover n) (mods-cover m)
 ------------------------------------------------------------------------
 -- Hashes and events
 
--- `#n` is `flat n`; `#/h/v` is `grid h v` (`#/h` is `grid h 0`).
+-- `#n` is `flat n`; `#/h/v` is `grid h v` (`#/h` is `grid h 0`); `#/id` is `named id`
+-- (a slide's id attribute, see `Slides.Input.Slides`).
 data Hash : Set where
-  flat : ℕ → Hash
-  grid : ℕ → ℕ → Hash
+  flat  : ℕ → Hash
+  grid  : ℕ → ℕ → Hash
+  named : String → Hash
 
 data Event : Set where
   keydown    : Key → Event

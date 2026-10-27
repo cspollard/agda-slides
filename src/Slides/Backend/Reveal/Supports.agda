@@ -11,7 +11,7 @@
 --               (`next`/`prev`); a stacked deck moves on the grid (`right left down up`).
 --               Space, n, PageDown are `next` and Shift+Space, p, PageUp `prev` in both.
 --               Ctrl and meta are ignored; Shift counts only for Space, n, p and the arrows.
---   revealHash  `#n`, `#/h`, `#/h/v` (zero-based, 2-D) read on load and on `hashchange`.
+--   revealHash  `#n`, `#/h`, `#/h/v` (zero-based, 2-D) and `#/id` (a labelled slide) read on load and on `hashchange`.
 --   revealRender  the canonical physical input of each command (none where there is none yet).
 --
 -- Laws and the facts the browser tests found: `Slides.Backend.Reveal.Supports.Properties`.
@@ -110,6 +110,7 @@ revealHash : Decoder Hash RCmd
 revealHash (flat n)         = just (nav (goto n))
 revealHash (grid h zero)    = just (nav (goto h))
 revealHash (grid h (suc v)) = just (slideV h (suc v))
+revealHash (named l)        = just (nav (gotoLabel l))
 
 revealRead : Mode → Decoder Event RCmd
 revealRead m (keydown k)    = revealKeys m k
@@ -122,7 +123,7 @@ revealRender _       (nav prev)         = just (keydown (⇧ space))
 revealRender _       (nav first)        = just (keydown ⟨ home ⟩)
 revealRender _       (nav last)         = just (keydown ⟨ end ⟩)
 revealRender _       (nav (goto n))     = just (hashLoad (grid n 0))
-revealRender _       (nav (gotoLabel _)) = nothing
+revealRender _       (nav (gotoLabel l)) = just (hashLoad (named l))
 revealRender _       (ext overview)     = just (keydown ⟨ keyO ⟩)
 revealRender _       (ext tick)         = nothing
 revealRender linear  (move _)           = nothing

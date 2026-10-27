@@ -235,5 +235,17 @@ test-nav:
 	cd tests/browser && npm install --silent
 	node tests/browser/nav.mjs out
 
+# Label navigation (`Slides.Examples.Labels`): not part of the goldens.  `make labels test-labels`.
+.PHONY: labels test-labels
+labels:
+	mkdir -p out/labels $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/labels/reveal
+	cp assets/slides.css assets/animation.js out/labels/
+	$(call run-main,src/Slides/Examples/LabelsMain.agda)
+
+test-labels: labels
+	cd tests/browser && npm install --silent
+	node tests/browser/labels.mjs out
+
 # Every browser test that needs only local files (test-pairs needs a CDN and is left out).
 test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav test-keys

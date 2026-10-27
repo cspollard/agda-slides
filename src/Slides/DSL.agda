@@ -229,6 +229,13 @@ background c = record defaultSlide { background = just c }
 transition : String → SlideOptions
 transition t = record defaultSlide { transition = just t }
 
+-- Name a slide (the options of `slideWith`): `gotoLabel` goes to it.
+labelled : String → SlideOptions → SlideOptions
+labelled l o = record o { label = just l }
+
+slideAs : String → Body → Deck
+slideAs l = slideWith (labelled l defaultSlide)
+
 -- `animateBoth name width ms period acts`: the acts of `animate` (one per reveal
 -- step) with a loop of `period` phases running underneath; `acts φ` is the list of
 -- acts at phase `φ` (see `renderBoth`: every phase has acts of the same lengths).

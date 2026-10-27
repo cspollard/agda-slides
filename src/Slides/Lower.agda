@@ -25,6 +25,7 @@ module Slides.Lower where
 
 open import Data.List using (List; []; _∷_; map)
 open import Data.Maybe using (Maybe; just; nothing)
+open import Data.String using (String)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -33,7 +34,7 @@ open import Data.Container.Core using (Shape)
 open import Data.Container.FreeMonad using (pure; impure)
 
 open import Container.Lowering
-open import Container.Sum using (inl; inr)
+open import Container.Sum using (inl)
 open import Slides.Core
 open import Slides.Diagram using (Diagram)
 open import Slides.Input.Deck
@@ -111,6 +112,19 @@ module _ (l : Lowering ContentC ContentC) where
   deck (slide o b)  = impure (slide o (lower block b) , pure)
   deck (stack o bs) = impure (stack o (map (lower block) bs) , pure)
 
+-- Give a labelled slide an empty element whose id is the label, so that a browser goes to it
+-- by `#/label`.  Until the backends write the id on the slide themselves
+-- (`Slides.Backend.Common.slideAttrs`); unlabelled slides are untouched.  A labelled stack
+-- labels its first slide.
+mountFirst : Maybe String → Body → Body
+mountFirst nothing  b = b
+mountFirst (just l) b = impure (inj₁ (mount l) , λ _ → b)
+
+labelMounts : Lowering DeckC DeckC
+labelMounts (slide o b)         = impure (slide o (mountFirst (SlideOptions.label o) b) , pure)
+labelMounts (stack o [])        = ret (stack o [])
+labelMounts (stack o (b ∷ bs))  = impure (stack o (mountFirst (SlideOptions.label o) b ∷ bs) , pure)
+
 lowerBody : Lowering ContentC ContentC → Body → Body
 lowerBody l = lower (block l)
 
@@ -138,7 +152,8 @@ module _ {C : Set} (b : Supports C) where
   -- Lower the awaited commands of a body; blocks are kept.
   lowerCmdBlock : Lowering (DeckBlockC C) (BlockAwaitC (S b))
   lowerCmdBlock (inj₁ s) = impure (inj₁ s , pure)
-  lowerCmdBlock (inj₂ k) = lower (embed inr) (lowerCmd k)
+  lowerCmdBlock (inj₂ (inj₁ k)) = lower (embed awaitIn) (lowerCmd k)
+  lowerCmdBlock (inj₂ (inj₂ l)) = labelB l
 
   lowerCmdBody : Body⁺ (Nav ⊎ C) → Body⁺ (S b)
   lowerCmdBody = lower lowerCmdBlock

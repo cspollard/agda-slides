@@ -56,8 +56,8 @@ reveal-render linear  (nav last)  refl = refl
 reveal-render stacked (nav last)  refl = refl
 reveal-render linear  (nav (goto n)) refl = refl
 reveal-render stacked (nav (goto n)) refl = refl
-reveal-render linear  (nav (gotoLabel _)) ()
-reveal-render stacked (nav (gotoLabel _)) ()
+reveal-render linear  (nav (gotoLabel _)) refl = refl
+reveal-render stacked (nav (gotoLabel _)) refl = refl
 reveal-render linear  (ext overview) refl = refl
 reveal-render stacked (ext overview) refl = refl
 reveal-render linear  (ext tick) ()

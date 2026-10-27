@@ -59,6 +59,7 @@ plainHash : Decoder Hash PCmd
 plainHash (flat zero)    = just (nav (goto zero))
 plainHash (flat (suc n)) = just (nav (goto n))
 plainHash (grid _ _)     = nothing
+plainHash (named _)      = nothing   -- plain.js reads `#n` only
 
 plainRead : Decoder Event PCmd
 plainRead (keydown k)    = plainKey k

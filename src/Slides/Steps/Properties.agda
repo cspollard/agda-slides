@@ -77,7 +77,8 @@ module _ {X : Set} (step? : X → Bool) where
     trans (cong (λ w → proj₂ (stepL m l) >>= λ _ → w) (goBy-bind (proj₁ (stepL m l)) (k tt) y))
           (sym (bind-assoc (proj₂ (stepL m l)) (goBy step? (proj₁ (stepL m l)) (k tt))
                            (goBy step? (afterBy step? (proj₁ (stepL m l)) (k tt)) y)))
-  goBy-bind m (impure (inj₂ a , k))        y = goBy-bind (m ∨ step? a) (k tt) y
+  goBy-bind m (impure (inj₂ (inj₁ a) , k)) y = goBy-bind (m ∨ step? a) (k tt) y
+  goBy-bind m (impure (inj₂ (inj₂ _) , k)) y = goBy-bind m (k tt) y
 
 ------------------------------------------------------------------------
 -- Bridge: `pause` is `await next`

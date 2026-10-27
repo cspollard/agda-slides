@@ -140,9 +140,10 @@ record SlideOptions : Set where
   field
     background : Maybe String   -- any CSS colour
     transition : Maybe String   -- none, fade, slide, convex, concave, zoom
+    label      : Maybe String   -- a name to go to (`Slides.Input.Slides`; the slide id)
 
 defaultSlide : SlideOptions
-defaultSlide = record { background = nothing ; transition = nothing }
+defaultSlide = record { background = nothing ; transition = nothing ; label = nothing }
 
 data DeckShape : Set where
   -- a horizontal slide
