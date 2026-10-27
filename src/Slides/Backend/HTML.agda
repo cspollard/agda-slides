@@ -72,6 +72,13 @@ hMixed tag attrs (t , cs@(_ ∷ _)) with fromContent (toList t , map (λ { (x , 
        {fromEq (fixAttrs-valid (map (λ { (k , v) → toList k , toList v }) attrs))}
        {fromEq (mapTexts-valid texts)}
 
+-- A `<script src=…>` (with the single space of content HTML5 needs) and a `<link rel=stylesheet>`.
+scriptTag : String → XMLM A
+scriptTag src = hText "script" (("src" , src) ∷ []) " "
+
+stylesheet : String → XMLM A
+stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
+
 -- The doctype is not part of the XML AST; it is a constant prefix added when
 -- a page is written out.
 doctype : String

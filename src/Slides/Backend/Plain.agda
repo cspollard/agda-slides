@@ -76,13 +76,6 @@ defaultConfig = record
   ; katex       = nothing
   }
 
-private
-  scriptTag : String → XMLDoc
-  scriptTag src = hText "script" (("src" , src) ∷ []) " "
-
-  stylesheet : String → XMLDoc
-  stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
-
 page : PlainConfig → Forest → XMLDoc
 page cfg slides =
   hElement "html" (("lang" , "en") ∷ [])

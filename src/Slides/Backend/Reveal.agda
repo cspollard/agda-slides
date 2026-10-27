@@ -131,12 +131,6 @@ defaultConfig = record
   }
 
 private
-  scriptTag : String → XMLDoc
-  scriptTag src = hText "script" (("src" , src) ∷ []) " "
-
-  stylesheet : String → XMLDoc
-  stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
-
   div : String → List XMLDoc → XMLDoc
   div cls = hElement "div" (("class" , cls) ∷ [])
 

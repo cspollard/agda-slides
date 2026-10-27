@@ -106,9 +106,6 @@ coordsOf fs = if allNum fs then nothing else just (map entry fs)
 encodeWith : ∀ {E : Set} → (Kind × E → Formula) → (E → ℕ) → Draw E → Elem
 encodeWith slot bval dr = elem (mapDraw bval dr) (coordsOf (map slot (nums dr)))
 
-encodeDraw : Draw (Expr ℕ) → Elem
-encodeDraw = encodeWith slotF (eval (λ _ → 0))
-
 entries : Maybe (List (Maybe Formula)) → List (Maybe Formula)
 entries nothing   = []
 entries (just cs) = cs

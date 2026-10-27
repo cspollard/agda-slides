@@ -49,7 +49,6 @@ open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 
-open import Container.Sum using (inl)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
@@ -110,9 +109,6 @@ subD = record { shape = λ o → inj₁ (inj₂ o) ; position = λ q → q }
 
 euclidD : EuclidC ⇒ DExprC
 euclidD = record { shape = λ o → inj₂ o ; position = λ q → q }
-
-exprD : ExprC ⇒ DExprC
-exprD = inl {C₁ = ExprC} {C₂ = EuclidC}
 
 private
   pick4 : ∀ {A : Set} → A → A → A → A → Fin 4 → A

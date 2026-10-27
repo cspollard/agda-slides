@@ -14,7 +14,7 @@
 
 module Container.Polynomial where
 
-open import Level using (Level; _⊔_; 0ℓ)
+open import Level using (Level; _⊔_)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; ⟦_⟧)
 import Data.Container.Core as CC
@@ -27,7 +27,7 @@ open import Relation.Binary.PropositionalEquality.Core
   using (refl; sym; trans)
 
 open import Categories.Category.Instance.Setoids using (Setoids)
-open import Categories.Functor using (Functor; Endofunctor)
+open import Categories.Functor using (Functor)
 
 private
   variable
@@ -84,8 +84,3 @@ Poly C = record
   ; homomorphism = λ {_} {_} {Z} {_} {_} {(_ , _)} → refl ,ₚ λ _ → Setoid.refl Z
   ; F-resp-≈     = λ f≈g {(_ , _)} → refl ,ₚ λ _ → f≈g
   }
-
--- Containers in `Set 0ℓ` give endofunctors.
-
-Poly-Endo : Container 0ℓ 0ℓ → Endofunctor (Setoids c ℓ)
-Poly-Endo = Poly

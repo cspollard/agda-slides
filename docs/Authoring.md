@@ -123,7 +123,7 @@ combinators below are smart constructors that build it. Gaps, margins and
 minimum widths are not operations, they are spacers. Nothing is laid out until
 it is interpreted: an interpretation is an `Algebra S A` (the operation and the
 results for its children) and `fold` is the catamorphism. `layout` folds
-into `Slides.Diagram.Place.Layout` (a sized rectangle that draws itself at an
+into `Slides.Diagram.Draw.Layout` (a sized rectangle that draws itself at an
 offset and carries named anchors), `compile` turns that into a `Diagram`, and
 `Slides.Diagram.Names.dangling` is a second algebra that lists the names a
 `connect` refers to but nothing declares, so a deck can state

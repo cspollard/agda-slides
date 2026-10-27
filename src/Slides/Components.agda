@@ -5,8 +5,8 @@
 -- A component is an ordinary function into the free monad: its parameters
 -- go in, a `Body` (or `Deck`) comes out, and components compose with `>>`
 -- and `>>=`.  The backend respects composition: rendering a sequence is the
--- concatenation of the renderings (`renderBody-bind`,
--- `renderDeck-bind` in `Slides.Backend.Reveal`).
+-- concatenation of the renderings (`renderBody-bind` in `Slides.Backend.Common.Properties`,
+-- `renderDeck-bind` in `Slides.Backend.Reveal.Properties`).
 
 module Slides.Components where
 

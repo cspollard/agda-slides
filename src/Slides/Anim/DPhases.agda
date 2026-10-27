@@ -14,7 +14,7 @@ open import Data.List using (List)
 open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
 
-open import Slides.Diagram.Draw using (Draw; Layout)
+open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
 open import Slides.Anim.Formula
 open import Slides.Anim.Phases
@@ -23,9 +23,6 @@ open import Slides.Anim.Phases
 slotFD : Kind × DExpr ℕ → Formula
 slotFD (pos  , e) = half (encD e)
 slotFD (size , e) = encD e
-
-encodeDrawD : Draw (DExpr ℕ) → Elem
-encodeDrawD = encodeWith slotFD (evalD natD (λ _ → 0))
 
 phasesOfD : List (Layout (DExpr ℕ)) → List (ℕ × List Elem)
 phasesOfD = phasesWith slotFD (evalD natD (λ _ → 0))

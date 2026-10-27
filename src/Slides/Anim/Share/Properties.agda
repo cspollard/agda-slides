@@ -215,10 +215,6 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
                 evalArg ρ (env ρ ds′) a ≡ evalArg ρ (env ρ ds) a
   evalArg-ext ρ a x w = evalArg-cong ρ a (λ j j<n → env-ext ρ x j<n) w
 
-  evalNode-ext : ∀ ρ {ds′ ds} nd → Ext ds′ ds → WfNode (length ds) nd →
-                 evalNode ρ (env ρ ds′) nd ≡ evalNode ρ (env ρ ds) nd
-  evalNode-ext ρ nd x w = evalNode-cong ρ nd (λ j j<n → env-ext ρ x j<n) w
-
   evalOut-ext : ∀ ρ {ds′ ds} nd → Ext ds′ ds → WfNode (length ds) nd →
                 evalOut ρ (env ρ ds′) nd ≡ evalOut ρ (env ρ ds) nd
   evalOut-ext ρ nd x w = evalOut-cong ρ nd (λ j j<n → env-ext ρ x j<n) w
