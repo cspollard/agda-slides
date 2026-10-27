@@ -286,6 +286,9 @@ frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `
 checks by computation that every phase has acts of the same lengths. Design and open items:
 `plan/Animations.md`.
 
+User input (commands, programs, machines, backend support) is described in
+[`docs/Input.md`](Input.md).
+
 ## Module conventions
 
 Proofs about `X` live in `X.Properties` (the standard library's `Data.List.Base` against
