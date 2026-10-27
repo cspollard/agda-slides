@@ -66,6 +66,7 @@ example:
 # Golden-file tests for the example decks (run `make example talk plain showcase` first).
 .PHONY: test test-browser
 test:
+	python3 tests/check_closure.py
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css

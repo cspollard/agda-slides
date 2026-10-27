@@ -26,11 +26,8 @@ module Slides.Anim.Timeline where
 
 open import Data.List using (List; []; _∷_; _++_; length; map; applyUpTo)
 import Slides.Anim.Track as T
-import Slides.Anim.Track.Properties as TP
-import Data.List.Properties as LP
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (_+_; _⊔_; suc)
-import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
 open import Data.Fin using (zero; suc)
