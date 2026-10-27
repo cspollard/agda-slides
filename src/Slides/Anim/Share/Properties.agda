@@ -18,7 +18,7 @@ open import Relation.Nullary using (yes; no; ¬_; Dec)
 import Data.Tree.AVL.Map.Membership.Propositional as AVLMem
 import Data.Tree.AVL.Map.Membership.Propositional.Properties as AVLMemP
 
-open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; pct; hlf; fdiv; fmod; fmul; flt)
+open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; fmin; pct; hlf; fdiv; fmod; fmul; flt; fease)
 
 open import Slides.Anim.Share
 open St
@@ -57,6 +57,8 @@ record Semantics {A B : Set} (R : Reading A B) : Set where
     s-fdiv : ∀ d a ρ → sem (fdiv d a) ρ ≡ app1 (oDiv d) (sem a ρ)
     s-fmod : ∀ d a ρ → sem (fmod d a) ρ ≡ app1 (oMod d) (sem a ρ)
     s-fmul : ∀ n a ρ → sem (fmul n a) ρ ≡ app1 (oMul n) (sem a ρ)
+    s-fmin : ∀ a b ρ → sem (fmin a b) ρ ≡ app2 oMin (sem a ρ) (sem b ρ)
+    s-fease : ∀ e a ρ → sem (fease e a) ρ ≡ app1 (oEase e) (sem a ρ)
     s-flt  : ∀ a b x y ρ → sem (flt a b x y) ρ ≡ app4 (sem a ρ) (sem b ρ) (sem x ρ) (sem y ρ)
 
   -- what an output should be: the root of a coordinate that is a half is read as a half
@@ -206,6 +208,7 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   evalOut-cong ρ (un (oDiv n) a) h w = cong out (evalNode-cong ρ (un (oDiv n) a) h w)
   evalOut-cong ρ (un (oMod n) a) h w = cong out (evalNode-cong ρ (un (oMod n) a) h w)
   evalOut-cong ρ (un (oMul n) a) h w = cong out (evalNode-cong ρ (un (oMul n) a) h w)
+  evalOut-cong ρ (un (oEase e) a) h w = cong out (evalNode-cong ρ (un (oEase e) a) h w)
   evalOut-cong ρ (un oHlf a)     h w = cong outHlf (evalArg-cong ρ a h w)
   evalOut-cong ρ (bin o a b)    h w = cong out (evalNode-cong ρ (bin o a b) h w)
   evalOut-cong ρ (quad a b c d) h w = cong out (evalNode-cong ρ (quad a b c d) h w)
@@ -402,6 +405,10 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
     impl-cong (sym (s-fmod d a ρ)) (un¹-impl ρ (oMod d) (share-impl a ρ))
   share-impl (fmul n a) ρ =
     impl-cong (sym (s-fmul n a ρ)) (un¹-impl ρ (oMul n) (share-impl a ρ))
+  share-impl (fmin a b) ρ =
+    impl-cong (sym (s-fmin a b ρ)) (bin²-impl ρ oMin (share-impl a ρ) (share-impl b ρ))
+  share-impl (fease e a) ρ =
+    impl-cong (sym (s-fease e a ρ)) (un¹-impl ρ (oEase e) (share-impl a ρ))
   share-impl (flt a b x y) ρ =
     impl-cong (sym (s-flt a b x y ρ))
       (quad⁴-impl ρ (share-impl a ρ) (share-impl b ρ) (share-impl x ρ) (share-impl y ρ))
@@ -452,6 +459,8 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   output-realises ρ (fdiv d a)    st I = out-other (fdiv d a) ρ refl st I
   output-realises ρ (fmod d a)    st I = out-other (fmod d a) ρ refl st I
   output-realises ρ (fmul n a)    st I = out-other (fmul n a) ρ refl st I
+  output-realises ρ (fmin a b)    st I = out-other (fmin a b) ρ refl st I
+  output-realises ρ (fease e a)   st I = out-other (fease e a) ρ refl st I
   output-realises ρ (flt a b x y) st I = out-other (flt a b x y) ρ refl st I
 
   -- pointwise, for lists
@@ -511,6 +520,8 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   nodeF e (bin oAdd a b)  = add (argF e a) (argF e b)
   nodeF e (bin oSub a b)  = sub (argF e a) (argF e b)
   nodeF e (bin oMax a b)  = max (argF e a) (argF e b)
+  nodeF e (bin oMin a b)  = fmin (argF e a) (argF e b)
+  nodeF e (un (oEase x) a) = fease x (argF e a)
   nodeF e (quad a b c d)  = flt (argF e a) (argF e b) (argF e c) (argF e d)
 
   -- the tree of definition `i` of a store (newest first)
@@ -537,6 +548,8 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   sem-nodeF ρ (bin oAdd a b)  h = trans (s-add _ _ ρ) (cong₂ (app2 oAdd) (sem-argF ρ a h) (sem-argF ρ b h))
   sem-nodeF ρ (bin oSub a b)  h = trans (s-sub _ _ ρ) (cong₂ (app2 oSub) (sem-argF ρ a h) (sem-argF ρ b h))
   sem-nodeF ρ (bin oMax a b)  h = trans (s-max _ _ ρ) (cong₂ (app2 oMax) (sem-argF ρ a h) (sem-argF ρ b h))
+  sem-nodeF ρ (bin oMin a b)  h = trans (s-fmin _ _ ρ) (cong₂ (app2 oMin) (sem-argF ρ a h) (sem-argF ρ b h))
+  sem-nodeF ρ (un (oEase x) a) h = trans (s-fease x _ ρ) (cong (app1 (oEase x)) (sem-argF ρ a h))
   sem-nodeF ρ (quad a b c d)  h =
     trans (s-flt _ _ _ _ ρ)
    (trans (cong (λ z → app4 z _ _ _) (sem-argF ρ a h))

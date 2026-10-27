@@ -41,7 +41,7 @@ import Slides.Anim.Formula as F
 open F using (Formula)
 open import Slides.Anim.Phases using (phasesOf; Elem)
 open import Slides.Anim.DPhases using (phasesOfD)
-open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oAdd; oSub; oMax)
+open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oEase; oAdd; oSub; oMax; oMin)
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
@@ -259,12 +259,18 @@ private
   argⱼ (apar i) = stringⱼ (num i)
   argⱼ (aref i) = intⱼ (ℤ.-[1+ i ])
 
+  easingⱼ : Tr.Easing → JSON
+  easingⱼ Tr.Linear           = natⱼ 0
+  easingⱼ Tr.Step             = natⱼ 1
+  easingⱼ Tr.StepStart        = natⱼ 2
+  easingⱼ (Tr.Bezier a b c d) = arrayⱼ (intⱼ a ∷ intⱼ b ∷ intⱼ c ∷ intⱼ d ∷ [])
+
   -- a node as the JSON the player evaluates (`Slides.Anim.Share.Node`: an operation on
   -- arguments).  The operation is a number, not a string: a quote costs six characters in an
   -- HTML attribute.  `0` plus, `1` minus, `2` maximum, `3` `["%", p, a]` (p percent of a), `4`
-  -- half, and for a discrete template (read in ℕ) `5` floor division `[5, n, a]`, `6` remainder
-  -- `[6, n, a]` (the divisor is shipped as it is, `d + 1`), `7` a literal factor `[7, n, a]` and
-  -- `8` `[8, a, b, x, y]`, which is `x` if `a < b` else `y`.
+  -- half, `5` floor division `[5, n, a]`, `6` remainder `[6, n, a]` (the divisor is shipped as it
+  -- is, `d + 1`), `7` a literal factor `[7, n, a]`, `8` `[8, a, b, x, y]`, which is `x` if `a < b`
+  -- else `y`, `9` minimum `[9, a, b]` and `10` an easing `[10, e, a]` (`e` as in a piece).
   nodeⱼ : Node → JSON
   nodeⱼ (atom a)               = argⱼ a
   nodeⱼ (un (oPct p) a)        = arrayⱼ (natⱼ 3 ∷ natⱼ p ∷ argⱼ a ∷ [])
@@ -275,6 +281,8 @@ private
   nodeⱼ (bin oAdd a b)         = arrayⱼ (natⱼ 0 ∷ argⱼ a ∷ argⱼ b ∷ [])
   nodeⱼ (bin oSub a b)         = arrayⱼ (natⱼ 1 ∷ argⱼ a ∷ argⱼ b ∷ [])
   nodeⱼ (bin oMax a b)         = arrayⱼ (natⱼ 2 ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (bin oMin a b)         = arrayⱼ (natⱼ 9 ∷ argⱼ a ∷ argⱼ b ∷ [])
+  nodeⱼ (un (oEase e) a)       = arrayⱼ (natⱼ 10 ∷ easingⱼ e ∷ argⱼ a ∷ [])
   nodeⱼ (quad a b x y)         = arrayⱼ (natⱼ 8 ∷ argⱼ a ∷ argⱼ b ∷ argⱼ x ∷ argⱼ y ∷ [])
 
   coordJ : Maybe Node → JSON
@@ -327,12 +335,6 @@ private
   ratⱼ q with ℚ.↧ₙ q
   ... | 1 = intⱼ (ℚ.↥ q)
   ... | d = arrayⱼ (intⱼ (ℚ.↥ q) ∷ natⱼ d ∷ [])
-
-  easingⱼ : Tr.Easing → JSON
-  easingⱼ Tr.Linear           = natⱼ 0
-  easingⱼ Tr.Step             = natⱼ 1
-  easingⱼ Tr.StepStart        = natⱼ 2
-  easingⱼ (Tr.Bezier a b c d) = arrayⱼ (intⱼ a ∷ intⱼ b ∷ intⱼ c ∷ intⱼ d ∷ [])
 
   pieceⱼ : Tr.Piece ℚ.ℚ → JSON
   pieceⱼ (Tr.piece n a b e) = arrayⱼ (natⱼ n ∷ ratⱼ a ∷ ratⱼ b ∷ easingⱼ e ∷ [])

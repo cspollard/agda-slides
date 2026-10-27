@@ -68,7 +68,8 @@ import Data.List.Relation.Binary.Lex.Strict as Lex
 import Data.Tree.AVL.Map as AVLMap
 
 open import Slides.DecEq using (retract-dec)
-open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; pct; hlf; fdiv; fmod; fmul; flt)
+open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; fmin; pct; hlf; fdiv; fmod; fmul; flt; fease; easingEq?)
+open import Slides.Anim.Track using (Easing)
 
 ------------------------------------------------------------------------
 -- Nodes: one operation, applied to arguments
@@ -80,9 +81,10 @@ data Arg : Set where
 data Op1 : Set where
   oPct oDiv oMod oMul : ℕ → Op1
   oHlf                : Op1
+  oEase               : Easing → Op1
 
 data Op2 : Set where
-  oAdd oSub oMax : Op2
+  oAdd oSub oMax oMin : Op2
 
 -- a formula with one operation at its root and arguments for its children
 data Node : Set where
@@ -115,42 +117,48 @@ arg≟ = retract-dec to from rt (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ _≟�
     rt (aref _) = refl
 
 op1≟ : DecidableEquality Op1
-op1≟ = retract-dec to from rt (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ UP._≟_))))
+op1≟ = retract-dec to from rt (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ (SP.≡-dec _≟ⁿ_ (SP.≡-dec UP._≟_ easingEq?)))))
   where
-    to : Op1 → ℕ ⊎ ℕ ⊎ ℕ ⊎ ℕ ⊎ ⊤
-    to (oPct n) = inj₁ n
-    to (oDiv n) = inj₂ (inj₁ n)
-    to (oMod n) = inj₂ (inj₂ (inj₁ n))
-    to (oMul n) = inj₂ (inj₂ (inj₂ (inj₁ n)))
-    to oHlf     = inj₂ (inj₂ (inj₂ (inj₂ tt)))
-    from : ℕ ⊎ ℕ ⊎ ℕ ⊎ ℕ ⊎ ⊤ → Op1
-    from (inj₁ n)                          = oPct n
-    from (inj₂ (inj₁ n))                   = oDiv n
-    from (inj₂ (inj₂ (inj₁ n)))            = oMod n
-    from (inj₂ (inj₂ (inj₂ (inj₁ n))))     = oMul n
-    from (inj₂ (inj₂ (inj₂ (inj₂ _))))     = oHlf
+    to : Op1 → ℕ ⊎ ℕ ⊎ ℕ ⊎ ℕ ⊎ ⊤ ⊎ Easing
+    to (oPct n)  = inj₁ n
+    to (oDiv n)  = inj₂ (inj₁ n)
+    to (oMod n)  = inj₂ (inj₂ (inj₁ n))
+    to (oMul n)  = inj₂ (inj₂ (inj₂ (inj₁ n)))
+    to oHlf      = inj₂ (inj₂ (inj₂ (inj₂ (inj₁ tt))))
+    to (oEase e) = inj₂ (inj₂ (inj₂ (inj₂ (inj₂ e))))
+    from : ℕ ⊎ ℕ ⊎ ℕ ⊎ ℕ ⊎ ⊤ ⊎ Easing → Op1
+    from (inj₁ n)                                = oPct n
+    from (inj₂ (inj₁ n))                         = oDiv n
+    from (inj₂ (inj₂ (inj₁ n)))                  = oMod n
+    from (inj₂ (inj₂ (inj₂ (inj₁ n))))           = oMul n
+    from (inj₂ (inj₂ (inj₂ (inj₂ (inj₁ _)))))    = oHlf
+    from (inj₂ (inj₂ (inj₂ (inj₂ (inj₂ e)))))    = oEase e
     rt : ∀ o → from (to o) ≡ o
-    rt (oPct _) = refl
-    rt (oDiv _) = refl
-    rt (oMod _) = refl
-    rt (oMul _) = refl
-    rt oHlf     = refl
+    rt (oPct _)  = refl
+    rt (oDiv _)  = refl
+    rt (oMod _)  = refl
+    rt (oMul _)  = refl
+    rt oHlf      = refl
+    rt (oEase _) = refl
 
 op2≟ : DecidableEquality Op2
-op2≟ = retract-dec to from rt (SP.≡-dec UP._≟_ (SP.≡-dec UP._≟_ UP._≟_))
+op2≟ = retract-dec to from rt (SP.≡-dec UP._≟_ (SP.≡-dec UP._≟_ (SP.≡-dec UP._≟_ UP._≟_)))
   where
-    to : Op2 → ⊤ ⊎ ⊤ ⊎ ⊤
+    to : Op2 → ⊤ ⊎ ⊤ ⊎ ⊤ ⊎ ⊤
     to oAdd = inj₁ tt
     to oSub = inj₂ (inj₁ tt)
-    to oMax = inj₂ (inj₂ tt)
-    from : ⊤ ⊎ ⊤ ⊎ ⊤ → Op2
-    from (inj₁ _)        = oAdd
-    from (inj₂ (inj₁ _)) = oSub
-    from (inj₂ (inj₂ _)) = oMax
+    to oMax = inj₂ (inj₂ (inj₁ tt))
+    to oMin = inj₂ (inj₂ (inj₂ tt))
+    from : ⊤ ⊎ ⊤ ⊎ ⊤ ⊎ ⊤ → Op2
+    from (inj₁ _)                 = oAdd
+    from (inj₂ (inj₁ _))          = oSub
+    from (inj₂ (inj₂ (inj₁ _)))   = oMax
+    from (inj₂ (inj₂ (inj₂ _)))   = oMin
     rt : ∀ o → from (to o) ≡ o
     rt oAdd = refl
     rt oSub = refl
     rt oMax = refl
+    rt oMin = refl
 
 node≟ : DecidableEquality Node
 node≟ = retract-dec to from rt
@@ -189,11 +197,13 @@ key1 (oDiv n) = 1 ∷ n ∷ []
 key1 (oMod n) = 2 ∷ n ∷ []
 key1 (oMul n) = 3 ∷ n ∷ []
 key1 oHlf     = 4 ∷ []
+key1 (oEase _) = 5 ∷ []      -- a hint only: not injective
 
 key2 : Op2 → ℕ
 key2 oAdd = 0
 key2 oSub = 1
 key2 oMax = 2
+key2 oMin = 3
 
 key : Node → List ℕ
 key (atom a)       = 0 ∷ keyA a
@@ -269,11 +279,13 @@ share (var i)       st = apar i , st
 share (add a b)     = bin² oAdd (share a) (share b)
 share (sub a b)     = bin² oSub (share a) (share b)
 share (max a b)     = bin² oMax (share a) (share b)
+share (fmin a b)    = bin² oMin (share a) (share b)
 share (pct p a)     = un¹ (oPct p) (share a)
 share (hlf a)       = un¹ oHlf (share a)
 share (fdiv d a)    = un¹ (oDiv d) (share a)
 share (fmod d a)    = un¹ (oMod d) (share a)
 share (fmul n a)    = un¹ (oMul n) (share a)
+share (fease e a)   = un¹ (oEase e) (share a)
 share (flt a b x y) = quad⁴ (share a) (share b) (share x) (share y)
 
 -- the output of a coordinate: the root of a position is a half (`Slides.Anim.Formula.half`) and

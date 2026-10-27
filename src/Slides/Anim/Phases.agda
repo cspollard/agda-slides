@@ -78,8 +78,8 @@ open Elem
 
 -- the formula of a number: positions are halved
 slotF : Kind × Expr ℕ → Formula
-slotF (pos  , e) = half (enc e)
-slotF (size , e) = enc e
+slotF (pos  , e) = half (encE e)
+slotF (size , e) = encE e
 
 entry : Formula → Maybe Formula
 entry (num _) = nothing

@@ -2,26 +2,26 @@
 
 -- The ordered layers of the scalar signature: one language of time-varying scalars.
 --
--- `Slides.Diagram.Expr` has two layers (core, sub) read in ℕ and in ℚ; `Slides.Diagram.Euclid` adds
--- a third, read in ℕ only, so that discrete templates and continuous ones are two languages.  Here
--- the same operations get a meaning in any scalar that supports them, and `Ease` joins them:
---
---     QC = ExprC ⊎ OrdC ⊎ FloorC ⊎ EaseC          QExpr V = Term QC V = QC ⋆ V
+-- `Slides.Diagram.Expr` has two layers (core, sub), read in ℕ and in ℚ.  Two more are added, each
+-- with its own record of operations and its own signature, the sum read by the copairing of the
+-- handlers (`Signature._⊕_`):
 --
 --     Ord    OrdC    Lt a b x y   `x` if a < b else `y` (one-sorted: no Bool)    Min a b
 --     Floor  FloorC  DivBy d x    ⌊x / (d+1)⌋          ModBy d x   x − (d+1)·⌊x/(d+1)⌋
 --                    MulLit n x   n · x
 --     Ease   EaseC   Ease e x     `Slides.Anim.Track.progress e x`
 --
--- Time is a parameter (`docs/Time.md` §7): a *model* is a scalar `S` with a `QOps S` (the operations
--- of every layer, each layer its own record, the sum read by the copairing `Signature._⊕_`) and, for
--- what the proofs need, the laws `QLaws` the operations satisfy.  ℚ is the first model (`ratQ`,
--- `ratQLaws`); ℕ is the tick clock and reads the core, sub, Ord and Floor layers (`Properties`:
--- `natOrd`, `natFloor`, joined to `ι : ℕ → ℚ` by `IsOrdHom`, `IsFloorHom`).  A lemma names the layers
--- it uses; a fact about a model beyond the laws (density, induction) is a hypothesis of the lemma.
+--     OC = ExprC ⊎ OrdC ⊎ FloorC     the layers both clocks read:  OExpr V = Term OC V = OC ⋆ V
+--     QC = OC ⊎ EaseC                ... and the one only ℚ reads:  QExpr V = Term QC V
+--
+-- Time is a parameter (`docs/Time.md` §7): a *model* is a scalar `S` with an `OOps S` (core, sub,
+-- Ord, Floor; ℕ and ℚ have one: `natO`, `ratO`) or a `QOps S` (and Ease: ℚ only, `ratQ`) and, for
+-- what the proofs need, the laws `QLaws` the operations satisfy (`ratQLaws`).  A lemma names the
+-- layers it uses; a fact about a model beyond the laws (density, induction) is a hypothesis of the
+-- lemma.  ℕ is the tick clock, read through `ι : ℕ → ℚ` (`Properties`: `IsOrdHom`, `IsFloorHom`).
 --
 -- Substitution is `_>>=_` of the free monad (`Properties.Laws`): delay, stretch, loop, hold are
--- Kleisli arrows.  A discrete template is a lowered term: `lowerQ` sends the two nodes whose ℕ
+-- Kleisli arrows.  A discrete template is a lowered term: `lowerO` sends the two nodes whose ℕ
 -- reading differs from the ℚ one (monus, percentage) to programs that compute the ℕ value.
 
 module Slides.Diagram.Ordered where
@@ -30,24 +30,24 @@ open import Data.Bool using (Bool; not; if_then_else_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.DivMod as ℤ
-open import Data.Nat as ℕ using (ℕ)
+open import Data.Nat as ℕ using (ℕ; _/_; _%_)
 open import Data.Product using (_,_)
 open import Data.Rational as ℚ using (ℚ)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Container.Core using (Container; _▷_; _⇒_; shape; position)
+open import Data.Container.Core using (_▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import Container.Pick using (pick2; pick4)
-open import Container.Lowering using (Lowering; lower; translate)
+open import Container.Lowering using (Lowering; lower; ret; translate)
+open import Container.Sum using (inl; inr)
 open import Slides.Cong using (cong₄)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
 open import Slides.Diagram.Expr
-import Slides.Diagram.Euclid as E
 open import Slides.Anim.Track using (Easing; progress)
 
 ------------------------------------------------------------------------
@@ -68,12 +68,17 @@ record EaseOps (S : Set) : Set where
   field
     ease : Easing → S → S
 
--- a scalar with every layer
-record QOps (S : Set) : Set where
+-- a scalar with the layers both clocks read
+record OOps (S : Set) : Set where
   field
     ops   : Ops S
     ord   : OrdOps S
     floor : FloorOps S
+
+-- ... and the one only ℚ reads
+record QOps (S : Set) : Set where
+  field
+    o     : OOps S
     easeO : EaseOps S
 
 ------------------------------------------------------------------------
@@ -107,50 +112,73 @@ easeArity _ = ⊤
 EaseC : Sig
 EaseC = EaseOp ▷ easeArity
 
--- the signature of time-varying scalars
-QC : Sig
-QC = ExprC ⊎ (OrdC ⊎ (FloorC ⊎ EaseC))
+OC QC : Sig
+OC = ExprC ⊎ (OrdC ⊎ FloorC)
+QC = OC ⊎ EaseC
 
-QExpr : Set → Set
+OExpr QExpr : Set → Set
+OExpr V = Term OC V
 QExpr V = Term QC V
 
-ordQ : OrdC ⇒ QC
-ordQ = record { shape = λ o → inj₂ (inj₁ o) ; position = λ q → q }
+coreO : CoreC ⇒ OC
+coreO = record { shape = λ o → inj₁ (inj₁ o) ; position = λ q → q }
 
-floorQ : FloorC ⇒ QC
-floorQ = record { shape = λ o → inj₂ (inj₂ (inj₁ o)) ; position = λ q → q }
+subO : SubC ⇒ OC
+subO = record { shape = λ o → inj₁ (inj₂ o) ; position = λ q → q }
 
-easeQ : EaseC ⇒ QC
-easeQ = record { shape = λ o → inj₂ (inj₂ (inj₂ o)) ; position = λ q → q }
+ordO : OrdC ⇒ OC
+ordO = record { shape = λ o → inj₂ (inj₁ o) ; position = λ q → q }
 
-coreQ : CoreC ⇒ QC
-coreQ = record { shape = λ o → inj₁ (inj₁ o) ; position = λ q → q }
+floorO : FloorC ⇒ OC
+floorO = record { shape = λ o → inj₂ (inj₂ o) ; position = λ q → q }
 
-subQ : SubC ⇒ QC
-subQ = record { shape = λ o → inj₁ (inj₂ o) ; position = λ q → q }
+------------------------------------------------------------------------
+-- Constructors, for any signature containing the layers
 
--- smart constructors
-open CoreSyntax coreQ public renaming (zero′ to zeroQ; lit to litQ; _⊞_ to _⊞ᵠ_; _⊓_ to _⊔ᵠ_; pct to pctQ; termCore to termCoreQ)
-open SubSyntax subQ public renaming (_⊖_ to _⊖ᵠ_; termSub to termSubQ)
+module OrdSyntax {Σ : Sig} (i : OrdC ⇒ Σ) where
+  -- `ltT a b x y`: if a < b then x else y
+  ltT : ∀ {V} → Term Σ V → Term Σ V → Term Σ V → Term Σ V → Term Σ V
+  ltT a b x y = impure (shape i Lt , λ q → pick4 a b x y (position i q))
 
-ltQ : ∀ {V} → QExpr V → QExpr V → QExpr V → QExpr V → QExpr V
-ltQ a b x y = impure (shape ordQ Lt , λ q → pick4 a b x y (position ordQ {Lt} q))
+  minT : ∀ {V} → Term Σ V → Term Σ V → Term Σ V
+  minT a b = impure (shape i Min , λ q → pick2 a b (position i q))
 
-minQ : ∀ {V} → QExpr V → QExpr V → QExpr V
-minQ a b = impure (shape ordQ Min , λ q → pick2 a b (position ordQ {Min} q))
+  termOrd : ∀ {V} → OrdOps (Term Σ V)
+  termOrd = record { lt = ltT ; min = minT }
 
-divByQ modByQ mulLitQ : ∀ {V} → ℕ → QExpr V → QExpr V
-divByQ d a  = impure (shape floorQ (DivBy d) , λ _ → a)
-modByQ d a  = impure (shape floorQ (ModBy d) , λ _ → a)
-mulLitQ n a = impure (shape floorQ (MulLit n) , λ _ → a)
+module FloorSyntax {Σ : Sig} (i : FloorC ⇒ Σ) where
+  divBy modBy mulLit : ∀ {V} → ℕ → Term Σ V → Term Σ V
+  divBy d a  = impure (shape i (DivBy d) , λ _ → a)
+  modBy d a  = impure (shape i (ModBy d) , λ _ → a)
+  mulLit n a = impure (shape i (MulLit n) , λ _ → a)
+
+  termFloor : ∀ {V} → FloorOps (Term Σ V)
+  termFloor = record { divBy = divBy ; modBy = modBy ; mulLit = mulLit }
+
+open OrdSyntax ordO public
+open FloorSyntax floorO public
+open CoreSyntax coreO public
+  renaming (zero′ to zeroO; lit to litO; _⊞_ to _⊞ᵒ_; _⊓_ to _⊓ᵒ_; pct to pctO; termCore to termCoreO)
+open SubSyntax subO public renaming (_⊖_ to _⊖ᵒ_; termSub to termSubO)
 
 -- `Ease e a`: the easing `e` applied to the progress `a`
 easeT : ∀ {V} → Easing → QExpr V → QExpr V
-easeT e a = impure (shape easeQ (Ease e) , λ _ → a)
+easeT e a = impure (shape (inr {C₁ = OC} {C₂ = EaseC}) (Ease e) , λ _ → a)
+
+-- a term of `OC` is a term of `QC`
+weakenQ : ∀ {V} → OExpr V → QExpr V
+weakenQ = translate (inl {C₁ = OC} {C₂ = EaseC})
+
+-- a term of the base layers is a term of `OC`
+exprO : ExprC ⇒ OC
+exprO = record { shape = inj₁ ; position = λ q → q }
+
+weakenO : ∀ {V} → Expr V → OExpr V
+weakenO = translate exprO
 
 -- the time
-tQ : QExpr ⊤
-tQ = pure tt
+tO : OExpr ⊤
+tO = pure tt
 
 ------------------------------------------------------------------------
 -- Handlers, one per layer, copaired
@@ -173,25 +201,40 @@ easeH : ∀ {S} → EaseOps S → Handler EaseC S
 easeH O .Handler.handle (Ease e) k = EaseOps.ease O e (k tt)
 easeH O .Handler.respects (Ease e) h = cong (EaseOps.ease O e) (h tt)
 
-qH : ∀ {S} → QOps S → Handler QC S
-qH Q = opsH (QOps.ops Q) ⊕ (ordH (QOps.ord Q) ⊕ (floorH (QOps.floor Q) ⊕ easeH (QOps.easeO Q)))
+oH : ∀ {S} → OOps S → Handler OC S
+oH O = opsH (OOps.ops O) ⊕ (ordH (OOps.ord O) ⊕ floorH (OOps.floor O))
 
--- evaluation: the fold, into any scalar with all four layers
+qH : ∀ {S} → QOps S → Handler QC S
+qH Q = oH (QOps.o Q) ⊕ easeH (QOps.easeO Q)
+
+-- evaluation: the fold, into any scalar with the layers
+evalO : ∀ {V S} → OOps S → (V → S) → OExpr V → S
+evalO O = foldT (oH O)
+
 evalQ : ∀ {V S} → QOps S → (V → S) → QExpr V → S
 evalQ Q = foldT (qH Q)
 
 ------------------------------------------------------------------------
--- The reading in ℚ
+-- The readings in ℕ and in ℚ
+
+natOrd : OrdOps ℕ
+natOrd = record { lt = λ a b x y → if a ℕ.<ᵇ b then x else y ; min = ℕ._⊓_ }
+
+natFloor : FloorOps ℕ
+natFloor = record { divBy = λ d x → x / ℕ.suc d ; modBy = λ d x → x % ℕ.suc d ; mulLit = ℕ._*_ }
+
+natO : OOps ℕ
+natO = record { ops = natOps ; ord = natOrd ; floor = natFloor }
 
 -- strict comparison
-_<ᵇ_ : ℚ → ℚ → Bool
-a <ᵇ b = not (b ℚ.≤ᵇ a)
+_<ᵇℚ_ : ℚ → ℚ → Bool
+a <ᵇℚ b = not (b ℚ.≤ᵇ a)
 
 fromℤ : ℤ → ℚ
 fromℤ z = z ℚ./ 1
 
 ratOrd : OrdOps ℚ
-ratOrd = record { lt = λ a b x y → if a <ᵇ b then x else y ; min = ℚ._⊓_ }
+ratOrd = record { lt = λ a b x y → if a <ᵇℚ b then x else y ; min = ℚ._⊓_ }
 
 ratFloor : FloorOps ℚ
 ratFloor = record
@@ -199,12 +242,21 @@ ratFloor = record
   ; modBy  = λ d x → x ℚ.- (ℤ.+ ℕ.suc d ℚ./ 1) ℚ.* fromℤ (ℚ.floor x ℤ./ ℤ.+ ℕ.suc d)
   ; mulLit = λ n x → (ℤ.+ n ℚ./ 1) ℚ.* x }
 
+ratO : OOps ℚ
+ratO = record { ops = ratOps ; ord = ratOrd ; floor = ratFloor }
+
 -- `Ease` is the progress function of `Slides.Anim.Track`, unchanged
 ratEase : EaseOps ℚ
 ratEase = record { ease = progress }
 
 ratQ : QOps ℚ
-ratQ = record { ops = ratOps ; ord = ratOrd ; floor = ratFloor ; easeO = ratEase }
+ratQ = record { o = ratO ; easeO = ratEase }
+
+-- the free scalar with the layers of `OC`
+termO : ∀ {V} → OOps (OExpr V)
+termO = record
+  { ops = record { core = termCoreO ; sub = termSubO ; toℕ = evalO natO (λ _ → 0) }
+  ; ord = termOrd ; floor = termFloor }
 
 ------------------------------------------------------------------------
 -- The laws of a model
@@ -212,33 +264,30 @@ ratQ = record { ops = ratOps ; ord = ratOrd ; floor = ratFloor ; easeO = ratEase
 -- `ModBy` and `Min` are definable from the other operations (layers: Floor + Sub, Ord): a model
 -- satisfies the laws iff it reads them so.  They stay primitive in the signature (one node
 -- each on the page), and `Properties.Laws` derives from the laws the definitions of the nodes.
-record QLaws {S : Set} (Q : QOps S) : Set where
+record QLaws {S : Set} (O : OOps S) : Set where
   private
-    module O = Ops (QOps.ops Q)
-    module Or = OrdOps (QOps.ord Q)
-    module F = FloorOps (QOps.floor Q)
+    module Sb = Ops (OOps.ops O)
+    module Or = OrdOps (OOps.ord O)
+    module F = FloorOps (OOps.floor O)
   field
-    modBy-spec : ∀ d x → F.modBy d x ≡ x O.- F.mulLit (ℕ.suc d) (F.divBy d x)
+    modBy-spec : ∀ d x → F.modBy d x ≡ x Sb.- F.mulLit (ℕ.suc d) (F.divBy d x)
     min-spec   : ∀ a b → Or.min a b ≡ Or.lt a b a b
 
 ------------------------------------------------------------------------
 -- Discrete templates are ordered ones: the lowering
 
--- The discrete reading as a *lowering* (a Kleisli map, `Container.Lowering`): the nodes that are
--- not the same in ℕ and ℚ are sent to programs that compute the ℕ value in ℚ, so no side
--- condition is left (`Properties.Discrete.discrete-is-ordered`).  The monus is `max (a − b) 0` (real subtraction clamped) and a percentage
--- is `⌊p·x / 100⌋`; every other node is its namesake.
-lowerD : Lowering E.DExprC QC
-lowerD (inj₁ (inj₁ Zero))    = impure (inj₁ (inj₁ Zero) , λ ())
-lowerD (inj₁ (inj₁ (Lit n))) = impure (inj₁ (inj₁ (Lit n)) , λ ())
-lowerD (inj₁ (inj₁ Plus))    = impure (inj₁ (inj₁ Plus) , pure)
-lowerD (inj₁ (inj₁ Max))     = impure (inj₁ (inj₁ Max) , pure)
-lowerD (inj₁ (inj₁ (Pct p))) = divByQ 99 (mulLitQ p (pure tt))
-lowerD (inj₁ (inj₂ Sub))     = impure (inj₁ (inj₁ Max) , pick2 (impure (inj₁ (inj₂ Sub) , pure)) zeroQ)
-lowerD (inj₂ (E.DivBy d))      = impure (inj₂ (inj₂ (inj₁ (DivBy d))) , pure)
-lowerD (inj₂ (E.ModBy d))      = impure (inj₂ (inj₂ (inj₁ (ModBy d))) , pure)
-lowerD (inj₂ (E.MulLit n))     = impure (inj₂ (inj₂ (inj₁ (MulLit n))) , pure)
-lowerD (inj₂ E.Lt)             = impure (inj₂ (inj₁ Lt) , pure)
+-- The nodes that are not the same in ℕ and ℚ are sent to programs that compute the ℕ value in
+-- any model, so no side condition is left (`Properties.Discrete.discrete-is-ordered`): the monus
+-- `a ∸ b` is `(a ⊔ b) − b` (the minuend is the larger by construction, as in `atop`) and a
+-- percentage is `⌊p·x / 100⌋`; every other node is its namesake.
+lowerO : Lowering OC OC
+lowerO (inj₁ (inj₁ (Pct p))) = divBy 99 (mulLit p (pure tt))
+lowerO (inj₁ (inj₂ Sub))     = (pure zero ⊓ᵒ pure (suc zero)) ⊖ᵒ pure (suc zero)
+lowerO s                     = ret s
 
-lowerQ : ∀ {V} → E.DExpr V → QExpr V
-lowerQ = lower lowerD
+lowerQ : ∀ {V} → OExpr V → OExpr V
+lowerQ = lower lowerO
+
+-- sample-and-hold: the template composed with `τ ↦ ⌊τ⌋`
+holdT : OExpr ⊤
+holdT = divBy 0 tO

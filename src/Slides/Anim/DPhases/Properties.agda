@@ -49,18 +49,18 @@ open import Slides.Anim.Phases.Properties
 
 private
   slot-valℚ : ∀ x ρ → ⟦ slotF x ⟧ ρ ≡ halfIf (proj₁ x) (evalWith ratOps ρ (proj₂ x))
-  slot-valℚ (pos  , e) ρ = trans (half-sem (enc e) ρ) (cong ((+ 1 ℚ./ 2) ℚ.*_) (enc-sem e ρ))
-  slot-valℚ (size , e) ρ = enc-sem e ρ
+  slot-valℚ (pos  , e) ρ = trans (half-sem (encE e) ρ) (cong ((+ 1 ℚ./ 2) ℚ.*_) (enc-semE e ρ))
+  slot-valℚ (size , e) ρ = enc-semE e ρ
 
   -- a number that folded to a constant is the base number
   slot-numℚ : ∀ x c ρ → slotF x ≡ num c →
               baseNum (proj₁ x , eval (λ _ → 0) (proj₂ x)) ≡ halfIf (proj₁ x) (evalWith ratOps ρ (proj₂ x))
-  slot-numℚ (pos , e) c ρ h with half-num-inv (enc e) c h
-  ... | a , e₁ , _ , refl =
-    trans (cong (λ v → ι (v / 2)) (enc-num e a e₁ (λ _ → 0)))
+  slot-numℚ (pos , e) c ρ h with half-num-inv (encE e) c h
+  ... | a , e₁ , refl =
+    trans (cong (λ v → ι (v / 2)) (enc-numE e a e₁ (λ _ → 0)))
           (trans (cong (λ f → ⟦ f ⟧ ρ) (sym h)) (slot-valℚ (pos , e) ρ))
   slot-numℚ (size , e) c ρ h =
-    trans (cong ι (enc-num e c h (λ _ → 0)))
+    trans (cong ι (enc-numE e c h (λ _ → 0)))
           (trans (cong (λ f → ⟦ f ⟧ ρ) (sym h)) (slot-valℚ (size , e) ρ))
 
 module Continuous = Over slotF (eval (λ _ → 0)) (λ f ρ → ⟦ f ⟧ ρ) (λ ρ e → evalWith ratOps ρ e) slot-valℚ slot-numℚ
@@ -73,16 +73,15 @@ pageFrame-sem  = Continuous.pageFrame-sem
 
 private
   -- the encoder never produces a half except at the root (`half`)
+  foldOr-hlf : ∀ m g c → foldOr m g ≡ hlf c → g ≡ hlf c
+  foldOr-hlf (just _) g c ()
+  foldOr-hlf nothing  g c h = h
+
   fold1-hlf : ∀ f mk → (∀ a c → mk a ≡ hlf c → ⊥) → ∀ a c → fold1 f mk a ≡ hlf c → ⊥
-  fold1-hlf f mk nn a c h with numOf a
-  fold1-hlf f mk nn a c () | just _
-  fold1-hlf f mk nn a c h  | nothing = nn a c h
+  fold1-hlf f mk nn a c h = nn a c (foldOr-hlf _ (mk a) c h)
 
   fold2-hlf : ∀ f mk → (∀ a b c → mk a b ≡ hlf c → ⊥) → ∀ a b c → fold2 f mk a b ≡ hlf c → ⊥
-  fold2-hlf f mk nn a b c h with numOf a | numOf b
-  fold2-hlf f mk nn a b c () | just _ | just _
-  fold2-hlf f mk nn a b c h  | just _ | nothing = nn a b c h
-  fold2-hlf f mk nn a b c h  | nothing | _ = nn a b c h
+  fold2-hlf f mk nn a b c h = nn a b c (foldOr-hlf _ (mk a b) c h)
 
   ltF-hlf : ∀ a b x y c → ltF a b x y ≡ hlf c → (x ≡ hlf c) ⊎ (y ≡ hlf c)
   ltF-hlf a b x y c h with numOf a | numOf b
@@ -96,10 +95,10 @@ encD-hlf : ∀ (e : DExpr ℕ) c → encD e ≡ hlf c → ⊥
 encD-hlf (pure v) c ()
 encD-hlf (impure (inj₁ (inj₁ E.Zero) , _)) c ()
 encD-hlf (impure (inj₁ (inj₁ (E.Lit n)) , _)) c ()
-encD-hlf (impure (inj₁ (inj₁ E.Plus) , k)) c h = fold2-hlf _+_ add (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
-encD-hlf (impure (inj₁ (inj₁ E.Max) , k)) c h = fold2-hlf _⊔_ max (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
+encD-hlf (impure (inj₁ (inj₁ E.Plus) , k)) c h = fold2-hlf _ add (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
+encD-hlf (impure (inj₁ (inj₁ E.Max) , k)) c h = fold2-hlf _ max (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
 encD-hlf (impure (inj₁ (inj₁ (E.Pct p)) , k)) c h = fold1-hlf _ (pct p) (λ _ _ ()) (encD (k tt)) c h
-encD-hlf (impure (inj₁ (inj₂ E.Sub) , k)) c h = fold2-hlf _∸_ sub (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
+encD-hlf (impure (inj₁ (inj₂ E.Sub) , k)) c h = fold2-hlf _ sub (λ _ _ _ ()) (encD (k zero)) (encD (k (fsuc zero))) c h
 encD-hlf (impure (inj₂ (Eu.DivBy d) , k)) c h = fold1-hlf _ (fdiv d) (λ _ _ ()) (encD (k tt)) c h
 encD-hlf (impure (inj₂ (Eu.ModBy d) , k)) c h = fold1-hlf _ (fmod d) (λ _ _ ()) (encD (k tt)) c h
 encD-hlf (impure (inj₂ (Eu.MulLit n) , k)) c h = fold1-hlf _ (fmul n) (λ _ _ ()) (encD (k tt)) c h
@@ -122,6 +121,8 @@ private
   val-nohlf (fmod _ _)    ρ nn = refl
   val-nohlf (fmul _ _)    ρ nn = refl
   val-nohlf (flt _ _ _ _) ρ nn = refl
+  val-nohlf (fmin _ _)    ρ nn = refl
+  val-nohlf (fease _ _)   ρ nn = refl
 
   slot-valℕ : ∀ x ρ → ⟦ slotFD x ⟧ᴰ ρ ≡ halfIf (proj₁ x) (ι (evalD natD ρ (proj₂ x)))
   slot-valℕ (pos  , e) ρ = trans (half-semN (encD e) ρ) (cong (λ v → (+ 1 ℚ./ 2) ℚ.* ι v) (encD-semN e ρ))
@@ -131,7 +132,7 @@ private
   slot-numℕ : ∀ x c ρ → slotFD x ≡ num c →
               baseNum (proj₁ x , evalD natD (λ _ → 0) (proj₂ x)) ≡ halfIf (proj₁ x) (ι (evalD natD ρ (proj₂ x)))
   slot-numℕ (pos , e) c ρ h with half-num-inv (encD e) c h
-  ... | a , e₁ , _ , refl =
+  ... | a , e₁ , refl =
     trans (cong (λ v → ι (v / 2)) (enc-numN e a e₁ (λ _ → 0)))
           (trans (cong (λ f → ⟦ f ⟧ᴰ ρ) (sym h)) (slot-valℕ (pos , e) ρ))
   slot-numℕ (size , e) c ρ h =

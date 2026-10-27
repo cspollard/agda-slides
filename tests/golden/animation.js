@@ -68,19 +68,22 @@ function SlidesAnimation(shown) {
   // a negative number `-1 - i` is the definition `i` of the phase's program (`V`, see `pframe`:
   // the shared subformulas, evaluated once per time step, oldest first).  The operations are
   // numbers: 0 plus, 1 minus, 2 maximum, 3 `[3, p, a]` p percent of `a`, 4 `[4, a]` half of `a`
-  // (positions being in half units).  A discrete template (`D`, see `renderParamAnimation`) is
-  // read in the naturals: `-` clamps at 0, `%` rounds down, and there are floor division
-  // `[5, n, a]`, remainder `[6, n, a]`, a literal factor `[7, n, a]` and `[8, a, b, x, y]`, which
-  // is `x` if `a < b` else `y`
+  // (positions being in half units), 5 floor division `[5, n, a]`, 6 remainder `[6, n, a]` (the
+  // real one, `a - n*floor(a/n)`), 7 a literal factor `[7, n, a]`, 8 `[8, a, b, x, y]`, which is
+  // `x` if `a < b` else `y`, 9 minimum, 10 `[10, e, a]` an easing (`e` as in a piece) of `a`.  A
+  // discrete template (`D`, see `renderParamAnimation`) is read in the naturals: `-` clamps at 0
+  // and `%` rounds down
   function ev(e, r, D, V) {
     if (typeof e === 'number') return e < 0 ? V[-1 - e] : e;
     if (typeof e === 'string') return r[+e];
-    var o = e[0], x = ev(e[1], r, D, V);
+    var o = e[0];
+    if (o === 10) return ease(e[1], ev(e[2], r, D, V));
+    var x = ev(e[1], r, D, V);
     if (o === 4) return x / 2;
     if (o === 8) return x < ev(e[2], r, D, V) ? ev(e[3], r, D, V) : ev(e[4], r, D, V);
     var y = ev(e[2], r, D, V);
-    return o === 0 ? x + y : o === 1 ? (D ? Math.max(0, x - y) : x - y) : o === 2 ? Math.max(x, y)
-         : o === 5 ? Math.floor(y / x) : o === 6 ? y % x : o === 7 ? x * y
+    return o === 0 ? x + y : o === 1 ? (D ? Math.max(0, x - y) : x - y) : o === 2 ? Math.max(x, y) : o === 9 ? Math.min(x, y)
+         : o === 5 ? Math.floor(y / x) : o === 6 ? y - x * Math.floor(y / x) : o === 7 ? x * y
          : D ? Math.floor(x * y / 100) : x * y / 100;
   }
   // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number

@@ -183,6 +183,8 @@ entry-view (fdiv _ _)    = inj₂ (refl , refl)
 entry-view (fmod _ _)    = inj₂ (refl , refl)
 entry-view (fmul _ _)    = inj₂ (refl , refl)
 entry-view (flt _ _ _ _) = inj₂ (refl , refl)
+entry-view (fmin _ _)    = inj₂ (refl , refl)
+entry-view (fease _ _)   = inj₂ (refl , refl)
 
 private
   false≢true : false ≡ true → ⊥

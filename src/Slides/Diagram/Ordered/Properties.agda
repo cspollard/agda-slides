@@ -52,7 +52,7 @@ private
 nat-<ᵇ : ∀ a b → (a ℕ.<ᵇ b) ≡ not (b ℕ.≤ᵇ a)
 nat-<ᵇ a b = trans (lt-aux a b) (cong not (sym (le-aux b a)))
 
-ι-<ᵇ : ∀ a b → (ι a <ᵇ ι b) ≡ (a ℕ.<ᵇ b)
+ι-<ᵇ : ∀ a b → (ι a <ᵇℚ ι b) ≡ (a ℕ.<ᵇ b)
 ι-<ᵇ a b = trans (cong not (ι-≤ᵇ b a)) (sym (nat-<ᵇ a b))
 
 private
@@ -102,13 +102,6 @@ qdiv a d = div-pos-is-/ℕ (+ a) (suc d)
 ------------------------------------------------------------------------
 -- Which operations are homomorphisms of `ι`
 
--- the ℕ readings of the new layers (the operations of `Slides.Diagram.Euclid`)
-natOrd : OrdOps ℕ
-natOrd = record { lt = λ a b x y → if a ℕ.<ᵇ b then x else y ; min = ℕ._⊓_ }
-
-natFloor : FloorOps ℕ
-natFloor = record { divBy = λ d x → x / suc d ; modBy = λ d x → x % suc d ; mulLit = _*_ }
-
 record IsOrdHom {S T : Set} (O : OrdOps S) (P : OrdOps T) (h : S → T) : Set where
   private module O = OrdOps O
   private module P = OrdOps P
@@ -127,7 +120,7 @@ record IsFloorHom {S T : Set} (O : FloorOps S) (P : FloorOps T) (h : S → T) : 
 -- `ι` is a homomorphism of the ordered layer, unconditionally
 ι-ord : IsOrdHom natOrd ratOrd ι
 ι-ord = record { h-lt = lt ; h-min = ι-⊓ }
-  where lt : ∀ a b x y → ι (if a ℕ.<ᵇ b then x else y) ≡ (if ι a <ᵇ ι b then ι x else ι y)
+  where lt : ∀ a b x y → ι (if a ℕ.<ᵇ b then x else y) ≡ (if ι a <ᵇℚ ι b then ι x else ι y)
         lt a b x y rewrite ι-<ᵇ a b with a ℕ.<ᵇ b
         ... | true  = refl
         ... | false = refl
@@ -140,20 +133,14 @@ record IsFloorHom {S T : Set} (O : FloorOps S) (P : FloorOps T) (h : S → T) : 
 ------------------------------------------------------------------------
 -- The monus and the percentage, as the lowering reads them
 
-private
-  sub-nonpos : ∀ {p q} → p ℚ.≤ q → p ℚ.- q ℚ.≤ ℚ.0ℚ
-  sub-nonpos {p} {q} pq = subst (λ x → p ℚ.- q ℚ.≤ x) (ℚP.+-inverseʳ q) (ℚP.+-monoˡ-≤ (ℚ.- q) pq)
-
-  sub-nonneg : ∀ {p q} → q ℚ.≤ p → ℚ.0ℚ ℚ.≤ p ℚ.- q
-  sub-nonneg {p} {q} qp = subst (λ x → x ℚ.≤ p ℚ.- q) (ℚP.+-inverseʳ q) (ℚP.+-monoˡ-≤ (ℚ.- q) qp)
-
--- `a ∸ b` is the real difference clamped at 0, with no side condition
-ι-monus : ∀ a b → ι (a ∸ b) ≡ (ι a ℚ.- ι b) ℚ.⊔ ℚ.0ℚ
+-- `a ∸ b` is `(a ⊔ b) − b` with no side condition (the minuend is the larger by construction)
+ι-monus : ∀ a b → ι (a ∸ b) ≡ (ι a ℚ.⊔ ι b) ℚ.- ι b
 ι-monus a b with b ℕ.≤ᵇ a in eq
 ... | true  = trans (ι-∸ a b (ℕP.≤ᵇ⇒≤ b a (subst T (sym eq) _)))
-                    (sym (ℚP.p≥q⇒p⊔q≡p (sub-nonneg (ι-≤ b a eq))))
+                    (cong (ℚ._- ι b) (sym (ℚP.p≥q⇒p⊔q≡p (ι-≤ b a eq))))
 ... | false = trans (cong ι (ℕP.m≤n⇒m∸n≡0 (ℕP.<⇒≤ (ℕP.≰⇒> (λ (h : b ℕ.≤ a) → subst T eq (ℕP.≤⇒≤ᵇ h))))))
-                    (sym (ℚP.p≤q⇒p⊔q≡q (sub-nonpos (ι-≰ b a eq))))
+                    (trans (sym (ℚP.+-inverseʳ (ι b)))
+                           (cong (ℚ._- ι b) (sym (ℚP.p≤q⇒p⊔q≡q (ι-≰ b a eq)))))
 
 -- `x·p/100` rounded down is the floor of `p·x/100` in ℚ
 ι-pct : ∀ p x → ι ((x * p) / 100) ≡ FloorOps.divBy ratFloor 99 (FloorOps.mulLit ratFloor p (ι x))
@@ -162,10 +149,10 @@ private
 ------------------------------------------------------------------------
 -- ℚ is a model of the laws
 
-ratQLaws : QLaws ratQ
+ratQLaws : QLaws ratO
 ratQLaws = record { modBy-spec = λ _ _ → refl ; min-spec = min-lt }
   where
-    min-lt : ∀ a b → a ℚ.⊓ b ≡ (if a <ᵇ b then a else b)
+    min-lt : ∀ a b → a ℚ.⊓ b ≡ (if a <ᵇℚ b then a else b)
     min-lt a b with b ℚ.≤ᵇ a in eq
     ... | true  = ℚP.p≥q⇒p⊓q≡q (ℚP.≤ᵇ⇒≤ {b} {a} (subst T (sym eq) _))
     ... | false = ℚP.p≤q⇒p⊓q≡p (ℚP.<⇒≤ (ℚP.≰⇒> (λ h → subst T eq (ℚP.≤⇒≤ᵇ {b} {a} h))))

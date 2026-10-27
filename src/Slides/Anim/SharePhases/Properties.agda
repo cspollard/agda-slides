@@ -48,6 +48,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label)
 open import Slides.Diagram.NatQ using (ι)
+open import Slides.Diagram.Ordered using (OrdOps; FloorOps; ratOrd; ratFloor)
+open import Slides.Anim.Track using (progress)
 open import Slides.Anim.Formula
 open import Slides.Anim.Formula.Properties
 open import Slides.Anim.Phases using (Elem; Kind; nums; entries; withNums)
@@ -74,22 +76,25 @@ readingℚ = record
     a1 : Op1 → ℚ → ℚ
     a1 (oPct p) x = (+ p ℚ./ 100) ℚ.* x
     a1 oHlf     x = halfQ x
-    a1 (oDiv d) x = ι (flr x / suc d)
-    a1 (oMod d) x = ι (flr x % suc d)
-    a1 (oMul n) x = ι (n * flr x)
+    a1 (oDiv d) x = FloorOps.divBy ratFloor d x
+    a1 (oMod d) x = FloorOps.modBy ratFloor d x
+    a1 (oMul n) x = FloorOps.mulLit ratFloor n x
+    a1 (oEase e) x = progress e x
     a2 : Op2 → ℚ → ℚ → ℚ
     a2 oAdd = ℚ._+_
     a2 oSub = ℚ._-_
     a2 oMax = ℚ._⊔_
+    a2 oMin = ℚ._⊓_
     a4 : ℚ → ℚ → ℚ → ℚ → ℚ
-    a4 a b x y = if b ℚ.≤ᵇ a then y else x
+    a4 = OrdOps.lt ratOrd
 
 semℚ : Semantics readingℚ
 semℚ = record
   { sem = ⟦_⟧
   ; s-num = λ _ _ → refl ; s-var = λ _ _ → refl ; s-add = λ _ _ _ → refl ; s-sub = λ _ _ _ → refl
   ; s-max = λ _ _ _ → refl ; s-pct = λ _ _ _ → refl ; s-hlf = λ _ _ → refl ; s-fdiv = λ _ _ _ → refl
-  ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl }
+  ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl
+  ; s-fmin = λ _ _ _ → refl ; s-fease = λ _ _ _ → refl }
 
 -- formulas read in ℕ (`⟦_⟧ᴺ`), the output a rational (`⟦_⟧ᴰ`)
 readingℕ : Reading ℕ ℚ
@@ -102,10 +107,12 @@ readingℕ = record
     a1 (oDiv d) x = x / suc d
     a1 (oMod d) x = x % suc d
     a1 (oMul n) x = n * x
+    a1 (oEase _) x = x          -- an easing has no ℕ reading (removed with this reading)
     a2 : Op2 → ℕ → ℕ → ℕ
     a2 oAdd = ℕ._+_
     a2 oSub = _∸_
     a2 oMax = _⊔_
+    a2 oMin = ℕ._⊓_
     a4 : ℕ → ℕ → ℕ → ℕ → ℕ
     a4 a b x y = if a <ᵇ b then x else y
 
@@ -114,7 +121,8 @@ semℕ = record
   { sem = ⟦_⟧ᴺ
   ; s-num = λ _ _ → refl ; s-var = λ _ _ → refl ; s-add = λ _ _ _ → refl ; s-sub = λ _ _ _ → refl
   ; s-max = λ _ _ _ → refl ; s-pct = λ _ _ _ → refl ; s-hlf = λ _ _ → refl ; s-fdiv = λ _ _ _ → refl
-  ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl }
+  ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl
+  ; s-fmin = λ _ _ _ → refl ; s-fease = λ _ _ _ → refl }
 
 -- the output reading is the existing one
 refOutℚ : ∀ g ρ → Semantics.refOut semℚ g ρ ≡ ⟦ g ⟧ ρ
@@ -129,6 +137,8 @@ refOutℚ (fdiv _ _)    ρ = refl
 refOutℚ (fmod _ _)    ρ = refl
 refOutℚ (fmul _ _)    ρ = refl
 refOutℚ (flt _ _ _ _) ρ = refl
+refOutℚ (fmin _ _)    ρ = refl
+refOutℚ (fease _ _)   ρ = refl
 
 refOutℕ : ∀ g ρ → Semantics.refOut semℕ g ρ ≡ ⟦ g ⟧ᴰ ρ
 refOutℕ (num _)       ρ = refl
@@ -142,6 +152,8 @@ refOutℕ (fdiv _ _)    ρ = refl
 refOutℕ (fmod _ _)    ρ = refl
 refOutℕ (fmul _ _)    ρ = refl
 refOutℕ (flt _ _ _ _) ρ = refl
+refOutℕ (fmin _ _)    ρ = refl
+refOutℕ (fease _ _)   ρ = refl
 
 ------------------------------------------------------------------------
 -- What the page sets
