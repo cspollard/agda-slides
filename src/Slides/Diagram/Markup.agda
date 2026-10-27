@@ -3,6 +3,10 @@
 -- Label markup, shared by the renderer (`Slides.Backend.Diagram`) and the text
 -- measurement of `Slides.Diagram.Layout`: `_x` or `_{xyz}` is a subscript, `^x`
 -- or `^{xyz}` a superscript, and a backslash quotes the next character.
+--
+-- A label is cut into runs: `parse "x_i^2"` is `flat "x" , sub "i" , sup "2"`
+-- (as a list of `Seg`).  The width used to centre a label in its frame is that
+-- of its characters, markup included (`Slides.Diagram.Layout`).
 
 module Slides.Diagram.Markup where
 

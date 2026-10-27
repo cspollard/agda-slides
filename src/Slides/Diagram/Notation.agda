@@ -39,12 +39,29 @@ infixr 8 _⊙_
 infixr 7 _∥_
 infixr 6 _═_
 
+-- The three connectives (pictures of each: `Slides.Diagram.Syntax`):
+--
+--   a ∥ b          a ═ b         a ⊙ b
+--   +---+---+      +-------+     +-----------+
+--   | a | b |      |   a   |     |  +-----+  |   b is on top of a,
+--   +---+---+      +-------+     |  |  b  |  |   both centred
+--   (centred        |   b   |     |  +-----+  |
+--    vertically)   +-------+     +-----------+
+--
+-- Frames touch for `∥` and `═`; `⊙` adds nothing.  Sizes: `∥` adds widths
+-- and takes the larger height; `═` adds heights and takes the larger width; `⊙`
+-- takes the larger of each.  Precedence: `⊙` binds tightest, then `∥`, then `═`,
+-- so `a ∥ b ═ c ∥ d` is `(a ∥ b) ═ (c ∥ d)`.
+
 _∥_ _═_ _⊙_ : ∀ {S} → Dia S → Dia S → Dia S
 _∥_ = besideA middle
 _═_ = aboveA centred
 _⊙_ = atop
 
 -- the same, aligned: `∥↑ ∥↓` to the top or bottom, `═◂ ═▸` left or right
+--
+-- (the pictures of the alignments are with `Beside` and `Above` in
+-- `Slides.Diagram.Syntax`)
 infixr 7 _∥↑_ _∥↓_
 infixr 6 _═◂_ _═▸_
 
@@ -59,11 +76,13 @@ _═▸_ = aboveA right
 
 infixr 4 _⦂_
 
--- `"id" ⦂ d`: remember the extent of `d` under a name
+-- `"id" ⦂ d`: remember the extent (the whole frame) of `d` under a name.  It
+-- changes neither the size nor the drawing.
 _⦂_ : ∀ {S} → String → Dia S → Dia S
 _⦂_ = named
 
--- a place on a named box: `"a" ⊢ side east`, `"a" ⊢ at south 40`
+-- A place on a named box: `"a" ⊢ side east`, `"a" ⊢ at south 40` (ports are
+-- pictured in `Slides.Diagram.Geometry`).
 infix 8 _⊢_
 record Endpoint : Set where
   constructor _⊢_
@@ -78,7 +97,17 @@ record Edge : Set where
 
 infix 7 _⟶_ _⟱_ _⇒_
 
--- east edge to west edge, south edge to north edge, or any two ports
+-- east edge to west edge, south edge to north edge, or any two ports.  The
+-- arrow goes from the first named box to the second.
+--
+--   "a" ⟶ "b"                "a" ⟱ "b"
+--   +---+            +---+      +---+
+--   | a |>---------->| b |      | a |
+--   +---+            +---+      +-v-+
+--                                 |
+--                               +-v-+
+--                               | b |
+--                               +---+
 _⟶_ _⟱_ : String → String → Edge
 a ⟶ b = edge (a ⊢ side east)  (b ⊢ side west)
 a ⟱ b = edge (a ⊢ side south) (b ⊢ side north)
@@ -92,7 +121,10 @@ private
 
 infixl 3 _▹[_]_ _▹_∶_
 
--- draw edges in a style, the first one first (later ones on top)
+-- Draw edges in a style over `d`, the first one first (later ones on top).
+-- Each is a `Connect` around the result so far, so the size and the other
+-- drawings of `d` do not change; an edge whose name `d` does not bind draws
+-- nothing.
 _▹[_]_ : ∀ {S} → Dia S → Style → List Edge → Dia S
 d ▹[ s ] es = foldl (draw s) d es
 
@@ -106,7 +138,17 @@ d ▹ e ∶ s = d ▹[ s ] (e ∷ [])
 module NotationWith {S : Set} (O : Ops S) where
   open Ops O using (0#)
 
-  -- empty space
+  -- Empty space; the unit of `∥`, `═` and `⊙` (a frame 0 x 0, nothing drawn).
+  -- `↔ n` is a frame n wide and 0 high, `↕ n` is 0 wide and n high: a gap
+  -- between two neighbours, since sizes add along the direction of the join.
+  --
+  --   a ∥ ↔ 4 ∥ b          a ═ ↕ 4 ═ b
+  --   +---+    +---+       +---+
+  --   | a |<-->| b |       | a |
+  --   +---+  4 +---+       +---+  ^ 4
+  --                        +---+  v
+  --                        | b |
+  --                        +---+
   empty : Dia S
   empty = spacer 0# 0#
 
@@ -114,7 +156,13 @@ module NotationWith {S : Set} (O : Ops S) where
   ↔ n = spacer n 0#
   ↕ n = spacer 0# n
 
-  -- a row / column with a gap between neighbours
+  -- A row / column with the same gap between neighbours (and none at the
+  -- ends); `al` aligns as in `besideA` / `aboveA`.  An empty list is `empty`.
+  --
+  --   hcat g (a ∷ b ∷ c ∷ [])
+  --   +---+     +---+     +---+     the gaps are spacers of width g
+  --   | a |<-g->| b |<-g->| c |     (right-nested, so it needs no
+  --   +---+     +---+     +---+      parentheses)
   hcatA : VAlign → S → List (Dia S) → Dia S
   hcatA al g []       = empty
   hcatA al g (d ∷ []) = d
@@ -135,23 +183,55 @@ module NotationWith {S : Set} (O : Ops S) where
   ⟨ ds ⟩ₕ g = hcat g ds
   ⟨ ds ⟩ᵥ g = vcat g ds
 
-  -- extra space left, top, right, bottom
+  -- Extra space left, top, right, bottom: the frame grows by that much, the
+  -- diagram keeps its size and is shifted by (left, top).
+  --
+  --   +---------------+
+  --   |   top         |
+  --   | l +-------+ r |
+  --   |   |   d   |   |
+  --   |   +-------+   |
+  --   |   bottom      |
+  --   +---------------+
   margin : S → S → S → S → Dia S → Dia S
   margin l t r b d = ↔ l ∥ ((↕ t ═ d ═ ↕ b) ∥ ↔ r)
 
   padded : S → Dia S → Dia S
   padded n = margin n n n n
 
-  -- at least this wide, the diagram centred (to give columns equal widths)
+  -- At least this wide, the diagram centred (to give columns equal widths):
+  -- `d ⊙ ↔ w`, so the width is the larger of the two and the height is `d`'s.
+  --
+  --   +--------------+
+  --   |   +-----+    |   width max w (width d); d centred
+  --   |   |  d  |    |
+  --   |   +-----+    |
+  --   +--------------+
   boxWidth : S → Dia S → Dia S
   boxWidth w d = d ⊙ ↔ w
 
-  -- the diagram at the top of a frame of the given height (centred
-  -- horizontally); inside `framed` this lines up contents of different heights
+  -- The diagram at the top of a frame of at least the given height: `d ∥↑
+  -- ↕ h`, so the width is `d`'s and the height the larger of `d`'s and `h`.
+  -- Inside `framed` this lines up contents of different heights.
+  --
+  --   +-----+  h        the empty space is below d,
+  --   |  d  |           not around it
+  --   +-----+
   topAligned : S → Dia S → Dia S
   topAligned h d = d ∥↑ ↕ h
 
-  -- a caption a gap above or below a diagram (the diagram stays centred)
+  -- A caption a gap above or below a diagram (the diagram stays centred): the
+  -- caption with the gap on its far side is the `labelAbove` caption, so the
+  -- room kept free on the other side is as big as caption plus gap.
+  --
+  --   captionAbove g lbl d
+  --   +-------+
+  --   |  lbl  |
+  --   +-------+
+  --   |  gap  | g
+  --   +-------+
+  --   |   d   |        (and the same amount of empty space below d)
+  --   +-------+
   captionAbove captionBelow : S → Dia S → Dia S → Dia S
   captionAbove g lbl d = labelAbove (lbl ═ ↕ g) d
   captionBelow g lbl d = labelBelow (↕ g ═ lbl) d
@@ -165,7 +245,7 @@ module NotationWith {S : Set} (O : Ops S) where
   _⌃[_]_ : Dia S → S → Dia S → Dia S
   lbl ⌃[ g ] d = captionAbove g lbl d
 
-  -- lines of text, one under the other, centred
+  -- lines of text, one under the other, centred (`vcat 0`: no gap)
   lines : ℕ → List String → Style → Dia S
   lines size ts s = vcat 0# (map (λ t → text size t s) ts)
 

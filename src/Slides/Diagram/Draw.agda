@@ -19,7 +19,16 @@ open import Data.String using (String)
 
 open import Slides.Diagram using (Style)
 
--- left, top (half units), width, height
+-- A named region: `left` and `top` (half units) of its corner relative to the
+-- frame's top-left corner, `width` and `height` (units).
+--
+--   (0,0)+---------------+
+--        |  (left,top)   |
+--        |       +----+  |   the origin is the top-left of the frame;
+--        |       |    | height   x grows right, y grows DOWN
+--        |       +----+  |
+--        +---------------+
+--                width
 record Box (S : Set) : Set where
   constructor box
   field
@@ -30,9 +39,15 @@ data Draw (S : Set) : Set where
   circle : (cx cy r : S) → Style → Draw S
   line   : (x₁ y₁ x₂ y₂ : S) → Style → Draw S
   arrow  : (x₁ y₁ x₂ y₂ : S) → Style → Draw S
+  -- a circle is given by its centre (not its corner); a line goes from its
+  -- first point to its second; an arrow also, with the head at the second
   -- text centred at a point: the font size is a plain number
   label  : (x y : S) (size : ℕ) → String → Style → Draw S
 
+-- A sized frame with what is drawn in it (all drawn relative to the frame's
+-- top-left corner, in the order of the list, so later is on top) and the boxes
+-- that have been given a name.  The size is the frame a neighbour sees; the
+-- drawings may stick out of it (`Place`), and are not counted in it.
 record Layout (S : Set) : Set where
   constructor layout
   field
