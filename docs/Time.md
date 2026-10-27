@@ -145,20 +145,29 @@ for an explicit justification.
   Plotkin and Power, *Algebraic operations and generic effects* **[memory]**:
   operations such as `tick` and `await` are algebraic operations.
 
-## 7. Decision on the time unit (proposed; awaiting the author)
+## 7. Decision on the time unit (author, 2026-10-27)
 
-- **Semantic time is ℚ.**  Behaviours, tracks, easings and the scene container are
-  interpreted over ℚ.  It is the smallest domain with scaling, subdivision, floor
-  and exact subtraction, and all our data is piecewise rational.
-- **ℕ is the tick clock.**  It indexes control-machine states (slides, fragments)
-  and observation instants; it is read through `ι`.  It is not a second value
-  language: discrete templates are lowered terms (`docs/Ordered.md`).
-- **ℤ is not adopted.**  Revisit only if a feature needs negative offsets.
-- **No generic `Time` parameter yet.**  Instead each module states, in its header,
-  which layers of section 4 it uses; ℚ with an ℕ tick index is the only model.
-  Generalise only when a second model with a real use appears.
-- **Consequence:** the ordered-layer migration M1 to M3 (`plan/Unify.md` 4c) is
-  the implementation of this decision.
+- **`Time` is a parameter.**  The semantics of scenes and behaviours is stated against
+  an abstract model of the layered time theory of section 4 (a record of the layers
+  used, with their laws), not against ℚ.
+- **The first instance is `Time = ℚ`.**  Everything is implemented and tested there.
+- **Proofs use extrinsic properties.**  Lemmas are proved from the laws of the model
+  record (monoid, order, floor spec, scaling), never by computing in ℚ, so that
+  the language can later be generalised (another model) or specialised (a smaller
+  theory) without re-proving.  A property of a *model* (density, induction,
+  archimedean) is a named hypothesis of the lemma that needs it.
+- **ℕ is the tick clock**: it indexes control-machine states and observation
+  instants, read through a model homomorphism `ι : ℕ → ℚ`; it is not a second value
+  language (discrete templates are lowered terms, `docs/Ordered.md`).
+- **ℤ is not adopted** unless a feature needs negative offsets.
+- **Variance** (see the discussion in the plan): a larger theory gives a larger
+  signature `TimeC(L) ↪ TimeC(L')` and a monad morphism; a model of `L'` restricts to
+  a model of `L`; evaluation is natural along model homomorphisms; a lowering for
+  an operation that `ι` does not preserve is a Kleisli arrow `C⋆ → C'⋆`.  Order is
+  kept algebraic through the select form `Lt a b x y`.  Models are explicit records
+  (no instance search).
+- **Consequence:** the ordered-layer migration M1 to M3 (`plan/Unify.md` 4c) is the
+  implementation, now stated against the model record.
 
 ## 7b. Open questions
 
