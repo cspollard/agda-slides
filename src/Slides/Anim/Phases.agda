@@ -20,8 +20,8 @@
 module Slides.Anim.Phases where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; map)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.List using (List; []; _∷_; map; head; drop)
+open import Data.Maybe using (Maybe; just; nothing; fromMaybe)
 open import Data.Nat as ℕ using (ℕ; suc)
 open import Data.Product using (_×_; _,_)
 open import Relation.Binary using (DecidableEquality)
@@ -52,25 +52,16 @@ nums (arrow a b c d _) = (pos , a) ∷ (pos , b) ∷ (pos , c) ∷ (pos , d) ∷
 nums (label x y _ _ _) = (pos , x) ∷ (pos , y) ∷ []
 
 private
-  headOr : ∀ {T : Set} → T → List T → T
-  headOr d []      = d
-  headOr d (x ∷ _) = x
-
-  tailL : ∀ {T : Set} → List T → List T
-  tailL []       = []
-  tailL (_ ∷ xs) = xs
+  at : ∀ {T : Set} → List T → T → ℕ → T
+  at ts d k = fromMaybe d (head (drop k ts))
 
 -- the same command with its numbers (in order) from a list; `dflt` when it runs out
 withNums : ∀ {S T : Set} → Draw S → List T → T → Draw T
-withNums (rect _ _ _ _ s) ts d =
-  rect (headOr d ts) (headOr d (tailL ts)) (headOr d (tailL (tailL ts))) (headOr d (tailL (tailL (tailL ts)))) s
-withNums (circle _ _ _ s) ts d =
-  circle (headOr d ts) (headOr d (tailL ts)) (headOr d (tailL (tailL ts))) s
-withNums (line _ _ _ _ s) ts d =
-  line (headOr d ts) (headOr d (tailL ts)) (headOr d (tailL (tailL ts))) (headOr d (tailL (tailL (tailL ts)))) s
-withNums (arrow _ _ _ _ s) ts d =
-  arrow (headOr d ts) (headOr d (tailL ts)) (headOr d (tailL (tailL ts))) (headOr d (tailL (tailL (tailL ts)))) s
-withNums (label _ _ n t s) ts d = label (headOr d ts) (headOr d (tailL ts)) n t s
+withNums (rect _ _ _ _ s)  ts d = rect (at ts d 0) (at ts d 1) (at ts d 2) (at ts d 3) s
+withNums (circle _ _ _ s)  ts d = circle (at ts d 0) (at ts d 1) (at ts d 2) s
+withNums (line _ _ _ _ s)  ts d = line (at ts d 0) (at ts d 1) (at ts d 2) (at ts d 3) s
+withNums (arrow _ _ _ _ s) ts d = arrow (at ts d 0) (at ts d 1) (at ts d 2) (at ts d 3) s
+withNums (label _ _ n t s) ts d = label (at ts d 0) (at ts d 1) n t s
 
 ------------------------------------------------------------------------
 -- One drawing command, as shipped
