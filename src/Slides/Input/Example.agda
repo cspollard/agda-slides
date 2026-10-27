@@ -6,7 +6,7 @@
 module Slides.Input.Example where
 
 open import Data.List.Base using (_∷_; [])
-open import Data.Maybe.Base using (just)
+open import Data.Maybe.Base using (just; nothing)
 open import Data.Nat.Base using (zero; suc)
 open import Data.Sum.Base using (_⊎_; inj₁)
 open import Data.Sum.Properties using (≡-dec)
@@ -53,3 +53,37 @@ module Strings where
   -- A reveal-like backend keeps the pauses; an extra command is skipped.
   pause-kept : lowerDeck (navOnlyS {⊤}) pause ≡ await next
   pause-kept = refl
+
+-- Slide labels on a deck of `Slides.Core` (`Slides.Examples.Labels`).
+module Slides where
+  open import Data.List.Base using (length)
+  open import Data.Container.Core using (Shape)
+  open import Slides.Core using (BlockC)
+  open import Slides.Input.Slides
+  open import Slides.Input.Navigation (Shape BlockC)
+  open import Slides.Examples.Labels using (labels)
+
+  -- intro, details (one pause), unnamed, more (two slides), end
+  _ : length (slides labels) ≡ 6
+  _ = refl
+
+  -- slide `i` starts after the pauses and `next`s before it
+  opaque
+    unfolding autoLabel
+
+    _ : labelTable (deckProg {⊤} labels) (autoLabel 0) ≡ just 0
+    _ = refl
+    _ : labelTable (deckProg {⊤} labels) (autoLabel 2) ≡ just 3
+    _ = refl
+    _ : labelTable (deckProg {⊤} labels) (autoLabel 5) ≡ just 6
+    _ = refl
+
+    -- a user label is the start of its slide; a stack's label is that of its first slide
+    _ : labelTable (deckProg {⊤} labels) "details" ≡ just 1
+    _ = refl
+    _ : labelTable (deckProg {⊤} labels) "more" ≡ just 4
+    _ = refl
+    _ : labelTable (deckProg {⊤} labels) "end" ≡ just 6
+    _ = refl
+    _ : labelTable (deckProg {⊤} labels) "nowhere" ≡ nothing
+    _ = refl

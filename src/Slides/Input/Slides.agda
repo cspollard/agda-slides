@@ -48,8 +48,9 @@ slides (pure _)                     = []
 slides (impure (slide o b , k))     = (SlideOptions.label o , b) ∷ slides (k tt)
 slides (impure (stack o bs , k))    = stackSlides (SlideOptions.label o) bs ++ slides (k tt)
 
-autoLabel : ℕ → String
-autoLabel i = showInBase 10 (suc i)
+opaque
+  autoLabel : ℕ → String
+  autoLabel i = showInBase 10 (suc i)
 
 module _ {C : Set} where
 

@@ -54,7 +54,7 @@ inputs. `choice-∈`, `bind-kind` (`Binding.Properties`): disjoint kinds lose no
 ## Decks that await
 
 `Slides.Core.Body` is unchanged (`pause` is still a layout command), so no deck changes. The
-stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X`,
+stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X ⊎ LabelC` (a body may carry `label l`; `toProgC` maps it to `Slides.Input`'s `label`),
 `DeckBlockC C = BlockAwaitC (Nav ⊎ C)`, `Body⁺ X`, and `toProg : Body⁺ X → Prog X ⊤` (scenes `Shape BlockC`), so `Supports.lowerDeck` applies to a body.
 
 * `Slides.Steps.Input`: `elab` (`pause ↦ await next`, a Kleisli lowering), and the second pass
@@ -66,6 +66,16 @@ stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X`
 * Laws: `Slides.Steps.Properties` (`stepsBy-elab : stepsBy isNext (elab b) ≡ steps b`, `goBy-bind`,
   `go-bind`, `go-bind-elab`, `elab-bind`); `Slides.Lower.Properties` (`lowerCmdBody-bind`,
   `lowerCmdBody-lowerDeck`, `steps-lowered`, `steps-pipeline`).
+
+## Slide labels
+
+A physical `goto` addresses a *slide* (`#/intro`, `#3`); `navM`'s `goto k` is a *position* (a count of `next`s). The bridge is a label at the start of every slide, `Slides.Input.Slides`:
+
+* Authoring: `slideAs "intro" body`, or `labelled "intro" opts` in `slideWith`/`stackWith` (`SlideOptions.label`; a stack's label names its first slide). Labels are opt-in: unlabelled decks are unchanged.
+* `slides d` lists the slides (a stack flattened, as plain does); `deckBody`/`deckProg d` is one program: per slide `label (autoLabel i)` (the numeral of `i + 1`, plain's `#n`), the user label, the elaborated body, and an `await next` between consecutive slides. `labelTable (deckProg d)` and `navDeck` then do slide-addressed goto through the position machine.
+* `Slides.Input.Slides.Properties`: `slide-table` (`labelTable (deckProg d)` is the first match in the independent list `entries`: slide `i` starts after the pauses and `next`s of the earlier slides) and `auto-start` (the label of slide `i` resolves to `startOf`, when no user label is a numeral: `Fresh`). New sequencing laws in `Navigation.Properties`: `nextCount-bind`, `labelFrom-bind`. Examples by `refl`: `Slides.Input.Example` (`Slides.Examples.Labels`).
+* Caveat: a `pause` is one `await next` in the machine but `Slides.Steps` wraps each later command in its own fragment, so machine positions are not physical fragment indices; the table is exact for slides (the ordinal), not for fragment steps.
+* Hashes: reveal reads `#/id` as `gotoLabel id` (`Hash.named`; round trip `reveal-render`); plain reads `#n` only (`plain.js` is a golden asset), so it has no label hash. The slide's `id` is produced for now by `Slides.Lower.labelMounts` (an empty `div#id` at the start of a labelled slide; reveal resolves the id to the enclosing section); the intended home is `slideAttrs` (`Backend.Common`: `opt "id" (SlideOptions.label o)`, the outer section of a labelled stack). Test: `make labels test-labels` (`tests/browser/labels.mjs`).
 
 ## Backend bindings
 
@@ -79,7 +89,7 @@ How a physical input becomes a command (the modules are `Slides.Backend.{Input,R
 * `revealSupports`, `plainSupports : Supports Ext` (any `V`). Reveal: vocabulary `RCmd = Nav ⊎ Ext ⊎ Move ⊎ (ℕ × ℕ)` (the grid moves `right left down up` and the vertical goto `slideV h v`,
   which have no `Nav ⊎ Ext` meaning: `dec` is `nothing`); `revealKeys : Mode → Decoder Key RCmd`, `revealHash`, `revealRead`, `revealRender` (canonical input per command).
   Plain: `PCmd = Nav ⊎ ⊤`, `plainKeys : Decoder KeyName PCmd` (key *names* only: modifiers cannot matter by construction), `plainHash`, `plainRead`, `plainRender`; `await overview` is skipped.
-  Gaps by design: `gotoLabel` and `tick` have no physical input yet (`render = nothing`; hashes for labels are step 7); alt-modified keys (reveal's skip-fragments) are not modelled.
+  Gaps by design: `tick` has no physical input yet (`render = nothing`), and neither has plain's `gotoLabel` (reveal's is `#/id`, see "Slide labels"); alt-modified keys (reveal's skip-fragments) are not modelled.
 
 What the two backends do differently (pinned by `tests/browser/nav.mjs`; a table, not theorems, because nothing depends on it):
 

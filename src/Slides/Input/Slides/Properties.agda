@@ -21,12 +21,12 @@ open import Data.List.Base using (List; []; _∷_; _++_; length)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.Maybe.Base using (Maybe; just; nothing; _<∣>_)
 open import Data.Nat.Base using (ℕ; zero; suc; _+_; _<_; z<s; s<s)
-open import Data.Nat.Properties using (+-assoc; +-suc; suc-injective; +-identityʳ)
+open import Data.Nat.Properties using (+-assoc; +-suc; suc-injective; +-identityʳ; m≢1+m+n)
 open import Data.Nat.Show using (showInBase)
 open import Data.Nat.Show.Properties using (charsInBase-injective)
 open import Data.Product.Base using (_×_; _,_; proj₁)
 open import Data.String.Base using (String; fromList)
-open import Data.String.Properties as Str using (fromList-injective)
+import Data.String.Properties as Str
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
@@ -34,6 +34,7 @@ open import Relation.Nullary using (yes; no; ¬_)
 open import Relation.Nullary.Decidable using (⌊_⌋; True)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; _≢_; refl; cong; trans; sym; subst)
 
+open import Data.Container.Core using (Shape)
 open import Slides.Core
 open import Slides.Input.Deck
 open import Slides.Input.Slides
@@ -41,7 +42,6 @@ open import Slides.Steps.Input using (elab; elabS)
 open import Slides.Input (Shape BlockC) using (Prog)
 open import Slides.Input.Navigation (Shape BlockC)
 open import Slides.Input.Navigation.Properties (Shape BlockC)
-open import Data.Container.Core using (Shape)
 
 ------------------------------------------------------------------------
 -- The specification
@@ -135,7 +135,7 @@ module _ {C : Set} where
     after-elab n b k l =
       trans (cong (λ p → labelFrom n p l) (toProg-bind (elab b) (λ _ → k)))
      (trans (labelFrom-bind n (toProg (elab b)) (λ _ → toProg k) l)
-     (trans (cong (_<∣> _) (elab-no-label n b l))
+     (trans (cong (λ r → r <∣> labelFrom (n + nextCount (toProg (elab b))) (toProg k) l) (elab-no-label n b l))
             (cong (λ m → labelFrom (n + m) (toProg k) l) (elab-count b))))
 
   -- One slide, then `k`: its labels first, then `k` after the slide's pauses.
@@ -174,21 +174,40 @@ module _ {C : Set} where
 ------------------------------------------------------------------------
 -- The label of slide `i` resolves to its start
 
-autoLabel-inj : ∀ {i j} → autoLabel i ≡ autoLabel j → i ≡ j
-autoLabel-inj e = suc-injective (charsInBase-injective 10 _ _ (fromList-injective _ _ e))
+opaque
+  unfolding autoLabel
+  autoLabel-inj : ∀ {i j} → autoLabel i ≡ autoLabel j → i ≡ j
+  autoLabel-inj e = suc-injective (charsInBase-injective 10 _ _ (Str.primStringFromListInjective _ _ e))
 
 -- No user label is the label of a slide.
 Fresh : List Slide → Set
 Fresh = All λ s → ∀ {u} → proj₁ s ≡ just u → ∀ k → u ≢ autoLabel k
 
+private
+  ≟-miss : ∀ a b → a ≢ b → ⌊ a Str.≟ b ⌋ ≡ false
+  ≟-miss a b ne with a Str.≟ b
+  ... | yes e = ⊥-elim (ne e)
+  ... | no _  = refl
+
+  slideEs-miss : ∀ i st o l → autoLabel i ≢ l → (∀ {u} → o ≡ just u → u ≢ l) →
+    lookupE l (slideEs i st o) ≡ nothing
+  slideEs-miss i st nothing l na nu rewrite ≟-miss _ _ na = refl
+  slideEs-miss i st (just u) l na nu rewrite ≟-miss _ _ na | ≟-miss u l (nu refl) = refl
+
+-- the label of slide `j + i` resolves to the start of slide `i` among slides numbered from `j`
 lookup-auto : ∀ j st ss i → Fresh ss → i < length ss →
   lookupE (autoLabel (j + i)) (entries j st ss) ≡ just (startOf st ss i)
 lookup-auto j st [] i fr ()
-lookup-auto j st ((o , b) ∷ ss) zero fr lt rewrite +-identityʳ j with o
-... | nothing  rewrite ≟-refl (autoLabel j) = refl
-... | just _   rewrite ≟-refl (autoLabel j) = refl
-lookup-auto j st ((o , b) ∷ ss) (suc i) (f ∷ fr) (s<s lt) with ⌊ autoLabel j Str.≟ autoLabel (j + suc i) ⌋ in e
-... | true  = ⊥-elim (neq (autoLabel-inj (dec-true e)))
-  where neq : j ≢ j + suc i → _
-        neq = {!!}
-... | false = {!!}
+lookup-auto j st ((nothing , b) ∷ ss) zero fr lt rewrite +-identityʳ j | ≟-refl (autoLabel j) = refl
+lookup-auto j st ((just _ , b) ∷ ss) zero fr lt rewrite +-identityʳ j | ≟-refl (autoLabel j) = refl
+lookup-auto j st ((o , b) ∷ ss) (suc i) (f ∷ fr) (s<s lt)
+  rewrite +-suc j i | lookupE-++ (autoLabel (suc (j + i))) (slideEs j st o) (entries (suc j) (st + pauses b + 1) ss)
+        | slideEs-miss j st o (autoLabel (suc (j + i)))
+            (λ e → m≢1+m+n j {i} (autoLabel-inj e))
+            (λ {u} eo e → f eo (suc (j + i)) e)
+  = lookup-auto (suc j) (st + pauses b + 1) ss i fr lt
+
+-- `labelTable (deckProg d)` resolves the label of slide `i` to its start.
+auto-start : ∀ {C : Set} (d : Deck) i → Fresh (slides d) → i < length (slides d) →
+  labelTable (deckProg {C} d) (autoLabel i) ≡ just (startOf 0 (slides d) i)
+auto-start d i fr lt = trans (slide-table d (autoLabel i)) (lookup-auto 0 0 (slides d) i fr lt)
