@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- The assembly of whole frames, continuous reading, at whole ticks: `leaf-tick` lifted from one
 -- segment to the whole timeline (`Slides.Anim.Continuous`).
 --

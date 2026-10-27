@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- The assembly of whole frames, for any language of template numbers: the symbolic frames of an
 -- animation are its frames.  Continuous templates (`Slides.Anim.Param.Properties`, `Expr`) and
 -- discrete ones (`Slides.Anim.DParam.Properties`, `DExpr`) are instances; what they supply is

@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Agreement of a list of frames with a list of symbolic frames: the induction both assembly
 -- theorems carry.
 --

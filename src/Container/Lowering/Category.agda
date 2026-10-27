@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Containers and lowerings form a category.
 --
 -- Objects are containers, arrows are lowerings (Kleisli arrows of the free

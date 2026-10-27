@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Lists of frames as partial functions of the tick.
 --
 -- `nth xs j` is the frame at tick `j`, if there is one.  The operations on animations are read

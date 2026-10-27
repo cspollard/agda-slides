@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- The boolean comparisons of ticks (`_<ᵇ_`, `_≤ᵇ_`, what the frame functions branch on) against
 -- the propositional order the proofs use.  Shared by the assembly proofs
 -- (`Slides.Anim.Assembly` and its `Leaf` and `Continuous` parts) and the phases (`Slides.Anim.Phases.Properties`).

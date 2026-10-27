@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Looping: the frame shown at time `t` of an animation of `n` frames repeated
 -- forever is frame `t mod n` (`Slides.Core.loop`; the player steps `i ↦ (i + 1)
 -- mod n`).  This is the periodic extension of the timeline: it agrees with the
