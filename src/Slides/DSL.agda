@@ -27,7 +27,6 @@ open import Data.String using (String)
 open import Data.Unit using (tt) public
 open import Data.Container.Core using (Container)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-import Data.Container.FreeMonad as FM
 
 open import Slides.Literals public
 open import Slides.Math using (Math)

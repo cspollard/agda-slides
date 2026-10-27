@@ -43,13 +43,13 @@ module Slides.Anim.Assembly.Leaf where
 
 open import Data.Bool using (true; false; if_then_else_; _∧_; T)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (List; _∷_; _++_; length; replicate; [])
+open import Data.List using (List; _++_; length; replicate)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃₂)
 import Data.List.Properties as LP
-open import Data.Unit using (⊤; tt)
+open import Data.Unit using (⊤)
 open import Relation.Binary.Definitions using (tri<; tri≈; tri>)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary.Decidable using (⌊_⌋)

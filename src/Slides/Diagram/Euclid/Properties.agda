@@ -4,11 +4,10 @@
 -- weakening is a homomorphism and evaluates to the original.
 module Slides.Diagram.Euclid.Properties where
 
-open import Data.Fin using (Fin)
-open import Data.Nat as ℕ using (ℕ; _/_; _%_; _<ᵇ_; _*_)
+open import Data.Nat as ℕ using (ℕ)
 open import Data.Product using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
-open import Data.Container.Core using (Shape; Position; position)
+open import Data.Container.Core using (Shape; Position)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans)
 

@@ -12,7 +12,7 @@ module Slides.Backend.Diagram where
 open import Data.Char using ()
 open import Data.List using (List; []; _∷_; _++_; map; length; [_])
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _∸_; _⊔_; _≤ᵇ_; _≟_)
+open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _≟_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
@@ -46,10 +46,9 @@ open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Data.Container.FreeMonad using ()
-open import Data.Bool using (_∧_; if_then_else_)
+open import Data.Bool using (if_then_else_)
 open import Data.Fin using (suc)
 open import Data.Unit using ()
-import Slides.Diagram.Expr as E
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Data.String as Str
 

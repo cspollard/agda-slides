@@ -10,14 +10,12 @@ open import Data.Nat using (ℕ)
 open import Data.Product using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (tt)
-open import Data.Container.Core using (position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; setoid)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; setoid)
 
 open import Container.FreeMonad using (Eq; refl⋆; sym⋆; trans⋆; fmap)
 
 open import Container.FreeMonad.Properties using (bind-cong; bind-pure; bind-assoc)
-open import Container.Lowering using (translate)
 open import Container.Sum using (inl; inr)
 
 open import Slides.Diagram.Scalar using (Ops; natOps; IsOpsHom)

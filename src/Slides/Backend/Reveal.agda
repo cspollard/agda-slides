@@ -25,7 +25,6 @@ open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
 open import Function using (_∘_)
 open import Relation.Binary.Bundles using (Setoid)
-import Data.Container.FreeMonad as FM
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 import Data.List.Relation.Binary.Pointwise as PW
 

@@ -24,7 +24,7 @@ open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Structures using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality.Core
-  using (_≡_; refl; sym; trans; subst)
+  using (refl; sym; trans)
 
 open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Functor using (Functor; Endofunctor)

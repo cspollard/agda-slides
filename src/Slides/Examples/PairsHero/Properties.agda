@@ -16,7 +16,7 @@ module Slides.Examples.PairsHero.Properties where
 
 open import Data.Bool using (Bool; if_then_else_; true; false)
 open import Data.List using ([]; _∷_; zipWith; upTo; foldr)
-open import Data.Nat as ℕ using (suc; _<ᵇ_; _∸_; _*_; ℕ)
+open import Data.Nat as ℕ using (suc; _<ᵇ_; _∸_)
 open import Data.String using () renaming (_++_ to _++ˢ_)
 open import Data.Nat.Show using (show)
 open import Data.List using ()

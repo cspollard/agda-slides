@@ -8,7 +8,6 @@
 
 module Container.Sum.Properties where
 
-open import Level using (_⊔_; Level)
 open import Data.Product.Base using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Sum.Relation.Binary.Pointwise using (_⊎ₛ_; inj₁; inj₂)

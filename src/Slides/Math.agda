@@ -17,7 +17,6 @@ open import Data.Nat using (ℕ)
 open import Data.Nat.Show using (show)
 open import Data.String using (String; concat; fromList; toList) renaming (_++_ to _++ˢ_)
 open import Data.Char using (Char)
-import Data.List as L
 
 data Greek : Set where
   alpha beta gamma delta epsilon theta lambda mu nu pi rho sigma tau phi chi psi omega : Greek

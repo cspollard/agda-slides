@@ -24,16 +24,15 @@
 
 module Slides.Anim.Timeline where
 
-open import Data.List using (List; []; _∷_; _++_; length; map; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; map; applyUpTo)
 import Slides.Anim.Track as T
 open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (_+_; _⊔_; suc)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Data.Nat using (_+_; suc)
 
-open import Data.Fin using (zero; suc)
-open import Data.Product using (_,_; proj₁; proj₂)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Slides.Diagram.Syntax using (Dia; atop)
+open import Data.Fin using (suc)
+open import Data.Product using (proj₁; proj₂)
+open import Data.Container.FreeMonad using (_⋆_)
+open import Slides.Diagram.Syntax using (Dia)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Anim.Syntax
 

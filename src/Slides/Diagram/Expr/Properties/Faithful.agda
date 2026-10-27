@@ -28,7 +28,6 @@ open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.List using ([]; _∷_; map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.Nat as ℕ using (ℕ; _≤_; _*_)
-import Data.Nat.Properties as ℕP
 import Data.Nat.DivMod as ℕDM
 import Data.Integer.Properties as ℤP
 import Data.Rational.Properties as ℚP

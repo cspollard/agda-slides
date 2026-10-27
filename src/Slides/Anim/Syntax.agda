@@ -27,7 +27,6 @@ open import Data.Product using (_,_)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Data.Bool using (true; false)
-open import Relation.Binary.PropositionalEquality using (refl; sym)
 open import Data.Bool using (T)
 
 open import Slides.Diagram.Syntax using (Dia; spacer; mapDia)

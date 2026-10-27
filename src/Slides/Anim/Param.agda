@@ -36,7 +36,6 @@ open import Data.Fin using (zero; suc)
 open import Data.Unit using (⊤)
 open import Function using ()
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)

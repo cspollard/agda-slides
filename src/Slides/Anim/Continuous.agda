@@ -56,7 +56,7 @@
 
 module Slides.Anim.Continuous where
 
-open import Data.Bool using (Bool; not; _∧_; if_then_else_; T)
+open import Data.Bool using (Bool; not; _∧_; if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Unit using (⊤)
@@ -70,7 +70,7 @@ open import Slides.Diagram.NatQ using (ι)
 
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Timeline using (mergeM)
-open import Slides.Anim.Syntax using (units; bodyAt; Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete)
+open import Slides.Anim.Syntax using (Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete)
 open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Expr using (Expr; evalWith)
 open import Slides.Diagram.Layout using (module LayoutWith)

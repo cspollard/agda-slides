@@ -4,19 +4,18 @@
 -- `Seq` and `Par`, and the length of a timeline is the duration of the animation.
 module Slides.Anim.Timeline.Properties where
 
-open import Data.List using (List; []; _∷_; _++_; length; map; applyUpTo)
+open import Data.List using (List; []; _∷_; _++_; length; applyUpTo)
 import Slides.Anim.Track as T
 import Slides.Anim.Track.Properties as TP
 import Data.List.Properties as LP
-open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (_+_; _⊔_; suc)
 import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
 open import Data.Fin using (zero; suc)
-open import Data.Product using (_,_; proj₁; proj₂)
+open import Data.Product using (_,_; proj₁)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Slides.Diagram.Syntax using (Dia; atop)
+open import Slides.Diagram.Syntax using (atop)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Anim.Syntax
 

@@ -41,9 +41,9 @@ open import Relation.Binary.PropositionalEquality using (_â‰¡_; refl; sym; congâ
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
-  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
+  using ( Algebra; fold; Rectangle; Disc; Segment; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect
-        ; VAlign; top; middle; bottom; Align; left; centred; right )
+        ; top; middle; bottom; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
 import Slides.Diagram.Layout as Lay
 open import Tactic.RingSolver.Core.AlmostCommutativeRing using (fromCommutativeRing)

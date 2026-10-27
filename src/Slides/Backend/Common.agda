@@ -21,8 +21,7 @@ open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
-open import Function using (_∘_)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
 open import Data.Container.FreeMonad using (pure; impure)
 import Data.Container.FreeMonad as FM
@@ -36,7 +35,7 @@ open import Data.Container.Relation.Binary.Pointwise
 open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Data.XML.AST using (XMLDoc)
-open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
+open import Data.XML.Equality using (XMLSetoid)
 open import Data.XML.Print using ()
 open import Data.JSON.AST using ()
 open import Data.JSON.Print using ()

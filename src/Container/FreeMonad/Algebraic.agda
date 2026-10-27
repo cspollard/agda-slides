@@ -27,9 +27,7 @@ open import Categories.Functor using (Functor; Endofunctor)
 open import Categories.Functor.Algebra
   using (F-Algebra; F-Algebra-Morphism)
 open import Categories.FreeObjects.Free using (FreeObject; FO⇒Functor; FO⇒LAdj)
-open import Categories.Monad using (Monad)
 open import Categories.NaturalTransformation using (NaturalTransformation)
-import Categories.NaturalTransformation.Core as NT
 
 open import Container.Polynomial
 open import Container.FreeMonad

@@ -20,9 +20,9 @@ module Container.Category where
 open import Level using (0ℓ; suc; lift)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; Position; _⇒_; shape; position; ⟦_⟧; ⟪_⟫)
-open import Data.Container.Relation.Binary.Pointwise using (Pointwise) renaming (_,_ to _,ₚ_)
+open import Data.Container.Relation.Binary.Pointwise using (Pointwise) 
 import Data.Container.Morphism as CM
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 open import Relation.Binary.PropositionalEquality using (setoid)
@@ -31,7 +31,6 @@ open import Categories.Category.Core using (Category)
 open import Categories.Category.Construction.Functors using (Functors)
 open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Functor using (Functor)
-open import Categories.NaturalTransformation.Equivalence using (_≃_; ≃-isEquivalence)
 
 open import Container.Polynomial
 open import Container.Polynomial.Morphism

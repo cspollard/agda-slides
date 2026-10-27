@@ -30,7 +30,7 @@ open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; 
 open import Slides.Diagram.Expr using (Expr; exprOps)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps; natOps)
-open import Slides.Diagram.Syntax using (Dia; atop)
+open import Slides.Diagram.Syntax using (atop)
 
 open import Slides.Anim.Continuous
 

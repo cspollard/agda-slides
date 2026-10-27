@@ -10,7 +10,7 @@
 
 module Slides.Anim.Loop where
 
-open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _<_; _≤_; NonZero; s≤s)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _<_; _≤_; NonZero)
 open import Data.Nat.DivMod using (_%_; m%n<n; m<n⇒m%n≡m; [m+n]%n≡m%n; [m+kn]%n≡m%n; m%n%n≡m%n; %-distribˡ-+)
 open import Data.Nat.Properties using (*-monoˡ-≤; +-monoˡ-≤; ≤-trans)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong)

@@ -6,14 +6,12 @@ module Slides.Backend.XML.Properties where
 open import Level using (0ℓ)
 open import Relation.Binary.Bundles using (Setoid)
 
-open import Categories.Category.Instance.Setoids using (Setoids)
 
 open import Data.XML.AST using (XMLC; XMLDoc; XMLShape)
 open import Data.XML.Equality using ()
 open import Data.XML.Print using ()
 open import Data.XML.RoundTrip using ()
 
-open import Container.Polynomial using (Poly)
 
 open import Slides.Backend.XML
 
@@ -31,7 +29,7 @@ open import Data.Product.Base using (_,_; Σ; proj₁; proj₂)
 open import Data.Unit.Base using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality.Core
-  using (_≡_; refl; sym; cong; subst)
+  using (_≡_; refl; sym; subst)
 
 open import Data.XML.AST using (shape)
 open import Data.XML.Equality using (_≈ₓ_; ≈element)

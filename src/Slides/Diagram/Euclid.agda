@@ -47,7 +47,7 @@ open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (_▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (pure; impure)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 
 open import Container.Sum using (inl)
 

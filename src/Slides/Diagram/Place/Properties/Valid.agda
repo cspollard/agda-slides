@@ -29,7 +29,6 @@ open import Slides.Diagram.Place.Properties.Laws using (IsLawful; lawfulℤ; law
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry using (top; middle; bottom; left; centred; right)
 import Slides.Diagram.Geometry as Geo
-import Slides.Diagram.Layout as Lay
 open import Relation.Nullary using (¬_)
 open import Slides.Diagram using (defaultStyle)
 open import Data.Fin using (zero; suc)

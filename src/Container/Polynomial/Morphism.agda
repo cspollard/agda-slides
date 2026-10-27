@@ -12,7 +12,7 @@ open import Data.Container.Core using (Container; _⇒_; position; ⟪_⟫)
 import Data.Container.Morphism as CM
 open import Data.Container.Relation.Binary.Pointwise
   using () renaming (_,_ to _,ₚ_)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 

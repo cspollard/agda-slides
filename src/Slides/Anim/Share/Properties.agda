@@ -6,22 +6,16 @@
 module Slides.Anim.Share.Properties where
 
 
-open import Data.Bool using (if_then_else_)
-open import Data.List using (List; []; _∷_; length; _++_)
+open import Data.List using (List; []; _∷_; length)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat as ℕ using (ℕ; suc; _<_; _≤_)
 import Data.Nat.Properties as ℕP
-import Data.Sum.Properties as SP
-import Data.Product.Properties as PP
-import Data.Unit.Properties as UP
-open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃-syntax)
-open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃-syntax)
+open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 open import Relation.Nullary using (yes; no; ¬_; Dec)
-import Data.List.Relation.Binary.Lex.Strict as Lex
-import Data.Tree.AVL.Map as AVLMap
 import Data.Tree.AVL.Map.Membership.Propositional as AVLMem
 import Data.Tree.AVL.Map.Membership.Propositional.Properties as AVLMemP
 

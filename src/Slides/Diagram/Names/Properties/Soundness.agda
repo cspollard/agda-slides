@@ -17,7 +17,7 @@ open import Slides.Diagram.Scalar using (Ops)
 
 module Slides.Diagram.Names.Properties.Soundness {S : Set} (O : Ops S) where
 
-open import Data.Bool using (Bool; true; false; not; if_then_else_)
+open import Data.Bool using (Bool; true; false; not)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; filterᵇ)
@@ -31,14 +31,13 @@ open import Data.Unit using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (yes; no)
-open import Relation.Nullary.Decidable using (⌊_⌋)
 
 open import Slides.Diagram using (Style)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry using (Port; centred)
 open import Slides.Diagram.Names
 open import Slides.Diagram.Syntax
-  using ( Dia; Algebra; fold; arity; Op; Rectangle; Disc; Segment; Text; Spacer
+  using ( Dia; fold; Rectangle; Disc; Segment; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect )
 import Slides.Diagram.Layout as Lay
 open import Slides.Diagram.Place O
