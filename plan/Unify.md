@@ -84,7 +84,7 @@ only valid when their inputs do not overlap.
   `_‖_ : Prog C₁ A → Prog C₂ A → Prog (C₁ ⊎ C₂) A`: each side reacts only to its own
   summand, so the disjointness condition holds by construction and is a type, not a check.
   Sharing one physical input between two parts is not composition; it is a **binding**.
-- *Backends declare what they support, and bind commands to inputs.* `Backend.supports ⊆ C`,
+- *Backends declare what they support, and bind commands to inputs.* `Backend.supports ⊆ C` (superseded: a partial embedding `Nav ⊎ C → Maybe S`, section 4b),
   plus `bind : C → Input` (reveal: arrow keys, overview, hash `#/n`, fragments; plain: buttons;
   print: none). Two commands bound to the same input are a conflict, checked at binding
   (decidable injectivity, reported like our existing negative tests `OverlappingPar`,
@@ -159,6 +159,72 @@ geometric layout stay different algebras on the same signature of time).
 **Stage 5: one evaluator, generated.** With the signature now the single source, generate
 the JS `ev` from it (closes the "tested, not proved" gap in the direction of one source), and
 fold the player's phases/params paths into one.
+
+## 4b. Stage 0 results (spikes `spike-timed` 96f4bd8, `spike-input` 6912a6f; unmerged)
+
+Both halves pass the go/no-go with a wide margin: no postulates, no holes, no instance search,
+`--safe --without-K`; each spike re-checked independently.
+
+**Timed lift** (`src/Slides/Spike/Timed*`, 374 lines, about 103 lines of proof, 4.7 s, 1.8 GB):
+- `TimeC` (`Seq`, `Par`, `Hold n`, `Delay n`), `SceneC S = TimeC ⊎ DiagramC S`,
+  `Scene S = SceneC S ⋆ ⊥`, carrier `Timed (Maybe A)`.
+- **Lifting lemma, as proved:** naturality along any algebra homomorphism `Φ : A → B`
+  into an extensional target, `Rel Φ (sample αB t) (sample αA t)`; with `αA` the term algebra
+  it gives `sample α t τ ≡ Maybe.map (fold α) (restrict t τ)` and equal durations. Covers
+  the temporal operations too. Instantiated at layout in one line (`lifting-lemma-at layoutAlgebra
+  layout-ext`), no slowdown. (My earlier statement was not typable: it needs the `Maybe.map`.)
+- **Absence is strict.** `Beside`, `Above`, `Atop`, the label operations and `Overlay` are
+  present only when all children are; `Place`, `Named`, `Connect` map over the child; only
+  `Hold`/`Delay` create absence; only `Par` is lenient (`Atop` with absence as unit, as
+  `Timeline.merge`; `par-is-atop` is `refl`). The lenient design is *unlawful* for `Overlay`
+  (`overlay-no-unit`: the frame has the declared size whatever the children). This replaces
+  the plan's open question about units.
+- **Corrections:** extensionality (a pointwise-congruence condition, 14 trivial clauses for
+  layout) replaces funext; bare primitives have no presence window, so Stage 2 must put
+  them under `Hold` (or take durations in `ℕ∞`); `seqAt` shows its left operand at
+  negative times, so `Seq` needs a window guard; `Container.Sum.copair` is stated on
+  setoid `Func`s, so a Set-level copairing is needed for plain `cata`.
+- **Not done:** `Repeat`; re-deriving `frameAt-assembly` and `discrete-assembly` (needs
+  an embedding of `Anim ℕ (Seg ℕ)` into `Scene` and the faithful ℕ→ℚ bridge); constant
+  behaviours of `inj : Dia S → Scene S`.
+
+**Input machines** (`src/Slides/Spike/Input/*`, product lemma about 135 lines, 1.7 s, 1.4 GB):
+- `AwaitC C = C ▷ ⊤`, `ProgC C = SceneC ⊎ AwaitC C ⊎ ParC`; `Machine C`
+  (state, init, step, view) as the carrier of a Kleisli fold `sem`; adapters along partial
+  decoders `D → Maybe C`.
+- **Proved:** `product` (`machine (p ‖ q) ≅ machine p ⊗ machine q`, with `MIso`, a state
+  bijection preserving init/step/view, no funext), `sem-bind` (the fold is a monad
+  morphism), `seq-machine`, `await-seq`, `lift-lemma` (`sem (mapP f p) ≅ liftE h (sem p)`).
+- `Nav` (with `gotoLabel`), `pause = await next` (`Steps` elaboration: `after-elab`,
+  `after-seq`, `hasAwait-bind`), `Backend` (partial embedding `inj : Nav ⊎ C → Maybe S`,
+  `NavTotal`, `printB` provably cannot present a deck, `lowerDeck`, decidable `conflict?`
+  for finite tables), `navM` (replays `next`s; `view-next`, `prev-next`).
+- **Corrections:**
+  1. *Choice cannot be `OnC C`.* A morphism `OnC C₁ ⇒ OnC (C₁ ⊎ C₂)` does not exist
+     (`no-OnC-inl`), so `‖` could not be a `translate`. Choice must carry the offered commands
+     in its shape (shape `List C`, positions the offered ones, with `C → Maybe A` in the
+     machine). Not built; only `AwaitC` is in.
+  2. *`‖` needs `ParC = ⊤ ▷ Bool`*, and a free-monad `par` node duplicates its
+     continuation, so `(p ‖ q) >>= k` runs `k` twice. Either `‖` only at the top, or `par`
+     with a join. Unresolved; decide in Stage 1.
+  3. *`bind : C → Input` fails for families* (`goto n`, `gotoLabel s`, reveal's `#/n`). The
+     decidable conflict check works for finite tables only. Bind constructor *kinds*
+     (finite) and decode families: `decode : Input → Maybe Command`, with conflicts then
+     only between decoders. Not built.
+  4. *Embedding direction.* Section 3 said `supports ⊆ C`, section 8 `Nav ↪ supports`; the
+     spike implements a partial embedding of commands into the backend vocabulary. This plan
+     now means that one (the section 3 phrase is superseded).
+  5. `prev`, `goto`, `first`, `last`, `gotoLabel` are not awaited; they are interpreted by a
+     separate machine (`navM`) that replays `next`s, and `gotoLabel` needs a `label`
+     operation and a label table (not built).
+  6. Unsupported commands are lowered by skipping the `await` (jumping on), shown per
+     operation and by examples; the whole-program lowering soundness theorem is not proved.
+  7. The view is an accumulating list (Beamer `pause`), not the plan's `Frame-in-time`.
+
+**Decisions this forces for Stage 1** (author to confirm): (a) `‖` only at the top of a
+program, or `par` with a join (recommend: top-level, with the join deferred until Stage 2
+needs it); (b) choice via commands in the shape; (c) binding by kind plus decoders; (d)
+strict absence with `Hold` around primitives for Stage 2.
 
 ## 5. Pros and cons
 
