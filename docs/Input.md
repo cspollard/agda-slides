@@ -11,8 +11,7 @@ program: a program names the commands it awaits, a backend says which it support
   take `V = Shape BlockC`): containers `SceneC V`, `AwaitC C = C ▷ ⊤`, `LabelC = String ▷ ⊤`,
   `ProgC C = SceneC ⊎ AwaitC C ⊎ LabelC`, `Prog C A = ProgC C ⋆ A`, and `Deck C A = Prog (Nav ⊎ C) A`.
   Smart constructors `show`, `await`, `label`, `pause = await (inj₁ next)`, `_⨾_`.
-  A map of commands `C → D` is a container morphism `mapC`, so `mapP` is
-  `Container.Lowering.translate`.
+  Moving a program to a backend's vocabulary is a lowering (below).
 * One sequential control program. There is no parallel node (`‖`) yet.
 
 ## Machines
@@ -21,15 +20,16 @@ program: a program names the commands it awaits, a backend says which it support
 `sem l` is the Kleisli fold of the program algebra (`show` adds to the view, `await c` waits for
 `c` and ignores other commands, `label` does nothing); `machine = sem (λ _ → idle)`.
 Machines are equal up to `MIso` (state bijection preserving init, step, view). Laws
-(`Machine.Properties`): `sem-bind` (the fold is a monad morphism), `seq-machine`, `await-seq`,
-`lift-lemma` (`mapP f` is invisible up to the decoder adapter `liftE`).
+(`Machine.Properties`): `sem-bind` (the fold is a monad morphism), `seq-machine`, `await-seq`, and
+the `liftE-*` facts about the decoder adapter `liftE` that `lower-sound` uses.
 
 `Slides.Input.Navigation`: `prev`, `goto`, `first`, `last`, `gotoLabel` are not awaited by the
 program; `navM M len table` keeps a position (number of `next`s taken) and shows `M` replayed
 by that many `next`s (history by replay). `labelTable p l` is the number of `await next`
 before `label l` (first occurrence wins); `nextCount p` is the last position; `navDeck`
 packages them. Laws (`Navigation.Properties`): `labelTable-label`, `labelTable-next`,
-`gotoLabel-goto`, `gotoLabel-view`, `view-next`, `prev-next`.
+`gotoLabel-goto`, `view-next`, `prev-next`. `navM` is the abstract semantics of `goto` and
+`gotoLabel`; backends need not agree with it on jumps (see "Conformance: decision").
 
 ## Backends: Supports, lowering, binding
 
@@ -43,29 +43,29 @@ default in the generic vocabulary. `Supports.Properties`: `lower-sound` (for eve
 backend machine is the generic machine of `skipDeck p` seen through `dec`) and
 `lower-supported` (all awaits supported: the same behaviour as `p`).
 
-`Slides.Input.Binding`: a backend reads a physical input as a command by *kind*: one decoder
-`I → Maybe S` per kind (so families such as `goto n` or `#/n` are expressible), combined by
-`_⊕_` (first match wins). A conflict is an input that two kinds decode; `Disjoint` rules it out
-and `disjoint?` decides it over a finite list of inputs; `conflict?` is the finite-table case
-(`S → I` injective). `⊕-left`, `⊕-right` (`Binding.Properties`): disjoint kinds lose nothing.
+`Slides.Input.Binding` (the one binding vocabulary): a backend reads a physical input as a command
+by *kind*: `on ks s` is a decoder `I → Maybe S` (so families such as `goto n` or `#/n` are
+expressible), `choice` combines kinds by `_⊕_` (first match wins). A conflict is an input that two
+kinds decode; `Disjoint` rules it out and `disjoint?`/`disjoint*?` decide it over a finite list of
+inputs. `choice-∈`, `bind-kind` (`Binding.Properties`): disjoint kinds lose nothing.
+`Supports.command b r` reads an input with `r : Decoder I (S b)`, then decodes it with `dec`;
+`command-render` (`Supports.Properties`) is the round trip.
 
-## Decks that await (port steps 1-3)
+## Decks that await
 
 `Slides.Core.Body` is unchanged (`pause` is still a layout command), so no deck changes. The
 stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X`,
-`DeckBlockC C = BlockAwaitC (Nav ⊎ C)`, `Body⁺ X`, `DeckC⁺ X` (slides whose bodies are `Body⁺ X`),
-and `toProg : Body⁺ X → Prog X ⊤` (scenes `Shape BlockC`), so `Supports.lowerDeck` applies to a body.
+`DeckBlockC C = BlockAwaitC (Nav ⊎ C)`, `Body⁺ X`, and `toProg : Body⁺ X → Prog X ⊤` (scenes `Shape BlockC`), so `Supports.lowerDeck` applies to a body.
 
-* `Slides.Steps.Input`: `elab` (`pause ↦ await next`, a Kleisli lowering; `elabDeck` slide by
-  slide), and the second pass `stepsBy step?` (mode, `afterBy`, `hasStep`) where `step?` says
-  which awaited commands are steps: `isNext` for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a
-  backend vocabulary. `stepsDeck` lifts it to decks.
+* `Slides.Steps.Input`: `elab` (`pause ↦ await next`, a Kleisli lowering), and the second pass
+  `stepsBy step?` (mode, `afterBy`) where `step?` says which awaited commands are steps: `isNext`
+  for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a backend vocabulary.
 * `Slides.Lower`: `lowerCmd b` (supported renamed, unsupported skipped), `lowerCmdBlock`,
-  `lowerCmdBody`, `lowerCmdDeck`. Awaits occur only at body level, so nothing else is touched.
+  `lowerCmdBody`. Awaits occur only at body level, so nothing else is touched. Lifting both
+  passes to whole decks (a clause per slide constructor) is left to the step that presents a deck.
 * Laws: `Slides.Steps.Properties` (`stepsBy-elab : stepsBy isNext (elab b) ≡ steps b`, `goBy-bind`,
-  `afterBy-bind`, `after-∨`, `hasStep-bind`, `go-bind`, `go-bind-elab`, `elab-bind`);
-  `Slides.Lower.Properties` (`lowerCmd-supported/unsupported`, `lowerCmdBody-lowerDeck`,
-  `steps-lowered`, `steps-pipeline`).
+  `go-bind`, `go-bind-elab`, `elab-bind`); `Slides.Lower.Properties` (`lowerCmdBody-bind`,
+  `lowerCmdBody-lowerDeck`, `steps-lowered`, `steps-pipeline`).
 
 ## Backend bindings
 
@@ -74,9 +74,8 @@ How a physical input becomes a command (the modules are `Slides.Backend.{Input,R
 * `Slides.Backend.Input`: `Event = keydown Key | hashLoad Hash | hashChange Hash`, `Key = KeyName × Mods` (`bare | shift | ctrl`, `ctrl` standing for ctrl and meta), `Hash = flat n | grid h v` (`#n`, `#/h/v`), `Ext = overview | tick`,
   `Mode = linear | stacked`. `on ks s` is one *kind*: the keys `ks` mean `s`. `choice` folds kinds with `_⊕_`.
   `bindKeys`/`bindNames` are `choice` guarded by an instance argument `True (disjoint*? ...)`: the kinds must be pairwise `Disjoint`
-  on all (finitely many) keys, decided by computation, so a clash is "No instance of type" (`tests/negative/TwoCommandsOneKey`, `TwoDecodersOneName`).
-  `Binding.Properties` gets `choice-∈` (`Backend.Input.Properties`): no kind is shadowed.
-* `Slides.Backend.Command`: `command b r : Decoder I (Nav ⊎ C)` is `Supports.dec` after the reading `r : Decoder I (S b)`; `command-render` (round trip): if `inj k = just s` and `render s = just i` and `r i = just s` then `command b r i = just k`.
+  on all (finitely many) keys, decided by computation, so a clash is "No instance of type" (`tests/negative/TwoCommandsOneKey`).
+  `bind-kind` (`Binding.Properties`): no kind is shadowed.
 * `revealSupports`, `plainSupports : Supports Ext` (any `V`). Reveal: vocabulary `RCmd = Nav ⊎ Ext ⊎ Move ⊎ (ℕ × ℕ)` (the grid moves `right left down up` and the vertical goto `slideV h v`,
   which have no `Nav ⊎ Ext` meaning: `dec` is `nothing`); `revealKeys : Mode → Decoder Key RCmd`, `revealHash`, `revealRead`, `revealRender` (canonical input per command).
   Plain: `PCmd = Nav ⊎ ⊤`, `plainKeys : Decoder KeyName PCmd` (key *names* only: modifiers cannot matter by construction), `plainHash`, `plainRead`, `plainRender`; `await overview` is skipped.

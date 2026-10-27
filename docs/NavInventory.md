@@ -1,10 +1,11 @@
-# Navigation inventory and Stage 1 port plan
+# Navigation inventory
 
 Scope: every place where navigation (next, prev, goto, first, last, step) and stepping
-(fragments, `pause`, animation steps) live today, who binds the physical input, and what
-changes when navigation becomes the `Nav` commands of a `Supports` binding
-(plan/Unify.md sections 3, 4, 4b, 8; Stage 1). Line numbers are for branch `stage1-port`
-at its creation (`c8e4c0b`). Pinned by `tests/browser/nav.mjs` (`make test-nav`).
+(fragments, `pause`, animation steps) live in the code that existed when Stage 1 began, and who
+binds the physical input; plus the risks and surprises found.  The design that replaced it is
+`docs/Input.md` (the one source of truth: commands, machines, `Supports`, bindings, the
+differences between the backends); the plan is `plan/Unify.md`.  Line numbers are for branch
+`stage1-port` at its creation (`c8e4c0b`).  Pinned by `tests/browser/nav.mjs` (`make test-nav`).
 
 ## 1. Inventory
 
@@ -82,32 +83,12 @@ overview), `f` fullscreen, `b`/`.` pause, `?` help; touch/swipe, mouse-wheel (of
 | `tests/browser/anim.mjs:36-60` | `Reveal.nextFragment()/prevFragment()` drive animation steps (uses the *reveal API*, not keys) |
 | `tests/browser/plain-anim.mjs` | plain animations on the arrow keys |
 | `tests/browser/pairs.mjs` | the pairs deck (CDN); keys and fragments |
-| `tests/browser/nav.mjs` (new) | all of 1.3 end to end, and the backend-agreement walk (section 2) |
+| `tests/browser/nav.mjs` (new) | all of 1.3 end to end, and the backend-agreement walk |
 | `tests/check_reveal.py`, `tests/check_plain.py` | load pages headless; check `fragment` classes preserved |
 | `tests/check_closure.py` | executables must not import `.Properties`. Constrains where new proofs may live |
 | `tests/golden/*` | byte-exact: every `index.html`, `intro.init.js`, `showcase.init.js`, `pairs.init.js`, `plain.js`, `animation.js` |
 
-## 2. What the port must do, command by command
-
-`Nav = next | prev | goto n | first | last | gotoLabel s`; `pause = await next`; the deck is
-`Prog (Nav ⊎ C)`; a backend presenting it must support all of `Nav`.
-
-| command | today (implicit) | reveal binding today | plain binding today | after the port |
-|---|---|---|---|---|
-| `next` | each `.fragment` is one step, then slide | reveal: Right/Space/PageDown/`n`/`l`/`j` (Down only in a stack); API `Reveal.next()` | `next()`, 5 keys | `Supports` binds the kind `next`; a deck's `await next` count equals the number of `.fragment`s. Key choice is data of the binding, not code |
-| `prev` | hide last fragment, else previous slide with all shown | reveal keys, API | `prev()`, 3 keys | kind `prev`; "arrive with all shown" must be part of the specified semantics (it is in both backends) |
-| `first` | start | Home | `show(0,false)` | kind `first` |
-| `last` | end | End | `show(n-1,true)` (all fragments of the last slide) | kind `last`; plain reveals all fragments of the last slide (`show(n-1,true)`); reveal calls `Reveal.slide(lastH)` (`keyboard.js:336`), fragment state there is NOT verified (showcase's last slide has no fragments, so `nav.mjs` cannot see it; see risks) |
-| `goto n` | `#/h[/v]` (reveal), `#n` on load (plain) | `hash:true`, hashchange; `Reveal.slide(h,v)` | load only | a *family*: bind by kind with a decoder `Input -> Maybe Nav`. Different grammars (zero-based 2-D vs one-based flat) must live in the decoder. Plain has no hashchange handler; adding it changes behaviour (the pinned test `hashchange is ignored after load` would flip, deliberately) |
-| `gotoLabel s` | none | none | none | new; label table derived from the deck's `label` operation; hash grammar for it is new output |
-| overview | reveal only | `o`/Escape, Enter | none | not in `Nav`; an extra command `overview`, supported by reveal, lowered (dropped) by plain |
-| animation step | fragment `.anim-step` + `fragmentshown`/`hidden` -> `player.sync` | via the fragment events | `syncAll(.., false)` after the fragment is toggled | `await next` inside the animation act. Reveal keeps the event glue; plain keeps the direct call |
-| clock (`tick`) | `spin` loops in `animation.js`, not input | n/a | n/a | an extra command `tick`; neither backend binds it to a user input; supported by both (the page timer), lowered to a rest frame by print/still |
-| print | `beforeprint` shows all | reveal print css | `plain.css` | none |
-
-Implicit assumptions about reveal's key handling that leak (section 6, surprises) are the main risk.
-
-## 3. Behaviour to keep byte-identical
+## 2. Behaviour to keep byte-identical
 
 * All `tests/golden/*` (indexes, `init.js`, `plain.js`, `animation.js`, css) unchanged. The
   port must not change what `Slides.Steps` yields in HTML (`fragment`/`stepped`/`anim-step` classes
@@ -115,57 +96,7 @@ Implicit assumptions about reveal's key handling that leak (section 6, surprises
 * The step count of every slide (`nav.mjs` `expectedForward`), the traces of reveal and plain
   equal for showcase and talk, the lowered and still decks' fragment counts.
 
-## 4. Port plan (ordered edits)
-
-Preconditions: the core exists (`Slides.Input.{Prog,Nav,Machine,Supports,Lowering,Label}`), merged
-into `stage1-port` (or this branch rebased onto it). Every step ends with: `make check`,
-`make REVEAL=... example talk plain showcase pairs`, `make test test-negative`,
-`make test-browser-all`, and an empty `git diff` on `tests/golden`.
-
-1. **Types.** Add `Slides.Input.Deck`: `DeckBlockC = BlockC ⊎ AwaitC Nav` (as the spike's
-   spike branch `Spike/Input/Steps.agda`) and `Body C = (BlockC ⊎ AwaitC (Nav ⊎ C)) ⋆ ⊤`. Keep `Core.Body`
-   unchanged: Stage 1 must not make every existing deck break. (independent; one agent)
-2. **Elaboration.** New `Slides.Steps.Input` (or extend `Slides.Steps`): `elab : Lowering BlockC
-   DeckBlockC` with `pause ↦ await next`; and a second pass `steps′` that wraps
-   what follows an `await` in `fragment`/`stepped`, reproducing `steps` exactly. Prove
-   `steps′ (elab b) ≡ steps b` (a bridge theorem), so existing `go-bind` results stay and the
-   old `steps` keep working; then redefine `steps` as that composite if wanted. Re-derive: `go-bind`
-   as `after-bind` (spike `after-elab`, `after-seq`, `hasAwait-bind`) and `bind-assoc` (reuse stdlib
-   free-monad associativity if the core has it). (agent A: proofs)
-3. **Lower.** Add to `Slides.Lower` the *command lowering* `lowerCmd : Supports → Lowering (AwaitC (Nav ⊎ C)) (AwaitC S)`
-   (spike `lowerOp`: supported renames, unsupported skips) and its lifting through `layout/block/deck`
-   (`Lower.agda:73-113`; the `layout` clause for `stepped`/`pause` is unchanged). `Lower/Properties` gets
-   the unsupported/supported lemmas. Content lowerings stay as they are. (agent B)
-4. **Supports record per backend.** `Backend/Reveal.agda`: `revealSupports` (all of `Nav`, plus
-   `overview`; `tick` if the page player is on); `Backend/Plain.agda`: `plainSupports` (all of `Nav`,
-   `tick`; no overview). Each carries `bind` by kind and a decoder for `goto`/`gotoLabel`
-   (reveal: `#/h[/v]` zero-based, plain: `#n` one-based), `inj-injective`, and the decidable
-   conflict check (no instance search in core: use a `Fin` table or `True (conflict? ..)` as
-   `tests/negative/TwoCommandsOneKey.agda`; done: `Slides.Backend.{Reveal,Plain}.Supports`). Define them but do not yet use them to produce output. (agent C)
-5. **`present`.** `renderReveal`/`renderPlain` gain a `Supports`-aware entry: `present : (b : Supports) → NavTotal b → Deck C → Forest`
-   whose body is `lowerDeck ∘ elab` followed by the existing `steps`/`renderBody`. The old
-   `renderReveal : RevealConfig → Deck → String` stays as `present` at the default supports (so every example and
-   Driver call site is unchanged). The negative test `NoNavBackend` moves here. (agent C)
-6. **Bindings in the page.** Render the binding as data: for reveal, `Reveal.initialize` gets a
-   `keyboard` map generated from the binding **only for keys that differ from reveal's defaults**
-   (an empty map for the default binding keeps `init.js` identical; any default-binding key
-   emitted would break `*.init.js` goldens). For plain, `plain.js` is a static asset whose goldens are byte-exact: **do not
-   generate it**; keep the key table in the asset, and make the Agda binding a *checked
-   description* of it (a test that the keys in `plain.js` match `plainSupports`, see risks).
-   Generating plain.js from the binding is a Stage 5 item and changes the golden once, deliberately. (agent D)
-7. **Label/goto.** Emit `gotoLabel s` targets as slide ids only for decks that use `label` (none of the
-   existing decks do, so no golden changes); extend `nav.mjs` with a label deck then. (agent D)
-8. **Docs/tests.** Update `docs/Design.md` ("pause" section), move negatives to `tests/negative/`,
-   remove the "pinned current behaviour" caveats in `nav.mjs` that the port intentionally changes.
-
-Parallelism: 1-2 (A), 3 (B), 4-5 (C), 6-7 (D) after 1's types are merged; 8 last. A, B, C may proceed
-once the type module of 1 exists. `tests/check_closure.py`: no new executable imports of `.Properties`.
-
-Proofs to re-derive: `Steps.go-bind` and `bind-assoc` (as 2); `Lower.Properties` (add the command-lowering
-lemmas); `Backend/Reveal/Properties` and `Backend/Plain/Properties` if they mention `renderDeck`/`deckAlg`
-(both import `steps` and use it in `renderDeck-length`, `Plain/Properties.agda:23,43`, `Reveal/Properties.agda:29`; these must still typecheck after step 5, a change of `steps`'s type would break them). No change to `renderBody-bind` (`Common.agda:269-278`).
-
-## 5. Risks
+## 3. Risks
 
 * **Goldens**: the generated `init.js` embeds the two glue scripts verbatim; any change to
   `animationSync`/`scriptLoader` text or to option order breaks `intro/showcase/pairs.init.js`.
@@ -183,7 +114,7 @@ lemmas); `Backend/Reveal/Properties` and `Backend/Plain/Properties` if they ment
 * **Closure**: new elaboration used by executables must live outside `.Properties`.
 * **Backwards fragments**: both backends show all fragments of a slide entered backwards, and reveal retains them for a goto backwards (`#/1` from slide 5 shows all, pinned). The machine's `view-next`/`prev-next` replay model must reproduce these states.
 
-## 6. Surprises (implicit reveal assumptions that leak)
+## 4. Surprises (implicit reveal assumptions that leak)
 
 1. `animationSync` is the only coupling to navigation, and it assumes reveal's *events*: animation steps are plain `.fragment` spans
    so reveal's fragment machinery (and its keys) drive animations. Any backend that does not emit fragments must call `player.sync` itself (plain does).
