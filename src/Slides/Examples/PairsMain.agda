@@ -11,7 +11,6 @@ open import Data.List using (List; _∷_; [])
 open import Data.String using (String)
 open import Data.Maybe using (just)
 open import IO using (Main; run; IO; _>>=_)
-open import Level using (0ℓ)
 open import Data.Unit.Polymorphic.Base using (⊤)
 open import System.Environment using (getArgs)
 

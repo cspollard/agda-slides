@@ -55,10 +55,9 @@ open import Data.Product using (_,_)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (Shape; Position; _▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
-open import Data.Container.FreeMonad using (pure; impure; _>>=_)
-open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂; trans)
+open import Data.Container.FreeMonad using (pure; impure)
+open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂)
 
-open import Container.FreeMonad using (Eq)
 open import Container.Lowering using (translate)
 open import Container.Sum using (inl; inr)
 

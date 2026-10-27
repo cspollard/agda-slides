@@ -87,7 +87,7 @@ Scripts are not type checked. Not yet: figure/table numbering, Beamer/LaTeX and 
 ## Repository layout
 
 - `src/Container/` — generic: containers as polynomial functors on `Setoids`, the category of containers and morphisms with its functors to polynomial endofunctors and to lowerings (`Container.Category`), the free monad, its algebraic description (`Free ⊣ Forget`, monadic), interpretation and fusion, container sums. Nothing here imports `Slides.*`.
-- `src/Slides/` — the DSL: `Core` (vocabulary), `DSL` (commands and `do`-notation), `Math`, `Literals`, `Steps` (`pause`), `Resources`, `Components`, `Diagram`, `Backend/*` (`Common`, `Reveal`, `Plain`, `Diagram`, `Restyle`, `HTML`, `XML`), `Driver`, `Examples/*`.
+- `src/Slides/` — the DSL: `Core` (vocabulary), `DSL` (commands and `do`-notation), `Math`, `Literals`, `Steps` (`pause`), `Resources`, `Components`, `Diagram`, `Backend/*` (`Common`, `Reveal`, `Plain`, `Diagram`, `Restyle`, `HTML`), `Driver`, `Examples/*`.
 - `parsnip/` — submodule: verified XML/JSON/SVG printers and parsers with proved round trips.
 - `assets/` — stylesheets, navigation script, sample figure. `tests/` — golden files, browser checks, negative tests. `plan/`, `docs/`.
 

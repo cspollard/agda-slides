@@ -12,11 +12,11 @@
 module Slides.Backend.Restyle where
 
 open import Level using (0ℓ)
-open import Data.List using (_∷_; _++_; map; [])
+open import Data.List using (_++_; map)
 open import Data.List.Properties using (map-++)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 import Data.List.Relation.Binary.Pointwise as PW
@@ -25,7 +25,6 @@ open import Data.Container.Relation.Binary.Pointwise
   using () renaming (_,_ to _,ₚ_)
 open import Categories.Functor.Algebra using (F-Algebra; F-Algebra-Morphism)
 
-open import Data.Container.FreeMonad using (_⋆_)
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (_≈ₓ_)
 

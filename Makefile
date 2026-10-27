@@ -23,6 +23,17 @@ GHCFLAGS ?= -O0
 BUILD_DIR = _build/ghc
 COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS)
 
+# What the standalone (plain) decks need next to index.html.
+PLAIN_FILES = assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg
+
+# Compile the executable module $(1) and run it with the arguments $(2).
+# Agda leaves the binary in the working directory: move it next to the others.
+define run-main
+$(COMPILE) $(1)
+mv $(basename $(notdir $(1))) $(BUILD_DIR)/ 2>/dev/null || true
+$(BUILD_DIR)/$(basename $(notdir $(1))) $(2)
+endef
+
 clean:
 	find . -name '*.agdai' -delete
 	rm -rf MAlonzo _build out
@@ -35,9 +46,7 @@ REVEAL ?= $(CURDIR)/node_modules/reveal.js
 spike:
 	mkdir -p out/spike $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/spike/reveal
-	$(COMPILE) src/Slides/Spike/Reveal.agda
-	mv Reveal $(BUILD_DIR)/Reveal 2>/dev/null || true
-	$(BUILD_DIR)/Reveal
+	$(call run-main,src/Slides/Spike/Reveal.agda)
 	cp assets/slides.css assets/animation.js out/spike/
 
 # Render any deck: `make deck MAIN=src/MyTalkMain.agda NAME=mytalk`, where the
@@ -49,9 +58,7 @@ deck:
 	mkdir -p out/$(NAME) $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/$(NAME)/reveal
 	cp assets/slides.css assets/animation.js assets/plot.svg out/$(NAME)/
-	$(COMPILE) $(MAIN)
-	mv $(basename $(notdir $(MAIN))) $(BUILD_DIR)/ 2>/dev/null || true
-	$(BUILD_DIR)/$(basename $(notdir $(MAIN)))
+	$(call run-main,$(MAIN))
 
 # Render the example deck to out/intro/.
 .PHONY: example
@@ -59,9 +66,7 @@ example:
 	mkdir -p out/intro $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/intro/reveal
 	cp assets/slides.css assets/animation.js out/intro/
-	$(COMPILE) src/Slides/Examples/IntroMain.agda
-	mv IntroMain $(BUILD_DIR)/IntroMain 2>/dev/null || true
-	$(BUILD_DIR)/IntroMain
+	$(call run-main,src/Slides/Examples/IntroMain.agda)
 
 # Golden-file tests for the example decks (run `make example talk plain showcase` first).
 .PHONY: test test-browser
@@ -100,18 +105,14 @@ talk:
 	mkdir -p out/talk $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/talk/reveal
 	cp assets/slides.css assets/animation.js assets/plot.svg out/talk/
-	$(COMPILE) src/Slides/Examples/TalkMain.agda
-	mv TalkMain $(BUILD_DIR)/TalkMain 2>/dev/null || true
-	$(BUILD_DIR)/TalkMain
+	$(call run-main,src/Slides/Examples/TalkMain.agda)
 
 # Render the component-based deck as standalone HTML to out/plain/.
 .PHONY: plain
 plain:
 	mkdir -p out/plain $(BUILD_DIR)
-	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/plain/
-	$(COMPILE) src/Slides/Examples/PlainMain.agda
-	mv PlainMain $(BUILD_DIR)/PlainMain 2>/dev/null || true
-	$(BUILD_DIR)/PlainMain
+	cp $(PLAIN_FILES) out/plain/
+	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
 # Decks that refer to a resource they did not declare must not typecheck.
 .PHONY: test-negative check-resources
@@ -136,12 +137,10 @@ showcase:
 	mkdir -p out/showcase out/showcase-plain out/showcase-lowered out/showcase-still $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/showcase/reveal
 	cp assets/slides.css assets/animation.js assets/plot.svg out/showcase/
-	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-plain/
-	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-lowered/
-	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg out/showcase-still/
-	$(COMPILE) src/Slides/Examples/ShowcaseMain.agda
-	mv ShowcaseMain $(BUILD_DIR)/ShowcaseMain 2>/dev/null || true
-	$(BUILD_DIR)/ShowcaseMain
+	cp $(PLAIN_FILES) out/showcase-plain/
+	cp $(PLAIN_FILES) out/showcase-lowered/
+	cp $(PLAIN_FILES) out/showcase-still/
+	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
 
 # The "It Just Takes Two" deck (docs/PairsDeck.md).  `make pairs` loads reveal.js and
 # KaTeX from a CDN (out/pairs/, needs network in the browser); `make pairs-local
@@ -152,17 +151,13 @@ PAIRS_FILES = assets/slides.css assets/animation.js assets/pairs/pairs.css
 pairs:
 	mkdir -p out/pairs $(BUILD_DIR)
 	cp $(PAIRS_FILES) out/pairs/
-	$(COMPILE) src/Slides/Examples/PairsMain.agda
-	mv PairsMain $(BUILD_DIR)/PairsMain 2>/dev/null || true
-	$(BUILD_DIR)/PairsMain cdn
+	$(call run-main,src/Slides/Examples/PairsMain.agda,cdn)
 
 pairs-local:
 	mkdir -p out/pairs-local $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/pairs-local/reveal
 	cp $(PAIRS_FILES) out/pairs-local/
-	$(COMPILE) src/Slides/Examples/PairsMain.agda
-	mv PairsMain $(BUILD_DIR)/PairsMain 2>/dev/null || true
-	$(BUILD_DIR)/PairsMain local
+	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
 
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.
@@ -190,9 +185,7 @@ test-plain-anim:
 animref:
 	mkdir -p out/animref $(BUILD_DIR)
 	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css out/animref/
-	$(COMPILE) src/Slides/Examples/AnimRefMain.agda
-	mv AnimRefMain $(BUILD_DIR)/AnimRefMain 2>/dev/null || true
-	$(BUILD_DIR)/AnimRefMain
+	$(call run-main,src/Slides/Examples/AnimRefMain.agda)
 
 test-anim-ref: animref
 	cd tests/browser && npm install --silent

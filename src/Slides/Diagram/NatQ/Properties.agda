@@ -14,7 +14,7 @@ import Data.Nat.Divisibility as ℕD
 import Data.Nat.Properties as ℕP
 open import Data.Rational as ℚ using (ℚ; _/_)
 import Data.Rational.Properties as ℚP
-open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_; *≤*)
+open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_)
 import Data.Rational.Unnormalised.Properties as ℚᵘP
 open import Data.Bool using (T)
 open import Data.Unit using (tt)

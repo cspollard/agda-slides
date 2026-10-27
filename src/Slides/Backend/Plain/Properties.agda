@@ -5,20 +5,14 @@ module Slides.Backend.Plain.Properties where
 
 open import Data.List using (List; _++_; map; length)
 open import Data.List.Properties using (length-++; length-map)
-open import Data.Maybe using (Maybe)
 open import Data.Nat using (ℕ; suc; _+_)
 open import Data.Product using (_,_)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans)
 open import Data.Container.FreeMonad using (pure; impure)
-import Data.List.Relation.Binary.Pointwise as PW
 
-open import Data.Container.Relation.Binary.Pointwise
-  using () renaming (_,_ to _,ₚ_)
 
-open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Steps using (steps)
 open import Slides.Backend.HTML

@@ -18,7 +18,6 @@ open import Data.String using (String)
 import Data.String.Properties as StrP
 open import Relation.Binary using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
-open import Relation.Nullary using ()
 open import Relation.Nullary.Decidable using (map′)
 
 open import Slides.DecEq using (retract-dec)

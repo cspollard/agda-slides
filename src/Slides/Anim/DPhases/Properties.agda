@@ -21,19 +21,17 @@ module Slides.Anim.DPhases.Properties where
 
 open import Data.Bool using (true; false)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.List using (_∷_; [])
 open import Data.Maybe using (just; nothing)
 open import Data.Nat as ℕ using (ℕ; _/_; _+_; _∸_; _⊔_)
 open import Data.Fin using (zero) renaming (suc to fsuc)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Unit using (tt)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ)
 open import Data.Integer using (+_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
-open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Expr using (eval; evalWith)
 import Slides.Diagram.Expr as E
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)

@@ -8,7 +8,7 @@
 
 module Slides.Anim.Arith where
 
-open import Data.Bool using (Bool; true; false; T)
+open import Data.Bool using (true; false; T)
 open import Data.Nat as ℕ using (ℕ; zero; suc; _<ᵇ_; _≤ᵇ_; _≤_; _<_)
 import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst)

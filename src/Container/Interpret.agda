@@ -18,15 +18,7 @@ open import Level using (Level)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; _⇒_; shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Data.Container.Relation.Binary.Pointwise
-  using () renaming (_,_ to _,ₚ_)
-open import Function.Bundles using (Func)
-open import Relation.Binary.Bundles using (Setoid)
-open import Relation.Binary.PropositionalEquality.Core using (refl)
 
-open import Categories.Functor.Algebra
-  using (F-Algebra; F-Algebra-Morphism)
-open import Categories.Object.Initial using (Initial)
 
 open import Container.Polynomial
 open import Container.FreeMonad

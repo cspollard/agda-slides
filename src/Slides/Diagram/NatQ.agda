@@ -10,10 +10,9 @@
 
 module Slides.Diagram.NatQ where
 
-open import Data.Integer as ℤ using (ℤ; +_)
-open import Data.Nat as ℕ using (ℕ; suc)
+open import Data.Integer as ℤ using (+_)
+open import Data.Nat as ℕ using (ℕ)
 open import Data.Rational as ℚ using (ℚ; _/_)
-open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_; *≤*)
 
 ι : ℕ → ℚ
 ι n = + n / 1

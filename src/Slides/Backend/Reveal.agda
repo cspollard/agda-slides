@@ -25,7 +25,6 @@ open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
 open import Function using (_∘_)
 open import Relation.Binary.Bundles using (Setoid)
-import Data.Container.FreeMonad as FM
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 import Data.List.Relation.Binary.Pointwise as PW
 
@@ -132,12 +131,6 @@ defaultConfig = record
   }
 
 private
-  scriptTag : String → XMLDoc
-  scriptTag src = hText "script" (("src" , src) ∷ []) " "
-
-  stylesheet : String → XMLDoc
-  stylesheet href = hElement "link" (("rel" , "stylesheet") ∷ ("href" , href) ∷ []) []
-
   div : String → List XMLDoc → XMLDoc
   div cls = hElement "div" (("class" , cls) ∷ [])
 

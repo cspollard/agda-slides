@@ -25,12 +25,9 @@
 
 module Slides.Anim.DParam.Properties where
 
-open import Data.Bool using ()
 open import Data.List using (replicate)
 open import Data.Maybe using (just)
-open import Data.Nat using (ℕ; _+_; _<ᵇ_)
-open import Data.Product using (_,_)
-open import Data.Unit using ()
+open import Data.Nat using (ℕ)
 open import Data.Container.FreeMonad using (pure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans)
 

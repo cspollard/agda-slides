@@ -29,7 +29,6 @@ open import Data.Nat as ℕ using (ℕ)
 open import Data.Integer as ℤ using (ℤ)
 import Data.Integer.DivMod as ℤ
 import Data.Rational as ℚ
-import Data.Rational.Properties as ℚP
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
 record CoreOps (S : Set) : Set where

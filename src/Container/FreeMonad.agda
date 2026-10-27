@@ -15,17 +15,10 @@ open import Data.Empty using (⊥)
 open import Data.Product.Base using (_,_; Σ-syntax)
 open import Data.Container.Core using (Container; Position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Function.Bundles using (Func)
 open import Function.Base using (id)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Structures using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; subst)
-
-open import Categories.Category.Instance.Setoids using (Setoids)
-open import Categories.Functor using (Functor)
-open import Categories.Monad using (Monad)
-open import Categories.NaturalTransformation using ()
-import Categories.NaturalTransformation.Core as NT
 
 private
   variable

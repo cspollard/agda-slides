@@ -21,13 +21,10 @@ open import Data.Product using (_×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
-open import Function using (_∘_)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
-open import Data.Container.FreeMonad using (pure; impure)
-import Data.Container.FreeMonad as FM
-open import Data.List.Properties using (++-assoc)
-open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans; sym)
+open import Data.Container.Core using (_▷_)
+open import Relation.Binary.PropositionalEquality.Core using (refl; cong; trans; sym)
 import Data.List.Relation.Binary.Pointwise as PW
 
 open import Data.Container.Relation.Binary.Pointwise
@@ -36,11 +33,7 @@ open import Data.Container.Relation.Binary.Pointwise
 open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Data.XML.AST using (XMLDoc)
-open import Data.XML.Equality using (_≈ₓ_; XMLSetoid)
-open import Data.XML.Print using ()
-open import Data.JSON.AST using ()
-open import Data.JSON.Print using ()
-
+open import Data.XML.Equality using (XMLSetoid)
 open import Container.Polynomial using (Poly₀)
 open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)
@@ -178,21 +171,30 @@ renderContent (mount i)           =
   hElement "div" (("id" , i) ∷ ("class" , "mount") ∷ []) [] ∷ []
 
 module A = Alg 0ℓ 0ℓ ContentC
-module L = Alg 0ℓ 0ℓ LayoutC
 module B = Alg 0ℓ 0ℓ BlockC
 
--- The content algebra: a command contributes its markup, then the rest.
-contentα : Func (Poly₀ ContentC ForestSetoid) ForestSetoid
-contentα = record
-  { to   = λ { (c , k) → renderContent c ++ k tt }
+-- The algebra of a vocabulary whose commands render to markup: a command contributes its
+-- markup, then the rest.
+commandα : ∀ {S : Set} → (S → Forest) → Func (Poly₀ (S ▷ λ _ → ⊤) ForestSetoid) ForestSetoid
+commandα render = record
+  { to   = λ { (c , k) → render c ++ k tt }
   ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → PW.++⁺ (forest-refl _) (k≈ tt) }
   }
+
+-- The content algebra.
+contentα : Func (Poly₀ ContentC ForestSetoid) ForestSetoid
+contentα = commandα renderContent
 
 contentAlg : F-Algebra A.F
 contentAlg = record { A = ForestSetoid ; α = contentα }
 
 renderContentProgram : Content → Forest
 renderContentProgram = A.fold contentAlg {⊤ˢ} nil
+
+-- The class of a fragment: `fragment`, plus the reveal.js style if there is one.
+fragmentClass : Maybe String → String
+fragmentClass nothing  = "fragment"
+fragmentClass (just s) = "fragment " ++ˢ s
 
 -- The layout algebra.
 renderLayout : LayoutShape → Forest
@@ -206,11 +208,7 @@ renderLayout (box t c) =
   ∷ []
 
 renderLayout (fragment style c) =
-  hElement "div" (("class" , cls style) ∷ []) (renderContentProgram c) ∷ []
-  where
-    cls : Maybe String → String
-    cls nothing  = "fragment"
-    cls (just s) = "fragment " ++ˢ s
+  hElement "div" (("class" , fragmentClass style) ∷ []) (renderContentProgram c) ∷ []
 
 renderLayout (placed x y w h c) =
   hElement "div"
@@ -229,20 +227,10 @@ renderLayout pause = []
 renderLayout (classed cls c) =
   hElement "div" (("class" , cls) ∷ []) (renderContentProgram c) ∷ []
 renderLayout (stepped style l) =
-  hElement "div" (("class" , cls style) ∷ []) (renderLayout l) ∷ []
-  where
-    cls : Maybe String → String
-    cls nothing  = "fragment"
-    cls (just s) = "fragment " ++ˢ s
+  hElement "div" (("class" , fragmentClass style) ∷ []) (renderLayout l) ∷ []
 
 layoutα : Func (Poly₀ LayoutC ForestSetoid) ForestSetoid
-layoutα = record
-  { to   = λ { (c , k) → renderLayout c ++ k tt }
-  ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → PW.++⁺ (forest-refl _) (k≈ tt) }
-  }
-
-layoutAlg : F-Algebra L.F
-layoutAlg = record { A = ForestSetoid ; α = layoutα }
+layoutα = commandα renderLayout
 
 -- The algebra for slide bodies is the copairing of the two.
 blockAlg : F-Algebra B.F
@@ -259,20 +247,3 @@ slideAttrs o = opt "data-background-color" (SlideOptions.background o)
     opt : String → Maybe String → Attrs
     opt k nothing  = []
     opt k (just v) = (k , v) ∷ []
-
-
-------------------------------------------------------------------------
--- Structural properties
-
--- Rendering is a monoid homomorphism: sequencing programs concatenates the
--- markup.  (The fold of a program is the markup of its first command followed
--- by the fold of the rest, and the leaf contributes nothing.)
-renderBody-bind : ∀ (b₁ b₂ : Body) →
-                  renderBody (b₁ FM.>>= λ _ → b₂) ≡ renderBody b₁ ++ renderBody b₂
-renderBody-bind (pure tt)             b₂ = refl
-renderBody-bind (impure (inj₁ c , k)) b₂ =
-  trans (cong (renderContent c ++_) (renderBody-bind (k tt) b₂))
-        (sym (++-assoc (renderContent c) (renderBody (k tt)) (renderBody b₂)))
-renderBody-bind (impure (inj₂ c , k)) b₂ =
-  trans (cong (renderLayout c ++_) (renderBody-bind (k tt) b₂))
-        (sym (++-assoc (renderLayout c) (renderBody (k tt)) (renderBody b₂)))

@@ -13,8 +13,6 @@ module Container.Lowering.Category where
 
 open import Level using (0ℓ; suc)
 open import Data.Container.Core using (Container)
-open import Relation.Binary.Structures using ()
-
 open import Categories.Category.Core using (Category)
 
 open import Container.Lowering

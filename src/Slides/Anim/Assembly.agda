@@ -16,7 +16,7 @@
 
 module Slides.Anim.Assembly where
 
-open import Data.Bool using (true; false; if_then_else_; T)
+open import Data.Bool using (true; false)
 open import Data.List using (List; []; _∷_; _++_; length)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat as ℕ using (ℕ; suc; _+_; _∸_; _<ᵇ_; _≤_)

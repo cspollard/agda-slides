@@ -43,7 +43,6 @@ open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
-open import Slides.Diagram using ()
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Scalar using (Ops; IsOpsHom; natOps)

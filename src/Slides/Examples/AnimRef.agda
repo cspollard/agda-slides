@@ -21,13 +21,13 @@ open import Slides.Anim.Footprint using (parI)
 open import Slides.Anim.Render using (frameDiagrams)
 open import Slides.Anim.Timeline using (timeline; frames)
 open import Slides.Diagram.Syntax using (Dia; atop; rectangle; disc; text; named)
-open import Slides.Diagram.Notation using (_∥_; _═_; ↔)
+open import Slides.Diagram.Notation using (_∥_; ↔)
 open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Expr using (Expr; exprOps; t; lit; _⊞_; _⊖_; _⊓_; pct)
 import Slides.Diagram.Notation as N
 open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenT; units; _⨾_; _∥ᵃ_; par)
 import Slides.Anim.Track as T
-open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _⊔_) renaming (_/_ to _÷_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_) 
 open import Data.Unit using (⊤)
 open import Data.Product using (_,_)
 import Data.Rational as ℚ

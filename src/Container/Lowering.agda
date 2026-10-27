@@ -26,9 +26,6 @@ open import Level using (Level; _⊔_)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; Shape; Position; _⇒_; shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Data.Container.Relation.Binary.Pointwise
-  using () renaming (_,_ to _,ₚ_)
-open import Function.Bundles using (Func)
 
 open import Container.Polynomial
 open import Container.FreeMonad

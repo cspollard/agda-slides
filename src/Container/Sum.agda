@@ -12,16 +12,15 @@
 
 module Container.Sum where
 
-open import Level using (_⊔_; Level)
 open import Data.Product.Base using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
-open import Data.Sum.Relation.Binary.Pointwise using (_⊎ₛ_; inj₁; inj₂)
+open import Data.Sum.Relation.Binary.Pointwise using (inj₁; inj₂)
 open import Data.Container.Core using (Container)
 import Data.Container.Core as CC
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.Relation.Binary.Pointwise
   using (Pointwise) renaming (_,_ to _,ₚ_)
-open import Function.Bundles using (Func; Inverse; _⟨$⟩_)
+open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 

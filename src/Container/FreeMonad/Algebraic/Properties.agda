@@ -7,18 +7,10 @@ open import Level using (Level; lift)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Data.Container.Relation.Binary.Pointwise
-  using () renaming (_,_ to _,ₚ_)
 open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
-open import Categories.Category.Instance.Setoids using (Setoids)
-open import Categories.Category.Construction.F-Algebras using (F-Algebras)
-open import Categories.Functor using (Functor)
-open import Categories.Functor.Algebra
-  using (F-Algebra; F-Algebra-Morphism)
-open import Categories.FreeObjects.Free using (FreeObject)
 open import Categories.Adjoint.Properties using (adjoint⇒monad)
 open import Categories.Monad using (Monad)
 open import Categories.Monad.Morphism using (Monad⇒-id)

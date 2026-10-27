@@ -28,7 +28,6 @@ open import Relation.Binary using (Rel; IsEquivalence; Setoid)
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
-import Slides.Diagram.Layout as Lay
 open import Slides.Diagram.Syntax using (Dia)
 import Slides.Diagram.Syntax as DS
 open import Slides.Anim.Syntax using (AnimC; _∥ᵃ_)

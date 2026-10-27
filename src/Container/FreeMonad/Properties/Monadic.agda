@@ -17,10 +17,10 @@
 
 module Container.FreeMonad.Properties.Monadic where
 
-open import Level using (Level; _⊔_; lift)
+open import Level using (Level; lift)
 open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Data.Container.Relation.Binary.Pointwise
   using () renaming (_,_ to _,ₚ_)
 open import Function.Bundles using (Func; _⟨$⟩_)
@@ -28,18 +28,13 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Categories.Adjoint.Monadic using (IsMonadicAdjunction)
-open import Categories.Adjoint.Properties using ()
-open import Categories.Category.Construction.F-Algebras using (F-Algebras)
 open import Categories.Category.Construction.Properties.EilenbergMoore using (ComparisonF)
-open import Categories.Category.Equivalence using ()
 open import Categories.Functor using (Functor; _∘F_) renaming (id to idF)
 open import Categories.Functor.Algebra using (F-Algebra)
 open import Categories.Monad using (Monad)
-open import Categories.NaturalTransformation using ()
 open import Categories.NaturalTransformation.NaturalIsomorphism using (NaturalIsomorphism)
 import Categories.Category.Construction.EilenbergMoore as EilenbergMooreC
 
-open import Container.Polynomial using ()
 open import Container.FreeMonad
 open import Container.FreeMonad.Properties
 open import Container.FreeMonad.Algebraic

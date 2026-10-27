@@ -23,15 +23,13 @@
 module Slides.Anim.Track where
 
 open import Level using (0ℓ)
-open import Data.Bool using (if_then_else_; T)
+open import Data.Bool using (if_then_else_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Integer as ℤ using (ℤ; +_)
 open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_)
 open import Data.Product using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _/_)
 import Data.Rational.Properties as ℚP
-open import Data.Rational.Unnormalised as ℚᵘ using (ℚᵘ; mkℚᵘ; *≡*; _≃_)
-open import Relation.Nullary using (no)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)

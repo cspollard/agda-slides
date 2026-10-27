@@ -9,10 +9,10 @@
 
 module Slides.Backend.Diagram where
 
-open import Data.Char using ()
 open import Data.List using (List; []; _∷_; _++_; map; length; [_])
-open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _∸_; _⊔_; _≤ᵇ_; _≟_)
+open import Data.Maybe using (Maybe; just; nothing; fromMaybe)
+import Data.Maybe as Maybe
+open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _≟_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
@@ -45,11 +45,8 @@ open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin;
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
-open import Data.Container.FreeMonad using ()
-open import Data.Bool using (_∧_; if_then_else_)
+open import Data.Bool using (if_then_else_)
 open import Data.Fin using (suc)
-open import Data.Unit using ()
-import Slides.Diagram.Expr as E
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Data.String as Str
 
@@ -67,35 +64,21 @@ private
   num : ℕ → String
   num = show
 
-  _▹′_ : Maybe ℕ → (ℕ → String) → Maybe String
-  nothing ▹′ f = nothing
-  just n  ▹′ f = just (f n)
-
   -- hooks and presentation shared by every element
   commonAttrs : Style → Attrs
   commonAttrs s =
       opt "class" (Style.cls s)
     ++ opt "id" (Style.ident s)
     ++ opt "stroke-dasharray" (Style.dash s)
-    ++ opt "opacity" (Style.opacity s ▹′ (λ n → num n ++ˢ "%"))
+    ++ opt "opacity" (Maybe.map (λ n → num n ++ˢ "%") (Style.opacity s))
 
   -- Shapes are outlined in the text colour and unfilled unless styled.
   shapeAttrs : Style → Attrs
   shapeAttrs s =
-      ("stroke" , maybeOr "currentColor" (Style.stroke s))
-    ∷ ("fill" , maybeOr "none" (Style.fill s))
-    ∷ opt "stroke-width" (Style.strokeWidth s ▹ num)
+      ("stroke" , fromMaybe "currentColor" (Style.stroke s))
+    ∷ ("fill" , fromMaybe "none" (Style.fill s))
+    ∷ opt "stroke-width" (Maybe.map num (Style.strokeWidth s))
     ++ commonAttrs s
-    where
-      maybeOr : String → Maybe String → String
-      maybeOr d nothing  = d
-      maybeOr d (just v) = v
-      _▹_ : Maybe ℕ → (ℕ → String) → Maybe String
-      nothing ▹ f = nothing
-      just n  ▹ f = just (f n)
-
-  points : ℕ → ℕ → ℕ → ℕ → String
-  points x₁ y₁ x₂ y₂ = num x₁ ++ˢ "," ++ˢ num y₁ ++ˢ " " ++ˢ num x₂ ++ˢ "," ++ˢ num y₂
 
   markerId : String → String
   markerId n = n ++ˢ "-arrow"
@@ -124,7 +107,7 @@ private
   mutual
     renderElement : String → Element → XMLM A
     renderElement n (rect x y w h s)   =
-      SVG.rect (num x) (num y) (num w) (num h) (opt "rx" (Style.rx s ▹′ num) ++ shapeAttrs s)
+      SVG.rect (num x) (num y) (num w) (num h) (opt "rx" (Maybe.map num (Style.rx s)) ++ shapeAttrs s)
     renderElement n (circle x y r s)   = SVG.circle (num x) (num y) (num r) (shapeAttrs s)
     renderElement n (line a b c d s)   = lineEl a b c d (shapeAttrs s)
     renderElement n (arrow a b c d s)  =
@@ -132,16 +115,10 @@ private
     renderElement n (label x y sz t s) =
       body (parse t)
       where
-        maybeOr : Maybe String → String
-        maybeOr nothing  = "currentColor"
-        maybeOr (just v) = v
-        maybeAnchor : Maybe String → String
-        maybeAnchor nothing  = "middle"
-        maybeAnchor (just v) = v
         attrs : Attrs
         attrs = ("x" , num x) ∷ ("y" , num y) ∷ ("font-size" , num sz)
-              ∷ ("text-anchor" , maybeAnchor (Style.anchor s)) ∷ ("dominant-baseline" , "central")
-              ∷ ("fill" , maybeOr (Style.fill s)) ∷ commonAttrs s
+              ∷ ("text-anchor" , fromMaybe "middle" (Style.anchor s)) ∷ ("dominant-baseline" , "central")
+              ∷ ("fill" , fromMaybe "currentColor" (Style.fill s)) ∷ commonAttrs s
         body : List Seg → XMLM A
         body (flat u ∷ []) = textElement "text" attrs (padText u)
         body []            = textElement "text" attrs " "

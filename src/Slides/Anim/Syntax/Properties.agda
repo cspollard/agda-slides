@@ -3,8 +3,8 @@
 -- Laws of the animation syntax: `foldA` commutes with `>>=`, and the durations of the connectives, of `pad` and of `par`.
 module Slides.Anim.Syntax.Properties where
 
-open import Data.Fin using (Fin; zero; suc)
-open import Data.Nat using (ℕ; _+_; _⊔_; _∸_; _≤_; _<ᵇ_)
+open import Data.Fin using (zero; suc)
+open import Data.Nat using (_+_; _⊔_; _∸_; _≤_; _<ᵇ_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_,_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
@@ -15,9 +15,6 @@ open import Data.Unit using (tt)
 
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
-open import Data.Rational as ℚ using (ℚ; 0ℚ)
-open import Data.Integer as ℤ using ()
-
 open import Slides.Anim.Syntax
 
 -- `foldA` commutes with `>>=` (a tween is a bind): substituting then folding is

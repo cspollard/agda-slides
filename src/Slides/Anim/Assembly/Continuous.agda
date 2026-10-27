@@ -35,15 +35,15 @@
 module Slides.Anim.Assembly.Continuous where
 
 open import Data.Bool using (true; false; if_then_else_; T)
-open import Data.List using (_∷_; _++_)
+open import Data.List using (_++_)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
-open import Data.Unit using (⊤; tt)
+open import Data.Unit using (⊤)
 open import Data.Fin using (zero; suc)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Rational as ℚ using (ℚ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 

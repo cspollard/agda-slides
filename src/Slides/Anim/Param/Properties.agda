@@ -26,16 +26,13 @@
 
 module Slides.Anim.Param.Properties where
 
-open import Data.Bool using (true; if_then_else_; _∧_; T)
+open import Data.Bool using (true; T)
 open import Data.List using ([]; _∷_; _++_; length; replicate; map; concat)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
-open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_)
+open import Data.Nat as ℕ using (ℕ; _+_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃₂)
 import Data.List.Properties as LP
-open import Data.Unit using ()
-open import Data.Fin using ()
-open import Data.Container.FreeMonad using (_⋆_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans; subst)
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)

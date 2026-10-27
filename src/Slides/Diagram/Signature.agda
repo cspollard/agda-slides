@@ -36,8 +36,6 @@ open import Data.Product.Base using (_,_)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
-open import Container.Lowering using ()
-
 Sig : Set₁
 Sig = Container 0ℓ 0ℓ
 

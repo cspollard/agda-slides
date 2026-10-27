@@ -15,9 +15,8 @@ open import Data.List using (List; []; _∷_; _++_; length; replicate; map; appl
 import Data.List.Properties as LP
 open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
 open import Data.List.Relation.Unary.All using (All; _∷_; [])
-open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _⊔_; _<ᵇ_; _≤_; suc)
+open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_; suc)
 import Data.Nat.Properties as ℕP
-open import Data.Product using (_,_)
 open import Data.Sum using (inj₁; inj₂)
 open import Data.Bool using (true; false; T)
 open import Relation.Binary using (IsEquivalence)

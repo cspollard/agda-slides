@@ -6,20 +6,19 @@ module Slides.Anim.Footprint.Properties where
 
 open import Data.List using (List; []; _++_)
 import Data.List.Properties as LP
-open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-trans; ↭-sym; ↭-refl)
+open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-trans; ↭-sym)
 import Data.List.Relation.Binary.Permutation.Propositional.Properties as PP
 open import Data.Bool using (true; false)
 open import Data.Unit using (⊤)
 open import Data.Nat using (_<ᵇ_)
-open import Data.Product using (_,_)
 open import Data.String using (String; _≟_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; sym)
-open import Data.List.Relation.Binary.Disjoint.DecPropositional _≟_ using (Disjoint; disjoint?)
+open import Data.List.Relation.Binary.Disjoint.DecPropositional _≟_ using (Disjoint)
 import Data.List.Relation.Binary.Disjoint.Propositional.Properties as DP
 
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Syntax using (fold)
-open import Slides.Diagram.Names using (namesAlgebra; Usage)
+open import Slides.Diagram.Names using (namesAlgebra)
 open import Slides.Diagram.Names.Properties using (names-mapDia)
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Expr using (Expr; evalWith)

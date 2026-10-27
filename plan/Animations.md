@@ -1,8 +1,8 @@
 # Plan: animations
 
 Goal (from `plan/TODO.md`): a DSL for animations in the style of `Dia` (a container,
-its free monad, algebras), with a Reveal backend. Today animations are hand-written
-JavaScript keyed by element ids (`assets/pairs/pairs.js`, see `docs/PairsDeck.md`).
+its free monad, algebras), with a Reveal backend. Animations used to be hand-written
+JavaScript keyed by element ids (`pairs.js`, gone since; see `docs/PairsDeck.md`).
 
 ## What the literature gives us
 
