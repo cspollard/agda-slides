@@ -59,6 +59,7 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂)
 
 open import Container.Lowering using (translate)
+open import Container.Pick using (pick2)
 open import Container.Sum using (inl; inr)
 
 open import Slides.Diagram.Scalar using (Ops; CoreOps; SubOps; natOps)
@@ -106,13 +107,6 @@ exprArity = Position ExprC
 
 Expr : Set → Set
 Expr V = Term ExprC V
-
--- the two children of a binary node, as a function of the position (public: the laws in
--- `Slides.Diagram.Expr.Properties` state their equations with it)
-pick2 : ∀ {A : Set} → A → A → Fin 2 → A
-pick2 a b zero          = a
-pick2 a b (suc zero)    = b
-pick2 a b (suc (suc ()))
 
 ------------------------------------------------------------------------
 -- Constructors, for any signature containing a layer

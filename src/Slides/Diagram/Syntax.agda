@@ -39,6 +39,7 @@ open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Container.Pick using (pick2)
 
 open import Slides.Diagram using (Style)
 open import Slides.Diagram.TextMetrics using (textWidth; spaceWidth)
@@ -119,12 +120,6 @@ fold α (impure (o , k)) = α o (λ i → fold α (k i))
 
 ------------------------------------------------------------------------
 -- The surface language (nothing here needs a zero, so any scalar will do)
-
-private
-  pick2 : ∀ {S} → Dia S → Dia S → Fin 2 → Dia S
-  pick2 a b zero          = a
-  pick2 a b (suc zero)    = b
-  pick2 a b (suc (suc ()))
 
 rectangle : ∀ {S} → S → S → Style → Dia S
 rectangle w h s = impure (Rectangle w h s , λ ())
