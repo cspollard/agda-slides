@@ -113,10 +113,8 @@ instQ d q = mapDia (evalWith ratOps (λ _ → q)) d
 
 -- a segment is running on `0 ≤ τ < ticks`; there its template is at the track's value
 leafAt : Tr.Track ℚ → Dia (Expr ⊤) → Timed (Maybe (Dia ℚ))
-leafAt tr d =
-  proj₁ (sampleAt Tr.ℚLerp tr) ,
-  λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (proj₁ (sampleAt Tr.ℚLerp tr)))
-        then just (instQ d (proj₂ (sampleAt Tr.ℚLerp tr) τ)) else nothing
+leafAt tr d = proj₁ s , λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (proj₁ s)) then just (instQ d (proj₂ s τ)) else nothing
+  where s = sampleAt Tr.ℚLerp tr
 
 -- running in parallel: the same time on both sides; a side that is not running adds nothing
 -- (`Slides.Anim.Timeline.merge`)
@@ -134,8 +132,7 @@ segAt s = bodyAt′ (track s) (content s)
 
 -- both parts, or nothing
 lift2 : ∀ {A : Set} → (A → A → A) → Maybe A → Maybe A → Maybe A
-lift2 f (just x) (just y) = just (f x y)
-lift2 f _        _        = nothing
+lift2 = Maybe.zipWith
 
 animAt : Anim ℕ (Seg ℕ) → Maybe (Timed (Maybe (Dia ℚ)))
 animAt a = foldA segAt (lift2 seqAt) (lift2 (parAt atop)) a

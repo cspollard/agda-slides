@@ -39,7 +39,7 @@ open import Slides.Diagram.Param using (param; dparam; AnyParam; continuous; dis
 open import Slides.Diagram.Euclid using (DExpr)
 import Slides.Anim.Formula as F
 open F using (Formula)
-open import Slides.Anim.Phases using (phasesOf)
+open import Slides.Anim.Phases using (phasesOf; Elem)
 open import Slides.Anim.DPhases using (phasesOfD)
 open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oAdd; oSub; oMax)
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
@@ -319,12 +319,9 @@ private
 
   -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements), with
   -- the formulas of each phase shared (`Slides.Anim.SharePhases.sharePhases`)
-  phasesⱼ : String → List (Dr.Layout (Expr ℕ)) → List JSON
-  phasesⱼ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOf ls))
-
-  -- the same for discrete templates (`Slides.Anim.DPhases.phasesOfD`)
-  phasesⱼᴰ : String → List (Dr.Layout (DExpr ℕ)) → List JSON
-  phasesⱼᴰ n ls = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases (phasesOfD ls))
+  -- (`phasesOf ls` for continuous templates, `Slides.Anim.DPhases.phasesOfD ls` for discrete ones)
+  phasesⱼ : String → List (ℕ × List Elem) → List JSON
+  phasesⱼ n ps = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases ps)
 
   ratⱼ : ℚ.ℚ → JSON
   ratⱼ q with ℚ.↧ₙ q
@@ -354,7 +351,7 @@ renderParamAnimation d (continuous (param ls segs)) ms play =
     ( ("data-n" , num (length ls))
     ∷ ("data-param" , renderJSON (objectFromList
          ( ("v" , arrayⱼ (map segmentJ segs))
-         ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) ls))
+         ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) (phasesOf ls)))
          ∷ [] )))
     ∷ [] )
     ms play
@@ -364,7 +361,7 @@ renderParamAnimation d (discrete (dparam ls segs)) ms play =
     ∷ ("data-param" , renderJSON (objectFromList
          ( ("d" , natⱼ 1)
          ∷ ("v" , arrayⱼ (map segmentJ segs))
-         ∷ ("p" , arrayⱼ (phasesⱼᴰ (Diagram.name d) ls))
+         ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) (phasesOfD ls)))
          ∷ [] )))
     ∷ [] )
     ms play

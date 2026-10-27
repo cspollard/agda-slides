@@ -26,6 +26,7 @@ open import Data.Nat using (ℕ; _+_; _⊔_; _∸_; _<ᵇ_)
 open import Data.Product using (_,_)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Container.Pick using (pick2)
 open import Data.Bool using (true; false)
 open import Data.Bool using (T)
 
@@ -106,12 +107,6 @@ ticks s = T.dur (track s)
 -- An animation over leaves `T`
 Anim : Set → Set → Set
 Anim S T = AnimC ⋆ T
-
-private
-  pick2 : ∀ {A : Set} → A → A → Fin 2 → A
-  pick2 a b zero          = a
-  pick2 a b (suc zero)    = b
-  pick2 a b (suc (suc ()))
 
 infixr 6 _⨾_
 infixr 7 _∥ᵃ_

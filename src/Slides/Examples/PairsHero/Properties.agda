@@ -14,6 +14,7 @@
 
 module Slides.Examples.PairsHero.Properties where
 
+open import Slides.Cong using (cong₄)
 open import Data.Bool using (Bool; if_then_else_; true; false)
 open import Data.List using ([]; _∷_; zipWith; upTo; foldr)
 open import Data.Nat as ℕ using (suc; _<ᵇ_; _∸_)
@@ -41,10 +42,6 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
     module E₂ = EuclidOps (DiscreteOps.euclid D₂)
   open IsOpsHom HO
   open IsEuclidHom HE
-
-  cong₄ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
-          a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
-  cong₄ f refl refl refl refl = refl
 
   sel-natural : ∀ i xs a → h (F₁.sel i xs a) ≡ F₂.sel i xs (h a)
   sel-natural i []           a = h-fromℕ 0

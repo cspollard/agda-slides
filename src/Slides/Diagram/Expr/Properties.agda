@@ -14,6 +14,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; setoid)
 
 open import Container.FreeMonad using (Eq; refl⋆; sym⋆; trans⋆; fmap)
+open import Container.Pick using (pick2)
 
 open import Container.FreeMonad.Properties using (bind-cong; bind-pure; bind-assoc)
 open import Container.Sum using (inl; inr)

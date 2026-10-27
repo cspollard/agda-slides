@@ -33,6 +33,7 @@ import Data.Rational.Properties as ℚP
 open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Container.Pick using (pick2)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
 ------------------------------------------------------------------------
@@ -137,12 +138,6 @@ SeqC = ⊤ ▷ (λ _ → Fin 2)
 
 Track : Set → Set
 Track A = SeqC ⋆ Piece A
-
-private
-  pick2 : ∀ {X : Set} → X → X → Fin 2 → X
-  pick2 a b zero          = a
-  pick2 a b (suc zero)    = b
-  pick2 a b (suc (suc ()))
 
 infixr 5 _⨾ᵗ_
 _⨾ᵗ_ : ∀ {A} → Track A → Track A → Track A

@@ -126,6 +126,57 @@ item is done.
   for the nine in a warm tree): each `agda` process re-reads all interfaces. Not changed: the executables need
   `--guardedness`, so they cannot join the aggregate.
 
+## Second pass (branch `stage1-old`, on `stage1-input`)
+
+Same method (type checker as the oracle; every merge re-checked, `tests/golden` unchanged). Lines are `src/`
+(19 131 before, 19075 after). Each item says whether it was done.
+
+### Done
+
+* **`pick2`/`pick4`** (4 + 1 copies): `Container.Pick`. The statements of `Diagram.Expr.Properties.two`
+  etc. are unchanged (they now see `pick2` through the import, not through `Diagram.Expr`).
+* **`cong₃`/`cong₄`**: five private copies (`Layout.Properties`, `Place.Properties.Atop`, `Diagram.Euclid`,
+  `Expr.Properties.Faithful` as `cong₄′`, `Examples.PairsHero.Properties`) are `Slides.Cong`.
+* **`shiftDraw`/`inFrame`/`overlay`/`combine`-natural**: proved twice (`Layout.Properties` under `IsOpsHom`,
+  `Place.Properties.Atop` under `h-+` only). One `Place.Properties.Natural {O P h h-+}`; `Atop` opens it and
+  `Layout.Properties` re-exports it from inside its `IsOpsHom` module, so names, arguments and statements are as before.
+* **Seq/Par clauses with equal bodies** (`Assembly.Leaf`: `numbered-≤`, `assignAt-out`, `InTree-range`,
+  `leaves-numbered`; `Assembly.Continuous`: `AllExact`): one clause on `impure (_ , c)`. *Not* mergeable when the
+  proof needs `foldA` to reduce on the shape (`length-segmentsOf`, `segmentsOf-nth`: tried, the checker refuses).
+  A script finds the candidates (consecutive clauses equal after `Seq`/`Par` renaming); the other Seq/Par pairs differ.
+* `Phases.withNums`: the `headOr`/`tailL` chains are `fromMaybe d (head (drop k ts))` (no proof mentions it).
+  `Continuous.leafAt`: one `sampleAt` in a `where`, not three; `lift2 = Maybe.zipWith`
+  (`lift2-just` unchanged). `Backend.Diagram`: `phasesⱼ`/`phasesⱼᴰ` are one function over the phases.
+
+### Deferred, with estimates (lines that could go)
+
+| item | where | est. | why not now |
+|---|---|---|---|
+| `Param`/`DParam`, `nonEmptyParam`/`dnonEmpty`, `instantiate`/`dinstantiate`, `mkParam`/`dmkParam`, `paramOf`/`dparamOf`, `dleaves` | `Diagram/Param`, `Anim/Param`, `Anim/DParam` | 40 | patterns on `param`/`dparam` and the `AnyParam` split in `Backend.Diagram`; Stage 2 reshapes it |
+| `Share`+`Share.Properties`, `SharePhases`+`.Properties`, `Formula`+`.Properties` (about 2 400 lines) | `Anim/*` | 200-400 | one development parameterised by a fold; large, Stage 2 |
+| `Assembly.Continuous` repeats the tick induction of `Assembly.Leaf.Over` for ℚ; `parAt` vs `Timeline.merge`, `Timed` vs `List` readings | `Anim/Assembly`, `Anim/Continuous` | 60 | Stage 2 (one `Timed` algebra with ticks as a restriction) |
+| `Reveal.deckAlg`/`Plain.deckAlg` | `Backend/{Reveal,Plain}` | 6 net | a generic `deckAlgOf emit` saves only a few lines now; Stage 3 changes the deck algebra |
+| `nth` ×3 (`Anim.Nth` Maybe; `Lower` an offset clamp; `TextMetrics` default), `member` ×2 | | 8 | three different functions (`Lower.nth` is shifted by one and clamps, its goldens depend on it); `Names.member` is proved sound by induction |
+| `Comparison⁻¹∘K≃id`: `F⇒G` and `F⇐G` are the same record | `Container/FreeMonad/Properties/Monadic` | 8 | the two target types differ in the checker's eyes; a typed helper needed |
+| `Spike/Input/*` duplicates `Input/*` (Nav, Machine, Machine.Properties: 6-line windows match) | | 400+ | Stage 1 new modules (out of scope here) |
+| `Examples.Talk`/`Showcase` repeat the `resources` record | | 8 | examples are meant to stand alone |
+| README quickstart and `docs/Authoring.md` closing section print the same program | docs | 10 | the README is the entry page |
+
+### Unused vocabulary, for the author (kept)
+
+`DSL.animate`, `animateLoop`, `animateBoth`, `fragmentWith`; `Components.bulletBody`; `Diagram.thick`/`dashed`/`faded`/`anchored`;
+`Lower.stripScripts`, `lowerBody`; `Backend.Reveal` `serifTheme`/`solarizedTheme`; `Track.holdLerp` (a `Lerp` for types with no
+interpolation; the comment above `Lerp` points at it).
+Unimported theory modules (all `.Properties` except the first four): `Container.Category`, `Slides.Anim.Loop`,
+`Slides.Anim.Assembly.Continuous`, `Slides.Backend.Restyle` (a `.Properties` by content; renaming it breaks
+`docs/NavInventory.md`'s table, which belongs to the Stage 1 work).
+
+### Tests / build
+
+`test-browser` (headless Chrome, macOS path baked in, 80 lines of Python) overlaps `test-playwright` (not compared check by check);
+it is the only browser check that runs without `npm install`, so it stays. `tests/spike` is referenced only by
+`plan/Animations.md`.
+
 ## Result
 
 See the final report: lines before/after, `make check` time and RSS, test results.

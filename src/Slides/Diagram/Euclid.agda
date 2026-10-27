@@ -47,6 +47,8 @@ open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (_▷_; _⇒_; shape; position)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (pure; impure)
+open import Container.Pick using (pick4)
+open import Slides.Cong using (cong₄)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 
 
@@ -110,14 +112,6 @@ subD = record { shape = λ o → inj₁ (inj₂ o) ; position = λ q → q }
 euclidD : EuclidC ⇒ DExprC
 euclidD = record { shape = λ o → inj₂ o ; position = λ q → q }
 
-private
-  pick4 : ∀ {A : Set} → A → A → A → A → Fin 4 → A
-  pick4 a b c d zero                = a
-  pick4 a b c d (suc zero)          = b
-  pick4 a b c d (suc (suc zero))    = c
-  pick4 a b c d (suc (suc (suc zero))) = d
-  pick4 a b c d (suc (suc (suc (suc ()))))
-
 module EuclidSyntax {Σ : Sig} (i : EuclidC ⇒ Σ) where
   -- `divBy d x` is `x / (d+1)`
   divBy modBy : ∀ {V} → ℕ → Term Σ V → Term Σ V
@@ -153,10 +147,6 @@ euclidH O .Handler.respects (ModBy d)  e = cong (EuclidOps.modBy O d) (e tt)
 euclidH O .Handler.respects (MulLit n) e = cong (EuclidOps.mulLit O n) (e tt)
 euclidH O .Handler.respects Lt e =
   cong₄ (EuclidOps.lt O) (e zero) (e (suc zero)) (e (suc (suc zero))) (e (suc (suc (suc zero))))
-  where cong₄ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
-                a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
-        cong₄ f refl refl refl refl = refl
-
 dH : ∀ {S} → DiscreteOps S → Handler DExprC S
 dH D = opsH (DiscreteOps.ops D) ⊕ euclidH (DiscreteOps.euclid D)
 

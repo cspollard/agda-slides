@@ -194,8 +194,7 @@ module Over
 
     numbered-≤ : ∀ t i i′ → numbered i i′ t → i ≤ i′
     numbered-≤ (pure l)           i i′ (refl , refl) = ℕP.n≤1+n i
-    numbered-≤ (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) = ℕP.≤-trans (numbered-≤ (c zero) i i₁ n₁) (numbered-≤ (c (suc zero)) i₁ i′ n₂)
-    numbered-≤ (impure (Par , c)) i i′ (i₁ , n₁ , n₂) = ℕP.≤-trans (numbered-≤ (c zero) i i₁ n₁) (numbered-≤ (c (suc zero)) i₁ i′ n₂)
+    numbered-≤ (impure (_ , c)) i i′ (i₁ , n₁ , n₂) = ℕP.≤-trans (numbered-≤ (c zero) i i₁ n₁) (numbered-≤ (c (suc zero)) i₁ i′ n₂)
 
     -- the parameter of a leaf at tick `k` if it is running there
     activeVal : Leaf E → ℕ → ℕ
@@ -232,17 +231,7 @@ module Over
     ... | yes refl with out
     ...   | inj₁ h = ⊥-elim (true≢false (trans (sym h) (<ᵇ-irrefl (Leaf.idx l))))
     ...   | inj₂ h = ⊥-elim (ℕP.1+n≰n h)
-    assignAt-out (impure (Seq , c)) i i′ (i₁ , n₁ , n₂) k j out =
-      cong₂ _+_ (assignAt-out (c zero) i i₁ n₁ k j (outˡ n₂ out))
-                (assignAt-out (c (suc zero)) i₁ i′ n₂ k j (outʳ n₁ out))
-      where
-        outˡ : numbered i₁ i′ (c (suc zero)) → _ → _
-        outˡ n₂ (inj₁ h) = inj₁ h
-        outˡ n₂ (inj₂ h) = inj₂ (ℕP.≤-trans (numbered-≤ _ i₁ i′ n₂) h)
-        outʳ : numbered i i₁ (c zero) → _ → _
-        outʳ n₁ (inj₁ h) = inj₁ (<ᵇ-true (ℕP.<-≤-trans (<ᵇ-lt h) (numbered-≤ _ i i₁ n₁)))
-        outʳ n₁ (inj₂ h) = inj₂ h
-    assignAt-out (impure (Par , c)) i i′ (i₁ , n₁ , n₂) k j out =
+    assignAt-out (impure (_ , c)) i i′ (i₁ , n₁ , n₂) k j out =
       cong₂ _+_ (assignAt-out (c zero) i i₁ n₁ k j (outˡ n₂ out))
                 (assignAt-out (c (suc zero)) i₁ i′ n₂ k j (outʳ n₁ out))
       where
@@ -291,13 +280,9 @@ module Over
 
     InTree-range : ∀ t i i′ lf → numbered i i′ t → InTree lf t → i ≤ Leaf.idx lf × Leaf.idx lf ℕ.< i′
     InTree-range (pure l) i i′ lf (refl , refl) refl = ℕP.≤-refl , ℕP.n<1+n _
-    InTree-range (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) with InTree-range (c zero) i i₁ lf n₁ h
+    InTree-range (impure (_ , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) with InTree-range (c zero) i i₁ lf n₁ h
     ... | lo , hi = lo , ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)
-    InTree-range (impure (Seq , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) with InTree-range (c (suc zero)) i₁ i′ lf n₂ h
-    ... | lo , hi = ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo , hi
-    InTree-range (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₁ h) with InTree-range (c zero) i i₁ lf n₁ h
-    ... | lo , hi = lo , ℕP.<-≤-trans hi (numbered-≤ _ i₁ i′ n₂)
-    InTree-range (impure (Par , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) with InTree-range (c (suc zero)) i₁ i′ lf n₂ h
+    InTree-range (impure (_ , c)) i i′ lf (i₁ , n₁ , n₂) (inj₂ h) with InTree-range (c (suc zero)) i₁ i′ lf n₂ h
     ... | lo , hi = ℕP.≤-trans (numbered-≤ _ i i₁ n₁) lo , hi
 
     length-segmentsOf : ∀ t i i′ → numbered i i′ t → i + length (segmentsOf t) ≡ i′
