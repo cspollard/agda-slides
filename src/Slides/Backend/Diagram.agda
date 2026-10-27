@@ -148,6 +148,9 @@ private
       ∷ [] )
       (marker (Diagram.name d) ∷ renderElements (Diagram.name d) (Diagram.elements d))
 
+renderSVG : Diagram → XMLM A
+renderSVG = svgOf
+
 renderDiagram : Diagram → XMLM A
 renderDiagram d = hElement "div" (("class" , "diagram") ∷ ("id" , Diagram.name d) ∷ []) (svgOf d ∷ [])
 
