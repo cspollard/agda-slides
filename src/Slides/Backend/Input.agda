@@ -25,15 +25,16 @@ open import Data.Nat.Base using (ℕ)
 open import Data.Nat.Properties using (_≟_)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.Product.Properties using (≡-dec)
-open import Relation.Nullary.Decidable using (map′; True)
+open import Relation.Nullary.Decidable using (True)
 open import Relation.Binary.Definitions using (DecidableEquality)
-open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
 
+open import Slides.DecEq using (retract-dec)
 open import Slides.Input.Binding using (Decoder; choice; disjoint*?)
 
--- Decidable equality of an enumeration through a retraction into ℕ.
+-- Decidable equality of an enumeration: a retract of ℕ (`Slides.DecEq.retract-dec`).
 decVia : ∀ {A : Set} (f : A → ℕ) (g : ℕ → A) → (∀ a → g (f a) ≡ a) → DecidableEquality A
-decVia f g gf a b = map′ (λ e → trans (sym (gf a)) (trans (cong g e) (gf b))) (cong f) (f a ≟ f b)
+decVia f g gf = retract-dec f g gf _≟_
 
 ------------------------------------------------------------------------
 -- Keys
