@@ -17,12 +17,18 @@ module Slides.Backend.Reveal where
 
 open import Level using (0ℓ)
 open import Data.Bool using (Bool; true; false)
-open import Data.List using (List; []; _∷_; _++_; map)
+open import Data.List using (List; []; _∷_; _++_; map; mapMaybe)
 open import Data.Nat using (ℕ)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using (Maybe; just; nothing; maybe′)
+import Data.Maybe.Base as Maybe
+open import Data.Maybe.Properties using (≡-dec)
+open import Data.Nat.Show using () renaming (show to showℕ)
 open import Data.Product using (_×_; _,_)
 open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
+open import Data.Container.Core using (Shape)
+open import Data.Container.FreeMonad using (pure; impure)
+open import Relation.Nullary using (yes; no)
 open import Function using (_∘_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
@@ -44,20 +50,27 @@ open import Data.JSON.Print using (renderJSON)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Steps using (steps)
+open import Slides.Lower using (presentBody)
+open import Slides.Input.Binding using (Decoder)
+open import Slides.Input.Supports (Shape BlockC) using (Supports; NavTotal)
+open import Slides.Input.Nav using (next; prev)
+open import Slides.Backend.Input
+open import Slides.Backend.Reveal.Supports
 open import Slides.Backend.HTML
 open import Slides.Backend.Common public
 
 module D = Alg 0ℓ 0ℓ DeckC
 
--- The deck algebra: each slide is a `<section>`; a stack is a `<section>`
--- of `<section>`s.
-deckAlg : F-Algebra D.F
-deckAlg = record
+-- The deck algebra, given what is done to each slide body `f` (`steps` for the old
+-- renderer, `presentBody b` for a backend `b`): each slide is a `<section>`; a stack is a
+-- `<section>` of `<section>`s.
+deckAlgBy : (Body → Body) → F-Algebra D.F
+deckAlgBy f = record
   { A = ForestSetoid
   ; α = record
-      { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody (steps b)) ∷ k tt
+      { to   = λ { (slide o b , k)  → section (slideAttrs o) (renderBody (f b)) ∷ k tt
                  ; (stack o bs , k) →
-                     section (slideAttrs o) (map (section [] ∘ renderBody ∘ steps) bs) ∷ k tt }
+                     section (slideAttrs o) (map (section [] ∘ renderBody ∘ f) bs) ∷ k tt }
       ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt
                  ; {stack _ _ , _} {stack _ _ , _} (refl ,ₚ k≈) →
@@ -65,8 +78,17 @@ deckAlg = record
       }
   }
 
+renderDeckBy : (Body → Body) → Deck → Forest
+renderDeckBy f = D.fold (deckAlgBy f) {⊤ˢ} nil
+
 renderDeck : Deck → Forest
-renderDeck = D.fold deckAlg {⊤ˢ} nil
+renderDeck = renderDeckBy steps
+
+-- Reveal navigates a deck on a grid when it has a vertical stack, linearly otherwise.
+modeOf : Deck → Mode
+modeOf (pure _)                 = linear
+modeOf (impure (slide _ _ , k)) = modeOf (k tt)
+modeOf (impure (stack _ _ , _)) = stacked
 
 ------------------------------------------------------------------------
 -- The page
@@ -114,6 +136,9 @@ record RevealConfig : Set where
     -- extra JavaScript files (paths relative to the page), loaded after the
     -- reveal.js plugins and before `init.js`
     scriptFiles : List String
+    -- how keys are read (`revealKeys` is reveal's own); `init.js` configures reveal.js
+    -- for the keys where this differs
+    binding     : Mode → Decoder Key RCmd
 
 defaultConfig : RevealConfig
 defaultConfig = record
@@ -128,6 +153,7 @@ defaultConfig = record
   ; height      = nothing
   ; scripts     = []
   ; scriptFiles = []
+  ; binding     = revealKeys
   }
 
 private
@@ -164,16 +190,64 @@ page cfg slides =
 withSource : Source → RevealConfig → RevealConfig
 withSource s cfg = record cfg { base = sourceBase s }
 
+-- The `keyboard` option of reveal.js: its key code and what the key does, for each key where
+-- the binding `r` differs from reveal's own table `revealKeys`.  reveal.js runs the method
+-- named by a string, and ignores the key (and its default) for any other value, so a command
+-- with no method, or no command, turns the key off.  The option is keyed by key code, so
+-- only the unmodified key is compared (and `otherKey`, which has no code, is not).
+keyCode : KeyName → Maybe ℕ
+keyCode arrowLeft  = just 37
+keyCode arrowUp    = just 38
+keyCode arrowRight = just 39
+keyCode arrowDown  = just 40
+keyCode space      = just 32
+keyCode pageUp     = just 33
+keyCode pageDown   = just 34
+keyCode end        = just 35
+keyCode home       = just 36
+keyCode escape     = just 27
+keyCode keyH       = just 72
+keyCode keyJ       = just 74
+keyCode keyK       = just 75
+keyCode keyL       = just 76
+keyCode keyN       = just 78
+keyCode keyO       = just 79
+keyCode keyP       = just 80
+keyCode keyQ       = just 81
+keyCode otherKey   = nothing
+
+-- The `Reveal` method a command runs.
+method : RCmd → Maybe String
+method (nav next)      = just "next"
+method (nav prev)      = just "prev"
+method (ext overview)  = just "toggleOverview"
+method (move right)    = just "right"
+method (move left)     = just "left"
+method (move down)     = just "down"
+method (move up)       = just "up"
+method _               = nothing
+
+keyboard : Mode → Decoder Key RCmd → List (String × JSON)
+keyboard m r = mapMaybe differs names
+  where
+    differs : KeyName → Maybe (String × JSON)
+    differs n with keyCode n
+    ... | nothing = nothing
+    ... | just c with ≡-dec _≟R_ (revealKeys m (n , bare)) (r (n , bare))
+    ...   | yes _ = nothing
+    ...   | no _  = just (showℕ c , maybe′ stringⱼ (boolⱼ false) (r (n , bare) Maybe.>>= method))
+
 -- The options for `Reveal.initialize`, as JSON.
-options : RevealConfig → JSON
-options cfg = objectFromList
+options : Mode → RevealConfig → JSON
+options m cfg = objectFromList
   ( ("hash" , trueⱼ)
   ∷ ("transition" , stringⱼ (RevealConfig.transition cfg))
   ∷ ("slideNumber" , boolⱼ (RevealConfig.slideNumber cfg))
   ∷ ("controls" , boolⱼ (RevealConfig.controls cfg))
   ∷ ("progress" , boolⱼ (RevealConfig.progress cfg))
   ∷ optNat "width" (RevealConfig.width cfg)
-  ++ optNat "height" (RevealConfig.height cfg) )
+  ++ optNat "height" (RevealConfig.height cfg)
+  ++ optKeyboard (keyboard m (RevealConfig.binding cfg m)) )
   where
     natⱼ : ℕ → JSON
     natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
@@ -181,6 +255,10 @@ options cfg = objectFromList
     optNat : String → Maybe ℕ → List (String × JSON)
     optNat k nothing  = []
     optNat k (just n) = (k , natⱼ n) ∷ []
+
+    optKeyboard : List (String × JSON) → List (String × JSON)
+    optKeyboard []       = []
+    optKeyboard kvs@(_ ∷ _) = ("keyboard" , objectFromList kvs) ∷ []
 
 -- Runs the `script` commands of a slide (`.js` elements carrying their code
 -- in `data-js`) once, the first time the slide is shown.
@@ -218,14 +296,20 @@ animationSync =
 
 -- `init.js`: the options plus the plugins (which are JavaScript values, not
 -- JSON), the script loader, and the deck's own scripts.
-initScript : RevealConfig → String
-initScript cfg =
-  "Reveal.initialize(Object.assign(" ++ˢ renderJSON (options cfg) ++ˢ
+initScript : Mode → RevealConfig → String
+initScript m cfg =
+  "Reveal.initialize(Object.assign(" ++ˢ renderJSON (options m cfg) ++ˢ
   ", {plugins: [RevealNotes, RevealHighlight, RevealMath.KaTeX]}));\n" ++ˢ
   scriptLoader ++ˢ
   animationSync ++ˢ
   concat (map (_++ˢ "\n") (RevealConfig.scripts cfg))
 
--- `index.html`, with the (unverified, constant) doctype prefix.
+-- `index.html`: a backend `b` presents a deck when it supports all of `Nav`
+-- (`Slides.Input.Supports`): each slide body is elaborated (`pause` is `await next`), its
+-- awaited commands are lowered to `b`'s and the steps it gives are shown (`presentBody`).
+-- The doctype prefix is constant and unverified.
+present : ∀ {C} (b : Supports C) → NavTotal b → RevealConfig → Deck → String
+present b _ cfg d = doctype ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
+
 renderReveal : RevealConfig → Deck → String
-renderReveal cfg d = doctype ++ˢ renderXML (page cfg (renderDeck d))
+renderReveal = present (revealSupports (Shape BlockC)) (revealSupports-total (Shape BlockC))

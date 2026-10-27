@@ -6,7 +6,6 @@
 --                        defined) and none is shadowed
 --   plain-render         the canonical input of each command reads back as that command
 --   plain-command        ... and through `Supports.dec`
---   plainSupports-total  plain supports all of `Nav`
 --
 -- What plain.js does with modifiers and hashes is a table in docs/Input.md, pinned by
 -- tests/browser/nav.mjs, not theorems: nothing depends on it.
@@ -44,7 +43,3 @@ plain-render clock ()
 plain-command : ∀ {k s e} → inj (plainSupports V) k ≡ just s → plainRender s ≡ just e →
                 command (plainSupports V) plainRead e ≡ just k
 plain-command = command-render (plainSupports V) plainRead plainRender (λ s _ → plain-render s)
-
--- Plain can present every deck (an `await overview` is skipped: it has no overview).
-plainSupports-total : NavTotal (plainSupports V)
-plainSupports-total n = nav n , refl

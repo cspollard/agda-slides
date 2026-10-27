@@ -78,6 +78,7 @@ example:
 .PHONY: test test-browser
 test:
 	python3 tests/check_closure.py
+	python3 tests/check_plain_keys.py
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
@@ -172,6 +173,19 @@ pairs-local:
 	cp $(PAIRS_FILES) out/pairs-local/
 	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
 
+# A deck with a non-default key binding (src/Slides/Examples/KeysMain.agda): not a golden.
+.PHONY: keys test-keys
+keys:
+	mkdir -p out/keys $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/keys/reveal
+	cp assets/slides.css assets/animation.js out/keys/
+	$(call run-main,src/Slides/Examples/KeysMain.agda)
+
+# The binding reaches reveal.js as a `keyboard` option and works (needs `make keys`).
+test-keys:
+	cd tests/browser && npm install --silent
+	node tests/browser/keys.mjs out
+
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.
 .PHONY: test-playwright
@@ -222,4 +236,4 @@ test-nav:
 	node tests/browser/nav.mjs out
 
 # Every browser test that needs only local files (test-pairs needs a CDN and is left out).
-test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav
+test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav test-keys

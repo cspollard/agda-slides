@@ -18,6 +18,7 @@ open import Data.Nat using (_+_)
 open import Data.Product using (_,_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (tt)
+open import Data.Container.Core using (Shape)
 open import Function using (_∘_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
@@ -34,6 +35,9 @@ open import Data.XML.Print using (renderXML)
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Slides.Core
 open import Slides.Steps using (steps)
+open import Slides.Lower using (presentBody)
+open import Slides.Input.Supports (Shape BlockC) using (Supports; NavTotal)
+open import Slides.Backend.Plain.Supports
 open import Slides.Backend.HTML
 open import Slides.Backend.Common
 
@@ -43,21 +47,26 @@ module D = Alg 0ℓ 0ℓ DeckC
 slideSection : SlideOptions → Forest → XMLDoc
 slideSection o = hElement "section" (("class" , "slide") ∷ slideAttrs o)
 
-deckAlg : F-Algebra D.F
-deckAlg = record
+-- The deck algebra, given what is done to each slide body `f` (`steps` for the old
+-- renderer, `presentBody b` for a backend `b`).
+deckAlgBy : (Body → Body) → F-Algebra D.F
+deckAlgBy f = record
   { A = ForestSetoid
   ; α = record
-      { to   = λ { (slide o b , k)  → slideSection o (renderBody (steps b)) ∷ k tt
-                 ; (stack o bs , k) → map (slideSection o ∘ renderBody ∘ steps) bs ++ k tt }
+      { to   = λ { (slide o b , k)  → slideSection o (renderBody (f b)) ∷ k tt
+                 ; (stack o bs , k) → map (slideSection o ∘ renderBody ∘ f) bs ++ k tt }
       ; cong = λ { {slide _ _ , _} {slide _ _ , _} (refl ,ₚ k≈) →
                      Setoid.refl XMLSetoid PW.∷ k≈ tt
                  ; {stack o bs , _} {stack _ _ , _} (refl ,ₚ k≈) →
-                     PW.++⁺ (Setoid.refl ForestSetoid {map (slideSection o ∘ renderBody ∘ steps) bs}) (k≈ tt) }
+                     PW.++⁺ (Setoid.refl ForestSetoid {map (slideSection o ∘ renderBody ∘ f) bs}) (k≈ tt) }
       }
   }
 
+renderDeckBy : (Body → Body) → Deck → Forest
+renderDeckBy f = D.fold (deckAlgBy f) {⊤ˢ} nil
+
 renderDeck : Deck → Forest
-renderDeck = D.fold deckAlg {⊤ˢ} nil
+renderDeck = renderDeckBy steps
 
 ------------------------------------------------------------------------
 -- The page
@@ -100,6 +109,10 @@ page cfg slides =
     katexJs (just k) = scriptTag (k ++ˢ "katex.min.js")
                      ∷ scriptTag (k ++ˢ "contrib/auto-render.min.js") ∷ []
 
--- `index.html`, with the (unverified, constant) doctype prefix.
+-- `index.html`: a backend `b` presents a deck when it supports all of `Nav` (see
+-- `Slides.Backend.Reveal.present`).  The doctype prefix is constant and unverified.
+present : ∀ {C} (b : Supports C) → NavTotal b → PlainConfig → Deck → String
+present b _ cfg d = doctype ++ˢ renderXML (page cfg (renderDeckBy (presentBody b) d))
+
 renderPlain : PlainConfig → Deck → String
-renderPlain cfg d = doctype ++ˢ renderXML (page cfg (renderDeck d))
+renderPlain = present (plainSupports (Shape BlockC)) (plainSupports-total (Shape BlockC))

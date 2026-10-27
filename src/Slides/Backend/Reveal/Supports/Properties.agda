@@ -7,7 +7,6 @@
 --                          to that kind's command
 --   reveal-render          the canonical input of each command reads back as that command
 --   reveal-command         ... and through `Supports.dec`: supported commands round-trip
---   revealSupports-total   reveal supports all of `Nav`
 --
 -- What reveal does with modifiers, hashes and `hashchange` is a table in docs/Input.md, pinned
 -- by tests/browser/nav.mjs, not theorems: nothing depends on it.
@@ -77,7 +76,3 @@ reveal-command : ∀ m {k s e} → inj (revealSupports V) k ≡ just s → revea
                  command (revealSupports V) (revealRead m) e ≡ just k
 reveal-command m = command-render (revealSupports V) (revealRead m) (revealRender m)
                      (λ s _ → reveal-render m s)
-
--- Reveal can present every deck: it supports all of `Nav` (and the extras).
-revealSupports-total : NavTotal (revealSupports V)
-revealSupports-total n = nav n , refl

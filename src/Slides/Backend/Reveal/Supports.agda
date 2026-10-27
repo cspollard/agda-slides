@@ -149,3 +149,7 @@ module _ (V : Set) where
     ; inj-dec = λ { {s = nav _} refl → refl ; {s = ext _} refl → refl
                   ; {s = move _} () ; {s = slideV _ _} () }
     }
+
+  -- Reveal can present every deck: it supports all of `Nav` (and the extras).
+  revealSupports-total : NavTotal revealSupports
+  revealSupports-total n = nav n , refl

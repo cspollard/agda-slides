@@ -61,8 +61,8 @@ stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X`
   `stepsBy step?` (mode, `afterBy`) where `step?` says which awaited commands are steps: `isNext`
   for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a backend vocabulary.
 * `Slides.Lower`: `lowerCmd b` (supported renamed, unsupported skipped), `lowerCmdBlock`,
-  `lowerCmdBody`. Awaits occur only at body level, so nothing else is touched. Lifting both
-  passes to whole decks (a clause per slide constructor) is left to the step that presents a deck.
+  `lowerCmdBody`, and `presentBody b` (the whole pipeline on a body). Awaits occur only at body level, so nothing
+  else is touched; the backends lift it to decks (next section).
 * Laws: `Slides.Steps.Properties` (`stepsBy-elab : stepsBy isNext (elab b) ≡ steps b`, `goBy-bind`,
   `go-bind`, `go-bind-elab`, `elab-bind`); `Slides.Lower.Properties` (`lowerCmdBody-bind`,
   `lowerCmdBody-lowerDeck`, `steps-lowered`, `steps-pipeline`).
@@ -100,7 +100,26 @@ Backends do **not** have to interpret inputs identically. `navM` (the replay mac
 
 Two things the deck side (steps 2, 5-7) still has to settle: (a) physical `goto` is by *slide* (`#/h`, `#n`) while `navM`'s `goto k` is by *position*, so the lowering must give the slide table, best as a `label` per slide; (b) reveal's grid moves and the vertical goto have no `Nav` meaning, they are reveal extensions. The mode (`linear` or `stacked`) is a property of the deck (does it contain a `stack`), chosen when presenting.
 
-Step 6 on paper (not implemented, no output changes): for reveal, `Reveal.initialize` receives a `keyboard` map only for keys where a deck's binding differs from `revealKeys`; for the default binding the map is empty and `init.js` is byte-identical. Plain keeps its key table in `assets/plain.js` (byte-exact golden); a test would extract the `e.key` names of `plain.js` and compare them with the decoded kinds of `plainKinds` (generating `plain.js` from them is Stage 5 and changes the golden once).
+## Presenting and binding as data
+
+`Slides.Backend.{Reveal,Plain}.present b nt cfg d` renders a deck on a backend `b` with `NavTotal` evidence
+`nt`: each slide body goes through `Slides.Lower.presentBody b` (`elab`, `lowerCmdBody b`,
+`stepsBy (isNextS b)`) and then the existing `renderBody`; the deck algebra `deckAlgBy f` takes that per-body
+pass as a parameter, so the lifting to a deck is its two clauses (`slide`, and `stack` with a `map`).
+`renderReveal` and `renderPlain` are `present` at `revealSupports` and `plainSupports`. Law
+(`Backend.{Reveal,Plain}.Properties`): `present-renderDeck`, `present-reveal`, `present-plain`: for any `b` that supports
+`next`, presenting renders as `steps` then render did (one induction per slide constructor and `map-cong`
+over a stack, then `steps-pipeline`).
+
+For reveal the binding is data: `RevealConfig.binding : Mode → Decoder Key RCmd` (default `revealKeys`; `Reveal.modeOf`
+gives a deck's mode), and `Reveal.keyboard` is the `keyboard` option of `Reveal.initialize` for exactly the unmodified
+keys where the binding differs from `revealKeys` (key code to the reveal method, or `false` for a key that is
+off). Nothing differs for the default binding, so no option is emitted and `init.js` is byte-identical.
+`Slides.Examples.KeysMain` is a non-default binding (`make keys`, `make test-keys`). Gaps: the option is
+by key code, so modifiers are not distinguished; commands with no zero-argument reveal method
+(`first`, `last`, `goto`) cannot be bound to a new key (such a key is turned off). Plain keeps its key table in
+`assets/plain.js` (byte-exact golden); `tests/check_plain_keys.py` extracts it and `plainKinds` and compares them
+(generating `plain.js` from the kinds is Stage 5 and changes the golden once).
 
 ## Deferred
 

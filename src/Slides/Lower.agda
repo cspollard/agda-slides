@@ -39,6 +39,7 @@ open import Slides.Diagram using (Diagram)
 open import Slides.Input.Deck
 open import Slides.Input.Supports (Shape BlockC) using (Supports)
 open Supports
+open import Slides.Steps.Input using (elab; stepsBy; isNextS)
 
 ------------------------------------------------------------------------
 -- Content lowerings
@@ -141,3 +142,9 @@ module _ {C : Set} (b : Supports C) where
 
   lowerCmdBody : Body⁺ (Nav ⊎ C) → Body⁺ (S b)
   lowerCmdBody = lower lowerCmdBlock
+
+  -- What a backend does with a slide body: elaborate `pause` to `await next`, lower the
+  -- awaited commands to the backend's, then step.  It is `Slides.Steps.steps` for a backend
+  -- that supports `next` (`steps-pipeline`).
+  presentBody : Body → Body
+  presentBody x = stepsBy (isNextS b) (lowerCmdBody (elab x))

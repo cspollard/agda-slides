@@ -40,7 +40,7 @@ decVia f g gf = retract-dec f g gf _≟_
 -- Keys
 
 data KeyName : Set where
-  arrowRight arrowLeft arrowDown arrowUp space pageDown pageUp home end keyN keyP keyH keyJ keyK keyL keyO escape otherKey : KeyName
+  arrowRight arrowLeft arrowDown arrowUp space pageDown pageUp home end keyN keyP keyH keyJ keyK keyL keyO keyQ escape otherKey : KeyName
 
 data Mods : Set where
   bare shift ctrl : Mods   -- ctrl: any of ctrl and meta (alt is not modelled)
@@ -66,8 +66,9 @@ private
   idx keyK = 13
   idx keyL = 14
   idx keyO = 15
-  idx escape = 16
-  idx otherKey = 17
+  idx keyQ = 16
+  idx escape = 17
+  idx otherKey = 18
 
   un : ℕ → KeyName
   un 0 = arrowRight
@@ -86,7 +87,8 @@ private
   un 13 = keyK
   un 14 = keyL
   un 15 = keyO
-  un 16 = escape
+  un 16 = keyQ
+  un 17 = escape
   un _ = otherKey
 
   un-idx : ∀ a → un (idx a) ≡ a
@@ -106,6 +108,7 @@ private
   un-idx keyK = refl
   un-idx keyL = refl
   un-idx keyO = refl
+  un-idx keyQ = refl
   un-idx escape = refl
   un-idx otherKey = refl
 
@@ -113,7 +116,7 @@ _≟K_ : DecidableEquality KeyName
 _≟K_ = decVia idx un un-idx
 
 names : List KeyName
-names = arrowRight ∷ arrowLeft ∷ arrowDown ∷ arrowUp ∷ space ∷ pageDown ∷ pageUp ∷ home ∷ end ∷ keyN ∷ keyP ∷ keyH ∷ keyJ ∷ keyK ∷ keyL ∷ keyO ∷ escape ∷ otherKey ∷ []
+names = arrowRight ∷ arrowLeft ∷ arrowDown ∷ arrowUp ∷ space ∷ pageDown ∷ pageUp ∷ home ∷ end ∷ keyN ∷ keyP ∷ keyH ∷ keyJ ∷ keyK ∷ keyL ∷ keyO ∷ keyQ ∷ escape ∷ otherKey ∷ []
 
 names-cover : ∀ a → a ∈ names
 names-cover arrowRight = here refl
@@ -132,8 +135,9 @@ names-cover keyJ = there (there (there (there (there (there (there (there (there
 names-cover keyK = there (there (there (there (there (there (there (there (there (there (there (there (there (here refl)))))))))))))
 names-cover keyL = there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl))))))))))))))
 names-cover keyO = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl)))))))))))))))
-names-cover escape = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl))))))))))))))))
-names-cover otherKey = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl)))))))))))))))))
+names-cover keyQ = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl))))))))))))))))
+names-cover escape = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl)))))))))))))))))
+names-cover otherKey = there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (there (here refl))))))))))))))))))
 
 private
   mi : Mods → ℕ

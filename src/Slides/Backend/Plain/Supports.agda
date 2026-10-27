@@ -85,3 +85,7 @@ module _ (V : Set) where
     ; dec-inj = λ { {inj₁ _} refl → refl ; {inj₂ overview} () ; {inj₂ tick} refl → refl }
     ; inj-dec = λ { {s = nav _} refl → refl ; {s = clock} refl → refl }
     }
+
+  -- Plain can present every deck (an `await overview` is skipped: it has no overview).
+  plainSupports-total : NavTotal plainSupports
+  plainSupports-total n = nav n , refl
