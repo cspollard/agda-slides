@@ -1,14 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of `plainSupports` and the facts the browser tests found for `assets/plain.js`.
+-- Laws of `plainSupports`.
 --
 --   plainKinds-disjoint   the key kinds are pairwise disjoint (decided)
 --   plainKeys-kind        no kind is shadowed
 --   plain-render          the canonical input of each command reads back as that command
 --   plain-command         ... and through `Supports.dec`
---   plain-ignores-mods    modifiers do not matter (Shift+Space and Ctrl+ArrowRight are `next`)
---   plain-no-hashchange   a hash change after load is not read
---   plain-hash-*          `#n` is one-based and flat; there is no two-dimensional hash
+--   plainSupports-total   plain supports all of `Nav`
+--
+-- What plain.js does with modifiers and hashes is a table in docs/Input.md, pinned by
+-- tests/browser/nav.mjs, not theorems: nothing depends on it.
 
 module Slides.Backend.Plain.Supports.Properties (V : Set) where
 
@@ -53,38 +54,6 @@ plain-command : ∀ {k s e} → inj (plainSupports V) k ≡ just s → plainRend
                 command (plainSupports V) plainRead e ≡ just k
 plain-command = command-render (plainSupports V) plainRead plainRender (λ s _ → plain-render s)
 
-------------------------------------------------------------------------
--- What plain.js does
-
-plain-ignores-mods : ∀ n m m′ → plainKey (n , m) ≡ plainKey (n , m′)
-plain-ignores-mods _ _ _ = refl
-
-shiftSpace-next : plainKey (space , shift) ≡ just (nav next)
-shiftSpace-next = refl
-
-ctrlRight-next : plainKey (arrowRight , ctrl) ≡ just (nav next)
-ctrlRight-next = refl
-
--- ArrowDown is `next` whatever the deck.
-arrowDown-next : ∀ m → plainKey (arrowDown , m) ≡ just (nav next)
-arrowDown-next _ = refl
-
-plain-no-hashchange : ∀ h → plainRead (hashChange h) ≡ nothing
-plain-no-hashchange _ = refl
-
--- One-based and flat.
-plain-hash-one-based : ∀ n → plainHash (flat (suc n)) ≡ just (nav (goto n))
-plain-hash-one-based _ = refl
-
-plain-hash-clamp : plainHash (flat zero) ≡ just (nav (goto zero))
-plain-hash-clamp = refl
-
-plain-no-grid : ∀ h v → plainHash (grid h v) ≡ nothing
-plain-no-grid _ _ = refl
-
--- Plain can present every deck; an `await overview` is skipped (it has no overview).
+-- Plain can present every deck (an `await overview` is skipped: it has no overview).
 plainSupports-total : NavTotal (plainSupports V)
 plainSupports-total n = nav n , refl
-
-plain-skips-overview : inj (plainSupports V) (inj₂ overview) ≡ nothing
-plain-skips-overview = refl

@@ -37,13 +37,3 @@ choice-∈ {ds = d′ ∷ ds} {d} (dis ∷ ap) (there m) i e with All.lookup dis
 ... | inj₂ n = ⊥-elim (just≢nothing (trans (sym e) n))
   where just≢nothing : ∀ {A : Set} {x : A} → just x ≡ nothing → _
         just≢nothing ()
-
--- A statement about every key name, checked by computation over the finite list.
-module _ {P : KeyName → Set} (P? : ∀ n → Dec (P n)) where
-
-  ∀-names : True (All.all? P? names) → ∀ n → P n
-  ∀-names t n = All.lookup (toWitness t) (names-cover n)
-
-isNothing? : ∀ {A : Set} (m : Maybe A) → Dec (m ≡ nothing)
-isNothing? (just _) = no λ ()
-isNothing? nothing  = yes refl

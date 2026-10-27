@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Physical inputs of the browser backends and how a backend reads them (docs/Input.md,
--- "Backends: Supports, lowering, binding" and "Conformance").
+-- "Backend bindings").
 --
 --   Key, Hash, Event   what the page sees: a key (name and modifier), a URL hash (`#n` flat,
 --                      `#/h/v` two-dimensional) read on load or on `hashchange`;
@@ -205,7 +205,7 @@ _≟E_ : DecidableEquality Ext
 _≟E_ = decVia ei ie ie-ei
 
 -- A deck without a vertical stack is navigated linearly by reveal; otherwise reveal moves
--- on a grid (docs/Input.md, "Conformance").
+-- on a grid.
 data Mode : Set where
   linear stacked : Mode
 

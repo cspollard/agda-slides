@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- What reveal.js supports and how it reads physical input (docs/NavInventory.md, 1.3, 6;
--- docs/Input.md, "Conformance").  Reveal binds its keys itself (`js/controllers/keyboard.js`);
+-- docs/Input.md, "Backend bindings").  Reveal binds its keys itself (`js/controllers/keyboard.js`);
 -- this is the description of what it does, not configuration.
 --
 --   RCmd        reveal's own command vocabulary: all of `Nav`, `Ext`, the grid moves, and the

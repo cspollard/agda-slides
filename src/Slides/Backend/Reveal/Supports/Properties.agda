@@ -1,25 +1,24 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of `revealSupports` and the facts the browser tests found (tests/browser/nav.mjs).
+-- Laws of `revealSupports`.
 --
 --   revealKinds-disjoint   the key kinds of each mode are pairwise disjoint (decided)
 --   revealKeys-kind        no kind is shadowed: a key of a kind decodes to that kind's command
 --   reveal-render          the canonical input of each command reads back as that command
 --   reveal-command         ... and through `Supports.dec`: supported commands round-trip
---   shiftSpace-prev, ctrl-ignored, arrowDown-*, hashchange-*, hash-flat-zero-based:
---                          what reveal does, as theorems (plain's differences are in
---                          `Slides.Backend.Conformance.Properties`)
+--   revealSupports-total   reveal supports all of `Nav`
+--
+-- What reveal does with modifiers, hashes and `hashchange` is a table in docs/Input.md, pinned
+-- by tests/browser/nav.mjs, not theorems: nothing depends on it.
 
 module Slides.Backend.Reveal.Supports.Properties (V : Set) where
 
 open import Data.List.Base using (List)
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Unary.AllPairs using (AllPairs)
-import Data.List.Relation.Unary.All as All
 open import Data.Maybe.Base using (Maybe; just; nothing)
 open import Data.Nat.Base using (zero; suc)
 open import Data.Product.Base using (_,_)
-open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit.Base using (tt)
 open import Relation.Nullary.Decidable using (toWitness)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
@@ -84,37 +83,6 @@ reveal-command : ∀ m {k s e} → inj (revealSupports V) k ≡ just s → revea
                  command (revealSupports V) (revealRead m) e ≡ just k
 reveal-command m = command-render (revealSupports V) (revealRead m) (revealRender m)
                      (λ s _ → reveal-render m s)
-
-------------------------------------------------------------------------
--- What reveal does
-
--- Shift+Space is `prev`.
-shiftSpace-prev : ∀ m → revealKeys m (space , shift) ≡ just (nav prev)
-shiftSpace-prev linear  = refl
-shiftSpace-prev stacked = refl
-
--- Ctrl and meta disable every key.
-ctrl-ignored : ∀ m n → revealKeys m (n , ctrl) ≡ nothing
-ctrl-ignored linear  = ∀-names (λ n → isNothing? (revealKeys linear (n , ctrl))) tt
-ctrl-ignored stacked = ∀-names (λ n → isNothing? (revealKeys stacked (n , ctrl))) tt
-
--- ArrowDown moves one step in a linear deck and down the grid in a stacked deck, where it
--- is no `Nav` command (on a horizontal slide it does nothing).
-arrowDown-linear : revealKeys linear (arrowDown , bare) ≡ just (nav next)
-arrowDown-linear = refl
-
-arrowDown-stacked : revealKeys stacked (arrowDown , bare) ≡ just (move down)
-arrowDown-stacked = refl
-
-arrowDown-stacked-no-nav : command (revealSupports V) (revealRead stacked) (keydown (arrowDown , bare)) ≡ nothing
-arrowDown-stacked-no-nav = refl
-
--- `hashchange` is read like the hash on load; `#n` is `#/n` (zero-based).
-hashchange-load : ∀ m h → revealRead m (hashChange h) ≡ revealRead m (hashLoad h)
-hashchange-load _ _ = refl
-
-hash-flat-grid : ∀ n → revealHash (flat n) ≡ revealHash (grid n 0)
-hash-flat-grid _ = refl
 
 -- Reveal can present every deck: it supports all of `Nav` (and the extras).
 revealSupports-total : NavTotal (revealSupports V)
