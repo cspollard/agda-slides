@@ -25,20 +25,14 @@ module Slides.Anim.DParam where
 open import Data.List using (List; []; _∷_; map)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
-open import Data.Nat using (ℕ; _+_)
+open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; _,_)
-open import Data.Fin using ()
-open import Data.Unit using ()
 open import Data.Container.FreeMonad using (_⋆_)
-open import Data.Rational using ()
-
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 open import Slides.Diagram.Euclid using (DExpr; dexprOps; renameD; weakenE)
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Scalar using ()
 open import Slides.Diagram.Param using (DParam; dparam)
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using ()
 open import Slides.Anim.Param using (seqAll; Leaf; leaf; leavesWith; symbolicFramesWith; segmentsOf)
 
 -- a segment placed in an animation (`Slides.Anim.Param.Leaf` over `DExpr`)

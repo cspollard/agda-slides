@@ -13,13 +13,11 @@ import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃-syntax)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Relation.Binary using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 open import Relation.Nullary using (yes; no; ¬_; Dec)
 import Data.Tree.AVL.Map.Membership.Propositional as AVLMem
 import Data.Tree.AVL.Map.Membership.Propositional.Properties as AVLMemP
 
-open import Slides.DecEq using ()
 open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; pct; hlf; fdiv; fmod; fmul; flt)
 
 open import Slides.Anim.Share

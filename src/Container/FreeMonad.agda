@@ -20,8 +20,6 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Structures using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; subst)
 
-open import Categories.NaturalTransformation using ()
-
 private
   variable
     s p c ℓ : Level

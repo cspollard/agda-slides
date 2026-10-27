@@ -15,8 +15,6 @@ open import Data.Unit using (tt)
 
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
-open import Data.Integer as ℤ using ()
-
 open import Slides.Anim.Syntax
 
 -- `foldA` commutes with `>>=` (a tween is a bind): substituting then folding is

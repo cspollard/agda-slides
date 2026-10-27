@@ -8,11 +8,6 @@ open import Relation.Binary.Bundles using (Setoid)
 
 
 open import Data.XML.AST using (XMLC; XMLDoc; XMLShape)
-open import Data.XML.Equality using ()
-open import Data.XML.Print using ()
-open import Data.XML.RoundTrip using ()
-
-
 open import Slides.Backend.XML
 
 ------------------------------------------------------------------------

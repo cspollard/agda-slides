@@ -16,7 +16,6 @@ open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 
-open import Categories.Category.Instance.Setoids using ()
 open import Categories.NaturalTransformation using (NaturalTransformation)
 open import Categories.NaturalTransformation.Equivalence using (_≃_)
 import Categories.NaturalTransformation.Core as NT

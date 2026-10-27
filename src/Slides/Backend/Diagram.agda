@@ -9,7 +9,6 @@
 
 module Slides.Backend.Diagram where
 
-open import Data.Char using ()
 open import Data.List using (List; []; _∷_; _++_; map; length; [_])
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; _*_; _/_; _%_; suc; _+_; _≟_)
@@ -45,10 +44,8 @@ open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin;
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
-open import Data.Container.FreeMonad using ()
 open import Data.Bool using (if_then_else_)
 open import Data.Fin using (suc)
-open import Data.Unit using ()
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Data.String as Str
 

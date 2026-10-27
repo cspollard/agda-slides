@@ -4,7 +4,7 @@
 -- commutes with sequencing of decks.
 module Slides.Backend.Reveal.Properties where
 
-open import Data.List using (List; []; _∷_; _++_; map; length)
+open import Data.List using ([]; _∷_; _++_; map; length)
 open import Data.Nat using (ℕ; suc)
 open import Data.Product using (_,_)
 open import Data.Unit using (tt)

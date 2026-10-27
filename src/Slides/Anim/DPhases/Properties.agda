@@ -32,7 +32,6 @@ open import Data.Integer using (+_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
-open import Slides.Diagram.Draw using ()
 open import Slides.Diagram.Expr using (eval; evalWith)
 import Slides.Diagram.Expr as E
 open import Slides.Diagram.Euclid using (DExpr; evalD; natD)

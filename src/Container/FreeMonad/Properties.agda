@@ -16,8 +16,6 @@ open import Relation.Binary.PropositionalEquality.Core using (refl)
 open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Functor using (Functor)
 open import Categories.Monad using (Monad)
-open import Categories.NaturalTransformation using ()
-
 open import Container.FreeMonad
 
 private

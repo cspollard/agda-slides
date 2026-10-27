@@ -11,7 +11,6 @@ open import Data.Nat using (_+_; suc)
 
 open import Data.Maybe using (Maybe)
 import Data.Maybe as Maybe
-open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Anim.Syntax using (Anim)
 
 open import Slides.Anim.Render

@@ -33,8 +33,6 @@ import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ; _+_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃; ∃₂)
 import Data.List.Properties as LP
-open import Data.Unit using ()
-open import Data.Fin using ()
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans; subst)
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)

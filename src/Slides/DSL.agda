@@ -34,7 +34,6 @@ open import Slides.Diagram using (Diagram)
 open import Slides.Anim.Syntax using (Anim; Seg)
 open import Slides.Anim.Render using (render; renderLoop; renderBoth; uniform?)
 open import Relation.Nullary.Decidable using (True)
-open import Slides.Core using ()
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; animation; script; mount; classed)
 import Slides.Core as Core
 import Container.Interpret as Interpret

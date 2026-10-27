@@ -36,10 +36,6 @@ open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Equality using (XMLSetoid)
-open import Data.XML.Print using ()
-open import Data.JSON.AST using ()
-open import Data.JSON.Print using ()
-
 open import Container.Polynomial using (Poly₀)
 open import Container.Sum using (copair)
 open import Container.FreeMonad.Algebraic using (module Alg)

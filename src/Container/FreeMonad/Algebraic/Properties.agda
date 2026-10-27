@@ -11,7 +11,6 @@ open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
-open import Categories.Functor using (Functor)
 open import Categories.Adjoint.Properties using (adjoint⇒monad)
 open import Categories.Monad using (Monad)
 open import Categories.Monad.Morphism using (Monad⇒-id)

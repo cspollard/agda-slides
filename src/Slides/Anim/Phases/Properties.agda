@@ -45,7 +45,6 @@ open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 open import Relation.Binary using (DecidableEquality)
 open import Relation.Nullary using (yes; no)
-open import Relation.Nullary.Decidable using ()
 import Data.Nat.Properties as ℕP
 import Data.List.Properties as LP
 

@@ -17,10 +17,6 @@ open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Functor using (Endofunctor)
 
 open import Data.XML.AST using (XMLC)
-open import Data.XML.Equality using ()
-open import Data.XML.Print using ()
-open import Data.XML.RoundTrip using ()
-
 open import Container.Polynomial using (Poly)
 open import Container.FreeMonad using (Free₀)
 
