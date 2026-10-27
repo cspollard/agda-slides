@@ -2,7 +2,10 @@
 # a clean check of the Pairs modules by about 12% (see plan/Plan.md item 9) for about
 # 0.5 GB more peak memory.  Override (`make check AGDA_RTS=`) to use the defaults.
 AGDA_RTS ?= +RTS -A1g -RTS
-AGDA ?= agda $(AGDA_RTS)
+# Extra Agda options, empty by default; for profiling or debugging, e.g.
+#   make check AGDA_FLAGS='--profile=modules' AGDA_RTS='+RTS -A1g -s -RTS'
+AGDA_FLAGS ?=
+AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 
 .PHONY: check clean
 
@@ -25,10 +28,13 @@ html:
 
 # All executables share one compile directory: MAlonzo output is per module,
 # so the (large) library part is translated and compiled by GHC once.
-# GHCFLAGS=-O1 for optimised builds.
+# The defaults are the fastest build: no optimisation (-O0) and every core
+# (-j: the GHC step of PairsMain takes 76 s with -j1 and 23 s with -j10, for about
+# 1.2 GB more memory; GHCJOBS=-j1 to serialise).  GHCFLAGS=-O1 for optimised builds.
 GHCFLAGS ?= -O0
+GHCJOBS ?= -j
 BUILD_DIR = _build/ghc
-COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS)
+COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS) --ghc-flag=$(GHCJOBS)
 
 # What the standalone (plain) decks need next to index.html.
 PLAIN_FILES = assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg
@@ -79,6 +85,7 @@ example:
 .PHONY: test test-browser
 test:
 	python3 tests/check_closure.py
+	python3 tests/check_plain_keys.py
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
@@ -121,15 +128,22 @@ plain:
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
-# Decks that refer to a resource they did not declare must not typecheck.
+# Programs that must not typecheck (tests/negative/*.agda): a resource a deck did not declare, an
+# overlapping parallel pair, two commands (decoders) bound to one input, a deck presented on a
+# backend without `Nav`.  A rejection must be "No instance of type" unless the file says
+# `-- EXPECT: <regex>` (the message of a type error).  tests/negative/controls/*.agda are the
+# valid counterparts and MUST typecheck, so a rejection cannot come from a typo.
 .PHONY: test-negative check-resources
 test-negative:
 	@for f in tests/negative/*.agda; do \
+	  pat=$$(sed -n 's/^-- EXPECT: //p' $$f); pat=$${pat:-No instance of type}; \
 	  if out=$$($(AGDA) -i tests/negative $$f 2>&1); then \
 	    echo "FAIL $$f typechecks but should not"; exit 1; \
-	  elif echo "$$out" | grep -q "No instance of type"; then echo "ok   $$f is rejected"; \
+	  elif echo "$$out" | grep -q "$$pat"; then echo "ok   $$f is rejected"; \
 	  else echo "FAIL $$f failed for another reason:"; echo "$$out"; exit 1; fi; \
 	done
+	@for f in tests/negative/controls/*.agda; do \
+	  $(AGDA) -i tests/negative/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
 
 # Declared figures exist next to the rendered decks (run `make talk plain` first).
 check-resources:
@@ -165,6 +179,19 @@ pairs-local:
 	ln -sfn $(REVEAL) out/pairs-local/reveal
 	cp $(PAIRS_FILES) out/pairs-local/
 	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
+
+# A deck with a non-default key binding (src/Slides/Examples/KeysMain.agda): not a golden.
+.PHONY: keys test-keys
+keys:
+	mkdir -p out/keys $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/keys/reveal
+	cp assets/slides.css assets/animation.js out/keys/
+	$(call run-main,src/Slides/Examples/KeysMain.agda)
+
+# The binding reaches reveal.js as a `keyboard` option and works (needs `make keys`).
+test-keys:
+	cd tests/browser && npm install --silent
+	node tests/browser/keys.mjs out
 
 # Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
 # Needs `make showcase` first and `npm install` in tests/browser once.
@@ -205,3 +232,27 @@ test-pairs:
 	cd tests/browser && npm install --silent
 	node tests/browser/pairs.mjs out pairs
 	@if [ -d out/pairs-local ]; then node tests/browser/pairs.mjs out pairs-local; fi
+
+# Pin how decks are navigated (next/prev/first/last/goto/overview, fragments, both backends,
+# and that the two backends walk a deck identically).  Needs `make example talk plain showcase`
+# and `npm install` in tests/browser once.  The Stage 1 port (plan/Unify.md, docs/NavInventory.md)
+# must leave it unchanged.
+.PHONY: test-nav test-browser-all
+test-nav:
+	cd tests/browser && npm install --silent
+	node tests/browser/nav.mjs out
+
+# Label navigation (`Slides.Examples.Labels`): not part of the goldens.  `make labels test-labels`.
+.PHONY: labels test-labels
+labels:
+	mkdir -p out/labels $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/labels/reveal
+	cp assets/slides.css assets/animation.js out/labels/
+	$(call run-main,src/Slides/Examples/LabelsMain.agda)
+
+test-labels: labels
+	cd tests/browser && npm install --silent
+	node tests/browser/labels.mjs out
+
+# Every browser test that needs only local files (test-pairs needs a CDN and is left out).
+test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav test-keys

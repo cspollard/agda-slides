@@ -24,7 +24,7 @@ import Slides.Backend.Plain as Plain
 writeRevealDeck : String → Reveal.RevealConfig → Deck → IO (⊤ {0ℓ})
 writeRevealDeck dir cfg d =
   writeFile (dir ++ "/index.html") (Reveal.renderReveal cfg d)
-  >> writeFile (dir ++ "/init.js") (Reveal.initScript cfg)
+  >> writeFile (dir ++ "/init.js") (Reveal.initScript (Reveal.modeOf d) cfg)
 
 -- standalone HTML: `index.html`.
 writePlainDeck : String → Plain.PlainConfig → Deck → IO (⊤ {0ℓ})

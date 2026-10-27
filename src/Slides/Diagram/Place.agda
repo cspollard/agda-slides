@@ -7,8 +7,16 @@
 --
 -- A `Layout` is a rectangle of known size, the drawing commands that fill it
 -- (relative to its top-left corner) and the named sub-rectangles inside it.
--- Combining layouts shifts the drawing commands and the anchors of each part;
--- every operation grows its frame to fit, so offsets are never negative.
+-- Combining layouts shifts the drawing commands and the anchors of each part.
+-- The binary connectives (`besideA`, `aboveA`, `atop`, the labels) make a frame
+-- that is exactly large enough for both children, so their offsets are never
+-- negative; `place` and `overlay` instead take the frame size as a parameter
+-- and do not grow it.
+--
+--   a layout:   (0,0)+-------------+     the frame is width x height;
+--                    | draws       |     `draws` are in the frame's
+--                    |   [name]    |     coordinates (origin top-left, y
+--                    +-------------+     down), `anchors` are named boxes
 --
 -- Positions are in half units and sizes in units (see `Slides.Diagram.Draw`).
 -- That is what makes centring exact: a child of size `inner` in a frame of
@@ -51,7 +59,17 @@ shiftBox dx dy (box l t w h) = box (l + dx) (t + dy) w h
 shiftAnchor : S → S → String × Box S → String × Box S
 shiftAnchor dx dy (n , b) = n , shiftBox dx dy b
 
--- the same layout, shifted inside a frame of a given size
+-- The same layout, shifted by (dx, dy) (half units) inside a frame of a given
+-- size.  The drawing commands and the named boxes move together.  The frame
+-- size is simply declared: it is not computed from the layout, so a layout
+-- that does not fit sticks out (nothing is clipped).
+--
+--   (0,0)+----------------+
+--        |                |  frame w x h
+--        |  (dx,dy)+----+ |
+--        |         | d  | |
+--        |         +----+ |
+--        +----------------+
 inFrame : S → S → S → S → Layout S → Layout S
 inFrame w h dx dy d = layout w h
   (map (shiftDraw dx dy) (Layout.draws d))
@@ -63,7 +81,9 @@ inFrame w h dx dy d = layout w h
 place : S → S → S → S → Layout S → Layout S
 place w h x y d = inFrame w h (dbl x) (dbl y) d
 
--- two layouts in one frame, the second drawn over the first
+-- two layouts in one frame, the second drawn over the first: the draws of `a`
+-- come first in the list (so are painted first), then those of `b`; the anchors
+-- likewise.  Neither is moved: both have their top-left corner at (0,0).
 overlay : S → S → Layout S → Layout S → Layout S
 overlay w h a b = layout w h (Layout.draws a ++ Layout.draws b) (Layout.anchors a ++ Layout.anchors b)
 
@@ -98,7 +118,22 @@ text pct size t s = layout w h (label w h size t s ∷ []) []
 ------------------------------------------------------------------------
 -- Combining
 
--- `inner` inside `outer`: the position, in half units
+-- `inner` inside `outer`: the position, in half units.  `outer - inner` is the
+-- extra room in units, which is twice that in half units, so
+--
+--   top:     0                     the child's top at the frame's top
+--   middle:  outer - inner         (half the extra room, in units)
+--   bottom:  2 * (outer - inner)   (all of the extra room, in units)
+--
+--   +----------+  top      +----------+  middle   +----------+  bottom
+--   | inner    |           |          |           |          |
+--   +----------+           | inner    |           |          |
+--   |          |           +----------+           +----------+
+--   |          |           |          |           | inner    |
+--   +----------+           +----------+           +----------+
+--
+-- (`alignOffset` is the same for the horizontal direction: `left` is 0,
+-- `centred` is `outer - inner`, `right` is `2 * (outer - inner)`.)
 valignOffset : VAlign → S → S → S
 valignOffset top    outer inner = 0#
 valignOffset middle outer inner = outer - inner
@@ -109,32 +144,69 @@ alignOffset left    outer inner = 0#
 alignOffset centred outer inner = outer - inner
 alignOffset right   outer inner = dbl (outer - inner)
 
--- a frame holding two layouts at given positions, the second drawn over the
--- first: every binary connective is one of these
+-- a frame of size w x h holding two layouts at given positions (half units),
+-- the second drawn over the first: every binary connective is one of these
+-- (they differ in the frame size and the two positions)
 combine : S → S → S × S → Layout S → S × S → Layout S → Layout S
 combine w h p a q b =
   overlay w h (inFrame w h (proj₁ p) (proj₂ p) a) (inFrame w h (proj₁ q) (proj₂ q) b)
 
--- on top of one another, both centred
+-- On top of one another, both centred: the frame is the larger of the two in
+-- each direction, `b` is drawn over `a`.
+--
+--   +------------+   w = max (width a) (width b)
+--   |   +----+   |   h = max (height a) (height b)
+--   |   | b  |   |   each child is at (w - its width, h - its height)
+--   |   +----+   |   in half units, i.e. centred
+--   +------------+
 atop : Layout S → Layout S → Layout S
 atop a b =
   let w = width a ⊔ width b ; h = height a ⊔ height b in
   combine w h (w - width a , h - height a) a (w - width b , h - height b) b
 
+-- `b` to the right of `a`: `a` at x = 0, `b` at x = width a (in units); the
+-- width is the sum, the height the larger.  The vertical position of each
+-- is `valignOffset al h (its height)`.
+--
+--   (0,0)+----+----+    al = top: both at y = 0
+--        | a  | b  |    al = middle: the shorter at (h - its height)/2
+--        +----+    |    al = bottom: the shorter at h - its height
+--             |    |
+--             +----+
 besideA : VAlign → Layout S → Layout S → Layout S
 besideA al a b =
   let w = width a + width b ; h = height a ⊔ height b in
   combine w h (0# , valignOffset al h (height a)) a
               (dbl (width a) , valignOffset al h (height b)) b
 
+-- `b` below `a`: `a` at y = 0, `b` at y = height a; the height is the sum, the
+-- width the larger.  The horizontal position of each is `alignOffset al w
+-- (its width)`.
+--
+--   (0,0)+----+
+--        | a  |       al = left: both at x = 0
+--        +----+----+  al = centred: the narrower at (w - its width)/2
+--        |    b    |  al = right: the narrower at w - its width
+--        +---------+
 aboveA : Align → Layout S → Layout S → Layout S
 aboveA al a b =
   let w = width a ⊔ width b ; h = height a + height b in
   combine w h (alignOffset al w (width a) , 0#) a
               (alignOffset al w (width b) , dbl (height a)) b
 
--- a caption above or below, with empty space of the caption's size on the
--- other side, so the layout stays at the centre
+-- A caption above or below, with empty space of the caption's height on the
+-- other side, so the diagram stays at the centre of the result: a column of
+-- three, each centred (the spacer is 0 wide, so the width is the larger of the
+-- caption and the diagram).  The height is `2 * height lbl + height d`.
+--
+--   labelAbove lbl d       labelBelow lbl d
+--   +-----------+          +-----------+
+--   |   lbl     |          |  (empty)  |
+--   +-----------+          +-----------+
+--   |    d      |          |    d      |
+--   +-----------+          +-----------+
+--   |  (empty)  |          |   lbl     |
+--   +-----------+          +-----------+
 labelAbove labelBelow : Layout S → Layout S → Layout S
 labelAbove lbl d = aboveA centred lbl (aboveA centred d (spacer 0# (height lbl)))
 labelBelow lbl d = aboveA centred (spacer 0# (height lbl)) (aboveA centred d lbl)
@@ -142,6 +214,11 @@ labelBelow lbl d = aboveA centred (spacer 0# (height lbl)) (aboveA centred d lbl
 ------------------------------------------------------------------------
 -- Names and connections
 
+-- Give the layout's whole frame a name: the layout is unchanged, and a box
+-- (0, 0, width, height) is added to the front of its anchors.  Combining
+-- shifts it with the layout, so it always names the child's frame.  When a name
+-- occurs twice, `findAnchor` finds the first (the outermost `named`, and the
+-- first child of two).
 named : String → Layout S → Layout S
 named n d = layout (width d) (height d) (Layout.draws d)
   ((n , box 0# 0# (width d) (height d)) ∷ Layout.anchors d)
@@ -150,7 +227,15 @@ findAnchor : String → List (String × Box S) → Maybe (Box S)
 findAnchor n [] = nothing
 findAnchor n ((m , b) ∷ bs) = if ⌊ n ≟ m ⌋ then just b else findAnchor n bs
 
--- the point of a box a port names, in half units
+-- The point of a box a port names, in half units (the box's left and top are
+-- in half units, its width and height in units, hence the `dbl`).  A side is
+-- the midpoint of the edge, `at` a percentage of the way along it, `middle`
+-- the centre.
+--
+--   (l,t)+----*--------+   `at north 40` is 40% of 2w along from l;
+--        |    N        |   the y of every north point is t,
+--        |             |   of every south point t + 2h
+--        +-------------+
 portPoint : Port → Box S → S × S
 portPoint (side north)  (box l t w h) = l + w , t
 portPoint (side south)  (box l t w h) = l + w , t + dbl h
@@ -163,8 +248,15 @@ portPoint (at east p)   (box l t w h) = l + dbl w , t + percentOf p (dbl h)
 portPoint (at west p)   (box l t w h) = l , t + percentOf p (dbl h)
 portPoint (at middle p) b             = portPoint (side middle) b
 
--- An arrow between two named boxes.  A name that does not exist draws
--- nothing; `Slides.Diagram.Names` reports such connections.
+-- An arrow between two named boxes: from the first port to the second, with
+-- the arrowhead at the second.  It is appended to the end of the draws, so it
+-- is on top of everything.  Width, height and anchors are those of `d`: only
+-- one drawing command is added.  A name that does not exist draws nothing (the
+-- layout is `d`); `Slides.Diagram.Names` reports such connections.
+--
+--   +-----+                +-----+
+--   |  a  |>-------------->|  b  |    connectP "a" (side east)
+--   +-----+                +-----+                "b" (side west) s d
 connectP : String → Port → String → Port → Style → Layout S → Layout S
 connectP a pa b pb s d with findAnchor a (Layout.anchors d) | findAnchor b (Layout.anchors d)
 ... | just ba | just bb =

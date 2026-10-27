@@ -43,6 +43,7 @@ open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
+open import Slides.Cong using (cong₃; cong₄)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Scalar using (Ops; IsOpsHom; natOps)
@@ -60,19 +61,6 @@ private
   mapPair : ∀ {S T : Set} → (S → T) → S × S → T × T
   mapPair f (x , y) = f x , f y
 
-  -- `map` commutes with a family of equations
-  map-comm : ∀ {A B C D : Set} (f : A → C) (g : A → B) (f′ : B → D) (g′ : C → D) →
-             (∀ x → f′ (g x) ≡ g′ (f x)) → ∀ xs → map f′ (map g xs) ≡ map g′ (map f xs)
-  map-comm f g f′ g′ eq []       = refl
-  map-comm f g f′ g′ eq (x ∷ xs) = cong₂ _∷_ (eq x) (map-comm f g f′ g′ eq xs)
-
-  cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {a a′ b b′ c c′} → a ≡ a′ → b ≡ b′ → c ≡ c′ → f a b c ≡ f a′ b′ c′
-  cong₃ f refl refl refl = refl
-
-  cong₄ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
-          a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
-  cong₄ f refl refl refl refl = refl
-
 module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h) where
   private
     module PS = Place O
@@ -87,43 +75,13 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
   ----------------------------------------------------------------------
   -- Shifting and framing
 
-  shiftDraw-natural : ∀ dx dy d → mapDraw h (PS.shiftDraw dx dy d) ≡ PT.shiftDraw (h dx) (h dy) (mapDraw h d)
-  shiftDraw-natural dx dy (rect x y w ht s)  = cong₂ (λ a b → rect a b (h w) (h ht) s) (h-+ x dx) (h-+ y dy)
-  shiftDraw-natural dx dy (circle x y r s)   = cong₂ (λ a b → circle a b (h r) s) (h-+ x dx) (h-+ y dy)
-  shiftDraw-natural dx dy (line a b c d s)   =
-    cong₄ (λ p q r t → line p q r t s) (h-+ a dx) (h-+ b dy) (h-+ c dx) (h-+ d dy)
-  shiftDraw-natural dx dy (arrow a b c d s)  =
-    cong₄ (λ p q r t → arrow p q r t s) (h-+ a dx) (h-+ b dy) (h-+ c dx) (h-+ d dy)
-  shiftDraw-natural dx dy (label x y n t s)  = cong₂ (λ a b → label a b n t s) (h-+ x dx) (h-+ y dy)
-
-  shiftAnchor-natural : ∀ dx dy a → mapAnchor h (PS.shiftAnchor dx dy a) ≡ PT.shiftAnchor (h dx) (h dy) (mapAnchor h a)
-  shiftAnchor-natural dx dy (n , box l tp w ht) = cong₂ (λ a b → n , box a b (h w) (h ht)) (h-+ l dx) (h-+ tp dy)
-
-  inFrame-natural : ∀ w ht dx dy d →
-    mapLayout h (PS.inFrame w ht dx dy d) ≡ PT.inFrame (h w) (h ht) (h dx) (h dy) (mapLayout h d)
-  inFrame-natural w ht dx dy d =
-    cong₂ (layout (h w) (h ht))
-      (map-comm (mapDraw h) (PS.shiftDraw dx dy) (mapDraw h) (PT.shiftDraw (h dx) (h dy)) (shiftDraw-natural dx dy) (Layout.draws d))
-      (map-comm (mapAnchor h) (PS.shiftAnchor dx dy) (mapAnchor h) (PT.shiftAnchor (h dx) (h dy)) (shiftAnchor-natural dx dy) (Layout.anchors d))
+  open import Slides.Diagram.Place.Properties.Natural O P h h-+ public
 
   place-natural : ∀ w ht x y d →
     mapLayout h (PS.place w ht x y d) ≡ PT.place (h w) (h ht) (h x) (h y) (mapLayout h d)
   place-natural w ht x y d =
     trans (inFrame-natural w ht (OS.dbl x) (OS.dbl y) d)
           (cong₂ (λ a b → PT.inFrame (h w) (h ht) a b (mapLayout h d)) (h-dbl x) (h-dbl y))
-
-  overlay-natural : ∀ w ht a b →
-    mapLayout h (PS.overlay w ht a b) ≡ PT.overlay (h w) (h ht) (mapLayout h a) (mapLayout h b)
-  overlay-natural w ht a b =
-    cong₂ (layout (h w) (h ht)) (LP.map-++ (mapDraw h) (Layout.draws a) (Layout.draws b))
-                                (LP.map-++ (mapAnchor h) (Layout.anchors a) (Layout.anchors b))
-
-  combine-natural : ∀ w ht px py qx qy a b →
-    mapLayout h (PS.combine w ht (px , py) a (qx , qy) b)
-    ≡ PT.combine (h w) (h ht) (h px , h py) (mapLayout h a) (h qx , h qy) (mapLayout h b)
-  combine-natural w ht px py qx qy a b =
-    trans (overlay-natural w ht (PS.inFrame w ht px py a) (PS.inFrame w ht qx qy b))
-          (cong₂ (PT.overlay (h w) (h ht)) (inFrame-natural w ht px py a) (inFrame-natural w ht qx qy b))
 
   ----------------------------------------------------------------------
   -- Primitives

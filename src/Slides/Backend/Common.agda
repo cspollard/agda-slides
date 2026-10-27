@@ -239,10 +239,12 @@ blockAlg = record { A = ForestSetoid ; α = copair ContentC LayoutC ForestSetoid
 renderBody : Body → Forest
 renderBody = B.fold blockAlg {⊤ˢ} nil
 
--- Slide options become `data-*` attributes.
+-- Slide options become `data-*` attributes; a slide's label is its `id`, so that a
+-- browser goes to it by `#/label` (a stack's label is on its outer section).
 slideAttrs : SlideOptions → Attrs
 slideAttrs o = opt "data-background-color" (SlideOptions.background o)
             ++ opt "data-transition" (SlideOptions.transition o)
+            ++ opt "id" (SlideOptions.label o)
   where
     opt : String → Maybe String → Attrs
     opt k nothing  = []

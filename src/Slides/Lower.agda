@@ -10,6 +10,12 @@
 --
 --     lowerDeck : Lowering ContentC ContentC → Deck → Deck
 --
+-- The commands a deck awaits are lowered the same way (`lowerCmd`): along a backend's
+-- `Supports` a supported `await k` becomes `await (inj k)` and an unsupported one is
+-- skipped (the documented default).  Commands are awaited only at the top of a body
+-- (`Slides.Input.Deck`), so no layout or content command nests one: the lifting to
+-- bodies (`lowerCmdBody`) leaves everything else alone.
+--
 -- Lowerings compose with `_⋙_` before they are lifted, so a backend that
 -- lacks several features applies one combined lowering.  Interpreting the
 -- lowered deck equals interpreting the original with the pulled-back
@@ -18,16 +24,23 @@
 module Slides.Lower where
 
 open import Data.List using (List; []; _∷_; map)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.String using (String)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Product using (_,_)
-open import Data.Sum using (inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (tt)
+open import Data.Container.Core using (Shape)
 open import Data.Container.FreeMonad using (pure; impure)
 
 open import Container.Lowering
 open import Container.Sum using (inl)
 open import Slides.Core
 open import Slides.Diagram using (Diagram)
+open import Slides.Input.Deck
+open import Slides.Input.Supports (Shape BlockC) using (Supports)
+open Supports
+open import Slides.Steps.Input using (elab; stepsBy; isNextS)
 
 ------------------------------------------------------------------------
 -- Content lowerings
@@ -111,3 +124,29 @@ stripScripts : Lowering ContentC ContentC
 stripScripts (script _) = pure tt
 stripScripts (mount _)  = pure tt
 stripScripts a          = ret a
+
+------------------------------------------------------------------------
+-- Command lowerings
+
+module _ {C : Set} (b : Supports C) where
+
+  -- A supported command is renamed, an unsupported one is skipped.
+  lowerCmd : Lowering (AwaitC (Nav ⊎ C)) (AwaitC (S b))
+  lowerCmd k with inj b k
+  ... | just s  = impure (s , pure)
+  ... | nothing = pure tt
+
+  -- Lower the awaited commands of a body; blocks are kept.
+  lowerCmdBlock : Lowering (DeckBlockC C) (BlockAwaitC (S b))
+  lowerCmdBlock (inj₁ s) = impure (inj₁ s , pure)
+  lowerCmdBlock (inj₂ (inj₁ k)) = lower (embed awaitIn) (lowerCmd k)
+  lowerCmdBlock (inj₂ (inj₂ l)) = labelB l
+
+  lowerCmdBody : Body⁺ (Nav ⊎ C) → Body⁺ (S b)
+  lowerCmdBody = lower lowerCmdBlock
+
+  -- What a backend does with a slide body: elaborate `pause` to `await next`, lower the
+  -- awaited commands to the backend's, then step.  It is `Slides.Steps.steps` for a backend
+  -- that supports `next` (`steps-pipeline`).
+  presentBody : Body → Body
+  presentBody x = stepsBy (isNextS b) (lowerCmdBody (elab x))

@@ -32,6 +32,21 @@ open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Scalar using (Ops; natOps)
 open import Slides.Diagram.Syntax public
 
+-- The algebra, command by command (the geometry of each is in
+-- `Slides.Diagram.Syntax`, its definition in `Slides.Diagram.Place`):
+--
+--   leaves            a frame with at most one drawing (a `Spacer` has none)
+--   Beside Above      frames touch, sizes add in one direction and take the max
+--                     in the other; the second child is drawn second
+--   Atop              both centred in the larger frame; second drawn second
+--   LabelAbove/Below  caption, diagram, room of the caption's height
+--   Place Overlay     frame size declared by the caller, children at the corner
+--                     or at (x, y); not centred
+--   Named Connect     size and drawing of the child; a name, or one arrow
+--
+-- `layout d` is a `Layout`: its width and height are the frame of `d`.  The
+-- origin of the frame is its top-left corner, y grows down.  `compile` halves
+-- the positions (they are in half units) and makes the `Diagram`.
 module LayoutWith {S : Set} (O : Ops S) where
   open Ops O using (toℕ)
   import Slides.Diagram.Place O as P

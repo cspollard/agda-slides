@@ -39,6 +39,7 @@ open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Container.Pick using (pick2)
 
 open import Slides.Diagram using (Style)
 open import Slides.Diagram.TextMetrics using (textWidth; spaceWidth)
@@ -48,38 +49,150 @@ open import Slides.Diagram.Geometry public
 ------------------------------------------------------------------------
 -- The signature
 
+-- Geometry conventions (every picture in this file and in
+-- `Slides.Diagram.Place` follows them)
+--
+--   * The origin is the top-left corner of a diagram's frame; x grows to the
+--     right and y grows DOWN.
+--   * Every diagram has a frame, a width x height rectangle.  The frame is all
+--     that a neighbour sees: connectives place frames, never the ink inside.
+--   * A connective never scales or rotates a child; it shifts it inside a new
+--     frame and declares that frame's size.
+--   * Of two children, the second is drawn after the first, so it is on top.
+--   * Sizes are in units; positions are kept in half units, so that centring
+--     (half of a difference) needs no division (`Slides.Diagram.Draw`).
+--
+-- Pictures below use `+--+` for a frame, `a`, `b` for the children.
+
 data Op (S : Set) : Set where
-  -- a rectangle (the style carries the corner radius, class, id, …)
+  -- A w x h rectangle at the origin.  The frame is w x h.
+  --
+  --   (0,0)+--------+
+  --        |        | h
+  --        +--------+
+  --            w
   Rectangle : (w h : S) → Style → Op S
-  -- a circle of radius r
+  -- A circle of radius r.  The frame is the bounding square, 2r x 2r, and the
+  -- centre of the circle is the centre of the frame.
+  --
+  --      +---------+
+  --      |  .---.  |
+  --      |  ( c )  |  2r
+  --      |  '---'  |
+  --      +---------+
+  --          2r
   Disc      : (r : S) → Style → Op S
-  -- a line from the top-left to the bottom-right corner of a w × h box
+  -- A line from the top-left to the bottom-right corner of a w x h box.  The
+  -- frame is that box.
+  --
+  --   (0,0) *
+  --         | \
+  --         |  \   h
+  --         +---* (w,h)
   Segment   : (w h : S) → Style → Op S
-  -- one line of text at a font size; the measured width is stretched by
-  -- `widthPct` percent (a heavier font is wider)
+  -- One line of text at a font size, centred in its frame.  The frame is as
+  -- wide as the characters (measured from a table; markup counts as
+  -- characters) times `widthPct` percent (a heavier font is wider), and
+  -- size * 3/2 high.
+  --
+  --   +-----------+
+  --   |   text    |  h = size * 3/2
+  --   +-----------+
+  --   w = measured width * widthPct / 100
   Text      : (widthPct size : ℕ) → String → Style → Op S
-  -- empty space of a given size
+  -- Empty space: a frame of the given size and nothing drawn.  This is how
+  -- gaps and margins are made (a zero in one direction, `↔ n` and `↕ n` in
+  -- `Slides.Diagram.Notation`).
   Spacer    : (w h : S) → Op S
-  -- two children: the second to the right of / below the first, aligned
+  -- Two children, the second to the right of the first: the frames touch,
+  -- the width is the sum of the widths, the height the larger of the two.  The
+  -- alignment says how the shorter one sits in the extra height (`top`,
+  -- `middle` = `beside`, `bottom`), with a the first child, b the second.
+  --
+  --   top            middle         bottom
+  --   +--+--+       +--+       +--+
+  --   |a |b |    +--+  |       |  |
+  --   +--+  |    |a |b |    +--+b |
+  --      |  |    +--+  |    |a |  |
+  --      +--+       +--+    +--+--+
   Beside    : VAlign → Op S
+  -- Two children, the second below the first: the frames touch, the height is
+  -- the sum, the width the larger.  The alignment (`left`, `centred` =
+  -- `above`, `right`) says how the narrower one sits in the extra width.
+  --
+  --   left        centred       right
+  --   +--+          +--+           +--+
+  --   |a |          |a |           |a |
+  --   +--+---+    +-+--+-+       +-+--+
+  --   |  b   |    |  b   |       |  b   |
+  --   +------+    +------+       +------+
   Above     : Align → Op S
-  -- two children: the second over the first, both centred
+  -- Two children on top of one another, both centred in the larger of the two
+  -- frames (width and height are each the larger of the two): the second is
+  -- drawn over the first.  Nothing is added between them.
+  --
+  --   +------------+
+  --   |   +----+   |  here a is the larger frame and is drawn first;
+  --   |   | b  |   |  b is centred over it
+  --   |   +----+   |
+  --   +------------+
   Atop      : Op S
-  -- two children, a caption and a diagram: the caption above / below the
-  -- diagram, with empty space of the caption's size on the other side, so the
-  -- diagram stays at the centre of the result
+  -- Two children, a caption and a diagram: a column caption / diagram / empty
+  -- space of the caption's height (`LabelBelow` is the mirror image).  So the
+  -- height is two captions plus the diagram, and the diagram is exactly at the
+  -- centre of the result, whatever the caption's size: this keeps a labelled
+  -- thing aligned with its unlabelled neighbours.  Everything is centred
+  -- horizontally.
+  --
+  --   +-----------+
+  --   |  caption  |  hl
+  --   +-----------+
+  --   |  diagram  |  hd        d is centred in the frame
+  --   +-----------+
+  --   |  (empty)  |  hl
+  --   +-----------+
   LabelAbove LabelBelow : Op S
-  -- one child at absolute position (x, y) (units, from the top-left corner) in a frame of
-  -- size w × h: no centring, no complement margins.  The caller says where the child goes; the
-  -- frame does not grow to fit (a child that sticks out is drawn outside it)
+  -- One child at the absolute position (x, y) of a frame of the declared size
+  -- w x h.  x and y are in units and measure from the frame's top-left corner
+  -- to the child's top-left corner.  Nothing is centred and nothing depends on
+  -- the child's size: the frame does not grow to fit (a child that sticks out
+  -- is drawn outside it, uncounted).  The child's names move with it.
+  --
+  --   (0,0)+---------------+
+  --        |               |
+  --        |   (x,y)+---+  |  frame w x h, declared
+  --        |        | d |  |
+  --        |        +---+  |
+  --        +---------------+
   Place     : (w h x y : S) → Op S
-  -- two children in one frame of size w × h, both at its top-left corner, the second drawn
-  -- over the first: no centring, so nothing about the size of the children enters the
-  -- coordinates (the frame is declared, like a `Spacer`'s)
+  -- Two children in one frame of the declared size w x h, both with their
+  -- top-left corner at the origin, the second drawn over the first.  As for
+  -- `Place`, nothing is centred and the frame size does not depend on the
+  -- children.
+  --
+  --   (0,0)+----------------+
+  --        | b      |       |  b is drawn over a;
+  --        +--------+       |  their top-left corners coincide
+  --        |   a            |  (a here is as large as the frame)
+  --        +----------------+
   Overlay   : (w h : S) → Op S
-  -- remember the extent of the child under a name
+  -- Remember the frame of the child under a name, so that a `Connect` further
+  -- out can point at it.  The name keeps referring to that frame after later
+  -- layout moves it.  Size, drawing and everything else are those of the
+  -- child: it is an annotation.
+  --
+  --   "n" ⦂ d   draws exactly d; the name "n" is the whole frame of d
   Named     : String → Op S
-  -- an arrow from a port of one named box to a port of another
+  -- An arrow from a port of one named box to a port of another (see `Port` in
+  -- `Slides.Diagram.Geometry`), drawn after the child so that it is over it.
+  -- The size, the other drawings and the names are those of the child; the
+  -- two names must be bound somewhere inside the child (`Named`), or no arrow
+  -- is drawn (`Slides.Diagram.Names` reports it).  The arrowhead is at the
+  -- second port.
+  --
+  --   +-----+                 +-----+
+  --   |  a  |>--------------->|  b  |   connect "a" east "b" west
+  --   +-----+                 +-----+
   Connect   : String → Port → String → Port → Style → Op S
 
 -- how many sub-diagrams
@@ -119,12 +232,6 @@ fold α (impure (o , k)) = α o (λ i → fold α (k i))
 
 ------------------------------------------------------------------------
 -- The surface language (nothing here needs a zero, so any scalar will do)
-
-private
-  pick2 : ∀ {S} → Dia S → Dia S → Fin 2 → Dia S
-  pick2 a b zero          = a
-  pick2 a b (suc zero)    = b
-  pick2 a b (suc (suc ()))
 
 rectangle : ∀ {S} → S → S → Style → Dia S
 rectangle w h s = impure (Rectangle w h s , λ ())

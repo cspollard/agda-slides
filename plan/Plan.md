@@ -222,7 +222,8 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
     whether one layout algebra can serve all three, so that `layout-natural`, the assembly proofs
     and the delta/phases encoding are proved once; what the backends (`Reveal`, `Plain`, the
     JS player) lose or gain; and the cost to compile time. Aim to remove code and duplicated
-    proofs, not to add a layer; keep the existing theorems as corollaries.
+    proofs, not to add a layer; keep the existing theorems as corollaries. The staged plan, with
+    pros and cons and the functional-reactive reading, is in `plan/Unify.md`.
 
 ## Risks
 

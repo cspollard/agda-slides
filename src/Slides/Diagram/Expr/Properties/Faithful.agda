@@ -42,6 +42,7 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
+open import Slides.Cong using (cong₃; cong₄)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Expr
 open import Slides.Diagram.Expr.Properties
@@ -147,32 +148,23 @@ AllLayout : ∀ {S} → (S → Set) → Layout S → Set
 AllLayout P l = P (Layout.width l) × P (Layout.height l)
               × All (AllDraw P) (Layout.draws l) × All (λ a → AllBox P (proj₂ a)) (Layout.anchors l)
 
-private
-  cong₄′ : ∀ {A B C D E : Set} (f : A → B → C → D → E) {a a′ b b′ c c′ d d′} →
-           a ≡ a′ → b ≡ b′ → c ≡ c′ → d ≡ d′ → f a b c d ≡ f a′ b′ c′ d′
-  cong₄′ f refl refl refl refl = refl
-
-  cong₃′ : ∀ {A B C D : Set} (f : A → B → C → D) {a a′ b b′ c c′} →
-           a ≡ a′ → b ≡ b′ → c ≡ c′ → f a b c ≡ f a′ b′ c′
-  cong₃′ f refl refl refl = refl
-
 module _ {S T : Set} {P : S → Set} {f g : S → T} (eq : ∀ x → P x → f x ≡ g x) where
 
   mapDraw-on : ∀ d → AllDraw P d → mapDraw f d ≡ mapDraw g d
   mapDraw-on (rect x y w h s)  (px , py , pw , ph) =
-    cong₄′ (λ a b c d → rect a b c d s) (eq x px) (eq y py) (eq w pw) (eq h ph)
+    cong₄ (λ a b c d → rect a b c d s) (eq x px) (eq y py) (eq w pw) (eq h ph)
   mapDraw-on (circle x y r s)  (px , py , pr) =
-    cong₃′ (λ a b c → circle a b c s) (eq x px) (eq y py) (eq r pr)
+    cong₃ (λ a b c → circle a b c s) (eq x px) (eq y py) (eq r pr)
   mapDraw-on (line a b c d s)  (pa , pb , pc , pd) =
-    cong₄′ (λ p q r t → line p q r t s) (eq a pa) (eq b pb) (eq c pc) (eq d pd)
+    cong₄ (λ p q r t → line p q r t s) (eq a pa) (eq b pb) (eq c pc) (eq d pd)
   mapDraw-on (arrow a b c d s) (pa , pb , pc , pd) =
-    cong₄′ (λ p q r t → arrow p q r t s) (eq a pa) (eq b pb) (eq c pc) (eq d pd)
+    cong₄ (λ p q r t → arrow p q r t s) (eq a pa) (eq b pb) (eq c pc) (eq d pd)
   mapDraw-on (label x y n t s) (px , py) =
     cong₂ (λ a b → label a b n t s) (eq x px) (eq y py)
 
   mapAnchor-on : ∀ a → AllBox P (proj₂ a) → mapAnchor f a ≡ mapAnchor g a
   mapAnchor-on (n , box l t w h) (pl , pt , pw , ph) =
-    cong₄′ (λ a b c d → n , box a b c d) (eq l pl) (eq t pt) (eq w pw) (eq h ph)
+    cong₄ (λ a b c d → n , box a b c d) (eq l pl) (eq t pt) (eq w pw) (eq h ph)
 
   map-on : ∀ {A B : Set} {Q : A → Set} {u v : A → B} → (∀ x → Q x → u x ≡ v x) →
            ∀ xs → All Q xs → map u xs ≡ map v xs
@@ -182,7 +174,7 @@ module _ {S T : Set} {P : S → Set} {f g : S → T} (eq : ∀ x → P x → f x
   -- two maps that agree on the scalars a layout is made of give the same layout
   mapLayout-on : ∀ l → AllLayout P l → mapLayout f l ≡ mapLayout g l
   mapLayout-on l (pw , ph , pds , pas) =
-    cong₄′ layout (eq _ pw) (eq _ ph) (map-on mapDraw-on (Layout.draws l) pds)
+    cong₄ layout (eq _ pw) (eq _ ph) (map-on mapDraw-on (Layout.draws l) pds)
                   (map-on mapAnchor-on (Layout.anchors l) pas)
 
 -- Discrete and continuous frames of a template agree when its layout is exact: sending the ℕ

@@ -123,8 +123,7 @@ Good (impure (Par , c)) k = ((k <ᵇ dur (c zero)) ≡ true → Good (c zero) k)
 -- every segment is exact at each of its ticks
 AllExact : Anim ℕ (Seg ℕ) → Set
 AllExact (pure s)           = ∀ m → (m <ᵇ ticks s) ≡ true → Exact s m
-AllExact (impure (Seq , c)) = AllExact (c zero) × AllExact (c (suc zero))
-AllExact (impure (Par , c)) = AllExact (c zero) × AllExact (c (suc zero))
+AllExact (impure (_ , c)) = AllExact (c zero) × AllExact (c (suc zero))
 
 AllExact⇒Good : ∀ a → AllExact a → ∀ k → Good a k
 AllExact⇒Good (pure s)           ex k = ex k
