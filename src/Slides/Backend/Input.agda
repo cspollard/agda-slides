@@ -7,33 +7,29 @@
 --                      `#/h/v` two-dimensional) read on load or on `hashchange`;
 --   Ext                the commands a deck may await beyond `Nav` (`overview`, `tick`);
 --   Mode               whether a deck is one-dimensional (reveal moves linearly) or stacked;
---   on ks s            a decoder: the keys `ks` mean the command `s` (one *kind* of binding);
---   choice ds          the kinds combined by `Slides.Input.Binding._⊕_`;
---   bindWith ...       `choice`, accepted only when the kinds are pairwise `Disjoint`: decided by
---                      computation over the finite list of all keys, so two kinds on one key
---                      are "No instance of type" (tests/negative).
+--   bindKeys, bindNames   `Slides.Input.Binding.choice` of kinds (`on`), accepted only when the
+--                      kinds are pairwise `Disjoint`: decided by computation over the finite list
+--                      of all keys (names), so two kinds on one key are "No instance of type"
+--                      (tests/negative).
 --
--- Laws: `Slides.Backend.Input.Properties`.  The backends' tables are
+-- Laws: `Slides.Input.Binding.Properties`.  The backends' tables are
 -- `Slides.Backend.Reveal.Supports` and `Slides.Backend.Plain.Supports`.
 
 module Slides.Backend.Input where
 
-open import Data.Bool.Base using (if_then_else_)
-open import Data.List.Base using (List; []; _∷_; cartesianProduct; foldr)
+open import Data.List.Base using (List; []; _∷_; cartesianProduct)
 open import Data.List.Membership.Propositional using (_∈_)
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional.Properties using (∈-cartesianProduct⁺)
-open import Data.List.Relation.Unary.AllPairs using (AllPairs; allPairs?)
-open import Data.Maybe.Base using (Maybe; just; nothing)
 open import Data.Nat.Base using (ℕ)
 open import Data.Nat.Properties using (_≟_)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.Product.Properties using (≡-dec)
-open import Relation.Nullary.Decidable using (Dec; yes; no; map′; True; ⌊_⌋)
+open import Relation.Nullary.Decidable using (map′; True)
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; sym; trans; cong)
 
-open import Slides.Input.Binding
+open import Slides.Input.Binding using (Decoder; choice; disjoint*?)
 
 -- Decidable equality of an enumeration through a retraction into ℕ.
 decVia : ∀ {A : Set} (f : A → ℕ) (g : ℕ → A) → (∀ a → g (f a) ≡ a) → DecidableEquality A
@@ -211,19 +207,6 @@ data Mode : Set where
 
 ------------------------------------------------------------------------
 -- Decoders and their kinds
-
-module _ {I S : Set} (_≟I_ : DecidableEquality I) where
-  open import Data.List.Membership.DecPropositional _≟I_ using (_∈?_)
-
-  on : List I → S → Decoder I S
-  on ks s i = if ⌊ i ∈? ks ⌋ then just s else nothing
-
-choice : ∀ {I S} → List (Decoder I S) → Decoder I S
-choice = foldr _⊕_ (λ _ → nothing)
-
-disjoint*? : ∀ {I S} (xs : List I) → (∀ i → i ∈ xs) → (ds : List (Decoder I S)) →
-             Dec (AllPairs Disjoint ds)
-disjoint*? xs cov = allPairs? (λ r r′ → disjoint? r r′ xs cov)
 
 -- The checked constructors: the instance argument is `⊤` exactly when the kinds are
 -- pairwise disjoint on all keys (so the error for a clash is "No instance of type").

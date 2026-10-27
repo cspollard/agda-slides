@@ -31,7 +31,7 @@ open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
 
 open import Slides.Input.Nav
-open import Slides.Input.Binding using (Decoder)
+open import Slides.Input.Binding using (Decoder; on)
 open import Slides.Backend.Input
 
 data Move : Set where

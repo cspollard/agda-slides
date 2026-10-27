@@ -13,13 +13,17 @@
 --                  scenes and labels are kept.  It is `Container.Lowering.lower`.
 --   skipDeck       the same default in the generic vocabulary (unsupported awaits removed).
 --
--- Binding `S` to physical inputs (decoders, conflicts) is `Slides.Input.Binding`.
--- Soundness: `Slides.Input.Supports.Properties`.
+--   command        from a physical input: read it as a backend command with a decoder
+--                  `r : Decoder I S` (`Slides.Input.Binding`), then decode it with `dec`; an input
+--                  that reads as nothing, or as a backend command with no `Nav ⊎ C` meaning, is
+--                  `nothing`.
+--
+-- Soundness and the round trip `command-render`: `Slides.Input.Supports.Properties`.
 
 module Slides.Input.Supports (V : Set) where
 
 open import Data.Empty using (⊥)
-open import Data.Maybe.Base using (Maybe; just; nothing)
+open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
 open import Data.Product.Base using (_,_; Σ-syntax)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Unit.Base using (⊤; tt)
@@ -29,6 +33,7 @@ open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
 
 open import Container.Lowering using (Lowering; lower)
 open import Slides.Input V
+open import Slides.Input.Binding using (Decoder)
 
 record Supports (C : Set) : Set₁ where
   field
@@ -42,6 +47,9 @@ open Supports
 
 NavTotal : ∀ {C} → Supports C → Set
 NavTotal b = ∀ n → Σ[ s ∈ S b ] inj b (inj₁ n) ≡ just s
+
+command : ∀ {C I} (b : Supports C) → Decoder I (S b) → Decoder I (Nav ⊎ C)
+command b r i = maybe′ (dec b) nothing (r i)
 
 module _ {C : Set} (b : Supports C) where
 

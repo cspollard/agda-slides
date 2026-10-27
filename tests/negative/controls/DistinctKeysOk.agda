@@ -9,7 +9,7 @@ open import Data.Product.Base using (_,_)
 open import Data.Unit.Base using (tt)
 
 open import Slides.Input.Nav
-open import Slides.Input.Binding using (Decoder)
+open import Slides.Input.Binding using (Decoder; on)
 open import Slides.Backend.Input
 
 ok : Decoder Key Nav

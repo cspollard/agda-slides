@@ -8,6 +8,8 @@
 --   lower-supported if every `await` of `p` is supported, `skipDeck p` behaves as `p`, so
 --                   the backend runs exactly the generic machine
 --   unsupported-skipped, supported-kept    the per-operation statements
+--   command-render  a supported command, rendered as a physical input and read back, is the
+--                   command we started from (`Supports.inj`/`dec` are the two halves)
 --
 -- Both are up to `MIso` (`Slides.Input.Machine.Properties`).  Lowering a deck with only
 -- supported commands is therefore the identity on behaviour; an unsupported `await` is
@@ -29,6 +31,7 @@ open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; sym; trans)
 
 open import Slides.Input V
+open import Slides.Input.Binding using (Decoder)
 open import Slides.Input.Machine V
 open Machine
 open import Slides.Input.Machine.Properties V
@@ -105,3 +108,9 @@ module _ {C : Set} (b : Supports C) where
     lower-supported p sp =
       trans-iso (lower-sound (λ _ → idle) (λ _ → idle) (λ _ → liftE-idle (dec b)) p)
         (liftE-iso (dec b) (skip-sem (λ _ → idle) p sp))
+
+module _ {C I : Set} (b : Supports C) (r : Decoder I (S b)) (render : S b → Maybe I)
+         (read-render : ∀ s i → render s ≡ just i → r i ≡ just s) where
+
+  command-render : ∀ {k s i} → inj b k ≡ just s → render s ≡ just i → command b r i ≡ just k
+  command-render {k} {s} {i} e ri rewrite read-render s i ri = dec-inj b e

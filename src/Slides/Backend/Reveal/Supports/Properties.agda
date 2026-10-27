@@ -2,8 +2,9 @@
 
 -- Laws of `revealSupports`.
 --
---   revealKinds-disjoint   the key kinds of each mode are pairwise disjoint (decided)
---   revealKeys-kind        no kind is shadowed: a key of a kind decodes to that kind's command
+--   revealKeys-kind        the key kinds of each mode are pairwise disjoint (checked when
+--                          `revealKeys` is defined) and none is shadowed: a key of a kind decodes
+--                          to that kind's command
 --   reveal-render          the canonical input of each command reads back as that command
 --   reveal-command         ... and through `Supports.dec`: supported commands round-trip
 --   revealSupports-total   reveal supports all of `Nav`
@@ -15,22 +16,19 @@ module Slides.Backend.Reveal.Supports.Properties (V : Set) where
 
 open import Data.List.Base using (List)
 open import Data.List.Membership.Propositional using (_∈_)
-open import Data.List.Relation.Unary.AllPairs using (AllPairs)
-open import Data.Maybe.Base using (Maybe; just; nothing)
+open import Data.Maybe.Base using (just)
 open import Data.Nat.Base using (zero; suc)
 open import Data.Product.Base using (_,_)
 open import Data.Unit.Base using (tt)
-open import Relation.Nullary.Decidable using (toWitness)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
 
 open import Slides.Input.Nav
-open import Slides.Input.Binding using (Decoder; Disjoint)
+open import Slides.Input.Binding using (Decoder)
+open import Slides.Input.Binding.Properties using (bind-kind)
 open import Slides.Input.Supports V
 open Supports
+open import Slides.Input.Supports.Properties V using (command-render)
 open import Slides.Backend.Input
-open import Slides.Backend.Input.Properties
-open import Slides.Backend.Command V
-open import Slides.Backend.Command.Properties V
 open import Slides.Backend.Reveal.Supports
 
 ------------------------------------------------------------------------
@@ -40,14 +38,10 @@ kinds : Mode → List (Decoder Key RCmd)
 kinds linear  = linearKinds
 kinds stacked = stackedKinds
 
-kinds-disjoint : ∀ m → AllPairs Disjoint (kinds m)
-kinds-disjoint linear  = toWitness {a? = disjoint*? keys keys-cover linearKinds} tt
-kinds-disjoint stacked = toWitness {a? = disjoint*? keys keys-cover stackedKinds} tt
-
 revealKeys-kind : ∀ m {d : Decoder Key RCmd} {i s} → d ∈ kinds m → d i ≡ just s →
                   revealKeys m i ≡ just s
-revealKeys-kind linear  mem e = choice-∈ (kinds-disjoint linear) mem _ e
-revealKeys-kind stacked mem e = choice-∈ (kinds-disjoint stacked) mem _ e
+revealKeys-kind linear  = bind-kind keys keys-cover linearKinds tt
+revealKeys-kind stacked = bind-kind keys keys-cover stackedKinds tt
 
 ------------------------------------------------------------------------
 -- Round trips
