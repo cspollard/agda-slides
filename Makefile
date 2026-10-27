@@ -16,8 +16,8 @@ check:
 	$(AGDA) -i _build _build/Everything.agda
 	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda -o -path '*/Spike/*.agda'); do $(AGDA) $$f || exit 1; done
 
-.PHONY: docs
-docs:
+.PHONY: html
+html:
 	@mkdir -p build
 	@(echo "{-# OPTIONS --guardedness #-}"; echo "module Everything where"; for f in $$(find src -name '*.agda' | sort); do \
 	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.agda$$##')"; done) > build/Everything.agda
