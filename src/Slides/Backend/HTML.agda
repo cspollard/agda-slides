@@ -22,8 +22,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.XML.AST using (XMLM; node; fromContent)
 open import Data.XML.Valid using (Text; isValidTexts)
 open import Data.XML.Sanitize
-  using ( element; textElement; fixName; fixAttrs; fixText; fixName-valid
-        ; fixAttrs-valid; fixText-valid; fromEq; both )
+  using ( element; textElement; fixName; fixAttrs; fixName-valid
+        ; fixAttrs-valid )
+open import Data.Sanitize using (fixText; fixText-valid; fromEq; both)
 
 private variable
   A : Set

@@ -26,7 +26,7 @@ open import Slides.Backend.XML
 
 open import Data.Bool using (T; true; false)
 open import Data.Empty using (⊥)
-open import Data.Fin using (Fin)
+open import Data.Container.Pos using (Pos)
 open import Data.Product.Base using (_,_; Σ; proj₁; proj₂)
 open import Data.Unit.Base using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure)
@@ -64,7 +64,7 @@ private
   shape-eq : ∀ {tag attrs n ts pt pt′ pa pa′ px px′} →
              pt ≡ pt′ → pa ≡ pa′ → px ≡ px′ →
              Σ (shape tag attrs n ts pt pa px ≡ shape tag attrs n ts pt′ pa′ px′)
-               (λ e → ∀ (q : Fin n) → subst (λ s → Fin (XMLShape.arity s)) e q ≡ q)
+               (λ e → ∀ (q : Pos n) → subst (λ s → Pos (XMLShape.arity s)) e q ≡ q)
   shape-eq refl refl refl = refl , λ _ → refl
 
 Eq-from-≈ₓ : ∀ {t u} → t ≈ₓ u → XMLEq t u
