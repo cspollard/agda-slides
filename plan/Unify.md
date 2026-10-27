@@ -286,6 +286,29 @@ container; the frame-level corollary for lowered layouts; JS/Agda agreement (tes
 as its own change with an audit; then the scene-container port, which depends on the clock
 the leaf uses.
 
+## 4d. Stage 4 spike results (branch `stage4-spike` 1585d50; spike code unmerged; `docs/Stage4.md`)
+
+GO for unifying the temporal layer: a deck is a scene whose leaves are slides
+(`Deck A = Scene (Scene A)`, `Scene A = TimeC ⋆ A`). Four modules, 316 lines, `--safe
+--without-K`, no postulates, about 4.5 s each with the library loaded.
+- One clock theory (a `Clock` record: time `T`, `+`, `-`, `<ᵇ`, `ι : ℕ → T`, with the laws
+  the proofs use), instantiated at ℚ without computing in ℚ. The deck and step clocks are ℕ
+  ticks read through `ι`, not another type; clocks compose by the monoid action
+  `at k τ = ι k + τ` (`at-compose`).
+- Nested clocks are substitution: `nested-flat : sample ℓ (t >>= f) ≈ sample (λ a → sample ℓ
+  (f a)) t`, proved by induction (3 lines plus the congruence cases); `nested-at` is the
+  composed-time statement for a slide after a known prefix.
+- `Prog (Nav ⊎ C)` embeds as a scene (`toScene`; `dur-toScene` = number of `next` awaits). A
+  pause is `Delay 1` under `Par`, not a `Seq` boundary: `Seq` hides earlier content and
+  belongs between slides only. `ContentC`/`LayoutC` untouched; the leaf type is a parameter.
+- `Body⁺` and `Prog` collapse (`Collapse.goBy` is `Steps.Input.goBy` unchanged). This is
+  independent of Stage 4 and can be done now (about 60 lines: `toProgC`, `toProg`, one of
+  `lowerCmdBody`/`lowerDeck`).
+Unproved: `Hold`, `Repeat`, `Drive` clauses; slide k of an n-slide deck; `toScene` agreement
+with `Steps.steps`; navigation (goto/prev) stays machine state, not scene structure.
+Correction to Stage 4 above: no clock-transform operation is needed. Estimated saving is
+modest; the gain is one temporal semantics shared with the Stage 2 `TimeC`.
+
 ## 5. Pros and cons
 
 **Pros**
