@@ -2,3 +2,5 @@
 - [x] Clean up completed items from plans, move information to docs (`docs/Design.md`)
 - [x] Add proofs for the base DSL (`Slides.Diagram.Place.Properties.Laws`, `NamesSound`)
 - [x] Add DSL for animations, similar to Dia, together with Reveal backend (`Slides.Anim.*`, `plan/Animations.md`).
+- [ ] better inline documentation of commands -- some geometric intuition should be included when one peruses the html docs for each agda file.
+- [ ] allow inclusion of pngs and pdfs as primitives -- need to be careful about how to ship these -- copy? symbolic link?
