@@ -114,15 +114,22 @@ plain:
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
-# Decks that refer to a resource they did not declare must not typecheck.
+# Programs that must not typecheck (tests/negative/*.agda): a resource a deck did not declare, an
+# overlapping parallel pair, two commands (decoders) bound to one input, a deck presented on a
+# backend without `Nav`.  A rejection must be "No instance of type" unless the file says
+# `-- EXPECT: <regex>` (the message of a type error).  tests/negative/controls/*.agda are the
+# valid counterparts and MUST typecheck, so a rejection cannot come from a typo.
 .PHONY: test-negative check-resources
 test-negative:
 	@for f in tests/negative/*.agda; do \
+	  pat=$$(sed -n 's/^-- EXPECT: //p' $$f); pat=$${pat:-No instance of type}; \
 	  if out=$$($(AGDA) -i tests/negative $$f 2>&1); then \
 	    echo "FAIL $$f typechecks but should not"; exit 1; \
-	  elif echo "$$out" | grep -q "No instance of type"; then echo "ok   $$f is rejected"; \
+	  elif echo "$$out" | grep -q "$$pat"; then echo "ok   $$f is rejected"; \
 	  else echo "FAIL $$f failed for another reason:"; echo "$$out"; exit 1; fi; \
 	done
+	@for f in tests/negative/controls/*.agda; do \
+	  $(AGDA) -i tests/negative/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
 
 # Declared figures exist next to the rendered decks (run `make talk plain` first).
 check-resources:
@@ -210,18 +217,3 @@ test-nav:
 
 # Every browser test that needs only local files (test-pairs needs a CDN and is left out).
 test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav
-
-# Draft negative tests of the Stage 1 port (tests/negative-pending/README.md): the negatives must be
-# rejected, the controls must typecheck.
-.PHONY: test-negative-pending
-test-negative-pending:
-	@if out=$$($(AGDA) -i tests/negative-pending tests/negative-pending/NoNavBackend.agda 2>&1); then \
-	  echo "FAIL NoNavBackend typechecks but should not"; exit 1; \
-	elif echo "$$out" | grep -q "nothing != just"; then echo "ok   NoNavBackend is rejected"; \
-	else echo "FAIL NoNavBackend failed for another reason:"; echo "$$out"; exit 1; fi
-	@if out=$$($(AGDA) -i tests/negative-pending tests/negative-pending/TwoCommandsOneInput.agda 2>&1); then \
-	  echo "FAIL TwoCommandsOneInput typechecks but should not"; exit 1; \
-	elif echo "$$out" | grep -q "No instance of type"; then echo "ok   TwoCommandsOneInput is rejected"; \
-	else echo "FAIL TwoCommandsOneInput failed for another reason:"; echo "$$out"; exit 1; fi
-	@for f in tests/negative-pending/controls/*.agda; do \
-	  $(AGDA) -i tests/negative-pending/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done

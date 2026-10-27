@@ -101,6 +101,6 @@ make test             # golden-file diffs
 make test-browser     # headless Chrome checks (CHROME=… to override)
 make test-playwright  # drive the showcase deck in a real browser (42+ checks)
 make pairs test-pairs # reveal.js from a CDN (no REVEAL needed); `make pairs-local REVEAL=…` for a local copy; the "It Just Takes Two" deck and its browser test (docs/PairsDeck.md)
-make test-negative    # decks citing undeclared resources must not typecheck
+make test-negative    # undeclared resources, key conflicts, a deck on a backend without Nav must not typecheck
 make check-resources  # declared figures exist next to the rendered decks
 ```
