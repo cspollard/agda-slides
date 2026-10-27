@@ -112,19 +112,6 @@ module _ (l : Lowering ContentC ContentC) where
   deck (slide o b)  = impure (slide o (lower block b) , pure)
   deck (stack o bs) = impure (stack o (map (lower block) bs) , pure)
 
--- Give a labelled slide an empty element whose id is the label, so that a browser goes to it
--- by `#/label`.  Until the backends write the id on the slide themselves
--- (`Slides.Backend.Common.slideAttrs`); unlabelled slides are untouched.  A labelled stack
--- labels its first slide.
-mountFirst : Maybe String → Body → Body
-mountFirst nothing  b = b
-mountFirst (just l) b = impure (inj₁ (mount l) , λ _ → b)
-
-labelMounts : Lowering DeckC DeckC
-labelMounts (slide o b)         = impure (slide o (mountFirst (SlideOptions.label o) b) , pure)
-labelMounts (stack o [])        = ret (stack o [])
-labelMounts (stack o (b ∷ bs))  = impure (stack o (mountFirst (SlideOptions.label o) b ∷ bs) , pure)
-
 lowerBody : Lowering ContentC ContentC → Body → Body
 lowerBody l = lower (block l)
 
