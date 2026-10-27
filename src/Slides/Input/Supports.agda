@@ -93,6 +93,3 @@ navOnlyS = record
   ; inj = [ just , (λ _ → nothing) ] ; dec = λ n → just (inj₁ n)
   ; dec-inj = λ { {inj₁ _} refl → refl }
   ; inj-dec = λ { refl → refl } }
-
-navOnlyS-total : ∀ {C} → NavTotal (navOnlyS {C})
-navOnlyS-total n = n , refl

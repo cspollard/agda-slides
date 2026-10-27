@@ -5,7 +5,6 @@
 --   labelTable-label   `label l` resolves to the position where it stands
 --   labelTable-next    an `await next` shifts every label of the rest by one
 --   gotoLabel-goto     resolving a label then moving is `goto` its index
---   gotoLabel-view     ... and shows the deck replayed by that many `next`s
 --   view-next, prev-next   `next` is replay one more step; `prev` undoes `next`
 
 module Slides.Input.Navigation.Properties (V : Set) where
@@ -13,7 +12,7 @@ module Slides.Input.Navigation.Properties (V : Set) where
 open import Data.Bool.Base using (true; false)
 open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
 open import Data.Maybe.Base as Maybe using ()
-open import Data.Nat.Base using (ℕ; suc; _⊓_; _≤_)
+open import Data.Nat.Base using (ℕ; suc; _+_; _⊓_; _≤_)
 open import Data.Nat.Properties using (m≤n⇒m⊓n≡m)
 open import Data.Product.Base using (_,_)
 open import Data.String.Base using (String)
@@ -51,13 +50,7 @@ module _ {C : Set} where
     labelFrom (suc n) p l ≡ Maybe.map suc (labelFrom n p l)
   labelFrom-shift n (pure _) l = refl
   labelFrom-shift n (impure (inj₁ _ , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ next)) , k)) l = labelFrom-shift (suc n) (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ prev)) , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ first)) , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ last)) , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ (goto _))) , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₁ (gotoLabel _))) , k)) l = labelFrom-shift n (k tt) l
-  labelFrom-shift n (impure (inj₂ (inj₁ (inj₂ _)) , k)) l = labelFrom-shift n (k tt) l
+  labelFrom-shift n (impure (inj₂ (inj₁ c) , k)) l = labelFrom-shift (n + δ c) (k tt) l
   labelFrom-shift n (impure (inj₂ (inj₂ l′) , k)) l with ⌊ l′ Str.≟ l ⌋
   ... | true  = refl
   ... | false = labelFrom-shift n (k tt) l
@@ -71,10 +64,6 @@ module _ {C : Set} (M : Machine (Nav ⊎ C)) (len : ℕ) (tbl : String → Maybe
   gotoLabel-goto : ∀ n l i → tbl l ≡ just i →
     navStep M len tbl n (gotoLabel l) ≡ navStep M len tbl n (goto i)
   gotoLabel-goto n l i e rewrite e = refl
-
-  gotoLabel-view : ∀ n l i → tbl l ≡ just i →
-    view (navM M len tbl) (navStep M len tbl n (gotoLabel l)) ≡ view M (replay M (i ⊓ len))
-  gotoLabel-view n l i e rewrite e = refl
 
   view-next : ∀ n → suc n ≤ len →
     view (navM M len tbl) (navStep M len tbl n next) ≡ view M (step M (replay M n) (inj₁ next))

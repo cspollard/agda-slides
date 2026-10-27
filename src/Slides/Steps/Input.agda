@@ -58,11 +58,6 @@ elabL (inj₂ l) = impure (elabS l , λ _ → pure tt)
 elab : ∀ {C : Set} → Body → Body⁺ (Nav ⊎ C)
 elab = lower elabL
 
--- The same, slide by slide.
-elabDeck : ∀ {C : Set} → Lowering DeckC (DeckC⁺ (Nav ⊎ C))
-elabDeck (slide o b)  = impure (slide⁺ o (elab b) , pure)
-elabDeck (stack o bs) = impure (stack⁺ o (map elab bs) , pure)
-
 ------------------------------------------------------------------------
 -- The pass with a mode, on a body that awaits
 
@@ -85,12 +80,3 @@ module _ {X : Set} (step? : X → Bool) where
   afterBy m (impure (inj₁ (inj₁ _) , k)) = afterBy m (k tt)
   afterBy m (impure (inj₁ (inj₂ l) , k)) = afterBy (proj₁ (stepL m l)) (k tt)
   afterBy m (impure (inj₂ x , k))        = afterBy (m ∨ step? x) (k tt)
-
-  -- Does the body await a step?
-  hasStep : Body⁺ X → Bool
-  hasStep = afterBy false
-
--- The deck-level pass: each slide body, stepped.
-stepsDeck : ∀ {X : Set} → (X → Bool) → Lowering (DeckC⁺ X) DeckC
-stepsDeck s (slide⁺ o b)  = impure (slide o (stepsBy s b) , pure)
-stepsDeck s (stack⁺ o bs) = impure (stack o (map (stepsBy s) bs) , pure)

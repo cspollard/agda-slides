@@ -14,7 +14,7 @@
 -- `Supports` a supported `await k` becomes `await (inj k)` and an unsupported one is
 -- skipped (the documented default).  Commands are awaited only at the top of a body
 -- (`Slides.Input.Deck`), so no layout or content command nests one: the lifting to
--- blocks and decks (`lowerCmdBody`, `lowerCmdDeck`) leaves everything else alone.
+-- bodies (`lowerCmdBody`) leaves everything else alone.
 --
 -- Lowerings compose with `_⋙_` before they are lifted, so a backend that
 -- lacks several features applies one combined lowering.  Interpreting the
@@ -141,8 +141,3 @@ module _ {C : Set} (b : Supports C) where
 
   lowerCmdBody : Body⁺ (Nav ⊎ C) → Body⁺ (S b)
   lowerCmdBody = lower lowerCmdBlock
-
-  -- Lower the bodies of the slides of a deck.
-  lowerCmdDeck : Lowering (DeckC⁺ (Nav ⊎ C)) (DeckC⁺ (S b))
-  lowerCmdDeck (slide⁺ o x)  = impure (slide⁺ o (lowerCmdBody x) , pure)
-  lowerCmdDeck (stack⁺ o xs) = impure (stack⁺ o (map lowerCmdBody xs) , pure)

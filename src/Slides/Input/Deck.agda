@@ -8,21 +8,19 @@
 --   BlockAwaitC X  = BlockC ⊎ AwaitC X     a block command, or an awaited command `X`
 --   DeckBlockC C   = BlockAwaitC (Nav ⊎ C) the vocabulary of a deck: navigation and extras `C`
 --   Body⁺ X        = BlockAwaitC X ⋆ ⊤     a slide body that may await
---   DeckC⁺ X       = slides whose bodies are `Body⁺ X`
 --
 -- `Slides.Steps.Input.elab` takes a `Body` to a `Body⁺ (Nav ⊎ C)` (`pause ↦ await next`)
--- and `Slides.Lower.lowerCmdDeck` lowers the awaited commands to a backend's.  A body is
+-- and `Slides.Lower.lowerCmdBody` lowers the awaited commands to a backend's.  A body is
 -- a `Slides.Input.Prog` over the scene vocabulary `Shape BlockC` through `toProg`, so
 -- `Slides.Input.Supports.lowerDeck` applies to it.
 
 module Slides.Input.Deck where
 
 open import Level using (0ℓ)
-open import Data.List using (List)
 open import Data.Product.Base using (_,_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base using (⊤)
-open import Data.Container.Core using (Container; Shape; _▷_; _⇒_)
+open import Data.Container.Core using (Container; Shape; _⇒_)
 import Data.Container.Core as CC
 open import Data.Container.Combinator using () renaming (_⊎_ to _⊎C_)
 open import Data.Container.FreeMonad using (_⋆_)
@@ -39,16 +37,6 @@ DeckBlockC C = BlockAwaitC (Nav ⊎ C)
 
 Body⁺ : Set → Set
 Body⁺ X = BlockAwaitC X ⋆ ⊤
-
-data DeckShape⁺ (X : Set) : Set where
-  slide⁺ : SlideOptions → Body⁺ X → DeckShape⁺ X
-  stack⁺ : SlideOptions → List (Body⁺ X) → DeckShape⁺ X
-
-DeckC⁺ : Set → Container 0ℓ 0ℓ
-DeckC⁺ X = DeckShape⁺ X ▷ λ _ → ⊤
-
-Deck⁺ : Set → Set
-Deck⁺ X = DeckC⁺ X ⋆ ⊤
 
 -- A body that awaits is a program of `Slides.Input` with scenes `Shape BlockC`.
 toProgC : ∀ {X : Set} → BlockAwaitC X ⇒ ProgC X

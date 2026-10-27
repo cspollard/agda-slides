@@ -9,9 +9,8 @@
 --
 -- The same on bodies that await (`Slides.Steps.Input`), for any `step?`:
 --
---   bind-assoc⁺, goBy-bind, afterBy-bind    the same two laws
---   after-∨, hasStep-bind                   the mode after `x` is `m` or the steps `x` awaits;
---                                           a sequence awaits a step iff a part does
+--   goBy-bind     elaborating a sequence elaborates the second part in the mode the first
+--                 leaves behind
 --
 -- Bridge: `pause` is `await next`:
 --
@@ -19,13 +18,10 @@
 --   goBy-elab, afterBy-elab     the second pass after `elab` is `go`, and its mode is `after`
 --   stepsBy-elab                `stepsBy isNext (elab b) ≡ steps b`
 --   go-bind-elab                `go-bind` re-derived through the bridge, from `goBy-bind`
---   after-elab                  `after m b ≡ m ∨ hasStep isNext (elab b)`
---   hasStep-elab-bind           `hasStep isNext (elab (b₁ ⨾ b₂))` is the disjunction of the parts
 
 module Slides.Steps.Properties where
 
 open import Data.Bool.Base using (Bool; true; false; _∨_)
-open import Data.Bool.Properties using (∨-identityʳ; ∨-assoc)
 open import Data.Product.Base using (_,_; proj₁; proj₂)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base using (⊤; tt)
@@ -66,26 +62,7 @@ go-bind m (impure (inj₂ l , k)) b₂ =
 ------------------------------------------------------------------------
 -- Bodies that await
 
-bind-assoc⁺ : ∀ {X} (x y z : Body⁺ X) →
-              ((x >>= λ _ → y) >>= λ _ → z) ≡ (x >>= λ _ → (y >>= λ _ → z))
-bind-assoc⁺ (pure _)                     y z = refl
-bind-assoc⁺ (impure (inj₁ (inj₁ c) , k)) y z =
-  cong (λ w → impure (inj₁ (inj₁ c) , λ _ → w)) (bind-assoc⁺ (k tt) y z)
-bind-assoc⁺ (impure (inj₁ (inj₂ l) , k)) y z =
-  cong (λ w → impure (inj₁ (inj₂ l) , λ _ → w)) (bind-assoc⁺ (k tt) y z)
-bind-assoc⁺ (impure (inj₂ a , k))        y z =
-  cong (λ w → impure (inj₂ a , λ _ → w)) (bind-assoc⁺ (k tt) y z)
-
 module _ {X : Set} (step? : X → Bool) where
-
-  -- The mode after a sequence is the mode after the second part, started where the
-  -- first part ends.
-  afterBy-bind : ∀ m (x y : Body⁺ X) →
-                 afterBy step? m (x >>= λ _ → y) ≡ afterBy step? (afterBy step? m x) y
-  afterBy-bind m (pure _)                     y = refl
-  afterBy-bind m (impure (inj₁ (inj₁ _) , k)) y = afterBy-bind m (k tt) y
-  afterBy-bind m (impure (inj₁ (inj₂ l) , k)) y = afterBy-bind (proj₁ (stepL m l)) (k tt) y
-  afterBy-bind m (impure (inj₂ a , k))        y = afterBy-bind (m ∨ step? a) (k tt) y
 
   -- Elaborating a sequence elaborates the second part in the mode the first leaves.
   goBy-bind : ∀ m (x y : Body⁺ X) →
@@ -101,27 +78,6 @@ module _ {X : Set} (step? : X → Bool) where
           (sym (bind-assoc (proj₂ (stepL m l)) (goBy step? (proj₁ (stepL m l)) (k tt))
                            (goBy step? (afterBy step? (proj₁ (stepL m l)) (k tt)) y)))
   goBy-bind m (impure (inj₂ a , k))        y = goBy-bind (m ∨ step? a) (k tt) y
-
-  -- The mode after `x` is the mode before, or the steps `x` awaits.
-  after-∨ : ∀ m (x : Body⁺ X) → afterBy step? m x ≡ m ∨ hasStep step? x
-  after-∨ m (pure _)                     = sym (∨-identityʳ m)
-  after-∨ m (impure (inj₁ (inj₁ _) , k)) = after-∨ m (k tt)
-  after-∨ m (impure (inj₁ (inj₂ l) , k)) = shift m (proj₁ (stepL false l)) (k tt)
-    where
-      shift : ∀ m p (r : Body⁺ X) → afterBy step? (m ∨ p) r ≡ m ∨ afterBy step? p r
-      shift m p r =
-        trans (after-∨ (m ∨ p) r)
-              (trans (∨-assoc m p (hasStep step? r))
-                     (cong (m ∨_) (sym (after-∨ p r))))
-  after-∨ m (impure (inj₂ a , k))        =
-    trans (after-∨ (m ∨ step? a) (k tt))
-          (trans (∨-assoc m (step? a) (hasStep step? (k tt)))
-                 (cong (m ∨_) (sym (after-∨ (step? a) (k tt)))))
-
-  -- A sequence awaits a step iff one of its parts does.
-  hasStep-bind : ∀ (x y : Body⁺ X) →
-                 hasStep step? (x >>= λ _ → y) ≡ hasStep step? x ∨ hasStep step? y
-  hasStep-bind x y = trans (afterBy-bind false x y) (after-∨ (hasStep step? x) y)
 
 ------------------------------------------------------------------------
 -- Bridge: `pause` is `await next`
@@ -188,13 +144,3 @@ module _ {C : Set} where
            (cong₂ (λ u v → u >>= λ _ → v) (goBy-elab m b₁)
              (trans (cong (λ n → goBy (isNext {C}) n (elab b₂)) (afterBy-elab m b₁))
                     (goBy-elab (after m b₁) b₂)))))
-
-  -- A body awaits a step when it has passed one: `after` in terms of the elaboration.
-  after-elab : ∀ m (b : Body) → after m b ≡ m ∨ hasStep (isNext {C}) (elab b)
-  after-elab m b = trans (sym (afterBy-elab m b)) (after-∨ isNext m (elab b))
-
-  hasStep-elab-bind : ∀ (b₁ b₂ : Body) →
-    hasStep (isNext {C}) (elab (b₁ >>= λ _ → b₂))
-    ≡ hasStep isNext (elab b₁) ∨ hasStep isNext (elab b₂)
-  hasStep-elab-bind b₁ b₂ =
-    trans (cong (hasStep isNext) (elab-bind b₁ b₂)) (hasStep-bind isNext (elab b₁) (elab b₂))

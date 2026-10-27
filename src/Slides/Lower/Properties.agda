@@ -7,7 +7,6 @@
 --
 -- Command lowerings (`lowerCmd`, `lowerCmdBody`):
 --
---   lowerCmd-supported, lowerCmd-unsupported   a supported command is renamed, an unsupported one skipped
 --   lowerCmdBody-bind                          the lowering of a body is a monad morphism (`lower-bind`)
 --   lowerCmdBody-lowerDeck                     on a body seen as a `Slides.Input` program it *is*
 --                                              `Slides.Input.Supports.lowerDeck`
@@ -51,12 +50,6 @@ finalFrame-no-steps d (f ∷ fs)  = refl
 -- Command lowerings
 
 module _ {C : Set} (b : Supports C) where
-
-  lowerCmd-supported : ∀ k s → inj b k ≡ just s → lowerCmd b k ≡ impure (s , pure)
-  lowerCmd-supported k s e rewrite e = refl
-
-  lowerCmd-unsupported : ∀ k → inj b k ≡ nothing → lowerCmd b k ≡ pure tt
-  lowerCmd-unsupported k e rewrite e = refl
 
   -- The lowering of a sequence is the sequence of the lowerings.
   lowerCmdBody-bind : ∀ (x : Body⁺ (Nav ⊎ C)) (f : ⊤ → Body⁺ (Nav ⊎ C)) →

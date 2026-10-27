@@ -19,7 +19,7 @@ module Slides.Input.Navigation (V : Set) where
 
 open import Data.Bool.Base using (if_then_else_)
 open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
-open import Data.Nat.Base using (ℕ; zero; suc; _⊓_)
+open import Data.Nat.Base using (ℕ; zero; suc; _+_; _⊓_)
 open import Data.Product.Base using (_,_)
 open import Data.String.Base using (String)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
@@ -35,20 +35,23 @@ open Machine
 
 module _ {C : Set} where
 
+  -- The position an awaited command advances: only `next` is a step.
+  δ : Nav ⊎ C → ℕ
+  δ (inj₁ next) = 1
+  δ _           = 0
+
   nextCount : ∀ {A} → Deck C A → ℕ
-  nextCount (pure _)                        = 0
-  nextCount (impure (inj₁ _ , k))           = nextCount (k tt)
-  nextCount (impure (inj₂ (inj₁ (inj₁ next)) , k)) = suc (nextCount (k tt))
-  nextCount (impure (inj₂ (inj₁ _) , k))    = nextCount (k tt)
-  nextCount (impure (inj₂ (inj₂ _) , k))    = nextCount (k tt)
+  nextCount (pure _)                       = 0
+  nextCount (impure (inj₁ _ , k))          = nextCount (k tt)
+  nextCount (impure (inj₂ (inj₁ c) , k))   = δ c + nextCount (k tt)
+  nextCount (impure (inj₂ (inj₂ _) , k))   = nextCount (k tt)
 
   -- `labelFrom n p`: the table of `p` when `n` nexts precede it.
   labelFrom : ∀ {A} → ℕ → Deck C A → String → Maybe ℕ
-  labelFrom n (pure _)                        l = nothing
-  labelFrom n (impure (inj₁ _ , k))           l = labelFrom n (k tt) l
-  labelFrom n (impure (inj₂ (inj₁ (inj₁ next)) , k)) l = labelFrom (suc n) (k tt) l
-  labelFrom n (impure (inj₂ (inj₁ _) , k))    l = labelFrom n (k tt) l
-  labelFrom n (impure (inj₂ (inj₂ l′) , k))   l =
+  labelFrom n (pure _)                       l = nothing
+  labelFrom n (impure (inj₁ _ , k))          l = labelFrom n (k tt) l
+  labelFrom n (impure (inj₂ (inj₁ c) , k))   l = labelFrom (n + δ c) (k tt) l
+  labelFrom n (impure (inj₂ (inj₂ l′) , k))  l =
     if ⌊ l′ Str.≟ l ⌋ then just n else labelFrom n (k tt) l
 
   labelTable : ∀ {A} → Deck C A → String → Maybe ℕ

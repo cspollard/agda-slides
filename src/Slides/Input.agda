@@ -11,8 +11,8 @@
 -- `V` is the scene vocabulary with a single continuation; for `Slides.Core` take
 -- `V = Shape BlockC` (every position of `BlockC` is `⊤`).  A deck is a
 -- `Prog (Nav ⊎ C)`: it requires the navigation vocabulary, and may await extras `C`.
--- A map of commands `C → D` is a container morphism (`mapC`), so programs are lifted
--- into a larger vocabulary by `Container.Lowering.translate` (`mapP`).
+-- Programs are moved to a backend's vocabulary by a lowering (`Slides.Input.Supports.lowerDeck`,
+-- a `Container.Lowering.lower`).
 
 module Slides.Input (V : Set) where
 
@@ -20,12 +20,10 @@ open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Product.Base using (_,_)
 open import Data.String.Base using (String)
 open import Data.Unit.Base using (⊤; tt)
-open import Data.Container.Core using (Container; _▷_; _⇒_)
+open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.Combinator using () renaming (_⊎_ to _⊎C_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-import Data.Container.Core as CC
 
-open import Container.Lowering using (translate)
 open import Slides.Input.Nav public
 
 SceneC : Container _ _
@@ -65,17 +63,3 @@ pause = await (inj₁ next)
 infixr 5 _⨾_
 _⨾_ : ∀ {C A B} → Prog C A → Prog C B → Prog C B
 p ⨾ q = p >>= λ _ → q
-
-------------------------------------------------------------------------
--- Changing the command vocabulary is a container morphism
-
-mapC : ∀ {C D} → (C → D) → ProgC C ⇒ ProgC D
-CC._⇒_.shape (mapC f) (inj₁ v)         = inj₁ v
-CC._⇒_.shape (mapC f) (inj₂ (inj₁ c))  = inj₂ (inj₁ (f c))
-CC._⇒_.shape (mapC f) (inj₂ (inj₂ l))  = inj₂ (inj₂ l)
-CC._⇒_.position (mapC f) {inj₁ _}         p = p
-CC._⇒_.position (mapC f) {inj₂ (inj₁ _)}  p = p
-CC._⇒_.position (mapC f) {inj₂ (inj₂ _)}  p = p
-
-mapP : ∀ {C D A} → (C → D) → Prog C A → Prog D A
-mapP f = translate (mapC f)

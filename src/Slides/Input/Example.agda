@@ -1,8 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Worked examples, checked by `refl` (not imported by any executable).
--- The scene vocabulary is instantiated with the real one: `Shape BlockC` of
--- `Slides.Core` (all its positions are `⊤`).
+-- Worked examples, checked by `refl` (not imported by any executable).  The scene vocabulary
+-- is `String`, so the views can be read.
 
 module Slides.Input.Example where
 
@@ -14,16 +13,6 @@ open import Data.Sum.Properties using (≡-dec)
 open import Data.Unit.Base using (⊤)
 open import Relation.Nullary using (yes)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl)
-open import Data.Container.Core using (Shape)
-
-open import Slides.Core using (BlockC)
-
--- A deck over the real scene vocabulary.
-module Real where
-  open import Slides.Input (Shape BlockC)
-  realDeck : Deck ⊤ ⊤
-  realDeck = pause ⨾ pause
-
 -- Over plain strings, to read the views.
 module Strings where
   open import Data.String.Base using (String)

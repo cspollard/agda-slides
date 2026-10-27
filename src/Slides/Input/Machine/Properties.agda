@@ -5,8 +5,9 @@
 --   sem-bind      the fold is a monad morphism: grafting leaves commutes with it
 --   seq-machine   machine (p ⨾ q) ≅ sem (λ _ → machine q) p
 --   await-seq     the awaited command moves from p's final state to q's start
---   lift-lemma    the semantics of a program lifted along a command map is the lifted
---                 semantics (an adapter `h : D → Maybe C` that decodes `f`)
+--   liftE-*       adapting the command vocabulary along a decoder `h : D → Maybe C` respects `MIso`,
+--                 and `await` commutes with it when `h` decodes exactly that command: the facts
+--                 `Slides.Input.Supports.Properties.lower-sound` needs
 --
 -- Equality of machines is `MIso`: a bijection of state sets that preserves `init`,
 -- `step` and `view` pointwise (no funext).  The product lemma for the deferred
@@ -106,7 +107,7 @@ module _ {C : Set} (d : DecidableEquality C) where
   await-seq c q = cong (λ b → if b then inj₂ (init (machine d q)) else inj₁ tt) (dec-refl c)
 
 ------------------------------------------------------------------------
--- Lifting along a command map
+-- Adapting the command vocabulary
 
 liftE-iso : ∀ {C D} (h : D → Maybe C) {M N : Machine C} → MIso M N → MIso (liftE h M) (liftE h N)
 liftE-iso h {M} {N} I = record
@@ -148,18 +149,3 @@ liftE-await {C} dC dD h c d coh M = record
     s q x with h x
     ... | just y  = refl
     ... | nothing = refl
-
-module _ {C D : Set} (dC : DecidableEquality C) (dD : DecidableEquality D)
-         (f : C → D) (h : D → Maybe C)
-         (coh : ∀ x c → ⌊ dD x (f c) ⌋ ≡ maybe′ (λ y → ⌊ dC y c ⌋) false (h x)) where
-
-  -- The lifting lemma: `mapP f` is invisible to the semantics up to `liftE h`.
-  lift-lemma : ∀ {A} (l : A → Machine C) (l′ : A → Machine D)
-               (hl : ∀ a → MIso (l′ a) (liftE h (l a))) (p : Prog C A) →
-               MIso (sem dD l′ (mapP f p)) (liftE h (sem dC l p))
-  lift-lemma l l′ hl (pure a)                      = hl a
-  lift-lemma l l′ hl (impure (inj₁ v , k))         = showM-iso v (lift-lemma l l′ hl (k tt))
-  lift-lemma l l′ hl (impure (inj₂ (inj₁ c) , k))  =
-    trans-iso (awaitM-iso dD (f c) (lift-lemma l l′ hl (k tt)))
-              (liftE-await dC dD h c (f c) (λ x → coh x c) (sem dC l (k tt)))
-  lift-lemma l l′ hl (impure (inj₂ (inj₂ _) , k))  = lift-lemma l l′ hl (k tt)
