@@ -5,3 +5,6 @@ out/
 .DS_Store
 node_modules/
 .claude/
+
+# Private talks: kept out of version control
+talks-private/
