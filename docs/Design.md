@@ -304,7 +304,7 @@ needs a lemma to typecheck, the minimal helper stays private in `X`.
   so the parametrised one is the topic (`Names.Properties.Soundness`) and `Names.Properties`
   holds the rest.
 * Theory modules that define their own vocabulary (`Slides.Anim.Assembly` and its `Leaf` and
-  `Continuous` parts, `Anim.Nth`, `Anim.Arith`, `Anim.Loop`, `Diagram.Equality`, the categorical
+  `Continuous` parts, `Anim.Nth`, `Anim.Arith`, `Anim.Loop`, `Diagram.Equality`, `Backend.Restyle`, the categorical
   `Container.Category`, `Container.Lowering.Category`) keep their names; their headers say so,
   and no executable imports them.
 * Rule: no executable (`*Main`) imports a `.Properties` module or a theory module, so a deck
