@@ -14,7 +14,7 @@ open import Slides.Diagram.Syntax using (rectangle; text; named)
 open import Slides.Diagram.Notation using (↔; _∥_)
 open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Anim.Syntax using (Anim; Seg; hold; tweenT; _⨾_)
-open import Slides.Diagram.Expr using (exprOps; t; lit)
+open import Slides.Diagram.Ordered using (termOps; tO; lit)
 import Slides.Diagram.Notation as N
 open import Data.Unit using (⊤)
 import Slides.Anim.Track as T
@@ -64,11 +64,11 @@ animated = do
 -- that follows an explicit track, sampled once per tick.  The body is a template, a
 -- diagram whose sizes are formulas in the parameter `t`, so the page ships the formulas
 -- and not the frames (`Slides.Anim.Param`).
-private module E = N.NotationWith (exprOps {⊤})
+private module E = N.NotationWith (termOps {⊤})
 
 slide′ : Anim ℕ (Seg ℕ)
 slide′ = tweenT 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
-           (E.↔ t ∥ named "slider" (rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle)))
+           (E.↔ tO ∥ named "slider" (rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle)))
 
 eased : Body
 eased = do

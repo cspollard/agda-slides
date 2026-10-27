@@ -18,6 +18,12 @@ import Data.Nat.Divisibility as ℕD
 import Data.Nat.Properties as ℕP
 open import Data.Rational as ℚ using (ℚ)
 open import Data.Product using (_,_)
+open import Data.Fin using (zero; suc)
+open import Data.Sum.Base using (inj₁; inj₂)
+open import Data.Unit using (tt)
+open import Data.Container.Core using (Position)
+open import Data.Container.Combinator using (_⊎_)
+open import Slides.Diagram.Signature using (Handler; _⊕_)
 import Data.Rational.Properties as ℚP
 open import Data.Rational.Unnormalised using (*≡*)
 import Data.Rational.Unnormalised.Properties as ℚᵘP
@@ -130,6 +136,16 @@ record IsFloorHom {S T : Set} (O : FloorOps S) (P : FloorOps T) (h : S → T) : 
 ι-floor = record { h-divBy = ι-divBy′ ; h-modBy = ι-modBy ; h-mulLit = ι-mulLit }
   where ι-divBy′ = λ d a → ι-divBy d a
 
+-- the nodes of both layers, as handlers
+ι-ordfloor : ∀ s (k : Position (OrdC ⊎ FloorC) s → ℕ) →
+             ι ((ordH natOrd ⊕ floorH natFloor) .Handler.handle s k)
+             ≡ (ordH ratOrd ⊕ floorH ratFloor) .Handler.handle s (λ q → ι (k q))
+ι-ordfloor (inj₁ Lt)          k = IsOrdHom.h-lt ι-ord (k zero) (k (suc zero)) (k (suc (suc zero))) (k (suc (suc (suc zero))))
+ι-ordfloor (inj₁ Min)         k = IsOrdHom.h-min ι-ord (k zero) (k (suc zero))
+ι-ordfloor (inj₂ (DivBy d))   k = IsFloorHom.h-divBy ι-floor d (k tt)
+ι-ordfloor (inj₂ (ModBy d))   k = IsFloorHom.h-modBy ι-floor d (k tt)
+ι-ordfloor (inj₂ (MulLit n))  k = IsFloorHom.h-mulLit ι-floor n (k tt)
+
 ------------------------------------------------------------------------
 -- The monus and the percentage, as the lowering reads them
 
@@ -141,6 +157,24 @@ record IsFloorHom {S T : Set} (O : FloorOps S) (P : FloorOps T) (h : S → T) : 
 ... | false = trans (cong ι (ℕP.m≤n⇒m∸n≡0 (ℕP.<⇒≤ (ℕP.≰⇒> (λ (h : b ℕ.≤ a) → subst T eq (ℕP.≤⇒≤ᵇ h))))))
                     (trans (sym (ℚP.+-inverseʳ (ι b)))
                            (cong (ℚ._- ι b) (sym (ℚP.p≤q⇒p⊔q≡q (ι-≰ b a eq)))))
+
+-- a percentage is exact when the ℕ result is the ℚ one
+Exact% : ℕ → ℕ → Set
+Exact% p x = ι ((x * p) ℕ./ 100) ≡ (+ p ℚ./ 100) ℚ.* ι x
+
+-- a percentage that divides evenly is exact
+exact% : ∀ p x → (x * p) ℕ.% 100 ≡ 0 → Exact% p x
+exact% p x h = ℚP.toℚᵘ-injective
+  (ℚᵘP.≃-trans (toℚᵘ-ι q)
+  (ℚᵘP.≃-trans (*≡* (trans (sym (ℤP.pos-* q 100)) (trans (cong +_ (sym eq)) (trans (ℤP.pos-* x p) (comm (+ x) (+ p))))))
+  (ℚᵘP.≃-sym (ℚᵘP.≃-trans (ℚP.toℚᵘ-homo-* (+ p ℚ./ 100) (ι x))
+                          (ℚᵘP.*-cong (toℚᵘ-/ (+ p) 99) (toℚᵘ-ι x))))))
+  where
+    q = (x * p) ℕ./ 100
+    eq : x * p ≡ q * 100
+    eq = trans (ℕDM.m≡m%n+[m/n]*n (x * p) 100) (cong (ℕ._+ q * 100) h)
+    comm : ∀ a b → a ℤ.* b ≡ (b ℤ.* a) ℤ.* + 1
+    comm = solve-∀
 
 -- `x·p/100` rounded down is the floor of `p·x/100` in ℚ
 ι-pct : ∀ p x → ι ((x * p) / 100) ≡ FloorOps.divBy ratFloor 99 (FloorOps.mulLit ratFloor p (ι x))

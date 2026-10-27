@@ -17,16 +17,16 @@
 -- injectivity and no condition on where `-` is applied: layout only computes with the
 -- operations, and each is preserved on the nose.  (That the layout is *valid*, with
 -- sizes and offsets non-negative, is a different matter, `Slides.Diagram.Place.Properties.Valid`.
--- Preserving `-` is what the ℕ monus asks of an evaluation; for `Slides.Diagram.Expr`
+-- Preserving `-` is what the ℕ monus asks of an evaluation; for `Slides.Diagram.Ordered`
 -- it holds because both sides interpret `-` by the same monus.)
 --
--- The consequence used by the page player: `h = eval ρ : Expr V → ℕ` (an
--- `Ops`-homomorphism by `Slides.Diagram.Expr.eval-hom`) gives
+-- The consequence used by the page player: `h = evalO O ρ : OExpr V → S` (an `Ops`-homomorphism,
+-- `Slides.Diagram.Ordered.Properties.Laws.evalO-hom`) gives
 --
---     mapLayout (eval ρ) (layout_Expr tmpl) ≡ layout_ℕ (mapDia (eval ρ) tmpl)
+--     mapLayout (evalO O ρ) (layout tmpl) ≡ layout_S (mapDia (evalO O ρ) tmpl)
 --
 -- so a template laid out once, symbolically, and evaluated, is the layout of the
--- instance (`layout-eval`).
+-- instance (`layout-evalO`).
 
 module Slides.Diagram.Layout.Properties where
 
@@ -53,8 +53,6 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Bool using (true; false)
 import Slides.Diagram.Place as Place
 open import Slides.Diagram.Layout using (module LayoutWith)
-open import Slides.Diagram.Expr using (Expr; exprOps; eval; evalWith; subst)
-open import Slides.Diagram.Expr.Properties using (eval-hom; evalWith-hom; subst-hom; evalWith-subst)
 open import Function using (_∘_)
 
 private
@@ -256,15 +254,6 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
     trans (connectP-natural a pa b pb s (LS.layout (k tt))) (cong (PT.connectP a pa b pb s) (layout-natural (k tt)))
 
 ------------------------------------------------------------------------
--- Templates: lay out once, evaluate later
-
--- a diagram over symbolic sizes, laid out in `Expr V` and evaluated at an assignment, is the
--- layout of the diagram with those sizes evaluated
-layout-eval : ∀ {V} (ρ : V → ℕ) (d : Dia (Expr V)) →
-  mapLayout (eval ρ) (LayoutWith.layout exprOps d) ≡ LayoutWith.layout natOps (mapDia (eval ρ) d)
-layout-eval ρ = layout-natural exprOps natOps (eval ρ) (eval-hom ρ)
-
-------------------------------------------------------------------------
 -- `mapLayout` is a functor (up to pointwise-equal maps)
 
 mapDraw-cong : ∀ {S T : Set} {f g : S → T} → (∀ x → f x ≡ g x) → ∀ d → mapDraw f d ≡ mapDraw g d
@@ -305,26 +294,3 @@ mapLayout-∘ g f l =
                 ∀ xs → map v (map u xs) ≡ map w xs
     map-comm′ u v w eq []       = refl
     map-comm′ u v w eq (x ∷ xs) = cong₂ _∷_ (eq x) (map-comm′ u v w eq xs)
-
-------------------------------------------------------------------------
--- Substituting into a template and then evaluating
-
--- Laying out a template whose variables are replaced by formulas `σ v` and then evaluating at
--- `ρ` is laying out the template at the assignment `v ↦ eval ρ (σ v)`.  (For a segment placed in
--- an animation, `σ` sends the segment's parameter to its own variable, and `ρ` gives every
--- segment's parameter at a tick.)  True in any scalar: `layout-subst` is the instance at ℕ, the
--- discrete frames; the instance at ℚ (`ratOps`) is the continuous ones.
-layout-substWith : ∀ {V W S} (O : Ops S) (σ : V → Expr W) (ρ : W → S) (d : Dia (Expr V)) →
-  LayoutWith.layout O (mapDia (evalWith O ρ) (mapDia (subst σ) d))
-  ≡ LayoutWith.layout O (mapDia (evalWith O (λ v → evalWith O ρ (σ v))) d)
-layout-substWith O σ ρ d =
-  trans (sym (layout-natural exprOps O (evalWith O ρ) (evalWith-hom O ρ) (mapDia (subst σ) d)))
-  (trans (cong (mapLayout (evalWith O ρ)) (sym (layout-natural exprOps exprOps (subst σ) (subst-hom σ) d)))
-  (trans (mapLayout-∘ (evalWith O ρ) (subst σ) (LayoutWith.layout exprOps d))
-  (trans (mapLayout-cong (evalWith-subst O ρ σ) (LayoutWith.layout exprOps d))
-         (layout-natural exprOps O (evalWith O (λ v → evalWith O ρ (σ v))) (evalWith-hom O _) d))))
-
-layout-subst : ∀ {V W} (σ : V → Expr W) (ρ : W → ℕ) (d : Dia (Expr V)) →
-  LayoutWith.layout natOps (mapDia (eval ρ) (mapDia (subst σ) d))
-  ≡ LayoutWith.layout natOps (mapDia (eval (λ v → eval ρ (σ v))) d)
-layout-subst = layout-substWith natOps

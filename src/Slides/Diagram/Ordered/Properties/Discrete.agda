@@ -14,13 +14,14 @@
 module Slides.Diagram.Ordered.Properties.Discrete where
 
 open import Data.Nat as ℕ using (ℕ; suc; _∸_; _*_; _/_)
+import Data.Nat.DivMod as ℕDM
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_,_)
 open import Data.Fin using (zero; suc)
 open import Data.Sum.Base using (inj₁; inj₂)
-open import Data.Unit using (tt)
+open import Data.Unit using (tt; ⊤)
 open import Data.Container.Core using (Position)
-open import Data.Container.FreeMonad using (pure; impure)
+open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Function using (_∘_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
@@ -30,7 +31,7 @@ open import Slides.Diagram.Signature
 open import Slides.Diagram.Expr using (Zero; Lit; Plus; Max; Pct; Sub)
 open import Slides.Diagram.Ordered
 open import Slides.Diagram.Ordered.Properties
-open import Slides.Diagram.Ordered.Properties.Laws using (pull; foldT-lower)
+open import Slides.Diagram.Ordered.Properties.Laws using (pull; foldT-lower; foldT-bind; foldT-cong)
 
 -- the handler of the lowering, at ℕ, is the handler of ℕ
 private
@@ -65,11 +66,7 @@ node-ι (inj₁ (inj₁ Plus))    k = ι-+ (k zero) (k (suc zero))
 node-ι (inj₁ (inj₁ Max))     k = ι-⊔ (k zero) (k (suc zero))
 node-ι (inj₁ (inj₁ (Pct p))) k = ι-pct p (k tt)
 node-ι (inj₁ (inj₂ Sub))     k = ι-monus (k zero) (k (suc zero))
-node-ι (inj₂ (inj₁ Lt))      k = IsOrdHom.h-lt ι-ord (k zero) (k (suc zero)) (k (suc (suc zero))) (k (suc (suc (suc zero))))
-node-ι (inj₂ (inj₁ Min))     k = IsOrdHom.h-min ι-ord (k zero) (k (suc zero))
-node-ι (inj₂ (inj₂ (DivBy d)))  k = IsFloorHom.h-divBy ι-floor d (k tt)
-node-ι (inj₂ (inj₂ (ModBy d)))  k = IsFloorHom.h-modBy ι-floor d (k tt)
-node-ι (inj₂ (inj₂ (MulLit n))) k = IsFloorHom.h-mulLit ι-floor n (k tt)
+node-ι (inj₂ s)              k = ι-ordfloor s k
 
 -- A discrete template at a tick is its lowering at `ι` of the tick: for every template and tick.
 discrete-is-ordered : ∀ {V} (ρ : V → ℕ) (e : OExpr V) →
@@ -81,3 +78,22 @@ discrete-is-ordered ρ e = trans (go e) (sym (foldT-lower lowerO (oH ratO) (ι �
     go (impure (s , k)) =
       trans (node-ι s (λ q → evalO natO ρ (k q)))
             (pull lowerO (oH ratO) .Handler.respects s (λ q → go (k q)))
+
+-- A discrete body (`Slides.Anim.Syntax.discrete`: the formulas lowered and held) reads, at the
+-- tick `u`, as the formulas themselves in ℕ, and as `ι` of that in ℚ at the whole tick `ι u`: it is
+-- one template with one reading in each clock.
+hold-ℕ : ∀ u → evalO natO (λ _ → u) holdT ≡ u
+hold-ℕ u = ℕDM.n/1≡n u
+
+discrete-ℕ : ∀ (u : ℕ) (e : OExpr ⊤) → evalO natO (λ _ → u) (lowerQ e >>= λ _ → holdT) ≡ evalO natO (λ _ → u) e
+discrete-ℕ u e =
+  trans (foldT-bind (oH natO) (λ _ → u) (λ _ → holdT) (lowerQ e))
+ (trans (foldT-cong (oH natO) (λ _ → hold-ℕ u) (lowerQ e)) (lower-ℕ (λ _ → u) e))
+
+discrete-ℚ : ∀ (u : ℕ) (e : OExpr ⊤) →
+             evalO ratO (λ _ → ι u) (lowerQ e >>= λ _ → holdT) ≡ ι (evalO natO (λ _ → u) e)
+discrete-ℚ u e =
+  trans (foldT-bind (oH ratO) (λ _ → ι u) (λ _ → holdT) (lowerQ e))
+ (trans (foldT-cong (oH ratO) (λ _ → sym (ι-hold u)) (lowerQ e)) (sym (discrete-is-ordered (λ _ → u) e)))
+  where ι-hold : ∀ u → ι u ≡ evalO ratO (λ _ → ι u) holdT
+        ι-hold u = trans (cong ι (sym (ℕDM.n/1≡n u))) (ι-divBy 0 u)

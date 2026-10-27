@@ -39,7 +39,6 @@ open import Slides.Anim.Syntax
 bodyUsage : ∀ {S} → SegBody S → ℚ → Usage
 bodyUsage (blackBox f) q = fold namesAlgebra (f q)
 bodyUsage (template d) q = fold namesAlgebra d
-bodyUsage (discrete d) q = fold namesAlgebra d
 
 footprint : ∀ {S} → Anim S (Seg S) → List String
 footprint = foldA (λ s → proj₁ (bodyUsage (content s) (T.start (track s)))) _++_ _++_

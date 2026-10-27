@@ -34,13 +34,10 @@ import Slides.Anim.Track as Tr
 open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
 open import Slides.Backend.HTML using (hElement; padText)
 import Slides.Diagram.Draw as Dr
-open import Slides.Diagram.Expr using (Expr)
-open import Slides.Diagram.Param using (param; dparam; AnyParam; continuous; discrete)
-open import Slides.Diagram.Euclid using (DExpr)
+open import Slides.Diagram.Param using (Param; param)
 import Slides.Anim.Formula as F
 open F using (Formula)
 open import Slides.Anim.Phases using (phasesOf; Elem)
-open import Slides.Anim.DPhases using (phasesOfD)
 open import Slides.Anim.Share using (Arg; anum; apar; aref; Node; atom; un; bin; quad; oPct; oDiv; oMod; oMul; oHlf; oEase; oAdd; oSub; oMax; oMin)
 open import Slides.Anim.SharePhases using (SElem; SBody; sbody; sharePhases)
 open import Slides.Diagram.Scalar using (natOps)
@@ -327,7 +324,6 @@ private
 
   -- the phases (`Slides.Anim.Phases.phasesOf`: runs of ticks that ship the same elements), with
   -- the formulas of each phase shared (`Slides.Anim.SharePhases.sharePhases`)
-  -- (`phasesOf ls` for continuous templates, `Slides.Anim.DPhases.phasesOfD ls` for discrete ones)
   phasesⱼ : String → List (ℕ × List Elem) → List JSON
   phasesⱼ n ps = map (λ p → objectFromList (("s" , natⱼ (proj₁ p)) ∷ phaseFields n (proj₂ p))) (sharePhases ps)
 
@@ -342,28 +338,13 @@ private
   segmentJ : ℕ × List (Tr.Piece ℚ.ℚ) → JSON
   segmentJ (s , ps) = arrayⱼ (natⱼ s ∷ arrayⱼ (map pieceⱼ ps) ∷ [])
 
--- A discrete parametric animation is the same object with `"d": 1`: the page reads its formulas
--- in ℕ (a difference clamps at 0, `[3, p, a]` rounds down, and `5`, `6`, `7`, `8` are floor
--- division, remainder, a literal factor, and `[8, a, b, x, y]`, which is `x` if `a < b` else `y`) and
--- shows, at real time `τ`, the frame of the whole tick `⌊τ⌋`, with every segment's parameter
--- the floor of its track's value at that whole tick.
-renderParamAnimation : Diagram → AnyParam → ℕ → Play → XMLM A
-renderParamAnimation d (continuous (param ls segs)) ms play =
+renderParamAnimation : Diagram → Param → ℕ → Play → XMLM A
+renderParamAnimation d (param ls segs) ms play =
   animationWith d
     ( ("data-n" , num (length ls))
     ∷ ("data-param" , renderJSON (objectFromList
          ( ("v" , arrayⱼ (map segmentJ segs))
          ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) (phasesOf ls)))
-         ∷ [] )))
-    ∷ [] )
-    ms play
-renderParamAnimation d (discrete (dparam ls segs)) ms play =
-  animationWith d
-    ( ("data-n" , num (length ls))
-    ∷ ("data-param" , renderJSON (objectFromList
-         ( ("d" , natⱼ 1)
-         ∷ ("v" , arrayⱼ (map segmentJ segs))
-         ∷ ("p" , arrayⱼ (phasesⱼ (Diagram.name d) (phasesOfD ls)))
          ∷ [] )))
     ∷ [] )
     ms play

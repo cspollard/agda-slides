@@ -3,7 +3,7 @@
 -- Signatures of scalar operations, as containers, and their algebras.
 --
 -- The scalar operations of a layout come in layers (`Slides.Diagram.Scalar`: `CoreOps`,
--- `SubOps`; `Slides.Diagram.Expr` and `Slides.Diagram.Euclid` give each layer its
+-- `SubOps`; `Slides.Diagram.Expr` and `Slides.Diagram.Ordered` give each layer its
 -- signature).  A signature is a container `Σ = Op ▷ arity`; the symbolic scalars over
 -- it are the free monad `Term Σ V = Σ ⋆ V` (leaves are variables).  Signatures are
 -- combined by the sum of containers (`Data.Container.Combinator._⊎_`), and a term over a

@@ -8,9 +8,8 @@
 -- through it: `++` (one segment after another) is "first, then the second with the tick shifted"
 -- (`nth-++`), `merge` (`Par`) is the pointwise `mergeM` (`nth-merge`), the same algebra the
 -- continuous semantics uses (`Slides.Anim.Continuous.parAt`), and the frames of one segment are
--- its body at the samples of its track (`nth-frames`).  Shared by the assembly proofs of the
--- continuous templates (`Slides.Anim.Param.Properties`) and of the discrete ones
--- (`Slides.Anim.DParam.Properties`).
+-- its body at the samples of its track (`nth-frames`).  Shared by the assembly proofs
+-- (`Slides.Anim.Param.Properties`, `Slides.Anim.Assembly.Continuous`).
 
 module Slides.Anim.Nth where
 
@@ -22,7 +21,7 @@ open import Data.Nat using (ℕ; zero; suc; _∸_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
-open import Slides.Diagram.Scalar using (Ops)
+open import Slides.Diagram.Ordered using (OOps)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
 open import Slides.Anim.Timeline using (merge; frames; mergeM)
@@ -77,7 +76,7 @@ private
   map-if g false x = refl
 
 -- the frames of a segment, tick by tick
-nth-frames : ∀ {S} (O : Ops S) (s : Seg S) j →
+nth-frames : ∀ {S} (O : OOps S) (s : Seg S) j →
              nth (frames O s) j
              ≡ (if j <ᵇ proj₁ (T.sample T.ℚLerp (track s))
                 then just (body O s (proj₂ (T.sample T.ℚLerp (track s)) j)) else nothing)

@@ -5,12 +5,11 @@
 -- The page, at the parameters `ρ` of the segments, shows for a phase element `pageElem e ρ`: the
 -- base command with each number replaced by the value of its formula (when it has one).  What
 -- the page does with the shipped data does not depend on which expression language the symbolic
--- frames are over, nor on how a shipped formula is read (ℚ for continuous templates, ℕ for
--- discrete ones, `Slides.Anim.Formula`); only on two facts about each slot of a command: the
--- formula's value is the number the slot stands for (`slot-val`, positions halved), and a slot that
--- folded to a constant has the right base number (`slot-num`).  So the theorems are proved once,
--- in `Over`, given those two facts; `Slides.Anim.Phases.Properties` instantiates it at ℚ
--- (continuous templates) and `Slides.Anim.DPhases.Properties` at ℕ (discrete ones).  We prove
+-- frames are over, nor on how a shipped formula is read; only on two facts about each slot of a
+-- command: the formula's value is the number the slot stands for (`slot-val`, positions halved), and
+-- a slot that folded to a constant has the right base number (`slot-num`).  So the theorems are
+-- proved once, in `Over`, given those two facts, and instantiated at ℚ, the reading of the page
+-- (`Continuous`, symbolic coordinates in `OExpr`, `Slides.Anim.Formula.Properties.enc-sem`).  We prove
 --
 --   * `encode-sem`: for a drawing command `dr` of a symbolic layout, `pageElem (encodeWith slot
 --     bval dr) ρ` is `dr` evaluated at `ρ` with positions halved (positions are in half units,
@@ -20,8 +19,7 @@
 --   * `phases-active`: grouping ticks into phases (`runs`) does not change the frame at any tick:
 --     the phase in force at tick `k` has the same elements as tick `k` itself.
 --   * `pageFrame-sem`: so at tick `k` the page's frame, at `ρ`, is the symbolic layout of tick `k`
---     evaluated at `ρ` and halved: the frame `Slides.Anim.Continuous.frameAt` (resp. the discrete
---     frame), drawn.
+--     evaluated at `ρ` and halved: the frame `Slides.Anim.Continuous.frameAt`, drawn.
 --
 -- Not proved: the printing of this data as JSON and its parsing by the player (`parse`, the
 -- attribute table `NUMS` in `assets/animation.js`, which must follow `nums`), and the floating
@@ -50,7 +48,10 @@ import Data.List.Properties as LP
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label; mapDraw; Layout)
 open import Slides.Diagram.NatQ using (ι)
+open import Slides.Diagram.Ordered using (OExpr; QExpr; evalO; evalQ; natO; ratO; ratQ; weakenQ)
+open import Slides.Diagram.Ordered.Properties.Laws using (evalQ-weaken)
 open import Slides.Anim.Formula
+open import Slides.Anim.Formula.Properties
 open import Slides.Anim.Arith using (≤ᵇ-true)
 open import Slides.Anim.Nth using (nth; nth-map)
 open import Slides.Anim.Phases
@@ -265,3 +266,28 @@ module Over {E P : Set} (slot : Kind × E → Formula) (bval : E → ℕ) (rd : 
               (trans (nth-map (tickElemsWith slot bval) ls k) (cong (Maybe.map (tickElemsWith slot bval)) h)) =
     cong just (trans (sym (LP.map-∘ (Layout.draws L)))
                      (LP.map-cong (λ dr → encode-sem dr ρ) (Layout.draws L)))
+
+------------------------------------------------------------------------
+-- The page's reading: formulas in ℚ, the symbolic coordinate an `OExpr ℕ` evaluated in ℚ
+
+private
+  slot-valℚ : ∀ x ρ → ⟦ slotF x ⟧ ρ ≡ halfIf (proj₁ x) (evalO ratO ρ (proj₂ x))
+  slot-valℚ (pos  , e) ρ = trans (half-sem (enc (weakenQ e)) ρ)
+                                 (cong ((+ 1 ℚ./ 2) ℚ.*_) (trans (enc-sem (weakenQ e) ρ) (evalQ-weaken ratQ ρ e)))
+  slot-valℚ (size , e) ρ = trans (enc-sem (weakenQ e) ρ) (evalQ-weaken ratQ ρ e)
+
+  -- a number that folded to a constant is the base number
+  slot-numℚ : ∀ x c ρ → slotF x ≡ num c →
+              baseNum (proj₁ x , evalO natO (λ _ → 0) (proj₂ x)) ≡ halfIf (proj₁ x) (evalO ratO ρ (proj₂ x))
+  slot-numℚ (pos , e) c ρ h with half-num-inv (enc (weakenQ e)) c h
+  ... | a , e₁ , refl =
+    trans (cong (λ v → ι (v / 2)) (enc-numO e a e₁ (λ _ → 0)))
+          (trans (cong (λ f → ⟦ f ⟧ ρ) (sym h)) (slot-valℚ (pos , e) ρ))
+  slot-numℚ (size , e) c ρ h =
+    trans (cong ι (enc-numO e c h (λ _ → 0)))
+          (trans (cong (λ f → ⟦ f ⟧ ρ) (sym h)) (slot-valℚ (size , e) ρ))
+
+module Continuous = Over slotF (evalO natO (λ _ → 0)) (λ f ρ → ⟦ f ⟧ ρ) (λ ρ e → evalO ratO ρ e) slot-valℚ slot-numℚ
+
+encodeDraw-sem = Continuous.encode-sem
+pageFrame-sem  = Continuous.pageFrame-sem

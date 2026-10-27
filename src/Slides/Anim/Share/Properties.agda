@@ -502,8 +502,7 @@ module Sound {A B : Set} (R : Reading A B) (S : Semantics R) where
   -- Substituting the definitions into a reference gives a tree again (`>>=` of the formulas'
   -- free monad: a variable, here a reference, is replaced by the formula it names).  Evaluating
   -- the program is evaluating that tree: `unfold-sound`, the law "evaluation after substitution
-  -- is evaluation at the evaluated substitution" (`Slides.Diagram.Expr.evalWith-subst`,
-  -- `Slides.Diagram.Euclid.evalD-substD`) for the shipped syntax, proved by `env-def`'s
+  -- is evaluation at the evaluated substitution" (`Slides.Diagram.Ordered.Properties.Laws.foldT-bind`) for the shipped syntax, proved by `env-def`'s
   -- induction on the store.
   argF : (ℕ → Formula) → Arg → Formula
   argF e (anum n) = num n

@@ -33,7 +33,7 @@ open import Data.Fin using (suc)
 open import Data.Product using (proj₁; proj₂)
 open import Data.Container.FreeMonad using (_⋆_)
 open import Slides.Diagram.Syntax using (Dia)
-open import Slides.Diagram.Scalar using (Ops)
+open import Slides.Diagram.Ordered using (OOps)
 open import Slides.Anim.Syntax
 
 -- what is shown when at most one of two parts is running, or both: they go over each other
@@ -55,6 +55,6 @@ module _ {F : Set} (_⊙_ : F → F → F) where
 
 
 -- the diagram language: a segment shows its body at the parameter's value on each tick, frames overlay by `atop`
-frames : ∀ {S} → Ops S → Seg S → List (Dia S)
+frames : ∀ {S} → OOps S → Seg S → List (Dia S)
 frames O s = map (λ t → body O s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
   where sampled = T.sample T.ℚLerp (track s)

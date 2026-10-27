@@ -70,28 +70,26 @@ function SlidesAnimation(shown) {
   // numbers: 0 plus, 1 minus, 2 maximum, 3 `[3, p, a]` p percent of `a`, 4 `[4, a]` half of `a`
   // (positions being in half units), 5 floor division `[5, n, a]`, 6 remainder `[6, n, a]` (the
   // real one, `a - n*floor(a/n)`), 7 a literal factor `[7, n, a]`, 8 `[8, a, b, x, y]`, which is
-  // `x` if `a < b` else `y`, 9 minimum, 10 `[10, e, a]` an easing (`e` as in a piece) of `a`.  A
-  // discrete template (`D`, see `renderParamAnimation`) is read in the naturals: `-` clamps at 0
-  // and `%` rounds down
-  function ev(e, r, D, V) {
+  // `x` if `a < b` else `y`, 9 minimum, 10 `[10, e, a]` an easing (`e` as in a piece) of `a`.  The
+  // floor adds an epsilon: a parameter that is a whole number in exact arithmetic (a track's value
+  // at a tick) can come out a hair below it in floating point
+  function fl(x) { return Math.floor(x + 1e-9); }
+  function ev(e, r, V) {
     if (typeof e === 'number') return e < 0 ? V[-1 - e] : e;
     if (typeof e === 'string') return r[+e];
     var o = e[0];
-    if (o === 10) return ease(e[1], ev(e[2], r, D, V));
-    var x = ev(e[1], r, D, V);
+    if (o === 10) return ease(e[1], ev(e[2], r, V));
+    var x = ev(e[1], r, V);
     if (o === 4) return x / 2;
-    if (o === 8) return x < ev(e[2], r, D, V) ? ev(e[3], r, D, V) : ev(e[4], r, D, V);
-    var y = ev(e[2], r, D, V);
-    return o === 0 ? x + y : o === 1 ? (D ? Math.max(0, x - y) : x - y) : o === 2 ? Math.max(x, y) : o === 9 ? Math.min(x, y)
-         : o === 5 ? Math.floor(y / x) : o === 6 ? y - x * Math.floor(y / x) : o === 7 ? x * y
-         : D ? Math.floor(x * y / 100) : x * y / 100;
+    if (o === 8) return x < ev(e[2], r, V) ? ev(e[3], r, V) : ev(e[4], r, V);
+    var y = ev(e[2], r, V);
+    return o === 0 ? x + y : o === 1 ? x - y : o === 2 ? Math.max(x, y) : o === 9 ? Math.min(x, y)
+         : o === 5 ? fl(y / x) : o === 6 ? y - x * fl(y / x) : o === 7 ? x * y : x * y / 100;
   }
   // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number
-  // that depends on a parameter.  A discrete animation (`"d": 1`) shows the frame of the whole
-  // tick `k = floor(t)` (no interpolation between ticks), each parameter being the floor of its
-  // track's value at that tick (the epsilon guards the floating point of easings)
+  // that depends on a parameter, each being its track's value at `t`
   function pframe(a, t) {
-    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0, D = P.d === 1;
+    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;
     var k = Math.max(0, Math.min(Math.floor(t), +a.dataset.n - 1));
     while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;
     var svg = a.querySelector(':scope > .frame svg');
@@ -102,15 +100,15 @@ function SlidesAnimation(shown) {
       P.p[i].b.forEach(function (s) { if (typeof s === 'number') s = seen[s]; else seen.push(s); svg.appendChild(parse(s)); });
       a._ph = i;
     }
-    var r = P.v.map(function (v) { var x = track(v[1], (D ? k : t) - v[0]); return D ? Math.floor(x + 1e-9) : x; });
+    var r = P.v.map(function (v) { return track(v[1], t - v[0]); });
     // the phase's program (`f`): the shared subformulas, each over the parameters and the earlier
     // ones, evaluated once; then the numbers of the elements
     var V = [];
-    (P.p[i].f || []).forEach(function (d) { V.push(ev(d, r, D, V)); });
+    (P.p[i].f || []).forEach(function (d) { V.push(ev(d, r, V)); });
     P.p[i].c.forEach(function (cs, j) {
       if (cs === null) return;
       var el = svg.children[1 + j];
-      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, D, V)); });
+      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, V)); });
     });
   }
   // show frame `k` (a real time for a parametric animation): rebuild from the first frame when

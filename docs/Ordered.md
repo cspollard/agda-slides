@@ -1,5 +1,19 @@
 # An ordered layer for the scalar signature (Stage 1b / scalar side of Stage 2)
 
+**Landed (branch `ordered-migration`, M1 to M3).** The design below is as built, with these
+changes against the spike: (1) the signature is split in two, `OC = ExprC ⊎ OrdC ⊎ FloorC` (the
+layers ℕ and ℚ both read; `OExpr`, `OOps`, the language of every template) and `QC = OC ⊎ EaseC`
+(ℚ only), because a template must be evaluable in ℕ (the flipbook, the assembly proofs) and
+`Ease` has no ℕ reading; templates are `Dia (OExpr ⊤)` and `Ease` stays a node of the shipped
+formulas and of `QExpr` for M4; (2) the lowering is a Kleisli endomorphism of `OC`
+(`lowerO`), with the monus as `(a ⊔ b) − b` instead of `max (a − b) 0`: the minuend is the larger
+by construction, so a lowered term is `FaithfulO` at every assignment (`faithful-lower`), and
+`Pct p x` is `DivBy 99 (MulLit p x)`; (3) models are explicit records (`OOps`, `QOps`: `natO`,
+`ratO`, `ratQ`) with laws `QLaws`; (4) `discrete d` is a function, not a constructor:
+`template (mapDia (λ e → lowerQ e >>= λ _ → holdT) d)`; `Euclid`, `DParam`, `DPhases`, the
+`D` flag of the player and the second set of Properties are gone (`plan/Unify.md` 4c).
+Modules: `Slides.Diagram.Ordered` and `.Properties{,.Discrete,.Faithful,.Laws}`.
+
 Status: design and spike, branch `stage2-ordered`; nothing in `src/Slides` outside `Spike/` is
 changed. Spike modules (all `--safe --without-K`, no postulates, no holes, no instance search
 beyond `NonZero` literals, none imported by an executable):

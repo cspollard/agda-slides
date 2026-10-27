@@ -2,10 +2,10 @@
 
 -- Where the discrete (ℕ) and the continuous (ℚ) readings of a formula differ.
 --
--- A template's sizes are `Expr`s (`Slides.Diagram.Expr`).  The deck is laid out in ℕ, whose
+-- A template's sizes are `OExpr`s (`Slides.Diagram.Ordered`).  The deck is laid out in ℕ, whose
 -- difference is the monus and whose "p percent of" rounds down; the continuous player
--- (`Slides.Anim.Continuous`) evaluates the same formulas in ℚ (`ratOps`), whose difference is
--- real subtraction and whose percentage is exact.  Both are `evalWith` of the same free
+-- (`Slides.Anim.Continuous`) evaluates the same formulas in ℚ (`ratO`), whose difference is
+-- real subtraction and whose percentage is exact.  Both are `evalO` of the same free
 -- algebra, and layout is natural in each (`Slides.Diagram.Layout.Properties`), so a template's
 -- frame in either reading is the evaluation of *one* symbolic layout.  They agree exactly when
 -- the ℕ operations were exact, i.e. at the nodes where
@@ -15,19 +15,24 @@
 --     rules out anyway), and
 --   * a percentage divides evenly (otherwise ℕ rounds down).
 --
--- Sums, maxima and literals always agree (`Slides.Diagram.NatQ`).  `Faithful ρ e` says that
--- every node of `e` is exact at the assignment `ρ`; `faithful` is the theorem that then
--- `ι (eval ρ e) = evalWith ratOps (ι ∘ ρ) e`, `faithful-layout` its form for the layout of a
--- template.  Nothing is claimed for an assignment that is not whole: a parameter between
--- two whole numbers has no ℕ value (the discrete reading floors it, `Slides.Anim.Syntax.units`).
+-- Sums, maxima and literals always agree (`Slides.Diagram.NatQ`), and so do the nodes of the
+-- ordered layers (`Slides.Diagram.Ordered.Properties`: `ι-ord`, `ι-floor`).  `FaithfulO ρ e` says
+-- that every node of `e` is exact at the assignment `ρ`; `faithful` is the theorem that then
+-- `ι (evalO natO ρ e) = evalO ratO (ι ∘ ρ) e`, `faithful-layout` its form for the layout of a
+-- template.  Lowered terms (`lowerQ`) are faithful at every assignment (`faithful-lower`), and so is
+-- a discrete body (`faithful-discrete`): the leaves of a discrete template need no hypothesis, only
+-- the layout's own differences do.  Nothing is claimed for an assignment that is not whole: a
+-- parameter between two whole numbers has no ℕ value (the discrete reading floors it,
+-- `Slides.Anim.Syntax.units`).
 
-module Slides.Diagram.Expr.Properties.Faithful where
+module Slides.Diagram.Ordered.Properties.Faithful where
 
 open import Data.Fin using (zero; suc)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.List using ([]; _∷_; map)
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.Nat as ℕ using (ℕ; _≤_; _*_)
+import Data.Nat.Properties as ℕP
 import Data.Nat.DivMod as ℕDM
 import Data.Integer.Properties as ℤP
 import Data.Rational.Properties as ℚP
@@ -38,39 +43,24 @@ open import Data.Product using (_×_; _,_; proj₂)
 open import Data.Integer as ℤ using (+_)
 open import Data.Rational as ℚ using (ℚ; _/_)
 open import Data.Unit using (⊤; tt)
-open import Data.Container.FreeMonad using (pure; impure)
+open import Data.Container.Core using (Shape; Position)
+open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Function using (_∘_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst; subst₂)
 
 open import Slides.Cong using (cong₃; cong₄)
 open import Slides.Diagram.Draw
-open import Slides.Diagram.Expr
-open import Slides.Diagram.Expr.Properties
-open import Slides.Diagram.Layout.Properties using (layout-natural; layout-eval; mapLayout-∘)
+open import Slides.Diagram.Expr using (CoreOp; SubOp; ExprOp; coreArity; subArity; exprArity; Zero; Lit; Plus; Max; Pct; Sub; coreH; subH; opsH)
+open import Slides.Diagram.Layout.Properties using (mapLayout-∘)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.NatQ
 open import Slides.Diagram.NatQ.Properties
 open import Slides.Diagram.Scalar using (Ops; natOps; ratOps)
-open import Slides.Diagram.Signature using (Handler)
+open import Slides.Diagram.Signature using (Handler; foldT)
 open import Slides.Diagram.Syntax using (Dia; mapDia)
-
--- a percentage is exact when the ℕ result is the ℚ one
-Exact% : ℕ → ℕ → Set
-Exact% p x = ι ((x * p) ℕ./ 100) ≡ (+ p / 100) ℚ.* ι x
-
--- a percentage that divides evenly is exact
-exact% : ∀ p x → (x * p) ℕ.% 100 ≡ 0 → Exact% p x
-exact% p x h = ℚP.toℚᵘ-injective
-  (ℚᵘP.≃-trans (toℚᵘ-ι q)
-  (ℚᵘP.≃-trans (*≡* (trans (sym (ℤP.pos-* q 100)) (trans (cong +_ (sym eq)) (trans (ℤP.pos-* x p) (comm (+ x) (+ p))))))
-  (ℚᵘP.≃-sym (ℚᵘP.≃-trans (ℚP.toℚᵘ-homo-* (+ p / 100) (ι x))
-                          (ℚᵘP.*-cong (toℚᵘ-/ (+ p) 99) (toℚᵘ-ι x))))))
-  where
-    q = (x * p) ℕ./ 100
-    eq : x * p ≡ q * 100
-    eq = trans (ℕDM.m≡m%n+[m/n]*n (x * p) 100) (cong (ℕ._+ q * 100) h)
-    comm : ∀ a b → a ℤ.* b ≡ (b ℤ.* a) ℤ.* + 1
-    comm = solve-∀
+open import Slides.Diagram.Ordered
+open import Slides.Diagram.Ordered.Properties
+open import Slides.Diagram.Ordered.Properties.Laws using (evalO-hom; foldT-bind; layout-evalO)
 
 ------------------------------------------------------------------------
 -- ι, layer by layer
@@ -118,17 +108,71 @@ ExprSide (inj₂ o) = SubSide o
 ι-node (inj₁ o) = ι-core o
 ι-node (inj₂ o) = ι-sub o
 
+------------------------------------------------------------------------
+-- The side conditions of a term over the ordered layers: those of the core and sub layers only
+
+OSide : (s : Shape OC) → (Position OC s → ℕ) → Set
+OSide (inj₁ s) k = ExprSide s k
+OSide (inj₂ _) k = ⊤
+
+-- the side condition depends on the values only
+OSide-cong : ∀ s {k k′ : Position OC s → ℕ} → (∀ q → k q ≡ k′ q) → OSide s k → OSide s k′
+OSide-cong (inj₁ (inj₁ (Pct p))) e ex = subst (Exact% p) (e tt) ex
+OSide-cong (inj₁ (inj₂ Sub))     e ex = subst₂ ℕ._≤_ (e (suc zero)) (e zero) ex
+OSide-cong (inj₁ (inj₁ Zero))    e ex = tt
+OSide-cong (inj₁ (inj₁ (Lit _))) e ex = tt
+OSide-cong (inj₁ (inj₁ Plus))    e ex = tt
+OSide-cong (inj₁ (inj₁ Max))     e ex = tt
+OSide-cong (inj₂ _)              e ex = tt
+
 -- every node of `e` is exact at `ρ`
-Faithful : ∀ {V} → (V → ℕ) → Expr V → Set
-Faithful ρ (pure v)         = ⊤
-Faithful ρ (impure (s , k)) = (∀ q → Faithful ρ (k q)) × ExprSide s (λ q → eval ρ (k q))
+FaithfulO : ∀ {V} → (V → ℕ) → OExpr V → Set
+FaithfulO ρ (pure v)         = ⊤
+FaithfulO ρ (impure (s , k)) = (∀ q → FaithfulO ρ (k q)) × OSide s (λ q → evalO natO ρ (k q))
+
+-- `ι` commutes with the handler of a node where its side condition holds
+ι-nodeO : ∀ s (k : Position OC s → ℕ) → OSide s k →
+          ι (oH natO .Handler.handle s k) ≡ oH ratO .Handler.handle s (λ q → ι (k q))
+ι-nodeO (inj₁ s) k ex = ι-node s k ex
+ι-nodeO (inj₂ s) k _  = ι-ordfloor s k
 
 -- Exactness gives agreement of the two evaluations.
-faithful : ∀ {V} (ρ : V → ℕ) (e : Expr V) → Faithful ρ e → ι (eval ρ e) ≡ evalWith ratOps (ι ∘ ρ) e
+faithful : ∀ {V} (ρ : V → ℕ) (e : OExpr V) → FaithfulO ρ e → ι (evalO natO ρ e) ≡ evalO ratO (ι ∘ ρ) e
 faithful ρ (pure v)         _        = refl
 faithful ρ (impure (s , k)) (f , ex) =
-  trans (ι-node s (λ q → eval ρ (k q)) ex)
-        (opsH ratOps .Handler.respects s (λ q → faithful ρ (k q) (f q)))
+  trans (ι-nodeO s (λ q → evalO natO ρ (k q)) ex)
+        (oH ratO .Handler.respects s (λ q → faithful ρ (k q) (f q)))
+
+------------------------------------------------------------------------
+-- Lowered terms are exact at every assignment
+
+-- exactness is preserved by substitution of exact terms for the variables
+faithful->>= : ∀ {V W} (ρ : W → ℕ) (m : OExpr V) (σ : V → OExpr W) →
+               FaithfulO (λ v → evalO natO ρ (σ v)) m → (∀ v → FaithfulO ρ (σ v)) → FaithfulO ρ (m >>= σ)
+faithful->>= ρ (pure v)         σ _        g = g v
+faithful->>= ρ (impure (s , k)) σ (f , ex) g =
+  (λ q → faithful->>= ρ (k q) σ (f q) g)
+  , OSide-cong s (λ q → sym (foldT-bind (oH natO) ρ σ (k q))) ex
+
+-- the program a node is lowered to is exact at every assignment
+faithful-lowerO : ∀ s {ρ′ : Position OC s → ℕ} → FaithfulO ρ′ (lowerO s)
+faithful-lowerO (inj₁ (inj₁ (Pct p))) = (λ _ → (λ _ → tt) , tt) , tt
+faithful-lowerO (inj₁ (inj₂ Sub))     {ρ′} =
+  (λ { zero → (λ { zero → tt ; (suc zero) → tt }) , tt ; (suc zero) → tt }) , ℕP.m≤n⊔m (ρ′ zero) (ρ′ (suc zero))
+faithful-lowerO (inj₁ (inj₁ Zero))    = (λ ()) , tt
+faithful-lowerO (inj₁ (inj₁ (Lit _))) = (λ ()) , tt
+faithful-lowerO (inj₁ (inj₁ Plus))    = (λ _ → tt) , tt
+faithful-lowerO (inj₁ (inj₁ Max))     = (λ _ → tt) , tt
+faithful-lowerO (inj₂ _)              = (λ _ → tt) , tt
+
+faithful-lower : ∀ {V} (ρ : V → ℕ) (e : OExpr V) → FaithfulO ρ (lowerQ e)
+faithful-lower ρ (pure v)         = tt
+faithful-lower ρ (impure (s , k)) =
+  faithful->>= ρ (lowerO s) (λ q → lowerQ (k q)) (faithful-lowerO s) (λ q → faithful-lower ρ (k q))
+
+-- ... and so is a discrete body: the formulas of `d` lowered and held
+faithful-discrete : ∀ (ρ : ⊤ → ℕ) (e : OExpr ⊤) → FaithfulO ρ (lowerQ e >>= λ _ → holdT)
+faithful-discrete ρ e = faithful->>= ρ (lowerQ e) (λ _ → holdT) (faithful-lower _ e) (λ _ → (λ _ → tt) , tt)
 
 ------------------------------------------------------------------------
 -- Layouts: every coordinate exact
@@ -179,14 +223,14 @@ module _ {S T : Set} {P : S → Set} {f g : S → T} (eq : ∀ x → P x → f x
 
 -- Discrete and continuous frames of a template agree when its layout is exact: sending the ℕ
 -- frame through `ι` is the ℚ frame at the parameter `ι ∘ ρ`.
-faithful-layout : ∀ {V} (ρ : V → ℕ) (d : Dia (Expr V)) →
-  AllLayout (Faithful ρ) (LayoutWith.layout exprOps d) →
-  mapLayout ι (LayoutWith.layout natOps (mapDia (eval ρ) d))
-  ≡ LayoutWith.layout ratOps (mapDia (evalWith ratOps (ι ∘ ρ)) d)
+faithful-layout : ∀ {V} (ρ : V → ℕ) (d : Dia (OExpr V)) →
+  AllLayout (FaithfulO ρ) (LayoutWith.layout termOps d) →
+  mapLayout ι (LayoutWith.layout natOps (mapDia (evalO natO ρ) d))
+  ≡ LayoutWith.layout ratOps (mapDia (evalO ratO (ι ∘ ρ)) d)
 faithful-layout ρ d ok =
-  trans (cong (mapLayout ι) (sym (layout-eval ρ d)))
- (trans (mapLayout-∘ ι (eval ρ) L)
+  trans (cong (mapLayout ι) (sym (layout-evalO natO ρ d)))
+ (trans (mapLayout-∘ ι (evalO natO ρ) L)
  (trans (mapLayout-on (λ x → faithful ρ x) L ok)
-        (layout-natural exprOps ratOps (evalWith ratOps ρ′) (evalWith-hom ratOps ρ′) d)))
-  where L = LayoutWith.layout exprOps d
+        (layout-evalO ratO ρ′ d)))
+  where L = LayoutWith.layout termOps d
         ρ′ = ι ∘ ρ

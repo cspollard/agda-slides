@@ -16,13 +16,13 @@
 --     later piece holds (`seqAt-boundary`), and a piece holds its `to` once over
 --     (`piece-hold`).  Time starts at 0; a segment shows nothing outside `[0, ticks)`.
 --   * The parameter of a template is a ℚ and is *not* floored: `instQ d q` evaluates the
---     template's `Expr ⊤` in `ratOps` with `t := q`.  `Expr` is unchanged (its signature has
---     no new operation): `evalWith` is already generic in the scalar, `evalWith ratOps ρ` is
---     an `Ops`-homomorphism (`evalWith-hom`) and layout is natural along it
---     (`layout-natural`), so the continuous frame is the evaluation in ℚ of the very symbolic
---     layout the page is sent.  There is no `units` (floor) operation to add: the continuous
---     semantics has none, the page draws fractional coordinates, and the floor belongs only to
---     the discrete reading `bodyAt` (`units q`).
+--     template's `OExpr ⊤` in `ratO` with `t := q`.  `evalO ratO ρ` is an `Ops`-homomorphism
+--     (`evalO-hom`) and layout is natural along it (`layout-natural`), so the continuous frame is
+--     the evaluation in ℚ of the very symbolic layout the page is sent.  There is no `units`
+--     (floor) in the semantics of a plain template, the page draws fractional coordinates; the
+--     floor belongs to the discrete reading `bodyAt` (`units q`) and to discrete bodies, which
+--     are templates that hold the parameter (`Slides.Anim.Syntax.discrete`: `⌊q⌋` is a node of
+--     the formulas, `holdT`).
 --   * An animation is `animAt`, the `foldA` of the segments into `Timed (Maybe (Dia ℚ))`:
 --     `Par` is `parAt` (the same `τ` on both sides, duration the maximum, frames overlaid with
 --     `atop` and a side that is not running contributing nothing, as `Slides.Anim.Timeline.merge`)
@@ -40,7 +40,7 @@
 --   * `sampleAt-ι`: at whole ticks the continuous sample of a track is the discrete one
 --     (`Slides.Anim.Track.sample`), exactly; so is `leafAt-ι` for a segment's frame.
 --   * `leaf-tick`: if moreover the sample is a whole number and the template's layout is exact
---     (`Slides.Diagram.Expr.Properties.Faithful.Faithful`: differences with minuend ≥ subtrahend, percentages that
+--     (`Slides.Diagram.Ordered.Properties.Faithful.FaithfulO`: differences with minuend ≥ subtrahend, percentages that
 --     divide), the continuous frame at tick `k` is the discrete frame sent through `ι`.
 --   * `parAt-time`, `parAt-dur`, `seqAt-before`, `seqAt-after`, `seqAt-boundary`: `Par` is the
 --     same `τ` on both sides and `Seq` offsets time by the duration; `animAt-dur`: the
@@ -70,9 +70,9 @@ open import Slides.Diagram.NatQ using (ι)
 
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Timeline using (mergeM)
-open import Slides.Anim.Syntax using (Anim; Seg; SegBody; foldA; track; content; template; blackBox; discrete)
+open import Slides.Anim.Syntax using (Anim; Seg; SegBody; foldA; track; content; template; blackBox)
 open import Slides.Diagram.Draw using (Layout)
-open import Slides.Diagram.Expr using (Expr; evalWith)
+open import Slides.Diagram.Ordered using (OExpr; evalO; ratO)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
@@ -108,11 +108,11 @@ sampleAt L = Tr.foldT (λ p → Tr.ticks p , pieceAt L p) seqAt
 
 -- A template at the value `q` of its parameter: the sizes are evaluated *in ℚ*, with
 -- `t := q` itself (the discrete reading `bodyAt` puts `fromℕ (units q)`, floored).
-instQ : Dia (Expr ⊤) → ℚ → Dia ℚ
-instQ d q = mapDia (evalWith ratOps (λ _ → q)) d
+instQ : Dia (OExpr ⊤) → ℚ → Dia ℚ
+instQ d q = mapDia (evalO ratO (λ _ → q)) d
 
 -- a segment is running on `0 ≤ τ < ticks`; there its template is at the track's value
-leafAt : Tr.Track ℚ → Dia (Expr ⊤) → Timed (Maybe (Dia ℚ))
+leafAt : Tr.Track ℚ → Dia (OExpr ⊤) → Timed (Maybe (Dia ℚ))
 leafAt tr d = proj₁ s , λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (proj₁ s)) then just (instQ d (proj₂ s τ)) else nothing
   where s = sampleAt Tr.ℚLerp tr
 
@@ -125,7 +125,6 @@ parAt _⊙_ (n , f) (m , g) = n ℕ.⊔ m , λ τ → mergeM _⊙_ (f τ) (g τ)
 bodyAt′ : Tr.Track ℚ → SegBody ℕ → Maybe (Timed (Maybe (Dia ℚ)))
 bodyAt′ tr (template d) = just (leafAt tr d)
 bodyAt′ tr (blackBox _) = nothing
-bodyAt′ tr (discrete _) = nothing   -- no continuous reading: floor division is not exact
 
 segAt : Seg ℕ → Maybe (Timed (Maybe (Dia ℚ)))
 segAt s = bodyAt′ (track s) (content s)

@@ -26,12 +26,11 @@ open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Slides.Core using (ContentShape; animation; paramAnimation; Play; onSteps; looping; both)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
-open import Slides.Diagram.Param using (AnyParam; continuous; discrete)
+open import Slides.Diagram.Param using (Param)
 open import Slides.Anim.Param using (paramOf)
-open import Slides.Anim.DParam using (dparamOf)
 open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Diagram.Syntax using (Dia; atop; spacer)
-open import Slides.Diagram.Scalar using (natOps)
+open import Slides.Diagram.Ordered using (natO)
 open import Slides.Diagram.Layout using (compile)
 open import Slides.Anim.Syntax using (Anim; Seg)
 open import Slides.Anim.Timeline using (timeline; frames)
@@ -67,31 +66,23 @@ frameDiagrams name pct fs with compileFrames name pct 0 fs
 -- the `animation` command for frames played in a given mode: `ms` is the time per frame
 private
   -- `mp` is the parametric encoding of the same frames, when there is one
-  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → Maybe AnyParam → ContentShape
+  shape : String → ℕ → ℕ → (Play) → List (Dia ℕ) → Maybe Param → ContentShape
   shape name pct ms play fs mp with frameDiagrams name pct fs
   ... | []     = animation (compile (name ++ˢ "-0") pct (spacer 0 0)) [] ms play
   ... | d ∷ ds with mp
   ...   | nothing = animation d ds ms play
   ...   | just pa = paramAnimation d ds pa ms play
 
--- the parametric encoding, if there is one: continuous templates (every segment a `template`)
--- are shipped as such, else discrete ones (some segment `discrete`, the others of either
--- kind); an animation with a function body stays a flipbook
-anyParamOf : List (Anim ℕ (Seg ℕ)) → Maybe AnyParam
-anyParamOf acts with paramOf acts
-... | just p  = just (continuous p)
-... | nothing = Maybe.map discrete (dparamOf acts)
-
 -- the acts one after the other; each act is one step
 render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
 render name pct ms acts =
-  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natOps) a)) acts)))
-        (concat (map (timeline atop (frames natOps)) acts))
-        (anyParamOf acts)
+  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natO) a)) acts)))
+        (concat (map (timeline atop (frames natO)) acts))
+        (paramOf acts)
 
 -- one animation, repeating
 renderLoop : (name : String) (percent ms : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natOps) a) (anyParamOf (a ∷ []))
+renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natO) a) (paramOf (a ∷ []))
 
 -- Steps over a loop: `acts φ` are the acts at phase `φ` of a loop of `period` phases
 -- (a phase typically only restyles the diagram: an arrow's dashes, a pulse).  Each
@@ -100,7 +91,7 @@ renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natO
 -- holds, and the deck does not typecheck when it does not).
 private
   lengths : List (Anim ℕ (Seg ℕ)) → List ℕ
-  lengths = map (λ a → length (timeline atop (frames natOps) a))
+  lengths = map (λ a → length (timeline atop (frames natO) a))
 
 Uniform : ℕ → (ℕ → List (Anim ℕ (Seg ℕ))) → Set
 Uniform period acts = All (λ φ → lengths (acts φ) ≡ lengths (acts 0)) (upTo period)
@@ -112,5 +103,5 @@ renderBoth : (name : String) (percent ms period : ℕ) (acts : ℕ → List (Ani
              {{_ : True (uniform? period acts)}} → ContentShape
 renderBoth name pct ms period acts =
   shape name pct ms (both (restsOf 0 (lengths (acts 0))) period)
-        (concat (map (λ φ → concat (map (timeline atop (frames natOps)) (acts φ))) (upTo period)))
+        (concat (map (λ φ → concat (map (timeline atop (frames natO)) (acts φ))) (upTo period)))
         nothing

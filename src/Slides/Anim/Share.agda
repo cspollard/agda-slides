@@ -13,8 +13,8 @@
 --
 -- The mathematics.  A program is a Kleisli family `σ i : Formula (Fin i ⊎ V)` and its meaning is
 -- the evaluation of the term obtained by substituting, definition by definition, into the
--- formula (`>>=`, `Slides.Diagram.Expr.subst`): evaluating after a substitution is evaluating at
--- the evaluated substitution (`evalWith-subst`, `evalD-substD`; here the same fact for the
+-- formula (`>>=`, `Slides.Diagram.Ordered.substO`): evaluating after a substitution is evaluating at
+-- the evaluated substitution (`Properties.Laws.evalO-substO`, `foldT-bind`; here the same fact for the
 -- shipped formulas is `env-def`, one definition at a time).  The page does not substitute, it
 -- evaluates the definitions in order, once per time step, and then each coordinate: the DAG whose
 -- unfolding is the tree.  A tree becomes a program by *value numbering* (`share`): a store of

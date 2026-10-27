@@ -23,7 +23,7 @@ open import Slides.Anim.Timeline using (timeline; frames)
 open import Slides.Diagram.Syntax using (Dia; atop; rectangle; disc; text; named)
 open import Slides.Diagram.Notation using (_∥_; ↔)
 open import Slides.Diagram using (defaultStyle; filled)
-open import Slides.Diagram.Expr using (Expr; exprOps; t; lit; _⊞_; _⊖_; _⊓_; pct)
+open import Slides.Diagram.Ordered using (OExpr; natO; termOps; tO; lit; _⊞_; _⊖_; _⊓_; pct)
 import Slides.Diagram.Notation as N
 open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenT; units; _⨾_; _∥ᵃ_; par)
 import Slides.Anim.Track as T
@@ -51,19 +51,20 @@ private
   steps : Body
   steps = do
     animate "mover" 60 100 (parI natOps mover counter ∷ [])
-    diagrams (frameDiagrams "ref-mover" 60 (timeline atop (frames natOps) (parI natOps mover counter)))
+    diagrams (frameDiagrams "ref-mover" 60 (timeline atop (frames natO) (parI natOps mover counter)))
 
-  -- the same loop as a discrete template (formulas read in ℕ): the page's frame at every tick of
-  -- the full period must equal the frame Agda computes
+  -- the same loop as a discrete template (lowered and held): the page's frame at every tick of
+  -- the full period must equal the frame Agda computes, and at every quarter tick the frame of the
+  -- tick before (the hold; `dhero3`, three pairs, is compared with the exact rationals there)
   dloop : Body
   dloop = do
     animateLoop "dhero" 100 100 (heroD 26 7)
-    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natOps) (heroD 26 7)))
+    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natO) (heroD 26 7)))
 
   loop : Body
   loop = do
     animateLoop "hero" 100 100 (hero 7)
-    diagrams (frameDiagrams "ref-hero" 100 (timeline atop (frames natOps) (hero 7)))
+    diagrams (frameDiagrams "ref-hero" 100 (timeline atop (frames natO) (hero 7)))
 
 ------------------------------------------------------------------------
 -- Templates.  A template animation is shipped as a simulator (tracks and formulas) that the
@@ -75,7 +76,7 @@ private
 -- order of the player's attribute table, positions in drawing units (halved).
 
 private
-  module E = N.NotationWith (exprOps {⊤})
+  module E = N.NotationWith (termOps {⊤})
 
   ease : T.Easing
   ease = T.Bezier (+ 40) (+ 0) (+ 20) (+ 100)
@@ -83,11 +84,11 @@ private
   orange = filled "#c96" defaultStyle
   blue  = filled "#69c" defaultStyle
 
-  sliderBox : ∀ {V} → Dia (Expr V)
+  sliderBox : ∀ {V} → Dia (OExpr V)
   sliderBox = named "slider" (rectangle (lit 40) (lit 30) orange)
 
   slider : T.Easing → ℕ → Anim ℕ (Seg ℕ)
-  slider e n = tweenT n (+ 0 / 1) (+ 120 / 1) e (E.↔ t ∥ sliderBox)
+  slider e n = tweenT n (+ 0 / 1) (+ 120 / 1) e (E.↔ tO ∥ sliderBox)
 
 -- a sliderBox sliding right along an easing; the same over 60 and 600 ticks (the formulas are the
 -- same size); linear over whole steps (where the discrete frames agree with the continuous);
@@ -99,17 +100,17 @@ vlongT  = slider ease 600
 wholeT  = slider T.Linear 6
 
 stepT : Anim ℕ (Seg ℕ)
-stepT = tweenT 4 (+ 0 / 1) (+ 80 / 1) T.Step (E.↔ t ∥ sliderBox)
-      ⨾ tweenT 4 (+ 80 / 1) (+ 120 / 1) T.StepStart (E.↔ t ∥ sliderBox)
+stepT = tweenT 4 (+ 0 / 1) (+ 80 / 1) T.Step (E.↔ tO ∥ sliderBox)
+      ⨾ tweenT 4 (+ 80 / 1) (+ 120 / 1) T.StepStart (E.↔ tO ∥ sliderBox)
 
 -- a sliderBox that grows (a percentage), a circle that follows it, and a bar that shrinks (a
 -- difference, kept non-negative: ℚ's is real subtraction) against a cap (a maximum); two acts
 growT : Anim ℕ (Seg ℕ)
 growT =
     tweenT 4 (+ 0 / 1) (+ 80 / 1) T.Linear
-      (named "g" (rectangle t (lit 20 ⊞ pct 50 t) blue) ∥ E.↔ (lit 10) ∥ disc (pct 25 t) blue)
+      (named "g" (rectangle tO (lit 20 ⊞ pct 50 tO) blue) ∥ E.↔ (lit 10) ∥ disc (pct 25 tO) blue)
   ⨾ tweenT 3 (+ 80 / 1) (+ 100 / 1) T.Linear
-      (named "g" (rectangle (t ⊓ lit 90) (lit 100 ⊖ t) blue) ∥ E.↔ (lit 10) ∥ text 16 "done" defaultStyle)
+      (named "g" (rectangle (tO ⊓ lit 90) (lit 100 ⊖ tO) blue) ∥ E.↔ (lit 10) ∥ text 16 "done" defaultStyle)
 
 -- the two together, of different lengths (the segments' parameters are independent), and
 -- with the shorter padded (`par`)
@@ -172,7 +173,7 @@ private
   steps60 : Body
   steps60 = do
     animate "elong" 60 100 (longF ∷ [])
-    diagrams (frameDiagrams "ref-elong" 60 (timeline atop (frames natOps) longF))
+    diagrams (frameDiagrams "ref-elong" 60 (timeline atop (frames natO) longF))
 
   -- 6 whole steps: the discrete frames (diagrams) must equal the continuous ones at ticks
   wholeF : Anim ℕ (Seg ℕ)
@@ -181,13 +182,14 @@ private
   whole : Body
   whole = do
     tpair "twhole" wholeT
-    diagrams (frameDiagrams "ref-twhole" 60 (timeline atop (frames natOps) wholeF))
+    diagrams (frameDiagrams "ref-twhole" 60 (timeline atop (frames natO) wholeF))
 
 deck : Deck
 deck = do
   slide steps
   slide loop
   slide dloop
+  slide (tpair "dhero3" (heroD 3 7))
   slide (tpair "tslide" slideT)
   slide (tpair "tlong" longT)
   slide (tpair "tvlong" vlongT)

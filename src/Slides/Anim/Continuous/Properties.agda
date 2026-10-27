@@ -24,10 +24,10 @@ open import Slides.Diagram.NatQ.Properties using (ι-≤ᵇ; ι-∸; ι-ratio)
 import Slides.Anim.Track as Tr
 import Slides.Anim.Track.Properties as TrP
 open import Slides.Anim.Timeline using (mergeM)
-open import Slides.Anim.Syntax using (units; bodyAt; track; content; template; blackBox; discrete; dur; Seq; Par)
+open import Slides.Anim.Syntax using (units; bodyAt; track; content; template; blackBox; dur; Seq; Par)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
-open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; faithful-layout)
-open import Slides.Diagram.Expr using (Expr; exprOps)
+open import Slides.Diagram.Ordered.Properties.Faithful using (AllLayout; FaithfulO; faithful-layout)
+open import Slides.Diagram.Ordered using (natO; termOps)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps; natOps)
 open import Slides.Diagram.Syntax using (atop)
@@ -123,7 +123,6 @@ segAt-dur s T eq = go (track s) (content s) T eq
     go : ∀ tr b T → bodyAt′ tr b ≡ just T → proj₁ T ≡ Tr.dur tr
     go tr (template d) _ refl = trans (sampleAt-dur Tr.ℚLerp tr) (TrP.sample-dur Tr.ℚLerp tr)
     go tr (blackBox _) _ ()
-    go tr (discrete _) _ ()
 
 -- the parts of a `lift2` that is there
 lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
@@ -156,13 +155,13 @@ leafAt-ι tr d k hk
 
 -- ... and that is the discrete frame sent through `ι` whenever the discrete reading was
 -- exact: the sample is a whole number `m`, and the template's layout is exact at `m`
--- (`Slides.Diagram.Expr.Properties.Faithful`: no monus that truncates, no percentage that rounds).
+-- (`Slides.Diagram.Ordered.Properties.Faithful`: no monus that truncates, no percentage that rounds).
 leaf-tick : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
             let q = proj₂ (Tr.sample Tr.ℚLerp tr) k in
             q ≡ ι (units q) →
-            AllLayout (Faithful (λ _ → units q)) (LayoutWith.layout exprOps d) →
+            AllLayout (FaithfulO (λ _ → units q)) (LayoutWith.layout termOps d) →
             Maybe.map (LayoutWith.layout ratOps) (proj₂ (leafAt tr d) (ι k))
-            ≡ just (mapLayout ι (LayoutWith.layout natOps (bodyAt natOps (template d) q)))
+            ≡ just (mapLayout ι (LayoutWith.layout natOps (bodyAt natO (template d) q)))
 leaf-tick tr d k hk whole ok rewrite leafAt-ι tr d k hk =
   cong just (trans (cong (λ r → LayoutWith.layout ratOps (instQ d r)) whole)
                    (sym (faithful-layout (λ _ → units q) d ok)))

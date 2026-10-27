@@ -5,8 +5,8 @@
 -- Agreement of a list of frames with a list of symbolic frames: the induction both assembly
 -- theorems carry.
 --
--- The symbolic frames of an animation are elements of a type `Sym` (for continuous templates
--- `Dia (Expr ℕ)`, for discrete ones `Dia (DExpr ℕ)`), each *interpreted* at an assignment as the
+-- The symbolic frames of an animation are elements of a type `Sym` (for templates
+-- `Dia (OExpr ℕ)`), each *interpreted* at an assignment as the
 -- layout in ℕ it stands for (`interp`: lay it out symbolically, evaluate at `ρ`), with `atop`
 -- of symbolic frames (`atopS`) interpreted as `atop` of layouts (`interp-atop`: layout is
 -- natural along evaluation, `Slides.Diagram.Layout.Properties.atop-natural`).  That is the whole

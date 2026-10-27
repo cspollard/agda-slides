@@ -1,8 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- What the backend ships for a parametric animation, as data.  `Slides.Backend.Diagram` only
--- prints this data as JSON; what it means is `Slides.Anim.Phases.Properties` and
--- `Slides.Anim.DPhases.Properties`.
+-- prints this data as JSON; what it means is `Slides.Anim.Phases.Properties`.
 --
 -- The shipped structure (`data-param`, see `Slides.Backend.Diagram`) is a list of *phases*.  A
 -- phase starts at a tick and has, for each drawing command of the layout, an `Elem`: the
@@ -13,9 +12,8 @@
 --
 -- Nothing here depends on how a formula is read, nor on the expression language of the symbolic
 -- layout: a command whose numbers are `E` is shipped by saying which formula each number has
--- (`slot`) and what its base number is (`bval`) (`encodeWith`, `phasesWith`).  The two instances
--- are `phasesOf` (continuous templates, `Expr ℕ`) and `Slides.Anim.DPhases.phasesOfD`
--- (discrete ones, `DExpr ℕ`).
+-- (`slot`) and what its base number is (`bval`) (`encodeWith`, `phasesWith`).  The instance is
+-- `phasesOf` (templates, `OExpr ℕ`).
 
 module Slides.Anim.Phases where
 
@@ -34,7 +32,7 @@ import Data.List.Properties as LP
 open import Slides.Diagram.DrawEq using (drawEq?)
 
 open import Slides.Diagram.Draw using (Draw; rect; circle; line; arrow; label; mapDraw; Layout)
-open import Slides.Diagram.Expr using (Expr; eval)
+open import Slides.Diagram.Ordered using (OExpr; evalO; natO; weakenQ)
 open import Slides.Anim.Formula
 
 ------------------------------------------------------------------------
@@ -77,9 +75,9 @@ record Elem : Set where
 open Elem
 
 -- the formula of a number: positions are halved
-slotF : Kind × Expr ℕ → Formula
-slotF (pos  , e) = half (encE e)
-slotF (size , e) = encE e
+slotF : Kind × OExpr ℕ → Formula
+slotF (pos  , e) = half (enc (weakenQ e))
+slotF (size , e) = enc (weakenQ e)
 
 entry : Formula → Maybe Formula
 entry (num _) = nothing
@@ -136,5 +134,5 @@ tickElemsWith slot bval l = map (encodeWith slot bval) (Layout.draws l)
 phasesWith : ∀ {E : Set} → (Kind × E → Formula) → (E → ℕ) → List (Layout E) → List (ℕ × List Elem)
 phasesWith slot bval ls = runs elemsEq? nothing 0 (map (tickElemsWith slot bval) ls)
 
-phasesOf : List (Layout (Expr ℕ)) → List (ℕ × List Elem)
-phasesOf = phasesWith slotF (eval (λ _ → 0))
+phasesOf : List (Layout (OExpr ℕ)) → List (ℕ × List Elem)
+phasesOf = phasesWith slotF (evalO natO (λ _ → 0))

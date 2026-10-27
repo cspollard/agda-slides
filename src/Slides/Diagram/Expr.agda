@@ -1,50 +1,22 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Symbolic scalars: the free algebra of layered signatures.
+-- The first two layers of the scalar signature: core and sub.
 --
--- A layout is computed in a scalar `Ops S` (`Slides.Diagram.Scalar`).  Take the scalar to
--- be an *expression*: the terms built from literals and the operations the layout uses,
--- over a set `V` of variables.  Those terms are the free monad on a container
--- (`Slides.Diagram.Signature`: `Term Σ V = Σ ⋆ V`), and the signature `Σ` is made of
--- *layers*, composed as a sum of containers (`Data.Container.Combinator._⊎_`):
+-- A layout is computed in a scalar `Ops S` (`Slides.Diagram.Scalar`).  The symbolic scalars are
+-- terms of a signature (`Slides.Diagram.Signature`: `Term Σ V = Σ ⋆ V`, the free monad on a
+-- container), and the signature is made of *layers*, composed as a sum of containers
+-- (`Data.Container.Combinator._⊎_`):
 --
 --     CoreC = CoreOp ▷ coreArity     zero, literal `fromℕ n`, plus, max, `pct p`
 --     SubC  = SubOp  ▷ subArity      sub  (monus in ℕ, real subtraction in ℤ, ℚ)
---     ExprC = CoreC ⊎ SubC           the signature of the layout's scalar
+--     ExprC = CoreC ⊎ SubC           the layers every scalar has
 --
--- Each layer is interpreted by its own record of operations (`CoreOps`, `SubOps`), and
--- the interpretation of a sum is the copairing of the two (`Signature._⊕_`, which is
--- `Container.Sum.copair`).  `Expr V = Term ExprC V` is what the rest of the library uses:
---
---   * `Expr V` is an `Ops` (`exprOps`: the operations are the constructors, with `0#` the
---     zero): laying a diagram out *in* `Expr V` leaves every coordinate as a formula,
---     computed once;
---   * `>>=` is substitution (`rename`, `subst`), `pure` a variable;
---   * `evalWith O ρ : Expr V → S` is the fold, the unique `Ops`-map extending an
---     assignment `ρ : V → S` (the free algebra's universal property), and it is an
---     `Ops`-homomorphism by construction (`evalWith-hom`, equalities of the form `refl`;
---     one `IsCoreHom` and one `IsSubHom`).  `eval ρ` is the instance at ℕ.  It is the
---     generic fold of `Container.FreeMonad.Algebraic` (`Signature.Generic.fold-agrees`)
---     and is unique among `Ops`-homomorphisms (`evalWith-unique`);
---   * a term over one layer is a term over the sum, along the inclusion
---     (`weakenCore`, `weakenSub`: translation along `inl`, `inr`, a monad morphism,
---     `Signature.weaken-bind`), and evaluating the weakened term needs only that layer's
---     operations (`evalWith-weakenCore`, `evalWith-weakenSub`).  A signature with a
---     further layer (`Slides.Diagram.Euclid`) is another sum; terms that do not mention
---     it are terms over this one;
---   * the monad laws of `Container.FreeMonad` hold for `subst` (`subst-bind`,
---     `subst-pure`, `subst-assoc`), in the free monad's own equality `Eq`.
---
--- The smart constructors (`zero′`, `lit`, `_⊞_`, `_⊓_`, `pct`; `_⊖_`) are written once
--- for any signature with a container morphism from the layer (`CoreSyntax`,
--- `SubSyntax`), and `Expr`'s are the instances at `inl`, `inr`.
---
--- A template body of an animation (`Slides.Anim.Syntax`) has one variable, the segment's
--- parameter (`t : Expr ⊤`); a whole animation has one variable per segment, so that
--- segments played together keep independent parameters.
---
--- `toℕ` has no meaning for a formula; `exprOps` takes the value at the all-zero
--- assignment.  It is not part of `IsOpsHom` and layout never applies it.
+-- Each layer is interpreted by its own record of operations (`CoreOps`, `SubOps`), and the
+-- interpretation of a sum is the copairing of the two (`Signature._⊕_`, which is
+-- `Container.Sum.copair`).  The smart constructors (`zero′`, `lit`, `_⊞_`, `_⊓_`, `pct`; `_⊖_`) are
+-- written once for any signature with a container morphism from the layer (`CoreSyntax`,
+-- `SubSyntax`).  The language of symbolic scalars that the rest of the library uses has two more
+-- layers, ordered and floor, and is `Slides.Diagram.Ordered.OExpr`; this module is its base.
 
 module Slides.Diagram.Expr where
 
@@ -105,9 +77,6 @@ ExprOp = Shape ExprC            -- CoreOp ⊎ SubOp
 exprArity : ExprOp → Set
 exprArity = Position ExprC
 
-Expr : Set → Set
-Expr V = Term ExprC V
-
 ------------------------------------------------------------------------
 -- Constructors, for any signature containing a layer
 
@@ -139,16 +108,6 @@ module SubSyntax {Σ : Sig} (j : SubC ⇒ Σ) where
   termSub : ∀ {V} → SubOps (Term Σ V)
   termSub = record { _-_ = _⊖_ }
 
-open CoreSyntax (inl {C₁ = CoreC} {C₂ = SubC}) public
-open SubSyntax (inr {C₁ = CoreC} {C₂ = SubC}) public
-
-var : ∀ {V} → V → Expr V
-var = pure
-
--- the parameter of a template
-t : Expr ⊤
-t = pure tt
-
 ------------------------------------------------------------------------
 -- Interpretation: one handler per layer, copaired
 
@@ -171,48 +130,3 @@ subH O .Handler.respects Sub e = cong₂ (SubOps._-_ O) (e zero) (e (suc zero))
 -- the algebra of an `Ops` is the copairing of its layers' algebras
 opsH : ∀ {S} → Ops S → Handler ExprC S
 opsH O = coreH (Ops.core O) ⊕ subH (Ops.sub O)
-
-------------------------------------------------------------------------
--- Evaluation: the fold, into any scalar
-
-evalWith : ∀ {V S} → Ops S → (V → S) → Expr V → S
-evalWith O = foldT (opsH O)
-
--- at the naturals
-eval : ∀ {V} → (V → ℕ) → Expr V → ℕ
-eval = evalWith natOps
-
--- a term over one layer, evaluated with that layer's operations only
-evalCore : ∀ {V S} → CoreOps S → (V → S) → Term CoreC V → S
-evalCore O = foldT (coreH O)
-
-evalSub : ∀ {V S} → SubOps S → (V → S) → Term SubC V → S
-evalSub O = foldT (subH O)
-
-------------------------------------------------------------------------
--- Inclusions of layers
-
-weakenCore : ∀ {V} → Term CoreC V → Expr V
-weakenCore = translate inl
-
-weakenSub : ∀ {V} → Term SubC V → Expr V
-weakenSub = translate inr
-
-------------------------------------------------------------------------
--- The `Ops` structure
-
-exprOps : ∀ {V} → Ops (Expr V)
-exprOps = record { core = termCore ; sub = termSub ; toℕ = eval (λ _ → 0) }
-
-------------------------------------------------------------------------
--- Substitution: the free monad's bind, as the fold into `exprOps`
-
--- (`subst-bind` below: it is also `_>>=_`, up to the free monad's own equality.)
--- `subst σ` is `evalWith exprOps σ`: the unique `Ops`-map that sends each variable `v` to
--- `σ v`.  So it is an `Ops`-homomorphism (`subst-hom`) on the nose, which is what lets
--- layout be natural along it (`Slides.Diagram.Layout.Properties`).
-subst : ∀ {V W} → (V → Expr W) → Expr V → Expr W
-subst σ = evalWith exprOps σ
-
-rename : ∀ {V W} → (V → W) → Expr V → Expr W
-rename f = subst (λ v → var (f v))

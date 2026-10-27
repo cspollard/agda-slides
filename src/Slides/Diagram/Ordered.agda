@@ -47,7 +47,7 @@ open import Slides.Cong using (cong₄)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
-open import Slides.Diagram.Expr
+open import Slides.Diagram.Expr using (CoreC; SubC; ExprC; opsH; Pct; Sub; module CoreSyntax; module SubSyntax)
 open import Slides.Anim.Track using (Easing; progress)
 
 ------------------------------------------------------------------------
@@ -158,8 +158,7 @@ module FloorSyntax {Σ : Sig} (i : FloorC ⇒ Σ) where
 open OrdSyntax ordO public
 open FloorSyntax floorO public
 open CoreSyntax coreO public
-  renaming (zero′ to zeroO; lit to litO; _⊞_ to _⊞ᵒ_; _⊓_ to _⊓ᵒ_; pct to pctO; termCore to termCoreO)
-open SubSyntax subO public renaming (_⊖_ to _⊖ᵒ_; termSub to termSubO)
+open SubSyntax subO public
 
 -- `Ease e a`: the easing `e` applied to the progress `a`
 easeT : ∀ {V} → Easing → QExpr V → QExpr V
@@ -168,13 +167,6 @@ easeT e a = impure (shape (inr {C₁ = OC} {C₂ = EaseC}) (Ease e) , λ _ → a
 -- a term of `OC` is a term of `QC`
 weakenQ : ∀ {V} → OExpr V → QExpr V
 weakenQ = translate (inl {C₁ = OC} {C₂ = EaseC})
-
--- a term of the base layers is a term of `OC`
-exprO : ExprC ⇒ OC
-exprO = record { shape = inj₁ ; position = λ q → q }
-
-weakenO : ∀ {V} → Expr V → OExpr V
-weakenO = translate exprO
 
 -- the time
 tO : OExpr ⊤
@@ -255,8 +247,18 @@ ratQ = record { o = ratO ; easeO = ratEase }
 -- the free scalar with the layers of `OC`
 termO : ∀ {V} → OOps (OExpr V)
 termO = record
-  { ops = record { core = termCoreO ; sub = termSubO ; toℕ = evalO natO (λ _ → 0) }
+  { ops = record { core = termCore ; sub = termSub ; toℕ = evalO natO (λ _ → 0) }
   ; ord = termOrd ; floor = termFloor }
+
+-- Substitution as the fold into the free scalar (`>>=` up to equality of programs): an
+-- `Ops`-homomorphism by construction, which is what lets layout commute with it
+-- (`Properties.Laws.layout-substO`).
+substO : ∀ {V W} → (V → OExpr W) → OExpr V → OExpr W
+substO σ = evalO termO σ
+
+-- layout in the free scalar leaves every coordinate a formula
+termOps : ∀ {V} → Ops (OExpr V)
+termOps = OOps.ops termO
 
 ------------------------------------------------------------------------
 -- The laws of a model
@@ -282,7 +284,7 @@ record QLaws {S : Set} (O : OOps S) : Set where
 -- percentage is `⌊p·x / 100⌋`; every other node is its namesake.
 lowerO : Lowering OC OC
 lowerO (inj₁ (inj₁ (Pct p))) = divBy 99 (mulLit p (pure tt))
-lowerO (inj₁ (inj₂ Sub))     = (pure zero ⊓ᵒ pure (suc zero)) ⊖ᵒ pure (suc zero)
+lowerO (inj₁ (inj₂ Sub))     = (pure zero ⊓ pure (suc zero)) ⊖ pure (suc zero)
 lowerO s                     = ret s
 
 lowerQ : ∀ {V} → OExpr V → OExpr V

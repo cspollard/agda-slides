@@ -41,10 +41,8 @@ import Data.Sum.Properties as SP
 import Data.Unit.Properties as UP
 import Data.Nat.Properties as ℕP
 
-open import Slides.Diagram.Expr as E using (Expr)
-open import Slides.Diagram.Euclid using (DExpr)
-import Slides.Diagram.Euclid as Eu
-open import Slides.Diagram.Ordered using (QExpr; weakenQ; weakenO; OrdOp; FloorOp; EaseOp; Lt; Min; DivBy; ModBy; MulLit; Ease)
+import Slides.Diagram.Expr as E
+open import Slides.Diagram.Ordered using (QExpr; OrdOp; FloorOp; EaseOp; Lt; Min; DivBy; ModBy; MulLit; Ease)
 open import Slides.Anim.Track using (Easing; Linear; Step; StepStart; Bezier)
 open import Slides.DecEq
 
@@ -136,31 +134,6 @@ enc (impure (inj₁ (inj₂ (inj₂ (DivBy d))) , k))       = divF d (enc (k tt)
 enc (impure (inj₁ (inj₂ (inj₂ (ModBy d))) , k))       = modF d (enc (k tt))
 enc (impure (inj₁ (inj₂ (inj₂ (MulLit n))) , k))      = mulF n (enc (k tt))
 enc (impure (inj₂ (Ease e) , k))                      = fease e (enc (k tt))
-
--- a continuous template (`Expr`), through its weakening
-encE : Expr ℕ → Formula
-encE e = enc (weakenQ (weakenO e))
-
--- the discrete encoder (`Slides.Anim.DParam`, read in ℕ): a closed node always folds
-monusN : Formula → Formula → Formula
-monusN = fold2 (tot2 _∸_) sub
-
-percentN : ℕ → Formula → Formula
-percentN p = fold1 (tot1 (λ x → (x * p) / 100)) (pct p)
-
-encD : DExpr ℕ → Formula
-encD (pure v)                                    = var v
-encD (impure (inj₁ (inj₁ E.Zero) , _))           = num 0
-encD (impure (inj₁ (inj₁ (E.Lit n)) , _))        = num n
-encD (impure (inj₁ (inj₁ E.Plus) , k))           = plus (encD (k zero)) (encD (k (fsuc zero)))
-encD (impure (inj₁ (inj₁ E.Max) , k))            = maxF (encD (k zero)) (encD (k (fsuc zero)))
-encD (impure (inj₁ (inj₁ (E.Pct p)) , k))        = percentN p (encD (k tt))
-encD (impure (inj₁ (inj₂ E.Sub) , k))            = monusN (encD (k zero)) (encD (k (fsuc zero)))
-encD (impure (inj₂ (Eu.DivBy d) , k))            = divF d (encD (k tt))
-encD (impure (inj₂ (Eu.ModBy d) , k))            = modF d (encD (k tt))
-encD (impure (inj₂ (Eu.MulLit n) , k))           = mulF n (encD (k tt))
-encD (impure (inj₂ Eu.Lt , k))                   =
-  ltF (encD (k zero)) (encD (k (fsuc zero))) (encD (k (fsuc (fsuc zero)))) (encD (k (fsuc (fsuc (fsuc zero)))))
 
 ------------------------------------------------------------------------
 -- Equality of formulas

@@ -16,7 +16,7 @@ open import Data.Fin using (zero; suc)
 open import Data.Product using (_,_; proj₁)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Slides.Diagram.Syntax using (atop)
-open import Slides.Diagram.Scalar using (Ops)
+open import Slides.Diagram.Ordered using (OOps)
 open import Slides.Anim.Syntax
 
 open import Slides.Anim.Timeline hiding (merge; timeline)
@@ -90,14 +90,14 @@ module _ {F : Set} (_⊙_ : F → F → F) where
           (cong₂ _⊔_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
 
 
-frames-length : ∀ {S} (O : Ops S) (s : Seg S) → length (frames O s) ≡ ticks s
+frames-length : ∀ {S} (O : OOps S) (s : Seg S) → length (frames O s) ≡ ticks s
 frames-length O s =
   trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
                (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
         (TP.sample-dur T.ℚLerp (track s))
 
 -- the length of the timeline is the duration
-length-dur : ∀ {S} (O : Ops S) (m : Anim S (Seg S)) → length (TL.timeline atop (frames O) m) ≡ dur m
+length-dur : ∀ {S} (O : OOps S) (m : Anim S (Seg S)) → length (TL.timeline atop (frames O) m) ≡ dur m
 length-dur {S} O m = trans (length-timeline atop (frames O) m) (foldA-ext m)
   where
     foldA-ext : (m : Anim S (Seg S)) →

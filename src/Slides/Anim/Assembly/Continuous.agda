@@ -10,7 +10,7 @@
 -- hypotheses of `leaf-tick` for that segment: the sample of its track is a whole number `q ≡
 -- ι (units q)` and the layout of its template is `Faithful` at `units q`), then
 --
---     frameAt a (ι k)  ≡  just (mapLayout ι (layout_ℕ (frame k of timeline atop (frames natOps) a)))
+--     frameAt a (ι k)  ≡  just (mapLayout ι (layout_ℕ (frame k of timeline atop (frames natO) a)))
 --
 -- (`frameAt-assembly`): the continuous frame at the whole tick is the discrete frame sent
 -- through `ι`.  `Good a k` is only about the segments running at `k` (a `Seq` asks it of the
@@ -49,8 +49,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Expr using (exprOps; eval)
-open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; faithful-layout)
+open import Slides.Diagram.Ordered using (natO; evalO; termOps)
+open import Slides.Diagram.Ordered.Properties.Faithful using (AllLayout; FaithfulO; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps; ratOps)
 open import Slides.Diagram.NatQ using (ι)
@@ -108,9 +108,8 @@ RelC-just (bothFrames {D} s) = D , refl , s
 Exact : Seg ℕ → ℕ → Set
 Exact (seg tr (template d)) m =
   let q = proj₂ (Tr.sample Tr.ℚLerp tr) m in
-  q ≡ ι (units q) × AllLayout (Faithful (λ _ → units q)) (LayoutWith.layout exprOps d)
+  q ≡ ι (units q) × AllLayout (FaithfulO (λ _ → units q)) (LayoutWith.layout termOps d)
 Exact (seg tr (blackBox _)) m = ⊤
-Exact (seg tr (discrete _)) m = ⊤
 
 -- Exactness of the segments running at the tick `k` of an animation (`k` relative to its start).
 Good : Anim ℕ (Seg ℕ) → ℕ → Set
@@ -164,22 +163,21 @@ private
 -- The theorem, tick by tick
 
 assembly : ∀ a T → animAt a ≡ just T → ∀ k → ((k <ᵇ dur a) ≡ true → Good a k) →
-           RelC (proj₂ T (ι k)) (nth (timeline atop (frames natOps) a) k)
+           RelC (proj₂ T (ι k)) (nth (timeline atop (frames natO) a) k)
 assembly (pure (seg tr (template d))) T refl k H
-  rewrite nth-frames natOps (seg tr (template d)) k | TrP.sample-dur Tr.ℚLerp tr
+  rewrite nth-frames natO (seg tr (template d)) k | TrP.sample-dur Tr.ℚLerp tr
   with k <ᵇ Tr.dur tr in eq
 ... | false = subst (λ m → RelC m nothing) (sym (leafAt-out tr d k eq)) noFrame
 ... | true  =
   let q  = proj₂ (Tr.sample Tr.ℚLerp tr) k
       ex = H refl refl
-  in subst (λ m → RelC m (just (mapDia (eval (λ _ → units q)) d))) (sym (leafAt-ι tr d k eq))
+  in subst (λ m → RelC m (just (mapDia (evalO natO (λ _ → units q)) d))) (sym (leafAt-ι tr d k eq))
        (bothFrames (trans (cong (λ r → layoutQ (instQ d r)) (proj₁ ex))
                           (sym (faithful-layout (λ _ → units q) d (proj₂ ex)))))
 assembly (pure (seg tr (blackBox f))) T () k H
-assembly (pure (seg tr (discrete d))) T () k H
 assembly (impure (Seq , c)) T eq k H with lift2-just seqAt (animAt (c zero)) (animAt (c (suc zero))) eq
-... | A , B , e₁ , e₂ , refl = go (nth-++′ (timeline atop (frames natOps) (c zero)) (timeline atop (frames natOps) (c (suc zero)))
-                                              k (dur (c zero)) (length-dur natOps (c zero)))
+... | A , B , e₁ , e₂ , refl = go (nth-++′ (timeline atop (frames natO) (c zero)) (timeline atop (frames natO) (c (suc zero)))
+                                              k (dur (c zero)) (length-dur natO (c zero)))
   where
     n = dur (c zero)
     m = dur (c (suc zero))
@@ -187,18 +185,18 @@ assembly (impure (Seq , c)) T eq k H with lift2-just seqAt (animAt (c zero)) (an
     step : proj₂ (seqAt A B) (ι k)
            ≡ (if ι k <ᵗ ι n then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι n))
     step = cong (λ x → if ι k <ᵗ ι x then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι x)) A-dur
-    go : nth (timeline atop (frames natOps) (c zero) ++ timeline atop (frames natOps) (c (suc zero))) k
-         ≡ (if k <ᵇ n then nth (timeline atop (frames natOps) (c zero)) k
-            else nth (timeline atop (frames natOps) (c (suc zero))) (k ∸ n)) →
+    go : nth (timeline atop (frames natO) (c zero) ++ timeline atop (frames natO) (c (suc zero))) k
+         ≡ (if k <ᵇ n then nth (timeline atop (frames natO) (c zero)) k
+            else nth (timeline atop (frames natO) (c (suc zero))) (k ∸ n)) →
          RelC (proj₂ (seqAt A B) (ι k))
-              (nth (timeline atop (frames natOps) (c zero) ++ timeline atop (frames natOps) (c (suc zero))) k)
+              (nth (timeline atop (frames natO) (c zero) ++ timeline atop (frames natO) (c (suc zero))) k)
     go e rewrite step | e | ι-<ᵗ k n with k <ᵇ n in ek
     ... | true  = assembly (c zero) A e₁ k (λ _ → proj₁ (H (<ᵇ-+ˡ {k} {n} m ek)) refl)
     ... | false rewrite sym (ι-∸ k n (<ᵇ-ge ek)) =
       assembly (c (suc zero)) B e₂ (k ∸ n) (λ t → proj₂ (H (<ᵇ-shift {k} {n} {m} ek t)) refl)
 assembly (impure (Par , c)) T eq k H with lift2-just (parAt atop) (animAt (c zero)) (animAt (c (suc zero))) eq
 ... | A , B , e₁ , e₂ , refl
-  rewrite nth-merge atop (timeline atop (frames natOps) (c zero)) (timeline atop (frames natOps) (c (suc zero))) k =
+  rewrite nth-merge atop (timeline atop (frames natO) (c zero)) (timeline atop (frames natO) (c (suc zero))) k =
   RelC-mergeM (assembly (c zero) A e₁ k (λ t → proj₁ (H (<ᵇ-⊔ˡ {k} {dur (c zero)} (dur (c (suc zero))) t)) t))
               (assembly (c (suc zero)) B e₂ k (λ t → proj₂ (H (<ᵇ-⊔ʳ {k} {dur (c (suc zero))} (dur (c zero)) t)) t))
 
@@ -212,10 +210,10 @@ frameAt-just a T eq τ rewrite eq = refl
 -- the segments running at `k` are exact there.
 frameAt-assembly :
   ∀ a T → animAt a ≡ just T → ∀ k → (k <ᵇ dur a) ≡ true → Good a k →
-  ∃ λ F → nth (timeline atop (frames natOps) a) k ≡ just F
+  ∃ λ F → nth (timeline atop (frames natO) a) k ≡ just F
         × frameAt a (ι k) ≡ just (mapLayout ι (layoutN F))
-frameAt-assembly a T eq k hk g with nth-in (timeline atop (frames natOps) a) k
-                                      (subst (λ n → (k <ᵇ n) ≡ true) (sym (length-dur natOps a)) hk)
+frameAt-assembly a T eq k hk g with nth-in (timeline atop (frames natO) a) k
+                                      (subst (λ n → (k <ᵇ n) ≡ true) (sym (length-dur natO a)) hk)
 ... | F , eF = F , eF , trans (frameAt-just a T eq (ι k)) (go (subst (RelC (proj₂ T (ι k))) eF (assembly a T eq k (λ _ → g))))
   where
     go : RelC (proj₂ T (ι k)) (just F) → Maybe.map layoutQ (proj₂ T (ι k)) ≡ just (mapLayout ι (layoutN F))
@@ -225,6 +223,6 @@ frameAt-assembly a T eq k hk g with nth-in (timeline atop (frames natOps) a) k
 -- ... for a whole animation of exact segments, at every tick
 frameAt-assembly-all :
   ∀ a T → animAt a ≡ just T → AllExact a → ∀ k → (k <ᵇ dur a) ≡ true →
-  ∃ λ F → nth (timeline atop (frames natOps) a) k ≡ just F
+  ∃ λ F → nth (timeline atop (frames natO) a) k ≡ just F
         × frameAt a (ι k) ≡ just (mapLayout ι (layoutN F))
 frameAt-assembly-all a T eq ex k hk = frameAt-assembly a T eq k hk (AllExact⇒Good a ex k)

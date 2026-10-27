@@ -2,15 +2,16 @@
 
 -- The hero template is the hero frame.
 --
--- `Slides.Examples.PairsHero.Frame` writes the frame once, over any scalar with the three layers
--- of `Slides.Diagram.Euclid`.  Such a construction is natural along a homomorphism of scalars
--- (of the core and sub layers, `IsOpsHom`, and of the Euclidean one, `IsEuclidHom`): building
--- the frame and then mapping the scalars is mapping the tick and then building (`frame-natural`).
--- Along `evalD natD (λ _ → t) : DExpr ⊤ → ℕ`, which is such a homomorphism, the template at the
--- variable `tickD` is the flipbook's frame at the tick `t` (`heroT-correct`).  So the shipped
--- template needs no separate trust: with `Slides.Anim.DParam.Properties.discrete-assemblyD` (the
--- frames of the animation are the symbolic layouts evaluated) the page's formulas are the
--- flipbook frames.
+-- `Slides.Examples.PairsHero.Frame` writes the frame once, over any scalar with the layers of
+-- `Slides.Diagram.Ordered`.  Such a construction is natural along a homomorphism of scalars (of
+-- the core and sub layers, `IsOpsHom`, and of the ordered and floor ones, `IsOrdHom`,
+-- `IsFloorHom`): building the frame and then mapping the scalars is mapping the tick and then
+-- building (`frame-natural`).  Along `evalO natO (λ _ → t) : OExpr ⊤ → ℕ`, which is such a
+-- homomorphism, the template at the variable `tO` is the flipbook's frame at the tick `t`
+-- (`heroT-correct`).  The shipped template is that template lowered and held
+-- (`Slides.Anim.Syntax.discrete`): its ℕ frames are the same (`bodyAt-discrete`), so with
+-- `Slides.Anim.Param.Properties.discrete-assembly` (the frames of the animation are the symbolic
+-- layouts evaluated) the page's formulas are the flipbook frames.
 
 module Slides.Examples.PairsHero.Properties where
 
@@ -26,35 +27,40 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax using (Dia; mapDia; overlay; spacer; connect)
-open import Slides.Diagram.Euclid
-open import Slides.Diagram.Euclid.Properties
+open import Slides.Diagram.Ordered using (OOps; OrdOps; FloorOps; natO; termO; tO; evalO)
+open import Slides.Diagram.Ordered.Properties using (IsOrdHom; IsFloorHom)
+open import Slides.Diagram.Ordered.Properties.Laws using (evalO-hom; evalO-ord-hom; evalO-floor-hom)
 open import Slides.Examples.PairsHero
 
-module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S → T)
-               (HO : IsOpsHom (DiscreteOps.ops D₁) (DiscreteOps.ops D₂) h)
-               (HE : IsEuclidHom (DiscreteOps.euclid D₁) (DiscreteOps.euclid D₂) h) where
+module Natural {S T : Set} (D₁ : OOps S) (D₂ : OOps T) (h : S → T)
+               (HO : IsOpsHom (OOps.ops D₁) (OOps.ops D₂) h)
+               (HR : IsOrdHom (OOps.ord D₁) (OOps.ord D₂) h)
+               (HF : IsFloorHom (OOps.floor D₁) (OOps.floor D₂) h) where
   private
     module F₁ = Frame D₁
     module F₂ = Frame D₂
-    module O₁ = Ops (DiscreteOps.ops D₁)
-    module O₂ = Ops (DiscreteOps.ops D₂)
-    module E₁ = EuclidOps (DiscreteOps.euclid D₁)
-    module E₂ = EuclidOps (DiscreteOps.euclid D₂)
+    module O₁ = Ops (OOps.ops D₁)
+    module O₂ = Ops (OOps.ops D₂)
+    module R₁ = OrdOps (OOps.ord D₁)
+    module R₂ = OrdOps (OOps.ord D₂)
+    module L₁ = FloorOps (OOps.floor D₁)
+    module L₂ = FloorOps (OOps.floor D₂)
   open IsOpsHom HO
-  open IsEuclidHom HE
+  open IsOrdHom HR
+  open IsFloorHom HF
 
   sel-natural : ∀ i xs a → h (F₁.sel i xs a) ≡ F₂.sel i xs (h a)
   sel-natural i []           a = h-fromℕ 0
   sel-natural i (x ∷ [])     a = h-fromℕ x
   sel-natural i (x ∷ y ∷ xs) a =
     trans (h-lt a (O₁.fromℕ (suc i)) (O₁.fromℕ x) (F₁.sel (suc i) (y ∷ xs) a))
-          (cong₄ E₂.lt refl (h-fromℕ (suc i)) (h-fromℕ x) (sel-natural (suc i) (y ∷ xs) a))
+          (cong₄ R₂.lt refl (h-fromℕ (suc i)) (h-fromℕ x) (sel-natural (suc i) (y ∷ xs) a))
 
   tri-natural : ∀ t → h (F₁.tri t) ≡ F₂.tri (h t)
   tri-natural t =
     trans (h-lt m (O₁.fromℕ 33) m (O₁.fromℕ period O₁.- m))
-          (cong₄ E₂.lt mn (h-fromℕ 33) mn (trans (h-- (O₁.fromℕ period) m) (cong₂ O₂._-_ (h-fromℕ period) mn)))
-    where m = E₁.modBy 63 t
+          (cong₄ R₂.lt mn (h-fromℕ 33) mn (trans (h-- (O₁.fromℕ period) m) (cong₂ O₂._-_ (h-fromℕ period) mn)))
+    where m = L₁.modBy 63 t
           mn = h-modBy 63 t
 
   private
@@ -67,21 +73,21 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
   angle-natural : ∀ p t → h (F₁.angle′ p t) ≡ F₂.angle′ p (h t)
   angle-natural p t =
     trans (h-modBy 7 (O₁.fromℕ (Pair.angle p) O₁.+ sp₁))
-    (cong (E₂.modBy 7)
+    (cong (L₂.modBy 7)
       (trans (h-+ (O₁.fromℕ (Pair.angle p)) sp₁)
              (cong₂ O₂._+_ (h-fromℕ (Pair.angle p))
                (trans (ifs (Pair.spin p <ᵇ 1) (Pair.spin p <ᵇ 2) q₁)
                       (cong (λ q → if Pair.spin p <ᵇ 1 then O₂.fromℕ 8 O₂.- q else (if Pair.spin p <ᵇ 2 then O₂.fromℕ 0 else q)) qn)))))
     where
-      q₁ = E₁.modBy 7 (E₁.divBy 3 t)
-      qn : h q₁ ≡ E₂.modBy 7 (E₂.divBy 3 (h t))
-      qn = trans (h-modBy 7 (E₁.divBy 3 t)) (cong (E₂.modBy 7) (h-divBy 3 t))
+      q₁ = L₁.modBy 7 (L₁.divBy 3 t)
+      qn : h q₁ ≡ L₂.modBy 7 (L₂.divBy 3 (h t))
+      qn = trans (h-modBy 7 (L₁.divBy 3 t)) (cong (L₂.modBy 7) (h-divBy 3 t))
       sp₁ = if Pair.spin p <ᵇ 1 then O₁.fromℕ 8 O₁.- q₁ else (if Pair.spin p <ᵇ 2 then O₁.fromℕ 0 else q₁)
 
   sway-natural : ∀ p t → h (F₁.swayD p t) ≡ F₂.swayD p (h t)
   sway-natural p t =
-    trans (h-divBy 31 (E₁.mulLit (Pair.amp p) (F₁.tri t)))
-          (cong (E₂.divBy 31) (trans (h-mulLit (Pair.amp p) (F₁.tri t)) (cong (E₂.mulLit (Pair.amp p)) (tri-natural t))))
+    trans (h-divBy 31 (L₁.mulLit (Pair.amp p) (F₁.tri t)))
+          (cong (L₂.divBy 31) (trans (h-mulLit (Pair.amp p) (F₁.tri t)) (cong (L₂.mulLit (Pair.amp p)) (tri-natural t))))
 
   private
     ifd : ∀ (b : Bool) amp (d : S) →
@@ -107,12 +113,12 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
       an = angle-natural p t
       d₁ = F₁.swayD p t
       dn = sway-natural p t
-      dxN = trans (h-divBy 99 (E₁.mulLit radius (F₁.dirX a₁)))
-                  (cong (E₂.divBy 99) (trans (h-mulLit radius (F₁.dirX a₁))
-                    (cong (E₂.mulLit radius) (trans (sel-natural 0 tabX a₁) (cong (F₂.sel 0 tabX) an)))))
-      dyN = trans (h-divBy 99 (E₁.mulLit radius (F₁.dirY a₁)))
-                  (cong (E₂.divBy 99) (trans (h-mulLit radius (F₁.dirY a₁))
-                    (cong (E₂.mulLit radius) (trans (sel-natural 0 tabY a₁) (cong (F₂.sel 0 tabY) an)))))
+      dxN = trans (h-divBy 99 (L₁.mulLit radius (F₁.dirX a₁)))
+                  (cong (L₂.divBy 99) (trans (h-mulLit radius (F₁.dirX a₁))
+                    (cong (L₂.mulLit radius) (trans (sel-natural 0 tabX a₁) (cong (F₂.sel 0 tabX) an)))))
+      dyN = trans (h-divBy 99 (L₁.mulLit radius (F₁.dirY a₁)))
+                  (cong (L₂.divBy 99) (trans (h-mulLit radius (F₁.dirY a₁))
+                    (cong (L₂.mulLit radius) (trans (sel-natural 0 tabY a₁) (cong (F₂.sel 0 tabY) an)))))
       oxN = trans (h-+ (O₁.fromℕ (cx ∸ amp)) _)
               (cong₂ O₂._+_ (h-fromℕ (cx ∸ amp))
                 (trans (ifd swayX amp d₁) (cong (λ x → if swayX then x else O₂.fromℕ amp O₂.- x) dn)))
@@ -121,9 +127,9 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
                 (trans (ifd swayY amp d₁) (cong (λ x → if swayY then x else O₂.fromℕ amp O₂.- x) dn)))
       lxN = trans (h-- _ _) (cong₂ O₂._-_ oxN dxN)
       rxN = trans (h-+ _ _) (cong₂ O₂._+_ oxN dxN)
-      lyN = trans (h-lt a₁ _ _ _) (cong₄ E₂.lt an (h-fromℕ 5)
+      lyN = trans (h-lt a₁ _ _ _) (cong₄ R₂.lt an (h-fromℕ 5)
               (trans (h-- _ _) (cong₂ O₂._-_ oyN dyN)) (trans (h-+ _ _) (cong₂ O₂._+_ oyN dyN)))
-      ryN = trans (h-lt a₁ _ _ _) (cong₄ E₂.lt an (h-fromℕ 5)
+      ryN = trans (h-lt a₁ _ _ _) (cong₄ R₂.lt an (h-fromℕ 5)
               (trans (h-+ _ _) (cong₂ O₂._+_ oyN dyN)) (trans (h-- _ _) (cong₂ O₂._-_ oyN dyN)))
 
   dot-natural : ∀ name cls r x y → mapDia h (F₁.dot name cls r x y) ≡ F₂.dot name cls r (h x) (h y)
@@ -161,6 +167,6 @@ module Natural {S T : Set} (D₁ : DiscreteOps S) (D₂ : DiscreteOps T) (h : S 
       go (i ∷ is) (p ∷ ps) = cong₄ overlay (h-fromℕ W) (h-fromℕ H) (pair-natural t i p) (go is ps)
 
 -- the template at the tick variable, evaluated at the tick `t`, is the flipbook frame
-heroT-correct : ∀ n seed t → mapDia (evalD natD (λ _ → t)) (heroT n seed) ≡ Frame.heroFrame natD n seed t
+heroT-correct : ∀ n seed t → mapDia (evalO natO (λ _ → t)) (heroT n seed) ≡ Frame.heroFrame natO n seed t
 heroT-correct n seed t =
-  Natural.frame-natural dexprD natD (evalD natD (λ _ → t)) (evalD-hom natD _) (evalD-euclid-hom natD _) n seed tickD
+  Natural.frame-natural termO natO (evalO natO (λ _ → t)) (evalO-hom natO _) (evalO-ord-hom natO _) (evalO-floor-hom natO _) n seed tO

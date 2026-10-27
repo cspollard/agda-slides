@@ -31,8 +31,8 @@ open import Data.Bool using (true; false)
 open import Data.Bool using (T)
 
 open import Slides.Diagram.Syntax using (Dia; spacer; mapDia)
-open import Slides.Diagram.Expr using (Expr; evalWith; zero′)
-open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
+open import Data.Container.FreeMonad using (_>>=_)
+open import Slides.Diagram.Ordered using (OExpr; OOps; evalO; lowerQ; holdT; zero′)
 open import Data.Unit using (⊤)
 open import Slides.Diagram.Scalar using (Ops)
 import Slides.Anim.Track as T
@@ -55,34 +55,31 @@ units q = ℤ.∣ ℚ.⌊ q ⌋ ∣
 -- The body of a segment: a diagram as a function of the parameter.
 --
 --   * `blackBox f` is any function `ℚ → Dia S`.  It can only be sampled (a flipbook).
---   * `template d` is an open diagram `d : Dia (Expr ⊤)`: its sizes are formulas in the
---     one variable `t` (`Slides.Diagram.Expr`), instantiated at a value of the
---     parameter by evaluating them in the scalar `S` with `t := fromℕ (units q)`.  A
---     template can be laid out once, symbolically, and shipped as formulas
---     (`Slides.Anim.Param`).  It needs no more than `Ops S`: `Expr` is the free
---     `Ops`-algebra, so there is exactly one way to evaluate it.
+--   * `template d` is an open diagram `d : Dia (OExpr ⊤)`: its sizes are formulas in the
+--     one variable `t` (`Slides.Diagram.Ordered`: the layers both clocks read, so floor division,
+--     remainder, comparison and a literal factor are there), instantiated at a value of the
+--     parameter by evaluating them in the scalar `S` with `t := fromℕ (units q)`.  A template can be
+--     laid out once, symbolically, and shipped as formulas (`Slides.Anim.Param`).  It needs no more
+--     than an `OOps S`: `OExpr` is the free algebra, so there is exactly one way to evaluate it.
 --
---   * `discrete d` is an open diagram `d : Dia (DExpr ⊤)` over the *Euclidean* signature
---     (`Slides.Diagram.Euclid`): floor division, remainder, comparison, a literal factor of
---     the tick.  Those operations have meaning in ℕ only, so the body is evaluated *in ℕ* at
---     the whole tick `units q` (`evalD natD`) and the numbers are then injected into the scalar
---     `S` (`fromℕ`).  So a discrete body has one frame per tick, and between two ticks it
---     shows the frame of the tick before (`units` rounds down): there is no interpolation,
---     and in ℚ (`ratOps`) the frame at time `q` is the frame of tick `⌊q⌋`.  It is shipped
---     symbolically like a template, as formulas read in ℕ (`Slides.Anim.DParam`); a `template`
---     and a `discrete` body can be played together (a template is a discrete one, read in ℕ,
---     `Slides.Diagram.Euclid.evalD-weaken`), but then the whole animation is discrete.
+--   * `discrete d` is a template that is held between ticks: the formulas of `d` read the ℕ way
+--     (`lowerQ`: the monus and the rounding percentage lowered to operations of both clocks) at the
+--     whole tick `⌊t⌋` (`holdT`, `Slides.Diagram.Ordered.Properties.Laws.hold-law`).  So a discrete
+--     body has one frame per tick and no interpolation; read in ℕ at the sample of a track it is
+--     `d` itself (`Slides.Diagram.Ordered.Properties.Discrete.lower-ℕ`) and read in ℚ at a whole
+--     tick it is `ι` of that (`discrete-is-ordered`).  It is not a second kind of body.
 --
 -- `bodyAt` is what every consumer of segments uses.
 data SegBody (S : Set) : Set where
   blackBox : (ℚ → Dia S) → SegBody S
-  template : Dia (Expr ⊤) → SegBody S
-  discrete : Dia (DExpr ⊤) → SegBody S
+  template : Dia (OExpr ⊤) → SegBody S
 
-bodyAt : ∀ {S} → Ops S → SegBody S → ℚ → Dia S
+discrete : ∀ {S} → Dia (OExpr ⊤) → SegBody S
+discrete d = template (mapDia (λ e → lowerQ e >>= λ _ → holdT) d)
+
+bodyAt : ∀ {S} → OOps S → SegBody S → ℚ → Dia S
 bodyAt O (blackBox f) q = f q
-bodyAt O (template d) q = mapDia (evalWith O (λ _ → Ops.fromℕ O (units q))) d
-bodyAt O (discrete d) q = mapDia (λ e → Ops.fromℕ O (evalD natD (λ _ → units q) e)) d
+bodyAt O (template d) q = mapDia (evalO O (λ _ → Ops.fromℕ (OOps.ops O) (units q))) d
 
 -- A segment: a diagram that depends on a parameter, which follows a track for as
 -- many ticks as the track lasts.  The track is explicit data (`Slides.Anim.Track`:
@@ -98,7 +95,7 @@ record Seg (S : Set) : Set where
 open Seg public
 
 -- the diagram at a value of the parameter
-body : ∀ {S} → Ops S → Seg S → ℚ → Dia S
+body : ∀ {S} → OOps S → Seg S → ℚ → Dia S
 body O s = bodyAt O (content s)
 
 ticks : ∀ {S} → Seg S → ℕ
@@ -124,11 +121,11 @@ tween : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → (ℚ → Dia S) → Ani
 tween n a b e f = pure (seg (pure (T.piece n a b e)) (blackBox f))
 
 -- the same, as a template: the diagram is open in the parameter `t`
-tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (Expr ⊤) → Anim S (Seg S)
+tweenT : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (OExpr ⊤) → Anim S (Seg S)
 tweenT n a b e d = pure (seg (pure (T.piece n a b e)) (template d))
 
 -- the same, as a discrete template: the diagram is open in the integer tick `t`
-tweenD : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (DExpr ⊤) → Anim S (Seg S)
+tweenD : ∀ {S} → ℕ → ℚ → ℚ → T.Easing → Dia (OExpr ⊤) → Anim S (Seg S)
 tweenD n a b e d = pure (seg (pure (T.piece n a b e)) (discrete d))
 
 -- a pause: an empty frame.  It is a template (constant, with the zero for its size), so

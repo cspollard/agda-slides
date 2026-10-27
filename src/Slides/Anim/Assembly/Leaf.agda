@@ -3,8 +3,8 @@
 -- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
 --
 -- The assembly of whole frames, for any language of template numbers: the symbolic frames of an
--- animation are its frames.  Continuous templates (`Slides.Anim.Param.Properties`, `Expr`) and
--- discrete ones (`Slides.Anim.DParam.Properties`, `DExpr`) are instances; what they supply is
+-- animation are its frames.  Templates (`Slides.Anim.Param.Properties`, `OExpr`, discrete ones
+-- included) are the instance; what it supplies is
 --
 --   * how a symbolic frame is interpreted at an assignment (`interp`: lay it out symbolically,
 --     evaluate at `ρ`), with `atop` interpreted as `atop` (`interp-atop`, layout is natural
@@ -18,7 +18,7 @@
 -- ≡ just (i′ , l)`): `l` is the same animation with each segment replaced by a `Leaf` (its
 -- variable `idx`, its start tick, its track, its template).  For every tick `k < dur a`
 --
---     layout_ℕ (frame k of  timeline atop (frames natOps) a)  ≡  interp (symbolic frame k) ρ
+--     layout_ℕ (frame k of  timeline atop (frames natO) a)  ≡  interp (symbolic frame k) ρ
 --
 -- for every assignment `ρ` such that, for every leaf running at tick `k` (`start + m ≡ k`,
 -- `m < dur track`), `ρ idx ≡ units (sample of its track at m)` (`GoodL l k ρ`).
@@ -62,6 +62,7 @@ open import Slides.Diagram.Draw using (Layout)
 open import Slides.Diagram.Syntax using (Dia; atop)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps)
+open import Slides.Diagram.Ordered using (natO)
 import Slides.Diagram.Place natOps as PN
 import Slides.Anim.Track as T
 import Slides.Anim.Track.Properties as TP
@@ -106,15 +107,15 @@ module Over
 
   -- a segment whose body, at a whole parameter, lays out as the template evaluated there
   leaf-Agree : ∀ (c : SegBody ℕ) i t₀ tr (tmpl : Dia (E ⊤)) →
-    (∀ q → layoutℕ (bodyAt natOps c q) ≡ layoutℕ (evalAt (units q) tmpl)) →
-    Agree (LeafGood (leaf i t₀ tr tmpl)) t₀ (frames natOps (seg tr c))
+    (∀ q → layoutℕ (bodyAt natO c q) ≡ layoutℕ (evalAt (units q) tmpl)) →
+    Agree (LeafGood (leaf i t₀ tr tmpl)) t₀ (frames natO (seg tr c))
           (replicate (T.dur tr) (inst (leaf i t₀ tr tmpl)))
   leaf-Agree c i t₀ tr tmpl body-ok = agree go
     where
     l = leaf i t₀ tr tmpl
-    go : ∀ j → Rel (LeafGood l (t₀ + j)) (nth (frames natOps (seg tr c)) j)
+    go : ∀ j → Rel (LeafGood l (t₀ + j)) (nth (frames natO (seg tr c)) j)
                                            (nth (replicate (T.dur tr) (inst l)) j)
-    go j rewrite nth-frames natOps (seg tr c) j
+    go j rewrite nth-frames natO (seg tr c) j
                | nth-replicate (T.dur tr) (inst l) j
                | TP.sample-dur T.ℚLerp tr
       with j <ᵇ T.dur tr in eq
@@ -131,7 +132,7 @@ module Over
     (leafOf : ℕ → ℕ → Seg ℕ → Maybe (Leaf E))
     (leafOf-idx : ∀ i t₀ s l → leafOf i t₀ s ≡ just l → Leaf.idx l ≡ i)
     (leaf-agree : ∀ i t₀ s l → leafOf i t₀ s ≡ just l →
-                  Agree (LeafGood l) t₀ (frames natOps s) (replicate (T.dur (Leaf.track l)) (inst l)))
+                  Agree (LeafGood l) t₀ (frames natO s) (replicate (T.dur (Leaf.track l)) (inst l)))
     where
 
     ------------------------------------------------------------------------
@@ -139,7 +140,7 @@ module Over
 
     -- The whole animation: the frames agree with the symbolic frames at every tick.
     leaves-agree : ∀ (a : Anim ℕ (Seg ℕ)) i t₀ i′ l → leavesWith leafOf i t₀ a ≡ just (i′ , l) →
-                   Agree (GoodL l) t₀ (timeline atop (frames natOps) a) (symbolicFramesWith inst l)
+                   Agree (GoodL l) t₀ (timeline atop (frames natO) a) (symbolicFramesWith inst l)
     leaves-agree (pure s) i t₀ i′ l eq with leafOf i t₀ s in e
     leaves-agree (pure s) i t₀ _ _ refl | just l′ = leaf-agree i t₀ s l′ e
     leaves-agree (pure s) i t₀ i′ l ()   | nothing
@@ -147,24 +148,24 @@ module Over
     ... | (i₁ , a′) , e₁ , r₁ with bind-just (leavesWith leafOf i₁ _ (k (suc zero))) _ r₁
     ... | (i₂ , b′) , e₂ , refl =
       Agree-++ (leaves-agree (k zero) i t₀ i₁ a′ e₁)
-               (Agree-≡ (cong (t₀ +_) (sym (length-dur natOps (k zero))))
+               (Agree-≡ (cong (t₀ +_) (sym (length-dur natO (k zero))))
                         (leaves-agree (k (suc zero)) i₁ (t₀ + dur (k zero)) i₂ b′ e₂))
     leaves-agree (impure (Par , k)) i t₀ i′ l eq with bind-just (leavesWith leafOf i t₀ (k zero)) _ eq
     ... | (i₁ , a′) , e₁ , r₁ with bind-just (leavesWith leafOf i₁ _ (k (suc zero))) _ r₁
     ... | (i₂ , b′) , e₂ , refl =
       Agree-merge (leaves-agree (k zero) i t₀ i₁ a′ e₁) (leaves-agree (k (suc zero)) i₁ t₀ i₂ b′ e₂)
 
-    -- Statement.  At every tick `k < dur a` the frame of `timeline atop (frames natOps) a` is the
+    -- Statement.  At every tick `k < dur a` the frame of `timeline atop (frames natO) a` is the
     -- interpretation of the symbolic frame at any assignment `ρ` that gives each leaf running at `k`
     -- the (floored) parameter of its track at that tick (`GoodL l k ρ`).
     assembly :
       ∀ (a : Anim ℕ (Seg ℕ)) i′ l → leavesWith leafOf 0 0 a ≡ just (i′ , l) → ∀ k → (k <ᵇ dur a) ≡ true →
       ∀ ρ → GoodL l k ρ →
-      ∃₂ λ F S → nth (timeline atop (frames natOps) a) k ≡ just F
+      ∃₂ λ F S → nth (timeline atop (frames natO) a) k ≡ just F
                × nth (symbolicFramesWith inst l) k ≡ just S
                × layoutℕ F ≡ interp S ρ
-    assembly a i′ l eq k hk ρ g with nth-in (timeline atop (frames natOps) a) k
-                                           (subst (λ n → (k <ᵇ n) ≡ true) (sym (length-dur natOps a)) hk)
+    assembly a i′ l eq k hk ρ g with nth-in (timeline atop (frames natO) a) k
+                                           (subst (λ n → (k <ᵇ n) ≡ true) (sym (length-dur natO a)) hk)
     ... | F , eF with Rel-just (subst (λ m → Rel (GoodL l k) m (nth (symbolicFramesWith inst l) k)) eF
                                       (at (leaves-agree a 0 0 i′ l eq) k))
     ... | S , eS , r = F , S , eF , eS , r ρ g
@@ -263,7 +264,7 @@ module Over
     -- leaves.
     assembly-canonical :
       ∀ (a : Anim ℕ (Seg ℕ)) i′ l → leavesWith leafOf 0 0 a ≡ just (i′ , l) → ∀ k → (k <ᵇ dur a) ≡ true →
-      ∃₂ λ F S → nth (timeline atop (frames natOps) a) k ≡ just F
+      ∃₂ λ F S → nth (timeline atop (frames natO) a) k ≡ just F
                × nth (symbolicFramesWith inst l) k ≡ just S
                × layoutℕ F ≡ interp S (assignAt l k)
     assembly-canonical a i′ l eq k hk =

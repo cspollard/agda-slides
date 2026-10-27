@@ -7,11 +7,11 @@
 -- runs into the first and nothing jumps.  The pairs are a deterministic function of
 -- a seed (a linear congruential generator), so the output is reproducible.
 --
--- The frame is written *once*, over any scalar with the three layers of
--- `Slides.Diagram.Euclid` (`Frame`: sum, monus, maximum, floor division, remainder, comparison
+-- The frame is written *once*, over any scalar with the layers of
+-- `Slides.Diagram.Ordered` (`Frame`: sum, monus, maximum, floor division, remainder, comparison
 -- and a literal factor), with the tick `t` a scalar.  At ℕ it is the frame the flipbook shows
--- (`heroAt`, `hero`); over the free algebra `DExpr ⊤`, with `t` the variable, it is a *discrete
--- template* (`heroT`, `heroD`): the pairs' data are literals (partially evaluated by Agda: a
+-- (`heroAt`, `hero`); over the free algebra `OExpr ⊤`, with `t` the variable, it is a *discrete
+-- template* (`heroT`, `heroD`: lowered and held, `Slides.Anim.Syntax.discrete`): the pairs' data are literals (partially evaluated by Agda: a
 -- constant spin makes the angle a number, and the closed subformulas fold), and only the tick
 -- stays symbolic.  Nothing is written twice, and the template is the frame by naturality of
 -- the construction along the evaluation homomorphism (`Slides.Examples.PairsHero.Properties`,
@@ -32,7 +32,7 @@ open import Slides.Diagram using (withClass; defaultStyle)
 open import Slides.Diagram.Syntax using (Dia; disc; named; connect; spacer; place; overlay)
 open import Slides.Diagram.Notation using (east; west)
 open import Slides.Diagram.Scalar using (Ops)
-open import Slides.Diagram.Euclid using (DiscreteOps; natD; DExpr; dexprD; tickD; EuclidOps)
+open import Slides.Diagram.Ordered using (OOps; OrdOps; FloorOps; natO; OExpr; termO; tO)
 open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenD; units)
 import Slides.Anim.Track as T
 
@@ -78,12 +78,12 @@ tabX tabY : List ℕ
 tabX = 100 ∷ 92 ∷ 71 ∷ 38 ∷ 0 ∷ 38 ∷ 71 ∷ 92 ∷ []
 tabY = 0 ∷ 38 ∷ 71 ∷ 92 ∷ 100 ∷ 92 ∷ 71 ∷ 38 ∷ []
 
-module Frame {S : Set} (D : DiscreteOps S) where
+module Frame {S : Set} (D : OOps S) where
   private
-    O = DiscreteOps.ops D
-    Eu = DiscreteOps.euclid D
+    O = OOps.ops D
   open Ops O renaming (_+_ to _⊕_; _-_ to _⊖_; fromℕ to lit)
-  open EuclidOps Eu
+  open OrdOps (OOps.ord D) using (lt)
+  open FloorOps (OOps.floor D) using (divBy; modBy; mulLit)
 
   sel : ℕ → List ℕ → S → S
   sel i []           a = lit 0
@@ -156,7 +156,7 @@ module Frame {S : Set} (D : DiscreteOps S) where
 
 -- the frame the flipbook shows
 heroAt : (seed : ℕ) → ℕ → Dia ℕ
-heroAt = Frame.heroFrame natD 26
+heroAt = Frame.heroFrame natO 26
 
 -- one period of the sway and spin, played as a loop
 hero : ℕ → Anim ℕ (Seg ℕ)
@@ -168,8 +168,8 @@ hero seed = tween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → her
 -- layout is linear in `n` (placing each pair by margins against `W - (x + 2r)` and centring the
 -- layers against the maximum of their widths made it cubic: 779 KB of formulas for 3 pairs, see
 -- `docs/Design.md`), and the formulas of a phase are shared when shipped (`Slides.Anim.Share`)
-heroT : (n seed : ℕ) → Dia (DExpr ⊤)
-heroT n seed = Frame.heroFrame dexprD n seed tickD
+heroT : (n seed : ℕ) → Dia (OExpr ⊤)
+heroT n seed = Frame.heroFrame termO n seed tO
 
 -- the same loop shipped as formulas
 heroD : (n seed : ℕ) → Anim ℕ (Seg ℕ)

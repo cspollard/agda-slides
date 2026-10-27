@@ -21,8 +21,8 @@ open import Slides.Diagram.Syntax using (fold)
 open import Slides.Diagram.Names using (namesAlgebra)
 open import Slides.Diagram.Names.Properties using (names-mapDia)
 open import Data.Rational using (ℚ)
-open import Slides.Diagram.Expr using (Expr; evalWith)
-open import Slides.Diagram.Euclid using (DExpr; evalD; natD)
+open import Data.Container.FreeMonad using (_>>=_)
+open import Slides.Diagram.Ordered using (OExpr; OOps; evalO; lowerQ; holdT)
 open import Slides.Diagram.Syntax using (Dia)
 open import Slides.Anim.Syntax
 
@@ -30,14 +30,13 @@ open import Slides.Anim.Footprint
 
 -- a template declares the names of every one of its instances
 -- (not so for a function body, which may declare different names at different parameters)
-bodyUsage-template : ∀ {S} (O : Ops S) (d : Dia (Expr ⊤)) (q q′ : ℚ) →
+bodyUsage-template : ∀ {S} (O : OOps S) (d : Dia (OExpr ⊤)) (q q′ : ℚ) →
                      bodyUsage {S} (template d) q ≡ fold namesAlgebra (bodyAt O (template d) q′)
-bodyUsage-template O d q q′ = sym (names-mapDia (evalWith O (λ _ → Ops.fromℕ O (units q′))) d)
+bodyUsage-template O d q q′ = sym (names-mapDia (evalO O (λ _ → Ops.fromℕ (OOps.ops O) (units q′))) d)
 
--- and so does a discrete one
-bodyUsage-discrete : ∀ {S} (O : Ops S) (d : Dia (DExpr ⊤)) (q q′ : ℚ) →
-                     bodyUsage {S} (discrete d) q ≡ fold namesAlgebra (bodyAt O (discrete d) q′)
-bodyUsage-discrete O d q q′ = sym (names-mapDia (λ e → Ops.fromℕ O (evalD natD (λ _ → units q′) e)) d)
+-- and so does a discrete one (it is a template): those of the diagram it lowers
+bodyUsage-discrete : ∀ {S} (d : Dia (OExpr ⊤)) (q : ℚ) → bodyUsage {S} (discrete d) q ≡ fold namesAlgebra d
+bodyUsage-discrete d q = names-mapDia (λ e → lowerQ e >>= λ _ → holdT) d
 
 footprint-⨾ : ∀ {S} (a b : Anim S (Seg S)) → footprint (a ⨾ b) ≡ footprint a ++ footprint b
 footprint-⨾ a b = refl

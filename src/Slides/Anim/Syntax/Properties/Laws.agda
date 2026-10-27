@@ -23,7 +23,8 @@ open import Relation.Binary using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 
 open import Slides.Diagram.Draw using (Layout)
-open import Slides.Diagram.Scalar using (Ops; intOps; ratOps)
+open import Slides.Diagram.Scalar using (Ops)
+open import Slides.Diagram.Ordered using (OOps; ratO)
 import Slides.Diagram.Syntax as DS
 open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
 import Slides.Diagram.Place.Properties.Commute as Commute
@@ -32,7 +33,8 @@ open import Slides.Anim.Syntax.Properties
 open import Slides.Anim.Timeline
 
 open import Slides.Anim.Timeline.Properties
-module For {S : Set} (O : Ops S) (L : IsLawful O) where
+module For {S : Set} (Q : OOps S) (L : IsLawful (OOps.ops Q)) where
+  private O = OOps.ops Q
   open Ops O using (0#)
   open Proofs O L
   open Commute.For O L using (mergeL; layout-merge)
@@ -98,16 +100,16 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) where
     map-const c []       = refl
     map-const c (x ∷ xs) = cong (c ∷_) (map-const c xs)
 
-  timeline-none : ∀ m → timeline DS.atop (frames O) (none O m) ≡ replicate m ε
+  timeline-none : ∀ m → timeline DS.atop (frames Q) (none O m) ≡ replicate m ε
   timeline-none m =
     trans (map-const ε (applyUpTo (λ i → i) m)) (cong (λ n → replicate n ε) (LP.length-applyUpTo (λ i → i) m))
 
   -- pad: the frames of `a`, then empty frames up to `n`
   timeline-pad : ∀ n (a : Anim S (Seg S)) →
-                 timeline DS.atop (frames O) (pad O n a) ≡ timeline DS.atop (frames O) a ++ replicate (n ∸ dur a) ε
+                 timeline DS.atop (frames Q) (pad O n a) ≡ timeline DS.atop (frames Q) a ++ replicate (n ∸ dur a) ε
   timeline-pad n a with dur a <ᵇ n in eq
-  ... | true  = cong (timeline DS.atop (frames O) a ++_) (timeline-none (n ∸ dur a))
-  ... | false = trans (sym (LP.++-identityʳ _)) (cong (λ k → timeline DS.atop (frames O) a ++ replicate k ε) (sym (le⇒∸0 eq)))
+  ... | true  = cong (timeline DS.atop (frames Q) a ++_) (timeline-none (n ∸ dur a))
+  ... | false = trans (sym (LP.++-identityʳ _)) (cong (λ k → timeline DS.atop (frames Q) a ++ replicate k ε) (sym (le⇒∸0 eq)))
     where
       le⇒∸0 : (dur a <ᵇ n) ≡ false → n ∸ dur a ≡ 0
       le⇒∸0 e = ℕP.m≤n⇒m∸n≡0 (ℕP.≮⇒≥ {dur a} {n} (λ h → subst T e (ℕP.<⇒<ᵇ {dur a} {n} h)))
@@ -124,31 +126,30 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) where
 
     -- the timeline of `par` and of the unpadded `Par`, laid out
     lay-par : ∀ (a b : Anim S (Seg S)) →
-              lay (timeline DS.atop (frames O) (par O a b))
-              ≡ mergeL (lay (timeline DS.atop (frames O) a) ++ replicate (dur b ∸ dur a) empty)
-                       (lay (timeline DS.atop (frames O) b) ++ replicate (dur a ∸ dur b) empty)
+              lay (timeline DS.atop (frames Q) (par O a b))
+              ≡ mergeL (lay (timeline DS.atop (frames Q) a) ++ replicate (dur b ∸ dur a) empty)
+                       (lay (timeline DS.atop (frames Q) b) ++ replicate (dur a ∸ dur b) empty)
     lay-par a b =
       trans (cong lay (cong₂ (merge DS.atop) (timeline-pad (dur b) a) (timeline-pad (dur a) b)))
-      (trans (layout-merge (timeline DS.atop (frames O) a ++ replicate (dur b ∸ dur a) ε) (timeline DS.atop (frames O) b ++ replicate (dur a ∸ dur b) ε))
-             (cong₂ mergeL (lay-pad (timeline DS.atop (frames O) a) (dur b ∸ dur a)) (lay-pad (timeline DS.atop (frames O) b) (dur a ∸ dur b))))
+      (trans (layout-merge (timeline DS.atop (frames Q) a ++ replicate (dur b ∸ dur a) ε) (timeline DS.atop (frames Q) b ++ replicate (dur a ∸ dur b) ε))
+             (cong₂ mergeL (lay-pad (timeline DS.atop (frames Q) a) (dur b ∸ dur a)) (lay-pad (timeline DS.atop (frames Q) b) (dur a ∸ dur b))))
 
     lay-∥ : ∀ (a b : Anim S (Seg S)) →
-            lay (timeline DS.atop (frames O) (a ∥ᵃ b)) ≡ mergeL (lay (timeline DS.atop (frames O) a)) (lay (timeline DS.atop (frames O) b))
-    lay-∥ a b = layout-merge (timeline DS.atop (frames O) a) (timeline DS.atop (frames O) b)
+            lay (timeline DS.atop (frames Q) (a ∥ᵃ b)) ≡ mergeL (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b))
+    lay-∥ a b = layout-merge (timeline DS.atop (frames Q) a) (timeline DS.atop (frames Q) b)
 
-    len : ∀ (a : Anim S (Seg S)) → length (lay (timeline DS.atop (frames O) a)) ≡ dur a
-    len a = trans (LP.length-map LW.layout (timeline DS.atop (frames O) a)) (length-dur O a)
+    len : ∀ (a : Anim S (Seg S)) → length (lay (timeline DS.atop (frames Q) a)) ≡ dur a
+    len a = trans (LP.length-map LW.layout (timeline DS.atop (frames Q) a)) (length-dur Q a)
 
   par-layout : ∀ (a b : Anim S (Seg S)) →
-               All Valid (lay (timeline DS.atop (frames O) a)) → All Valid (lay (timeline DS.atop (frames O) b)) →
-               Pointwise _≈ᴸ_ (lay (timeline DS.atop (frames O) (par O a b))) (lay (timeline DS.atop (frames O) (a ∥ᵃ b)))
+               All Valid (lay (timeline DS.atop (frames Q) a)) → All Valid (lay (timeline DS.atop (frames Q) b)) →
+               Pointwise _≈ᴸ_ (lay (timeline DS.atop (frames Q) (par O a b))) (lay (timeline DS.atop (frames Q) (a ∥ᵃ b)))
   par-layout a b va vb with ℕP.≤-total (dur a) (dur b)
-  ... | inj₁ le rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 le | LP.++-identityʳ (lay (timeline DS.atop (frames O) b)) =
-        padˡ (lay (timeline DS.atop (frames O) a)) (lay (timeline DS.atop (frames O) b)) (dur b ∸ dur a)
+  ... | inj₁ le rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 le | LP.++-identityʳ (lay (timeline DS.atop (frames Q) b)) =
+        padˡ (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b)) (dur b ∸ dur a)
              (trans (cong (_+ (dur b ∸ dur a)) (len a)) (trans (ℕP.m+[n∸m]≡n le) (sym (len b)))) vb
-  ... | inj₂ ge rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 ge | LP.++-identityʳ (lay (timeline DS.atop (frames O) a)) =
-        padʳ (lay (timeline DS.atop (frames O) a)) (lay (timeline DS.atop (frames O) b)) (dur a ∸ dur b)
+  ... | inj₂ ge rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 ge | LP.++-identityʳ (lay (timeline DS.atop (frames Q) a)) =
+        padʳ (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b)) (dur a ∸ dur b)
              (trans (cong (_+ (dur a ∸ dur b)) (len b)) (trans (ℕP.m+[n∸m]≡n ge) (sym (len a)))) va
 
-module ForInts = For intOps lawfulℤ
-module ForRats = For ratOps lawfulℚ
+module ForRats = For ratO lawfulℚ

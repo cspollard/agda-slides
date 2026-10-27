@@ -17,11 +17,9 @@
 --     the shared phases of `ps` is the frame it draws from the phases `ps` themselves
 --     (`Slides.Anim.Phases.pageElem`, with the numbers read as `ref`), *as lists of drawing
 --     commands*: sharing changes nothing the page shows;
---   * the instances at ℚ (`pageFrameS-sem-ℚ`, readings of `Slides.Anim.Formula.⟦_⟧`) and at ℕ
---     (`pageFrameS-sem-ℕ`, `⟦_⟧ᴺ` and the output `⟦_⟧ᴰ`), whose composition with
---     `Slides.Anim.Phases.pageFrame-sem` and `Slides.Anim.DPhases.pageFrameD-sem` says that the
---     shared page shows the symbolic layout of tick `k` evaluated at `ρ`: the continuous frame,
---     respectively the discrete one the flipbook shows (`Slides.Anim.DParam.Properties.discrete-assemblyD`).
+--   * the instance at ℚ (`Continuous`, the reading `Slides.Anim.Formula.⟦_⟧` of the page), whose
+--     composition with `Slides.Anim.Phases.Properties.pageFrame-sem` says that the shared page shows
+--     the symbolic layout of tick `k` evaluated at `ρ`: the continuous frame.
 --
 -- The base command of a shared element has the numbers that a formula overwrites zeroed
 -- (`shareElem`, `zeroBase-sem`: the page sets the same numbers), so that elements that differ
@@ -96,34 +94,6 @@ semℚ = record
   ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl
   ; s-fmin = λ _ _ _ → refl ; s-fease = λ _ _ _ → refl }
 
--- formulas read in ℕ (`⟦_⟧ᴺ`), the output a rational (`⟦_⟧ᴰ`)
-readingℕ : Reading ℕ ℚ
-readingℕ = record
-  { rnum = λ n → n ; app1 = a1 ; app2 = a2 ; app4 = a4 ; out = ι ; outHlf = λ x → halfQ (ι x) }
-  where
-    a1 : Op1 → ℕ → ℕ
-    a1 (oPct p) x = (x * p) / 100
-    a1 oHlf     x = x / 2
-    a1 (oDiv d) x = x / suc d
-    a1 (oMod d) x = x % suc d
-    a1 (oMul n) x = n * x
-    a1 (oEase _) x = x          -- an easing has no ℕ reading (removed with this reading)
-    a2 : Op2 → ℕ → ℕ → ℕ
-    a2 oAdd = ℕ._+_
-    a2 oSub = _∸_
-    a2 oMax = _⊔_
-    a2 oMin = ℕ._⊓_
-    a4 : ℕ → ℕ → ℕ → ℕ → ℕ
-    a4 a b x y = if a <ᵇ b then x else y
-
-semℕ : Semantics readingℕ
-semℕ = record
-  { sem = ⟦_⟧ᴺ
-  ; s-num = λ _ _ → refl ; s-var = λ _ _ → refl ; s-add = λ _ _ _ → refl ; s-sub = λ _ _ _ → refl
-  ; s-max = λ _ _ _ → refl ; s-pct = λ _ _ _ → refl ; s-hlf = λ _ _ → refl ; s-fdiv = λ _ _ _ → refl
-  ; s-fmod = λ _ _ _ → refl ; s-fmul = λ _ _ _ → refl ; s-flt = λ _ _ _ _ _ → refl
-  ; s-fmin = λ _ _ _ → refl ; s-fease = λ _ _ _ → refl }
-
 -- the output reading is the existing one
 refOutℚ : ∀ g ρ → Semantics.refOut semℚ g ρ ≡ ⟦ g ⟧ ρ
 refOutℚ (num _)       ρ = refl
@@ -139,21 +109,6 @@ refOutℚ (fmul _ _)    ρ = refl
 refOutℚ (flt _ _ _ _) ρ = refl
 refOutℚ (fmin _ _)    ρ = refl
 refOutℚ (fease _ _)   ρ = refl
-
-refOutℕ : ∀ g ρ → Semantics.refOut semℕ g ρ ≡ ⟦ g ⟧ᴰ ρ
-refOutℕ (num _)       ρ = refl
-refOutℕ (var _)       ρ = refl
-refOutℕ (add _ _)     ρ = refl
-refOutℕ (sub _ _)     ρ = refl
-refOutℕ (max _ _)     ρ = refl
-refOutℕ (pct _ _)     ρ = refl
-refOutℕ (hlf _)       ρ = refl
-refOutℕ (fdiv _ _)    ρ = refl
-refOutℕ (fmod _ _)    ρ = refl
-refOutℕ (fmul _ _)    ρ = refl
-refOutℕ (flt _ _ _ _) ρ = refl
-refOutℕ (fmin _ _)    ρ = refl
-refOutℕ (fease _ _)   ρ = refl
 
 ------------------------------------------------------------------------
 -- What the page sets
@@ -349,4 +304,3 @@ module Frame {A : Set} (R : Reading A ℚ) (S : Semantics R) (ref : Formula → 
 
 -- continuous templates: the shared phases show what `Slides.Anim.Phases.pageFrame` shows
 module Continuous = Frame readingℚ semℚ ⟦_⟧ refOutℚ
-module Discrete   = Frame readingℕ semℕ ⟦_⟧ᴰ refOutℕ
