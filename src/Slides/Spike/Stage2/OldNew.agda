@@ -89,13 +89,17 @@ seq-agree : ∀ {A B : Set} (h : A → B) (X Y : TM A) (X′ Y′ : Timed (Maybe
   (∀ k → Maybe.map h (proj₂ Y (ι k)) ≡ proj₂ Y′ (ι k)) →
   (∀ k → (k <ᵇ proj₁ Y) ≡ false → proj₂ Y (ι k) ≡ nothing) →
   ∀ k → Maybe.map h (proj₂ (seqW X Y) (ι k)) ≡ proj₂ (seqAt X′ Y′) (ι k)
-seq-agree h (n , f) (m , g) (n′ , f′) (m′ , g′) refl refl p q w k
-  rewrite seqW-tick (n , f) (m , g) k | ι-<ᵗ k n with k <ᵇ n + m in e₁ | k <ᵇ n in e₂
-... | true  | true  = p k
-... | true  | false rewrite sym (ι-∸ k n (<ᵇ-ge e₂)) = q (k ∸ n)
-... | false | true  = contra (trans (sym (<ᵇ-+ˡ {k} {n} m e₂)) e₁)
-... | false | false rewrite sym (ι-∸ k n (<ᵇ-ge e₂)) =
-  sym (trans (sym (q (k ∸ n))) (cong (Maybe.map h) (w (k ∸ n) (<ᵇ-shift-false n m e₁))))
+seq-agree h (n , f) (m , g) (n′ , f′) (m′ , g′) refl refl p q w k =
+  trans (cong (Maybe.map h) (seqW-tick (n , f) (m , g) k))
+    (trans (core (k <ᵇ n + m) (k <ᵇ n) refl refl) (sym (seqAt-tick (n , f′) (m , g′) k)))
+  where
+    core : ∀ b₁ b₂ → (k <ᵇ n + m) ≡ b₁ → (k <ᵇ n) ≡ b₂ →
+           Maybe.map h (if b₁ then (if b₂ then f (ι k) else g (ι (k ∸ n))) else nothing)
+           ≡ (if b₂ then f′ (ι k) else g′ (ι (k ∸ n)))
+    core true  true  _  _  = p k
+    core true  false _  _  = q (k ∸ n)
+    core false true  e₁ e₂ = contra (trans (sym (<ᵇ-+ˡ {k} {n} m e₂)) e₁)
+    core false false e₁ _  = sym (trans (sym (q (k ∸ n))) (cong (Maybe.map h) (w (k ∸ n) (<ᵇ-shift-false n m e₁))))
 
 map-merge : ∀ x y → Maybe.map (λ g → g 0ℚ) (mergeM (λ a b → algD Atop (fin2 a b)) x y)
                    ≡ mergeM atop (Maybe.map (λ g → g 0ℚ) x) (Maybe.map (λ g → g 0ℚ) y)

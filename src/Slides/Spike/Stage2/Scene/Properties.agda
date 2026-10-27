@@ -139,6 +139,16 @@ algD-ext (Connect a pa b pb s) p = cong (λ x q → connectP a pa b pb s (x q)) 
 open Const algD bindD algD-ext using () renaming (inj-cst to inj-cstD) public
 
 ------------------------------------------------------------------------
+-- Small lemmas on booleans and windows, stated at an abstract guard so that no rational
+-- number is rewritten inside a large goal
+guard-eq : ∀ {A : Set} {b b′ : Bool} (x y : A) → b ≡ b′ → (if b then x else y) ≡ (if b′ then x else y)
+guard-eq x y refl = refl
+
+-- the window [0, n) at the whole tick k is `k < n`
+win-ι : ∀ k n → ((0ℚ ℚ.≤ᵇ ι k) ∧ (ι k <ᵗ ι n)) ≡ (k <ᵇ n)
+win-ι k n = trans (cong₂ _∧_ (zero≤ι k) (ι-<ᵗ k n)) refl
+
+------------------------------------------------------------------------
 -- A segment is `Hold n (Drive tr (inj d))`: its frames are the existing `leafAt`
 
 private
@@ -158,10 +168,14 @@ segS-sample tr d = mk≈ (sym (dur-sample tr)) pt
   where
     w = proj₂ (sampleAt Tr.ℚLerp tr)
     pt : ∀ τ → proj₂ (framesD (segS (tr , d))) τ ≡ proj₂ (leafAt tr d) τ
-    pt τ rewrite at≈ (inj-cstD d) τ | dur-sample tr
-      with (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (Tr.dur tr))
-    ... | true  = cong just (fold-algD d (w τ))
-    ... | false = refl
+    pt τ = trans (cong (Maybe.map (λ g → g 0ℚ)) (segS-at tr d τ))
+             (trans (go ((0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (Tr.dur tr))))
+                    (guard-eq _ nothing (cong (λ n → (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι n)) (sym (dur-sample tr)))))
+      where
+        go : ∀ b → Maybe.map (λ g → g 0ℚ) (if b then just (bindD (w τ) (fold algD d)) else nothing)
+                 ≡ (if b then just (instQ d (w τ)) else nothing)
+        go true  = cong just (fold-algD d (w τ))
+        go false = refl
 
 -- the embedding preserves duration: the duration of the sample is `Slides.Anim.Syntax.dur`
 embed-dur : ∀ t → proj₁ (sample algD bindD (embed t)) ≡ A.dur (toAnim t)
@@ -169,17 +183,20 @@ embed-dur (pure s)                = refl
 embed-dur (impure (A.Seq , k))    = cong₂ ℕ._+_ (embed-dur (k zero)) (embed-dur (k (suc zero)))
 embed-dur (impure (A.Par , k))    = cong₂ ℕ._⊔_ (embed-dur (k zero)) (embed-dur (k (suc zero)))
 
-------------------------------------------------------------------------
--- ℚ clock to ℕ clock: `Seq` is `seqAt` guarded to its window
+-- ℚ clock to ℕ clock: `seqAt` at a whole tick, and `Seq` guarded to its window
+seqAt-tick : ∀ {A} (X Y : Timed A) k →
+  proj₂ (seqAt X Y) (ι k) ≡ (if k <ᵇ proj₁ X then proj₂ X (ι k) else proj₂ Y (ι (k ∸ proj₁ X)))
+seqAt-tick (n , f) (m , g) k = trans (guard-eq _ _ (ι-<ᵗ k n)) (go (k <ᵇ n) refl)
+  where
+    go : ∀ b → (k <ᵇ n) ≡ b → (if b then f (ι k) else g (ι k ℚ.- ι n)) ≡ (if b then f (ι k) else g (ι (k ∸ n)))
+    go true  _  = refl
+    go false eq = cong g (sym (ι-∸ k n (<ᵇ-ge eq)))
+
 seqW-tick : ∀ {A} (X Y : TM A) k →
   proj₂ (seqW X Y) (ι k) ≡
   (if k <ᵇ proj₁ X + proj₁ Y then (if k <ᵇ proj₁ X then proj₂ X (ι k) else proj₂ Y (ι (k ∸ proj₁ X))) else nothing)
-seqW-tick (n , f) (m , g) k rewrite zero≤ι k | ι-<ᵗ k (n + m) with k <ᵇ n + m
-... | false = refl
-... | true rewrite ι-<ᵗ k n with k <ᵇ n in eq
-...   | true  = refl
-...   | false = cong g (sym (ι-∸ k n (<ᵇ-ge eq)))
-
+seqW-tick X Y k = trans (guard-eq _ nothing (win-ι k (proj₁ X + proj₁ Y)))
+                        (cong (λ x → if k <ᵇ proj₁ X + proj₁ Y then x else nothing) (seqAt-tick X Y k))
 
 -- beyond the end of `x ⨾ y`, the second part is beyond its own end
 <ᵇ-shift-false : ∀ {k} n m → (k <ᵇ n + m) ≡ false → (k ∸ n <ᵇ m) ≡ false

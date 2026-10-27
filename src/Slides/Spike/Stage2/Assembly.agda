@@ -34,10 +34,10 @@ open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_)
 import Data.Nat.Properties as ℕP
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃)
 open import Data.Rational as ℚ using (ℚ; 0ℚ)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst; subst₂)
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
-open import Slides.Diagram.Syntax using (Dia; atop; mapDia; Atop)
+open import Slides.Diagram.Syntax using (Dia; atop; mapDia; Atop; fold)
 open import Slides.Diagram.Expr using (exprOps)
 open import Slides.Diagram.Expr.Properties.Faithful using (AllLayout; Faithful; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
@@ -125,12 +125,14 @@ module _ {A B : Set} {R : Maybe A → Maybe B → Set} where
              RelN R (tickQ (seqW X Y)) (nthN (xs ++ ys))
   relN-seq R∅ {n , f} {m , g} {xs} {ys} (relN refl p) (relN refl q) = relN (sym (LP.length-++ xs)) pt
     where
-      pt : ∀ k → R (proj₂ (seqW (length xs , f) (length ys , g)) (ι k)) (nth (xs ++ ys) k)
-      pt k rewrite seqW-tick (length xs , f) (length ys , g) k | nth-++g xs ys k with k <ᵇ length xs + length ys
-      ... | false = R∅
-      ... | true  with k <ᵇ length xs
-      ...   | true  = p k
-      ...   | false = q (k ∸ length xs)
+      pt : ∀ k → R (proj₂ (seqW (length xs , f) (m , g)) (ι k)) (nth (xs ++ ys) k)
+      pt k = subst₂ R (sym (seqW-tick (length xs , f) (m , g) k)) (sym (nth-++g xs ys k)) (core (k <ᵇ length xs + length ys) (k <ᵇ length xs))
+        where
+          core : ∀ b₁ b₂ → R (if b₁ then (if b₂ then f (ι k) else g (ι (k ∸ length xs))) else nothing)
+                             (if b₁ then (if b₂ then nth xs k else nth ys (k ∸ length xs)) else nothing)
+          core false _     = R∅
+          core true  true  = p k
+          core true  false = q (k ∸ length xs)
 
   relN-par : ∀ {⊙ : A → A → A} {⊙′ : B → B → B} →
              (∀ {x x′ y y′} → R x x′ → R y y′ → R (mergeM ⊙ x y) (mergeM ⊙′ x′ y′)) →
@@ -173,17 +175,22 @@ leaf : ∀ tr d → (∀ m → (m <ᵇ Tr.dur tr) ≡ true → ExactT (tr , d) m
        RelN RelR (tickQ (sample algD bindD (segS (tr , d)))) (nthN (frames natOps (A.seg tr (A.template d))))
 leaf tr d ex = relN (sym (TLP.frames-length natOps (A.seg tr (A.template d)))) pt
   where
-    pt : ∀ k → RelR (proj₂ (sample algD bindD (segS (tr , d))) (ι k)) (nth (frames natOps (A.seg tr (A.template d))) k)
-    pt k rewrite segS-at tr d (ι k) | zero≤ι k | ι-<ᵗ k (Tr.dur tr)
-               | nth-frames natOps (A.seg tr (A.template d)) k | TrP.sample-dur Tr.ℚLerp tr
-      with k <ᵇ Tr.dur tr in eq
-    ... | false = noFrame
-    ... | true  =
-      let q  = proj₂ (Tr.sample Tr.ℚLerp tr) k
-          e  = ex k eq
-      in bothFrames (trans (cong layoutQ (fold-algD d _))
-           (trans (cong (λ r → layoutQ (instQ d r)) (trans (sampleAt-ι Tr.ℚLerp tr k) (proj₁ e)))
-                  (sym (faithful-layout (λ _ → units q) d (proj₂ e)))))
+    seg = A.seg tr (A.template d)
+    pt : ∀ k → RelR (proj₂ (sample algD bindD (segS (tr , d))) (ι k)) (nth (frames natOps seg) k)
+    pt k = subst₂ RelR (sym e₁) (sym e₂) (core (k <ᵇ Tr.dur tr) refl)
+      where
+        e₁ = trans (segS-at tr d (ι k)) (guard-eq _ nothing (win-ι k (Tr.dur tr)))
+        e₂ = trans (nth-frames natOps seg k) (guard-eq _ nothing (cong (k <ᵇ_) (TrP.sample-dur Tr.ℚLerp tr)))
+        q = proj₂ (Tr.sample Tr.ℚLerp tr) k
+        core : ∀ b → (k <ᵇ Tr.dur tr) ≡ b →
+               RelR (if b then just (bindD (proj₂ (sampleAt Tr.ℚLerp tr) (ι k)) (fold algD d)) else nothing)
+                    (if b then just (A.body natOps seg q) else nothing)
+        core false _  = noFrame
+        core true  eq =
+          let e = ex k eq
+          in bothFrames (trans (cong layoutQ (fold-algD d _))
+               (trans (cong (λ r → layoutQ (instQ d r)) (trans (sampleAt-ι Tr.ℚLerp tr k) (proj₁ e)))
+                      (sym (faithful-layout (λ _ → units q) d (proj₂ e)))))
 
 ------------------------------------------------------------------------
 -- The theorem, tick by tick
@@ -209,15 +216,11 @@ frameQ t τ = Maybe.map layoutQ (proj₂ (framesD (embed t)) τ)
 
 -- STATEMENT: the continuous frame of the scene at a whole tick `k` is the discrete frame sent
 -- through `ι` (compare `Slides.Anim.Assembly.Continuous.frameAt-assembly-all`)
-RelR-just : ∀ {m F} → RelR m (just F) → ∃ λ g → m ≡ just g × layoutQ (g 0ℚ) ≡ mapLayout ι (layoutN F)
-RelR-just (bothFrames {g} s) = g , refl , s
+frame-of : ∀ m F → RelR m (just F) → Maybe.map layoutQ (Maybe.map (λ h → h 0ℚ) m) ≡ just (mapLayout ι (layoutN F))
+frame-of .(just _) F (bothFrames s) = cong just s
 
 frameAt-assembly′ :
   ∀ t → AllExactT t → ∀ k → (k <ᵇ A.dur (toAnim t)) ≡ true →
   ∃ λ F → nth (LS t) k ≡ just F × frameQ t (ι k) ≡ just (mapLayout ι (layoutN F))
 frameAt-assembly′ t ex k hk with nth-in (LS t) k (subst (λ n → (k <ᵇ n) ≡ true) (sym (TLP.length-dur natOps (toAnim t))) hk)
-... | F , eF = F , eF , go (subst (RelR (proj₂ (QS t) (ι k))) eF (atR (assembly t ex) k))
-  where
-    go : RelR (proj₂ (QS t) (ι k)) (just F) → frameQ t (ι k) ≡ just (mapLayout ι (layoutN F))
-    go r with RelR-just r
-    ... | g , e , s = trans (cong (λ m → Maybe.map layoutQ (Maybe.map (λ h → h 0ℚ) m)) e) (cong just s)
+... | F , eF = F , eF , frame-of (proj₂ (QS t) (ι k)) F (subst (RelR (proj₂ (QS t) (ι k))) eF (atR (assembly t ex) k))
