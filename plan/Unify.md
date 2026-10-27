@@ -47,37 +47,97 @@ So the proposal is **static-structure FRP, as a free monad**:
 4. **Interpretation is an algebra into `Timed A`**, `ℕ × (Time → Maybe A)` (duration and a
    partial function of time, as `Timed` in `Slides.Anim.Continuous`). Spatial operations act
    *pointwise* (the reader applicative), temporal ones are `seqAt`/`parAt`.
-5. **Events are boundaries, not a dynamic primitive.** `Seq` is "switch at a statically known
-   time". Genuine `switch`/`until` with data-dependent times, stateful `integral`, and
-   input from the user are *out of scope* for the shippable core; if wanted they are a
-   separate, non-symbolic layer (see risks).
+5. **User input is a parameter of the program, not a dynamic primitive.** Commands
+   (`next`, `prev`, `goto k`, a clock tick, a click on a named element) form a type `C`;
+   a program is indexed by the commands it awaits, `Prog C S`. `await c` is a one-child
+   operation of a container `AwaitC C = C ▷ (λ _ → ⊤)`; today's `pause` *is* `await next`
+   (`Slides.Steps` is its first elaboration). Alternatives (which of several commands arrives)
+   are an operation with one child per command. Time itself is a command, `tick`, so a backend
+   with no clock (print, a static page) simply does not support it. See section 3.
+6. **Events are boundaries, not data-dependent switching.** `Seq` is "switch at a statically
+   known time"; a command is "switch when this input arrives". Genuine `switch` on a *value*,
+   stateful `integral`, and unbounded history are out of scope for the shippable core.
 
 Note the consequence: the monad of the free structure is used for *substitution and
-composition of programs*, not for dynamic dependence on values. That is what keeps shipping
+composition of programs*, not for dynamic dependence on values; the only dynamism is the
+finite control graph that the awaited commands induce. That is what keeps shipping
 and proofs possible.
 
-## 3. Staged plan
+## 3. User input
+
+Requirement: slides change by user commands, so input comes first. The program must be
+parametric in the commands it uses; a backend supports only a subset; composing programs is
+only valid when their inputs do not overlap.
+
+**Design.**
+- *Commands are an abstract type* `C` (a datatype of intents, not of keys: `next`, `prev`,
+  `goto n`, `tick`, `click name`). Programs are `Prog C S = (SceneC S ⊎ AwaitC C) ⋆ A`, the free
+  monad on the sum container (`Container.Sum` again). Smart constructors: `await c`,
+  `onEither (c₁ ⇒ p₁ ∣ c₂ ⇒ p₂)`, `repeat`.
+- *Meaning is a machine, obtained by an algebra.* Fold a program into
+  `Machine C = (state Q, step : Q → C → Q, view : Q → Frame-in-time)`: a Moore machine, the
+  coalgebra dual to the free monad. Syntax stays a free monad; the running system is the
+  coalgebra the algebra produces, so cycles (back/forward) are fine without recursion in the
+  syntax. A `Seq` of slides is a machine whose `next` moves one state on; `Par` of
+  programs is the *product* of machines, with `view (q₁,q₂) = view₁ q₁ ∥ view₂ q₂`.
+- *Parametric in commands, composition disjoint by construction.*
+  `_‖_ : Prog C₁ A → Prog C₂ A → Prog (C₁ ⊎ C₂) A`: each side reacts only to its own
+  summand, so the disjointness condition holds by construction and is a type, not a check.
+  Sharing one physical input between two parts is not composition; it is a **binding**.
+- *Backends declare what they support, and bind commands to inputs.* `Backend.supports ⊆ C`,
+  plus `bind : C → Input` (reveal: arrow keys, overview, hash `#/n`, fragments; plain: buttons;
+  print: none). Two commands bound to the same input are a conflict, checked at binding
+  (decidable injectivity, reported like our existing negative tests `OverlappingPar`,
+  `NonUniformBoth`). A program that uses a command the backend does not support is either
+  rejected or *lowered*: `Container.Lowering` already exists for this (`supports`/`uses`,
+  Plan item 6), so an animation lowers to its rest frames on print, a clockless page to its
+  steps, and so on.
+- *Decision for the author* (section 8, Q4): if you want "overlap is a type error at the point
+  of composition" even for a global key vocabulary, we index by a list `uses : List C` and
+  require `Disjoint uses₁ uses₂` (decidable, a `True` argument as the DSL already does). It is
+  closer to your sentence, costs a list-reasoning layer, and makes composition partial. The
+  sum-indexed design is cheaper and total, and moves the same check to binding.
+
+**Proof obligations (planned).**
+- *Elaboration is a homomorphism:* `machine (p ‖ q) ≅ machine p × machine q` (product of
+  Moore machines), and `machine (p ⨾ q)` is sequencing.
+- *Lowering is sound:* a program that uses only supported commands has the same behaviour
+  under the backend and under the generic semantics; unsupported ones agree with the
+  documented default.
+- *Pause is `await next`:* `Slides.Steps` results (`go-bind`) restated as an instance.
+- *Time is just a command:* the continuous semantics is the machine run on `tick`s of real
+  duration (the limit of its sampling), with `sampleAt-ι` as the relation on whole ticks.
+
+## 4. Staged plan
 
 Each stage ends with `make check`, `make test`, `make test-negative`, the browser tests, a
 closure check, and a compile-time/memory measurement against the figures in Plan item 9. Each
 stage keeps every existing theorem as a corollary or states why it moved.
 
 **Stage 0: decide and de-risk (no change to `main`).** Spike in `src/Slides/Spike/`:
-- one `TimeC`, one `Timed`, and the pointwise lift of the *layout* algebra to `Timed (Layout S)`.
-  Question: does `Beside` of a present and an absent side (the `Maybe` in `Timed`) have the
-  right unit? `Par` uses `Atop` with absence as unit today (`Timeline.merge`); check it is the
-  same law.
+- `AwaitC C`, the sum with `DiagramC`, and the fold into a Moore machine `Machine C`; show
+  `pause` is `await next` and that `Slides.Steps` falls out as an instance.
+- one `TimeC`, one `Timed`, and the pointwise lift of the *layout* algebra to
+  `Timed (Layout S)`. Does `Beside` of a present and an absent side (the `Maybe` in `Timed`)
+  have the right unit? `Par` uses `Atop` with absence as unit today (`Timeline.merge`).
 - prove the lifting lemma `sample (fold (lift alg) t) τ ≡ fold alg (restrict t τ)` for the
-  spatial fragment. If this lemma is not cheap, the whole plan is not.
+  spatial fragment, and the product lemma `machine (p ‖ q) ≅ machine p × machine q`.
 - measure the instantiation cost (the generic `ParamCorrect` cost 53 s; do not repeat that).
-Go/no-go: lifting lemma proved in under about 150 lines and under about 30 s.
+Go/no-go: both lemmas proved in under about 150 lines each and under about 30 s.
 
-**Stage 1: time as a variable context.** Generalise `Expr ⊤` to `Expr V` in `SegBody.template`
-with `V = Time`. No behaviour change. Add `Ease` to the scalar signature as a unary
-operation (a new layer, as `SubC` and `EuclidC` are) so an easing is a term, not a `Track`
-side-table; the JS player already implements easings. `Track` becomes a derived notion: a
-piecewise behaviour built from `Seq` of `Ease` pieces. Needs an ordered layer (`Lt`, `clamp`)
-in ℚ, parallel to `EuclidC`'s ℕ-only `Lt`.
+**Stage 1: user input as a parameter (first, because slide change needs it).** Introduce
+`C`, `AwaitC`, `Prog C`, `machine`, `supports`, `bind`, and the conflict check; port
+`pause`/fragments, reveal's next/prev, and the plain backend's buttons onto it with
+*no change in output* (goldens and browser tests unchanged). `Lowering` handles unsupported
+commands. Add negative tests: a backend that cannot bind a used command; two commands bound
+to one input.
+
+**Stage 1b: time as a variable context.** Generalise `Expr ⊤` to `Expr V` in
+`SegBody.template`, `V` containing the time variable. No behaviour change. Add `Ease` to
+the scalar signature as a unary operation (a new layer, as `SubC` and `EuclidC` are), so
+an easing is a term instead of a `Track` side-table; the JS player already implements
+easings. `Track` becomes derived: `Seq` of `Ease` pieces. Needs an ordered layer (`Lt`,
+`clamp`) in ℚ parallel to `EuclidC`'s ℕ-only `Lt`.
 
 **Stage 2: one temporal container.** Replace `AnimC` by `TimeC`, and `Seg` by "a scene node
 with a duration". `foldA`, `dur`, `animAt` become instances of the generic `Timed` algebra.
@@ -85,7 +145,7 @@ Expected to delete or shrink: `Anim.Assembly`, `Anim.Assembly.Leaf`, `Anim.Assem
 (three proofs of "assembly" for three readings of time), parts of `Timeline`/`Footprint`.
 Proofs to re-derive: `discrete-assembly`, `frameAt-assembly`, `atop-ι`, `sampleAt-ι`.
 
-**Stage 3: loops, phases, steps as time operations.** `Repeat` replaces `Loop`; `both` becomes
+**Stage 3: loops, phases, steps as time and input operations.** `Repeat` replaces `Loop`; `both` becomes
 `Repeat` of a stepped scene; `pause` becomes a `Seq` boundary in a *discrete* clock, so
 `Slides.Steps` is an instance of the same temporal elaboration. Re-derive `phases-active`,
 `enc-sem`, `Steps.go-bind`. Backends read fragments off `Seq` boundaries.
@@ -100,7 +160,7 @@ geometric layout stay different algebras on the same signature of time).
 the JS `ev` from it (closes the "tested, not proved" gap in the direction of one source), and
 fold the player's phases/params paths into one.
 
-## 4. Pros and cons
+## 5. Pros and cons
 
 **Pros**
 - *Less code, fewer duplicated proofs.* Today there are three "assembly" proofs and three
@@ -113,9 +173,14 @@ fold the player's phases/params paths into one.
 - *Shippable.* Static structure keeps everything symbolic: one layout, formulas, shared
   subformulas, `Share`/`Phases` encodings still apply.
 - *Single player, single evaluator*, generated from the signature.
+- *Input is uniform.* Slide change, fragments, loops and a clock are all `await`; backends
+  differ only in `supports` and `bind`, with unsupported commands lowered instead of failing.
 - *Authoring.* A still diagram is a constant animation, and a slide is a scene; one DSL.
 
 **Cons and risks**
+- *Input adds a coalgebra.* The control machine is a second carrier next to the algebra into
+  `Timed`; the product lemma and lowering soundness are new proofs, and `Lowering` has to
+  carry command sets (`supports`/`uses`) that it does not carry today.
 - *Large change to proved code.* Roughly 40 modules touch `Anim`; all assembly and
   phases proofs are re-derived, not just moved. Needs a firm go/no-go at Stage 0.
 - *Compile time and memory.* Generic proofs over a sum container instantiated at several
@@ -128,8 +193,10 @@ fold the player's phases/params paths into one.
 - *Easing and nonlinear ops in the signature* have no ℕ meaning and are not
   ring homomorphisms; the discrete reading (`units`, floor) must stay a separate
   interpretation, so "one semantics" is really two (ℚ, ℕ) with a proved relation on whole ticks.
-- *FRP promises we will not keep.* No data-dependent `switch`, no `integral`/state, no user
-  input in the shippable core. If someone wants those, they live outside the symbolic
+- *FRP promises we will not keep.* No value-dependent `switch`, no `integral`/state. User
+  input is supported only as a finite alphabet of commands with a finite control graph; a
+  free-form input (a pointer position, a slider value) is a variable of a behaviour, not a
+  command, and needs its own treatment (not in Stage 1). If someone wants those, they live outside the symbolic
   pipeline, and the docs must say so plainly.
 - *Decks are a poor fit for a single time axis.* HTML flow content, citations, numbering and
   figures are not temporal; forcing them into `TimeC` risks an abstraction that is mostly
@@ -137,7 +204,7 @@ fold the player's phases/params paths into one.
 - *Function-valued semantics under `--without-K`.* `Time → A` equality needs pointwise
   reasoning (`Eq`-respect, as in `evalWith-unique`); every statement is pointwise.
 
-## 5. Alternatives considered
+## 6. Alternatives considered
 
 - **Do nothing; share only a `Timed` module.** Cheapest; removes little duplication, leaves
   three proof families. Fallback if Stage 0 fails.
@@ -149,17 +216,44 @@ fold the player's phases/params paths into one.
 - **Reader-monad semantics only, no free monad for time.** Loses `Seq`/`Par` as data (for
   `dur`, footprints, phases, symbolic shipping). Rejected: violates the free-monad ground rule.
 
-## 6. Recommendation
+## 7. Recommendation
 
-Do Stages 0 and 1 (low risk, mostly reinterpretation of what exists), then decide on Stage 2
-from the Stage 0 numbers. Treat Stages 3 and 4 as separately approvable. Do not promise
-dynamic FRP; promise *static-structure reactive programs with a closed-form, proved
+Do Stage 0, then Stage 1 (input; low risk, because `pause` and navigation already are this
+shape) and 1b (mostly reinterpretation of what exists), then decide on Stage 2 from the
+Stage 0 numbers. Treat Stages 3 and 4 as separately approvable. Do not promise
+value-dependent FRP; promise *static-structure reactive programs with a closed-form, proved
 semantics*, which is what the backends can actually compile.
 
-## 7. Questions for the author
+## 8. Answers so far and open questions
 
-1. Is user input (clicks, a slider) a goal, or only time and step?
-2. Is dropping the `blackBox` segment (flipbook-only) acceptable once templates cover the
-   decks, or must arbitrary `ℚ → Dia S` stay?
-3. Should the ℕ/discrete reading remain a first-class backend (reveal fragments), or become
-   "the ℚ reading sampled at ticks" with the relation proved once?
+Answered: user input comes early, as a parameter of the program (section 3). `blackBox`
+segments can go once templates cover the decks (a flipbook remains as a lowering target,
+not as syntax).
+
+**Discrete time: is there a downside?** Keep it; the question is only which role it plays.
+- *Events are discrete, behaviours are continuous.* That is the FRP split, not a compromise:
+  commands, steps and slide changes arrive at instants and index a finite state; within a
+  state, a behaviour is a function of real time. Reveal fragments and the control machine
+  are naturally discrete (`ℕ`-indexed states).
+- *Benefits of the ℕ reading:* exact arithmetic (our reference deck compares exactly at ticks;
+  no rounding in goldens), decidable equality, hash-consed shared formulas, `mod` for loops.
+- *Costs:* (1) two semantics, tied by `sampleAt-ι` only on whole ticks; (2) between ticks the
+  discrete reading holds the previous frame, so smooth playback needs the ℚ reading anyway;
+  (3) the `Euclid` operations (`DivBy`, `ModBy`, `Lt`) mean something only in ℕ, so
+  discrete templates cannot be mixed with fractional time (the current "whole animation is
+  discrete" restriction); (4) non-integer stretch or tempo changes need rounding (Hudak's
+  `zero (a + b)` issue that `Anim.Syntax` already notes).
+- *Resolution proposed:* ℚ is the one semantics of behaviours; ℕ is the *clock of the
+  control machine* and the reading of a ℚ behaviour at whole ticks (relation proved once,
+  `ι` is a faithful homomorphism). Add `floor`, `mod`, `lt` to the ℚ ordered layer so the
+  `Euclid` templates have a ℚ meaning, and then the ℕ reading is a restriction, not a
+  separate language. No downside to keeping discrete *control*; the only thing to avoid is
+  keeping two full *value* languages for ever.
+
+Open:
+4. Disjointness: total composition at `C₁ ⊎ C₂` with the conflict check at binding (cheaper), or
+   a `uses` index and a disjointness proof at each `‖` (closer to your sentence)?
+5. Is `tick` (a clock) a command like any other, so that clockless backends lower animations
+   to rest frames? (This plan assumes yes.)
+6. Which inputs should the first version support beyond next/prev/goto: click on a named
+   element, a key chord, a slider value?
