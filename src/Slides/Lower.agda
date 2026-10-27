@@ -33,7 +33,7 @@ open import Data.Container.Core using (Shape)
 open import Data.Container.FreeMonad using (pure; impure)
 
 open import Container.Lowering
-open import Container.Sum using (inl; inr)
+open import Container.Sum using (inl)
 open import Slides.Core
 open import Slides.Diagram using (Diagram)
 open import Slides.Input.Deck
@@ -137,7 +137,8 @@ module _ {C : Set} (b : Supports C) where
   -- Lower the awaited commands of a body; blocks are kept.
   lowerCmdBlock : Lowering (DeckBlockC C) (BlockAwaitC (S b))
   lowerCmdBlock (inj₁ s) = impure (inj₁ s , pure)
-  lowerCmdBlock (inj₂ k) = lower (embed inr) (lowerCmd k)
+  lowerCmdBlock (inj₂ (inj₁ k)) = lower (embed awaitIn) (lowerCmd k)
+  lowerCmdBlock (inj₂ (inj₂ l)) = labelB l
 
   lowerCmdBody : Body⁺ (Nav ⊎ C) → Body⁺ (S b)
   lowerCmdBody = lower lowerCmdBlock

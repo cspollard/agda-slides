@@ -48,7 +48,7 @@ isNextS b s with dec b s
 -- Elaboration: `pause ↦ await next`
 
 elabS : ∀ {C : Set} → LayoutShape → Shape (DeckBlockC C)
-elabS pause = inj₂ (inj₁ next)
+elabS pause = inj₂ (inj₁ (inj₁ next))
 elabS l     = inj₁ (inj₂ l)
 
 elabL : ∀ {C : Set} → Lowering BlockC (DeckBlockC C)
@@ -69,7 +69,8 @@ module _ {X : Set} (step? : X → Bool) where
   goBy m (pure x)                      = pure x
   goBy m (impure (inj₁ (inj₁ c) , k))  = wrapC m c >>= λ _ → goBy m (k tt)
   goBy m (impure (inj₁ (inj₂ l) , k))  = proj₂ (stepL m l) >>= λ _ → goBy (proj₁ (stepL m l)) (k tt)
-  goBy m (impure (inj₂ x , k))         = goBy (m ∨ step? x) (k tt)
+  goBy m (impure (inj₂ (inj₁ x) , k))  = goBy (m ∨ step? x) (k tt)
+  goBy m (impure (inj₂ (inj₂ _) , k))  = goBy m (k tt)     -- a label shows nothing
 
   stepsBy : Body⁺ X → Body
   stepsBy = goBy false
@@ -79,4 +80,5 @@ module _ {X : Set} (step? : X → Bool) where
   afterBy m (pure _)                     = m
   afterBy m (impure (inj₁ (inj₁ _) , k)) = afterBy m (k tt)
   afterBy m (impure (inj₁ (inj₂ l) , k)) = afterBy (proj₁ (stepL m l)) (k tt)
-  afterBy m (impure (inj₂ x , k))        = afterBy (m ∨ step? x) (k tt)
+  afterBy m (impure (inj₂ (inj₁ x) , k)) = afterBy (m ∨ step? x) (k tt)
+  afterBy m (impure (inj₂ (inj₂ _) , k)) = afterBy m (k tt)
