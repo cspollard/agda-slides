@@ -23,7 +23,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    - *Parametric bodies* (built; see `docs/Design.md`, "Animations"). `Slides.Diagram.Expr`:
      `Expr V = ExprC ⋆ V`, the free `Ops`-algebra (a free monad) over variables, with
      `evalWith O ρ` its fold, an `Ops`-homomorphism by `refl` (`evalWith-hom`), and `subst`
-     the fold into `exprOps` (a homomorphism too, `evalWith-subst`). `Slides.Diagram.LayoutNatural`:
+     the fold into `exprOps` (a homomorphism too, `evalWith-subst`). `Slides.Diagram.Layout.Properties`:
      `layout-natural`, `mapLayout h (layout_S d) ≡ layout_T (mapDia h d)` for an `IsOpsHom`
      `h` (six equations, no order, no condition on `-`), proved for every operation of
      `Place`; `layout-eval`, `layout-subst`. `SegBody S = blackBox (ℚ → Dia S) | template
@@ -41,7 +41,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `none` padding) against the frames Agda computes from the functions; the intro deck's
      slider is a template.
      Left:
-     - (Proved, `Slides.Anim.ParamCorrect`: the frame at tick `k` is the symbolic layout at
+     - (Proved, `Slides.Anim.Param.Properties`: the frame at tick `k` is the symbolic layout at
        the assignment `i ↦ (parameter of segment i at tick k)`, `discrete-assembly`,
        `paramOf-assembly-canonical`, with the shipped segments identified.)
      - Built: layered signatures (core, sub) and the Euclidean layer, `SegBody.discrete`
@@ -64,7 +64,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      `sampleAt-ι`, `leafAt-ι`, `leaf-tick` (with `Faithful`), `parAt-time`, `seqAt-*`,
      `animAt-dur`, `piece-hold`, `piece-start`. Tested only: the JavaScript (float easings,
      evaluator) against exact `frameAt` at every tick and quarter tick.
-     Proved at whole ticks, `Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: the
+     Proved at whole ticks, `Slides.Anim.Assembly.Continuous` (`frameAt-assembly`: the
      continuous frame is the discrete one through `ι` when the segments running at that tick
      satisfy `leaf-tick`'s hypotheses; `atop` needs none, `AtopNatural`) and
      `Slides.Anim.Formula`/`Phases` (shipped formulas and phases mean the symbolic frame).
@@ -75,19 +75,19 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      bodies stay discrete.
    - *`Expr` through the generic theory.* `Slides.Diagram.Expr` is already `ExprC ⋆ V`;
      route `evalWith` through `Container.FreeMonad.Algebraic` (`fold-agrees`, as in
-     `Slides.Diagram.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
+     `Slides.Diagram.Syntax.Properties.Generic`), `subst` as `_>>=_`, `rename` as `fmap`, with the monad laws
      from `Container.FreeMonad` (`Eq`, `bind-cong`, `join-assoc`).
    A CSS-transition emitter does not belong here: it adds smoothness, not compression.
-3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Generic` and
-   `Slides.Anim.Generic` show that `fold` and `foldA` are the generic fold
-   (`fold-agrees`); `Slides.Diagram.MapFusion` shows `mapDia f` is translation along the
+3. **Use the generic `Container.*` theory for `Dia`.** Done: `Slides.Diagram.Syntax.Properties.Generic` and
+   `Slides.Anim.Syntax.Properties.Generic` show that `fold` and `foldA` are the generic fold
+   (`fold-agrees`); `Slides.Diagram.Syntax.Properties.MapFusion` shows `mapDia f` is translation along the
    container morphism `scalarMor f` (identity on positions), hence functorial up to
    equality of programs (`mapDia-id`, `mapDia-∘`) and `fold α (mapDia f d) ≈ fold (pull
    (scalarMor f) α) d` for congruent `α` (`fold-mapDia`). Left: monad laws for
    `Dia`-with-holes if templates are wanted; pulling `Layout` back along a scalar map
    needs the map to be an ordered-ring homomorphism (see `docs/Design.md`).
-4. **Laws left over for diagrams** (`Slides.Diagram.Laws`):
-   - Done in `Slides.Diagram.Valid` (for ℤ and ℚ, via an `IsOrdered` record: the sum keeps
+4. **Laws left over for diagrams** (`Slides.Diagram.Place.Properties.Laws`):
+   - Done in `Slides.Diagram.Place.Properties.Valid` (for ℤ and ℚ, via an `IsOrdered` record: the sum keeps
      non-negativity, `fromℕ` is non-negative, `⊔` idempotent): every operation keeps a layout
      `Valid` (`valid-layout`: a term whose sized leaves are non-negative, `WellSized`, is valid;
      the hypotheses are needed, `invalid-rectangle`); `↔ m ∥ ↔ n ≈ ↔ (m + n)` (and `↕`, `⊙`);
@@ -145,7 +145,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      is not rational `gcd` (the ℤ checks cost as much, 2 to 5 s per diagram): it is the
      layout evaluation itself, linear in diagram size, so only smaller diagrams would
      help; left as is.
-   - *RTS flags.* Clean check of `Slides.Examples.PairsScalar` (and its 85 s of imports),
+   - *RTS flags.* Clean check of `Slides.Examples.Pairs.Properties` (and its 85 s of imports),
      user time and peak RSS, machine loaded (noise about 10%): default 82 to 89 s,
      1.4 GB; `-A64m` 105 s; `-A256m` 90 s, 1.1 GB; `-A1g` 69 to 71 s, 1.5 to 2.2 GB;
      `-A2g` 68 s, 3 GB (swaps); `-A256m -n4m`, `-A256m -c`, `-A256m -G3` no gain;
@@ -159,7 +159,7 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    (`--profile=modules`): 634 s, 5.3 GB peak RSS, 30% in GC. Heavy modules: `Anim.Track` 131 s
    (one definition, `reversal`), `Anim.ContinuousAssembly` 111 s, `Anim.Continuous` 67 s,
    `Anim.DPhases` 63 s, `Examples.PairsScalar` 58 s, `Anim.DParamCorrect` 54 s,
-   `Anim.ParamCorrect` 30 s, `Container.FreeMonad.Monadic` 25 s; each module also spends 20-57 s
+   `Anim.ParamCorrect` 30 s, `Container.FreeMonad.Properties.Monadic` 25 s; each module also spends 20-57 s
    "Miscellaneous" loading and re-serialising big interfaces, so time and memory follow how much
    a module imports. Every executable imported 56-59 modules / 10.9-11.7K lines because runtime
    code and proofs shared files. Done, consolidation first:
@@ -187,11 +187,27 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      0.3 s (the instantiation cost now shows in `ParamCorrect`, 57 s: net -27 s for the pair).
      A cold `make example talk plain showcase pairs animref` (GHC included) took 627 s, agda
      peaking at 1.8 GB resident.
-   Remaining: `Anim.Track` (`reversal`) and `PairsScalar` belong to the hot-proofs work;
+   - *`X.Properties` split* (convention in `docs/Design.md`, "Module conventions"). Every proof
+     module was renamed to `X.Properties` (or a topic `X.Properties.<Topic>`), and the mixed modules
+     were split: `Track`, `Continuous`, `NatQ`, `Delta`, `Timeline`, `Anim.Syntax`, `Footprint`,
+     `Signature`, `Expr`, `Euclid`, `Names`, `Lower`, `Render`, `Backend.Plain`/`Reveal`/`XML`,
+     `Share` (the AVL membership modules), `Container.Lowering`/`Interpret`/`Sum`/`FreeMonad`/
+     `FreeMonad.Algebraic`; `ExprQ` became `Expr.Properties.Faithful`. `tests/check_closure.py`
+     (in `make test`) fails if an executable's closure holds a `.Properties` or `Anim.Assembly`
+     module. Executable closures (modules / lines), before -> after: PairsMain 50 / 8,003 -> 50 / 6,997;
+     IntroMain 50 / 7,526 -> 50 / 6,458; ShowcaseMain 50 / 7,442 -> 50 / 6,455; Plain/TalkMain
+     49 / 7,212 -> 49 / 6,235; AnimRefMain 56 / 8,868 -> 54 / 7,002.
+   - *Measured* (same machine): clean typecheck of Everything 197 s, peak RSS 6.25 GB (the same
+     tree before the splits but after the renames: 330 s, 5.9 GB; the recorded baseline above was
+     358 s, 4.9 GB, so the memory did not drop: more, smaller interfaces are loaded at once). Cold
+     compile of PairsMain (`agda --compile`, `-O0`, agda and GHC together, parsnip pre-built):
+     276 s, 2.6 GB before -> 108 s, 2.2 GB after; the generated Haskell goes from 605 modules /
+     1.10 M lines to 482 / 0.58 M.
+   Remaining: `Anim.Track` (`reversal`) and `Examples.Pairs.Properties` belong to the hot-proofs work;
    `ContinuousAssembly` (107 s) and `Continuous` (67 s) are now outside every deck executable
    except `animref`, and could be sped up by explicit signatures / `abstract` for the big `with`
-   proofs; the proof parts of `Expr`, `Euclid`, `Anim.Syntax`, `Delta` (about 300 lines in all) are
-   still in the runtime modules; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
+   proofs; the categorical objects of `Container.*` (`Free₀`, `Alg`, `Poly`) keep their proofs because they are
+   the definitions; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
    target `make spike`). `--erasure` was not tried. Peak memory is still set by the single
    `make check` process; the lever is fewer, smaller interfaces per module.
 10. **Unify more of the core ideas.** Diagrams, animations and slides are each built the same

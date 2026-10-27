@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Containers and lowerings form a category.
 --
 -- Objects are containers, arrows are lowerings (Kleisli arrows of the free
@@ -17,6 +19,8 @@ open import Categories.Category.Core using (Category)
 
 open import Container.Lowering
 
+
+open import Container.Lowering.Properties
 Lowerings : Category (suc 0ℓ) 0ℓ 0ℓ
 Lowerings = record
   { Obj       = Container 0ℓ 0ℓ

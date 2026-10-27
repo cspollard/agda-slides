@@ -9,11 +9,11 @@
 -- discrete one is used as it is.  The segments are numbered left to right, the variable of each
 -- renamed to its own (`renameD`, a substitution), and the symbolic frames laid out once.
 --
--- Agreement (`Slides.Anim.DParamCorrect`): the frame of the animation at tick `k` -- computed in
+-- Agreement (`Slides.Anim.DParam.Properties`): the frame of the animation at tick `k` -- computed in
 -- ℕ from the functions -- is the symbolic layout of tick `k` evaluated in ℕ at the assignment
 -- `i ↦ (parameter of segment i at tick k)`.  One segment is `dleaf-agrees`: laying the renamed
 -- template out symbolically and evaluating it is laying out the template at the segment's own
--- parameter (`Slides.Diagram.EuclidNatural.layout-substD`).
+-- parameter (`Slides.Diagram.Euclid.Properties.Layout.layout-substD`).
 --
 -- What the page shows.  The page evaluates the formulas in ℕ (`Slides.Anim.Formula.encD`), at
 -- the whole tick `k = ⌊τ⌋` of real time `τ`: for `k ≤ τ < k+1` it shows the frame of tick

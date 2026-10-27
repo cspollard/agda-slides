@@ -29,7 +29,7 @@ that equalities of continuations need no function extensionality:
 | `Container.Polynomial.Morphism` | container morphisms are natural transformations; identity and composition are preserved |
 | `Container.FreeMonad` | `Free C` is a `Monad` on `Setoids`; tree equality is by recursion, not an inductive family (an indexed family would live in a universe that depends on the carrier level) |
 | `Container.FreeMonad.Algebraic` | the forgetful functor from `F-Algebras ⟦C⟧`, `Free C X` as a `FreeObject`, the adjunction `Free ⊣ Forget`, and its monad is isomorphic to `Free C` (key lemma: `fold-bind`) |
-| `Container.FreeMonad.Monadic` | that adjunction is monadic: `⟦C⟧`-algebras (backends) are exactly the Eilenberg–Moore algebras of the free monad |
+| `Container.FreeMonad.Properties.Monadic` | that adjunction is monadic: `⟦C⟧`-algebras (backends) are exactly the Eilenberg–Moore algebras of the free monad |
 | `Container.Interpret` | `Free C ⊥` is the initial algebra (Lambek); folds commute with algebra homomorphisms; fusion (translating along a container morphism, then folding, is folding with the pulled-back algebra) |
 | `Container.Sum` | `⟦C₁ ⊎ C₂⟧ A ≅ ⟦C₁⟧ A ⊎ ⟦C₂⟧ A`, and `copair` of algebras with its universal property: this is how backends for separate vocabularies combine |
 | `Container.Lowering`, `Container.Category` | a *lowering* sends each command to a program (a Kleisli map between containers); `lower`, `_>=>_`, the category of containers and lowerings, and `lower-fusion` |
@@ -143,12 +143,12 @@ Decisions that shaped it:
   gap parameter. `LabelAbove`/`LabelBelow` stay operations: their spacer is as tall
   as the caption's laid-out height.
 - **Scalar in the syntax.** `Dia S` carries sizes of type `S` (decks use ℕ), so
-  `mapDia` changes the scalar (`PairsScalar` checks that ℕ, ℤ and ℚ lay the Pairs
+  `mapDia` changes the scalar (`Examples.Pairs.Properties` checks that ℕ, ℤ and ℚ lay the Pairs
   diagrams out identically). A naturality theorem needs the map to be an `Ops`
   homomorphism (`IsOpsHom`): `intOps` floors percent ports, so ℤ→ℚ is not one, and ℕ→ℤ
   breaks on monus. For a homomorphism it is proved, `mapLayout h (layout d) ≡ layout
-  (mapDia h d)` (`Slides.Diagram.LayoutNatural`), and the evaluation of the free
-  scalar `Slides.Diagram.Expr` into ℕ is one. The earlier provable parts are in `Slides.Diagram.MapFusion`: `mapDia f` is
+  (mapDia h d)` (`Slides.Diagram.Layout.Properties`), and the evaluation of the free
+  scalar `Slides.Diagram.Expr` into ℕ is one. The earlier provable parts are in `Slides.Diagram.Syntax.Properties.MapFusion`: `mapDia f` is
   translation along a container morphism, so it is functorial (up to equality of programs)
   and folding after it is folding with the pulled-back algebra (`fold-mapDia`), for any
   renderer with congruent handlers. Transporting a *layout* along `f` additionally needs a
@@ -162,12 +162,12 @@ Decisions that shaped it:
 - **Equality is the scalar's own** (`IsLawful` takes a stdlib `IsCommutativeRing _≈_`
   plus a maximum), not `_≡_`, so a constructive real would be a scalar too.
 - **`Names` are scoped per `connect`**: a `connect` resolves against the names declared
-  inside its own diagram, which is what makes `NamesSound` true.
+  inside its own diagram, which is what makes `Names.Properties.Soundness` true.
 - **No escape hatch.** `Raw` (elements in final coordinates) was unused and the one
   operation outside the translation law; it was removed.
 - **Stdlib has no ordered ring** (checked at `8326c7475`): no `IsOrderedRing`,
   ordered field or `sqrt` for ℕ. `Nonneg x` is `0# ⊔ x ≈ x`, the join-semilattice order.
-- **`Valid` is preserved by every operation** (`Slides.Diagram.Valid`), given an `IsOrdered`
+- **`Valid` is preserved by every operation** (`Slides.Diagram.Place.Properties.Valid`), given an `IsOrdered`
   record on the scalar (sum keeps non-negativity, `fromℕ` is non-negative, `⊔` idempotent;
   ℤ and ℚ have it). A term is valid when its sized leaves are (`WellSized`; a negative
   rectangle is not, so the hypothesis cannot be dropped). The same module proves the
@@ -180,11 +180,11 @@ The same pattern again. `AnimC = Seq | Par` (two children each) is a container a
 `Anim S T = AnimC ⋆ T` its free monad, with leaves `Seg S`: a track of a parameter
 (`Slides.Anim.Track`, itself the free monad on `Seq` over pieces with easings) and a
 diagram as a function of that parameter. `dur`, `footprint` and `timeline` are algebras
-(`foldA`); `foldA` is the generic fold (`Slides.Anim.Generic`), and `foldA-bind` is its
+(`foldA`); `foldA` is the generic fold (`Slides.Anim.Syntax.Properties.Generic`), and `foldA-bind` is its
 fusion with `>>=` (a tween is a bind). Laws are proved at the level they are true at:
 the swap law and `merge` on lists of frames (`Timeline`), `footprint` up to permutation,
-`atop` commutative up to permutation of draws (`Slides.Diagram.Commute`), laid-out `Par`
-associative and padding invisible on valid frames (`Slides.Anim.Laws`), tracks
+`atop` commutative up to permutation of draws (`Slides.Diagram.Place.Properties.Commute`), laid-out `Par`
+associative and padding invisible on valid frames (`Slides.Anim.Syntax.Properties.Laws`), tracks
 associative, and reversible, sampled exactly, for `Linear`, `Step` and `StepStart` pieces (`Track`; `Bezier` is approximate), and so are whole tracks whose pieces meet (`reverse-sample`: tick `k` reversed is tick `dur - k`, exactly). Time is whole ticks;
 the backend plays frames on a timer, an act per reveal step, or, for `Play = looping`,
 cyclically (`phase n t = t mod n`, periodic and equal to the timeline on its first period:
@@ -214,24 +214,24 @@ unchanged, evaluated with `evalWith ratOps`; no floor operation), `frameAt` the 
 ℚ differs from the discrete reading: `-` is real subtraction (negative sizes are outside
 `Valid`), percentages are exact, the parameter is not floored. `sampleAt-ι` (whole ticks
 agree with `Track.sample`), `leaf-tick` (the continuous frame is the discrete one through
-`ι` when the template is `Faithful`, `Slides.Diagram.ExprQ`), and the time laws are proved;
+`ι` when the template is `Faithful`, `Slides.Diagram.Expr.Properties.Faithful`), and the time laws are proved;
 the JavaScript is tested against exact ℚ values (`make test-anim-ref`, tolerance 0.01 for
 float easings, 1e-9 at piece boundaries). Layout is natural along an `Ops`-homomorphism, so the
 evaluated symbolic layout is the layout of the instance (`layout-natural`, `layout-eval`,
 `layout-substWith`, `leaf-agrees`). The assembly over a whole timeline is
-proved: `Slides.Anim.LeafAssembly` (one generic induction over the language of the template
-numbers, `assembly`), instantiated by `Slides.Anim.ParamCorrect` (`discrete-assembly`,
+proved: `Slides.Anim.Assembly.Leaf` (one generic induction over the language of the template
+numbers, `assembly`), instantiated by `Slides.Anim.Param.Properties` (`discrete-assembly`,
 `paramOf-assembly`: the shipped
 symbolic layout of tick `k`, evaluated at the parameters of the segments running at `k`, is
 the layout of the frame `render` shows; the induction reads lists of frames as partial
 functions of the tick, `++` and `merge` becoming the algebra of `Continuous`);
-`Slides.Anim.ContinuousAssembly` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
+`Slides.Anim.Assembly.Continuous` (`frameAt-assembly`: at whole ticks `frameAt` is the discrete
 frame through `ι`, given `leaf-tick`'s exactness hypotheses for the segments running there;
-`atop` commutes with `ι` with no hypothesis, `Slides.Diagram.AtopNatural`);
-`Slides.Anim.FormulaCorrect` and `Slides.Anim.PhasesCorrect` (the shipped formulas, with closed
+`atop` commutes with `ι` with no hypothesis, `Slides.Diagram.Place.Properties.Atop`);
+`Slides.Anim.Formula.Properties` and `Slides.Anim.Phases.Properties` (the shipped formulas, with closed
 subformulas folded, mean the coordinates in ℚ, and grouping ticks into phases changes no
 frame: `pageFrame-sem`, proved once for any reading in `Over` and instantiated at ℚ and ℕ in
-`Slides.Anim.PhasesReadings`). The data and encoders the backend runs (`Formula`, `Phases`,
+`Slides.Anim.DPhases.Properties`). The data and encoders the backend runs (`Formula`, `Phases`,
 `DPhases`, `Share`, `SharePhases`) are separate modules from these proofs, so that a
 deck executable does not load the proofs. What is only tested: frames between whole ticks, the printing of the
 phases as JSON and its reading by the player (attribute order, float arithmetic).
@@ -248,8 +248,8 @@ morphism; `Faithful` is exactly the conjunction of the per-layer side conditions
 (`evalD natD`), have one frame per tick (the frame of `⌊τ⌋` between ticks) and are shipped
 as formulas read in ℕ (`"d": 1` in `data-param`; `Formula.encD`, whose folds need no exactness
 condition: `encD-semN`, `enc-numN`). Layout never compares or divides, so it is natural along
-`evalD` unchanged (`EuclidNatural`); `DParamCorrect.discrete-assemblyD` is the assembly
-(an instance of `Slides.Anim.LeafAssembly`), `PhasesReadings.pageFrameD-sem` the shipped phases. A
+`evalD` unchanged (`Diagram.Euclid.Properties.Layout`); `Anim.DParam.Properties.discrete-assemblyD` is the assembly
+(an instance of `Slides.Anim.Assembly.Leaf`), `Anim.DPhases.Properties.pageFrameD-sem` the shipped phases. A
 field layer (exact division by a literal) was not needed. The hero frame is written once over
 any scalar with the three layers (`PairsHero.Frame`); `heroT-correct` proves the template is
 the flipbook frame, and the Pairs deck's two hero loops are `heroD 26 seed`.
@@ -262,7 +262,7 @@ contained a copy of that chain (about `n³` nodes in all; measured 123 KB for on
 their measurements (26 pairs, phases of `data-param`): *(a) absolute placement*: `Place`
 (a child at `(x, y)` of a frame of declared size) and `Overlay` (two children at the corner
 of a declared frame) are `Dia` primitives with layout operations in `Place`, naturality along
-any `Ops`-hom (`LayoutNatural`), names, size and validity laws; the hero frame is an
+any `Ops`-hom (`Diagram.Layout.Properties`), names, size and validity laws; the hero frame is an
 overlay of placed dots, so a coordinate is the pair's own formula: linear, 247,547 characters
 unshared, 7 s. *(b) sharing*: the formulas of a phase are value-numbered into a straight-line
 program (`Slides.Anim.Share`: a store of definitions, each over the parameters and the earlier
@@ -271,12 +271,12 @@ numbers of the elements are nodes over it (`SharePhases`); the page evaluates th
 once per time step, in order, then the numbers. 1,004 definitions for 26 pairs, 18,849
 characters of phases (against 42,732 of edits), the Pairs page 240,278 to 188,951 bytes (each loop 16.9 KB of `data-param`, 25 KB with its markup, against 51 KB as edits); the layout and compile of the deck take about 10 s. Mathematically the
 program is a Kleisli family and its meaning the evaluation of the tree obtained by
-substitution: `ShareCorrect.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
+substitution: `Anim.Share.Properties.unfold-sound` (`sem (unfold ds i) ρ ≡ env ρ ds i`, by induction on the
 store, the law `evalWith-subst` for the shipped syntax), `share-unfold` (the unfolding of the
 shared reference of `g` evaluates equal to `g`, every assignment), and `share-impl`,
 `output-realises` (the shared output reads as the formula, for every reading `Reading` with a
 `Semantics`: instances at ℚ and ℕ), chained through traversals by stability along store
-extensions (`Realises`, `Stable`); `SharePhasesCorrect.pageFrameS-sem` is that sharing changes no
+extensions (`Realises`, `Stable`); `Anim.SharePhases.Properties.pageFrameS-sem` is that sharing changes no
 frame the page draws, with `zeroBase-sem` for the base numbers a formula overwrites (shipped as
 0 so that equal strings are shipped once). Not adopted: simplifying `a + 0` in the encoder (the
 overlay hero has no zero shifts) and inlining single-use definitions (about 16% of the
@@ -285,6 +285,36 @@ Steps and loop combine as a product: `both rests p` lays `p` phases of the steps
 frame `i + φ * n` (`index`, in range and recovering the step by `mod n`), and `renderBoth`
 checks by computation that every phase has acts of the same lengths. Design and open items:
 `plan/Animations.md`.
+
+## Module conventions
+
+Proofs about `X` live in `X.Properties` (the standard library's `Data.List.Base` against
+`Data.List.Properties`). `X` keeps the types, records, functions and instances, and
+everything whose *definition* needs a proof (a field of a record, a retraction behind a
+decidable equality, the `True` witnesses the DSL uses); lemmas, theorems and proof-only
+definitions (relations used only to state laws) go to `X.Properties`. Where a function
+needs a lemma to typecheck, the minimal helper stays private in `X`.
+
+* One `X.Properties` per module `X` (file `X/Properties.agda` next to `X.agda`). A larger or
+  separate development about `X` is a topic module `X.Properties.<Topic>` (for example
+  `Slides.Diagram.Place.Properties.Laws`, `.Commute`, `.Valid`, `.Atop`;
+  `Slides.Anim.Syntax.Properties.Laws`, `.Generic`); topic modules may import `X.Properties`.
+  There is no re-exporting umbrella module.
+* A proof module that is parametrised (by a scalar, say) cannot also hold scalar-free lemmas,
+  so the parametrised one is the topic (`Names.Properties.Soundness`) and `Names.Properties`
+  holds the rest.
+* Theory modules that define their own vocabulary (`Slides.Anim.Assembly` and its `Leaf` and
+  `Continuous` parts, `Anim.Nth`, `Anim.Arith`, `Anim.Loop`, `Diagram.Equality`, the categorical
+  `Container.Category`, `Container.Lowering.Category`) keep their names; their headers say so,
+  and no executable imports them.
+* Rule: no executable (`*Main`) imports a `.Properties` module or a theory module, so a deck
+  compiles and typechecks only declarations and functions. `tests/check_closure.py` (part of
+  `make test`) walks the import closure of every `*Main` and fails otherwise; `make check`
+  still typechecks everything. Theorem statements and names are unchanged by a move; only
+  the module changes.
+* What could not be separated: the categorical objects of `Container.*` whose definition is
+  a proof (`Free₀` and its equivalence, `Alg`: the free algebra, `fold`, `FreeObj`, the
+  `Poly` functor and its morphisms) stay with their definitions; the backends fold with them.
 
 ## Tests and build time
 

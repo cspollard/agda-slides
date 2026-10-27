@@ -194,7 +194,7 @@ The backend interface is `Fin n → Diagram` (a frame per tick). The carrier is 
 and the function is its `lookup`: `Vec` has a decidable structure and needs no
 function extensionality for the laws, and the two are isomorphic.
 
-### Laws to prove (`Slides.Anim.Laws`)
+### Laws to prove (`Slides.Anim.Syntax.Properties.Laws`)
 
 For `Timeline`: associativity of `concat` and `merge`, units, additivity of `zero`, the
 serial/parallel swap under equal durations, `dur` of the timeline equals `dur` of the
@@ -272,14 +272,14 @@ Each step ends with `make check`, `make test`, and the browser run.
    `Slides.Anim.Footprint`: `footprint` as a `foldA` into names (`none` touches nothing,
    padding preserves it); invariant up to `↭` under the swap law and under exchanging
    the sides of `Par`; `Independent` (stdlib `Disjoint`) is decidable and symmetric.
-   `Slides.Diagram.Commute`: `atop a b ≈ᵖ atop b a`, layouts equal up to permutation
+   `Slides.Diagram.Place.Properties.Commute`: `atop a b ≈ᵖ atop b a`, layouts equal up to permutation
    of draws and anchors (stdlib setoid `↭`), over the lawful scalars.
    `par-comm` lifts it to whole timelines (`mergeL-comm`, `layout-merge`): laid-out `a ∥ b`
    and `b ∥ a` agree frame by frame up to `≈ᵖ`, with no independence needed; independence
    is what makes `≈ᵖ` mean "the same picture". `parI` is `par` with an instance argument
    `True (independent? a b)` (found as `tt`), so overlapping operands fail to typecheck
    (`tests/negative/OverlappingPar.agda`).
-   `Slides.Anim.Laws`: laid-out `Par` is associative up to `≈ᴸ` (`mergeL-assoc`; the unit
+   `Slides.Anim.Syntax.Properties.Laws`: laid-out `Par` is associative up to `≈ᴸ` (`mergeL-assoc`; the unit
    laws of `merge` are definitional), and `par-layout`: `par` (padding with `none`) lays out
    like the unpadded `Par` when all frames are `Valid` (padding is invisible; this is where
    `⊙-unitˡ/ʳ` and `Valid` are needed).

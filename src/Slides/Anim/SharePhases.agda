@@ -11,7 +11,7 @@
 -- The base command of a shared element has the numbers that a formula overwrites zeroed
 -- (`shareElem`), so that elements that differ only in those numbers ship the same `<svg>` string,
 -- once (`Slides.Backend.Diagram`).  That sharing means what the unshared phases mean, for every
--- reading of formulas, is `Slides.Anim.SharePhasesCorrect`.
+-- reading of formulas, is `Slides.Anim.SharePhases.Properties`.
 
 module Slides.Anim.SharePhases where
 

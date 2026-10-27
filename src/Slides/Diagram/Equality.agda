@@ -1,5 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
+-- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
+--
 -- Equality of layouts, up to an equivalence on the scalar.
 --
 -- A layout is plain data over the scalar, so its equality is the scalar's

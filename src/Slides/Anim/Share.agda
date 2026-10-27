@@ -28,8 +28,8 @@
 -- extended) without making the result wrong.  What is proved depends on that check, not on the
 -- map: `Inv` says every entry of the memo names a true definition.
 --
--- Theorems (`Slides.Anim.ShareCorrect`, module `Sound`, for every *reading* of formulas:
--- `Reading`, instances at ℚ and ℕ in `Slides.Anim.SharePhasesCorrect`):
+-- Theorems (`Slides.Anim.Share.Properties`, module `Sound`, for every *reading* of formulas:
+-- `Reading`, instances at ℚ and ℕ in `Slides.Anim.SharePhases.Properties`):
 --
 --   * `share-impl`: for a formula `g`, any parameters `ρ` and any store `st` with `Inv st`,
 --     `share g st = (r , st′)` extends the store (`Ext`), keeps `Inv`, `r` refers only to
@@ -67,8 +67,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Nullary using (yes; no; ¬_)
 import Data.List.Relation.Binary.Lex.Strict as Lex
 import Data.Tree.AVL.Map as AVLMap
-import Data.Tree.AVL.Map.Membership.Propositional as AVLMem
-import Data.Tree.AVL.Map.Membership.Propositional.Properties as AVLMemP
 
 open import Slides.DecEq using (retract-dec)
 open import Slides.Anim.Formula using (Formula; num; var; add; sub; max; pct; hlf; fdiv; fmod; fmul; flt)
@@ -206,8 +204,6 @@ key (quad a b c d) = 3 ∷ keyA a ++ keyA b ++ keyA c ++ keyA d
 
 KeyOrder = Lex.<-strictTotalOrder ℕP.<-strictTotalOrder
 module M  = AVLMap KeyOrder
-module MM = AVLMem KeyOrder
-module MP = AVLMemP KeyOrder
 
 -- `defs` are the definitions, the newest first (the oldest is number 0, and the newest is number
 -- `size - 1`); `memo` maps the key of a node to the node and the number of its definition

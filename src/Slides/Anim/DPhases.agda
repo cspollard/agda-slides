@@ -6,7 +6,7 @@
 -- The shipped data are the same `Elem`s and phases as for continuous templates (`Elem`, `runs` and
 -- the grouping are shared: nothing in them depends on how a formula is read).  What differs is the
 -- encoding of a number (`encD`, which folds closed subformulas in ℕ, with no side condition).
--- What it means is `Slides.Anim.PhasesReadings.Discrete`.
+-- What it means is `Slides.Anim.DPhases.Properties.Discrete`.
 
 module Slides.Anim.DPhases where
 
