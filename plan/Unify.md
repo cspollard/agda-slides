@@ -80,10 +80,21 @@ only valid when their inputs do not overlap.
   coalgebra the algebra produces, so cycles (back/forward) are fine without recursion in the
   syntax. A `Seq` of slides is a machine whose `next` moves one state on; `Par` of
   programs is the *product* of machines, with `view (q₁,q₂) = view₁ q₁ ∥ view₂ q₂`.
-- *Parametric in commands, composition disjoint by construction.*
-  `_‖_ : Prog C₁ A → Prog C₂ A → Prog (C₁ ⊎ C₂) A`: each side reacts only to its own
-  summand, so the disjointness condition holds by construction and is a type, not a check.
-  Sharing one physical input between two parts is not composition; it is a **binding**.
+- *Parametric in commands; one sequential control program (decided).* A program is a single
+  sequential control flow (a deck, with `Nav`, `pause = await next`, and `tick` when the clock
+  arrives). There is **no program-level parallel composition in Stage 1**: no `ParC` node
+  and no `‖`. Animation content in a slide still runs in parallel through the *temporal*
+  `Par` of scenes, which awaits nothing, so it overlays as today. Rationale: the only
+  guarantee that two parts of a program do not overlap in their inputs comes from composing at
+  `C₁ ⊎ C₂`; allowing `Par` over a common command type would give that guarantee up and we could
+  not restore it later without breaking programs. Deferred: `_‖_ : Prog C₁ A → Prog C₂ A →
+  Prog (C₁ ⊎ C₂) A`, each side reacting only to its own summand (disjoint by construction), added
+  back as its own step when a feature needs concurrent input-driven parts. It needs a node
+  `ParC` with its two programs in the *shape* and one continuation (as `columns` in
+  `Slides.Core`) that fires when both have finished, matching `Par`'s max-duration; the product
+  lemma is already proved (section 4b). Adding it is a new definition and does not change
+  existing types. Sharing one physical input between two parts is a **binding**, not
+  composition.
 - *Backends declare what they support, and bind commands to inputs.* `Backend.supports ⊆ C` (superseded: a partial embedding `Nav ⊎ C → Maybe S`, section 4b),
   plus `bind : C → Input` (reveal: arrow keys, overview, hash `#/n`, fragments; plain: buttons;
   print: none). Two commands bound to the same input are a conflict, checked at binding
@@ -126,7 +137,9 @@ stage keeps every existing theorem as a corollary or states why it moved.
 Go/no-go: both lemmas proved in under about 150 lines each and under about 30 s.
 
 **Stage 1: user input as a parameter (first, because slide change needs it).** Introduce
-`C`, `AwaitC`, `Prog C`, `machine`, `supports`, `bind`, and the conflict check; port
+`C`, `AwaitC`, `Prog C` (one sequential control program, no `ParC`/`‖`), `machine`,
+`Nav` (with `gotoLabel` and a `label` operation), `Supports`, `bind` by kind with decoders for
+families, and the conflict check; port
 `pause`/fragments, reveal's next/prev, and the plain backend's buttons onto it with
 *no change in output* (goldens and browser tests unchanged). `Lowering` handles unsupported
 commands. Add negative tests: a backend that cannot bind a used command; two commands bound
@@ -221,10 +234,12 @@ Both halves pass the go/no-go with a wide margin: no postulates, no holes, no in
      operation and by examples; the whole-program lowering soundness theorem is not proved.
   7. The view is an accumulating list (Beamer `pause`), not the plan's `Frame-in-time`.
 
-**Decisions this forces for Stage 1** (author to confirm): (a) `‖` only at the top of a
-program, or `par` with a join (recommend: top-level, with the join deferred until Stage 2
-needs it); (b) choice via commands in the shape; (c) binding by kind plus decoders; (d)
-strict absence with `Hold` around primitives for Stage 2.
+**Decisions this forces for Stage 1.** Decided (author): (a) no program-level parallel
+(`‖`, `ParC`) in Stage 1; it returns later with join-when-both-finish semantics, stratified
+like `columns`, composing at `C₁ ⊎ C₂`. Recommended and adopted unless objected to: (b) choice
+carries its offered commands in the shape (not built until a feature needs it); (c) binding by
+command kind plus decoders for parameterised families; (d) strict absence, with primitives
+under `Hold`, for Stage 2.
 
 ## 5. Pros and cons
 
