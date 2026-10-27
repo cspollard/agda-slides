@@ -241,6 +241,51 @@ carries its offered commands in the shape (not built until a feature needs it); 
 command kind plus decoders for parameterised families; (d) strict absence, with primitives
 under `Hold`, for Stage 2.
 
+## 4c. Stage 2 spike results (branches `stage2-ordered`, `stage2-assembly`; spike code unmerged)
+
+Design notes: `docs/Ordered.md` (ordered scalar layer, `Ease`), `docs/Stage2.md` (scene
+container, assembly). Both spikes typecheck `--safe --without-K` with no postulates.
+Time-domain principles: `docs/Time.md`.
+
+**Ordered layer (GO for M1 to M3, NO-GO for M4).** `discrete-is-ordered` holds with no
+hypotheses: a discrete template evaluated in ℕ, mapped by `ι`, equals its lowering
+(`Sub a b ↦ max (a-b) 0`, `Pct p x ↦ DivBy 99 (MulLit p x)`) evaluated in ℚ. Substitution
+is the free monad's `>>=` (one `foldT-bind` replaces two lemmas). Estimated net about -220
+lines and about -10 s of checking, but only after M3 (M1 alone adds about 680).
+M1 add the layer unused; M2 ℚ meaning for `fdiv/fmod/fmul/flt`, `Min`, `Ease`, JS update;
+M3 `discrete d` becomes a lowered term, delete `DParam`, `DPhases`, `Euclid`, the JS `D` flag.
+M4 (`Track` derived from `Ease`) needs `Scale : ℤ → ℕ → Op` (exact multiplication by p/q;
+`DivBy` is floor) and an `Lt`-based time-select `Seq`; neither is spiked and the shipped
+formulas would grow. Deferred.
+
+**Scene container (conditional GO, reduced scope).** `TimeC = Seq | Par | Hold n | Delay n |
+Repeat n | Drive tr`; a segment is `Hold n (Drive tr (inj d))`. Settled with proofs:
+every primitive under `Hold` with ℕ durations (no ℕ∞ needed); `Seq` needs a window guard
+(`seqAt` leaks its left operand at negative times and its right past the end; `seqW` fixes
+it); a Set-level `copairAlg` suffices; `Repeat` has `loop-dur`/`loop-tick`; absence is a
+unit of `Par`, a present `none` is not (`none-not-unit`; use `Delay k (Hold 0 _)`).
+
+**Corrections to the plan above.**
+- Stage 2's claim that the three assembly proofs become instances of the lifting lemma is
+  wrong: the lemma relates two algebras on one ℚ clock; assembly relates the ℚ clock to the
+  ℕ tick clock (`RelN`), and the leaf still needs `Faithful`. Realistic saving: about 40-60
+  lines for `Continuous`, perhaps 30-60 across `Over` and `Leaf`; the 108 s to 6 s compile
+  figure is mostly proof style and could be had by restyling the old file.
+- `Drive` was missing from `TimeC`; `Seq` needs the window guard; ℕ∞ is not needed.
+- Stage 1b: `Track` becomes derived only with `Scale` and the time-select `Seq` (M4).
+- Section 8: `ι` is an unconditional homomorphism only for `Lt`, `Min`, `DivBy`, `ModBy`,
+  `MulLit` and the core `+`, `⊔`, literals; `Pct` and `Sub` need `Faithful` or a lowering;
+  `Ease` has no ℕ reading. Floor is `DivBy 0`. The `D` flag goes at M3, not Stage 5.
+- Shipped formulas: the encoder must never fold closed `Ease` nodes in exact ℚ.
+
+**Not yet established.** Local `Good` form of assembly; all-τ agreement of `seqW` with
+`seqAt`; `discrete-assembly`/`Leaf` ported; discrete and `blackBox` bodies in the new
+container; the frame-level corollary for lowered layouts; JS/Agda agreement (tested only).
+
+**Order.** Decide the time unit (`docs/Time.md` section 7) first; then ordered layer M1-M3
+as its own change with an audit; then the scene-container port, which depends on the clock
+the leaf uses.
+
 ## 5. Pros and cons
 
 **Pros**

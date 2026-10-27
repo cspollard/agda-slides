@@ -145,7 +145,22 @@ for an explicit justification.
   Plotkin and Power, *Algebraic operations and generic effects* **[memory]**:
   operations such as `tick` and `await` are algebraic operations.
 
-## 7. Open questions
+## 7. Decision on the time unit (proposed; awaiting the author)
+
+- **Semantic time is ℚ.**  Behaviours, tracks, easings and the scene container are
+  interpreted over ℚ.  It is the smallest domain with scaling, subdivision, floor
+  and exact subtraction, and all our data is piecewise rational.
+- **ℕ is the tick clock.**  It indexes control-machine states (slides, fragments)
+  and observation instants; it is read through `ι`.  It is not a second value
+  language: discrete templates are lowered terms (`docs/Ordered.md`).
+- **ℤ is not adopted.**  Revisit only if a feature needs negative offsets.
+- **No generic `Time` parameter yet.**  Instead each module states, in its header,
+  which layers of section 4 it uses; ℚ with an ℕ tick index is the only model.
+  Generalise only when a second model with a real use appears.
+- **Consequence:** the ordered-layer migration M1 to M3 (`plan/Unify.md` 4c) is
+  the implementation of this decision.
+
+## 7b. Open questions
 
 1. **Generic `Time` parameter, or fixed ℚ?**  The code must at least say, per
    module, which layers it uses.  A record `TimeDomain` (ordered monoid plus
