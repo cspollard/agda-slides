@@ -39,8 +39,8 @@ await press('ArrowLeft');   same('ArrowLeft is prev', await state(), [0, 1]);
 await press('j');           same('j is off', await state(), [0, 1]);
 await press('h');           same('h is off', await state(), [0, 1]);
 await press('n');           same('n (a common key) is next', await state(), [1, 0]);
-await press('Home');        same('Home (a common key) is first', await state(), [0, 0]);
-await press('Space');       same('Space (a common key) is next', await state(), [0, 1]);
+await press('Home');        same('Home (a common key) is first (the slide is shown full)', await state(), [0, 1]);
+await press('Space');       same('Space (a common key) is next', await state(), [1, 0]);
 
 check('no page errors', errors.length === 0, errors.join('; '));
 await browser.close();
