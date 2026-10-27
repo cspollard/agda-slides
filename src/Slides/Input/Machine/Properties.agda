@@ -10,8 +10,7 @@
 --
 -- Equality of machines is `MIso`: a bijection of state sets that preserves `init`,
 -- `step` and `view` pointwise (no funext).  The product lemma for the deferred
--- parallel composition `‖` is not here (no `ParC` yet); it is in the spike
--- (`Slides.Spike.Input.Machine.Properties`, branch spike-input).
+-- parallel composition `‖` is not here (no `ParC` yet); it is on branch spike-input.
 
 module Slides.Input.Machine.Properties (V : Set) where
 

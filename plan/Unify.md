@@ -201,7 +201,7 @@ Both halves pass the go/no-go with a wide margin: no postulates, no holes, no in
   an embedding of `Anim ℕ (Seg ℕ)` into `Scene` and the faithful ℕ→ℚ bridge); constant
   behaviours of `inj : Dia S → Scene S`.
 
-**Input machines** (`src/Slides/Spike/Input/*`, product lemma about 135 lines, 1.7 s, 1.4 GB):
+**Input machines** (branch `spike-input`, `src/Slides/Spike/Input/*`, product lemma about 135 lines, 1.7 s, 1.4 GB):
 - `AwaitC C = C ▷ ⊤`, `ProgC C = SceneC ⊎ AwaitC C ⊎ ParC`; `Machine C`
   (state, init, step, view) as the carrier of a Kleisli fold `sem`; adapters along partial
   decoders `D → Maybe C`.

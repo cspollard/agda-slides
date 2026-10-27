@@ -123,7 +123,7 @@ into `stage1-port` (or this branch rebased onto it). Every step ends with: `make
 `make test-browser-all`, and an empty `git diff` on `tests/golden`.
 
 1. **Types.** Add `Slides.Input.Deck`: `DeckBlockC = BlockC ⊎ AwaitC Nav` (as the spike's
-   `Spike/Input/Steps.agda`) and `Body C = (BlockC ⊎ AwaitC (Nav ⊎ C)) ⋆ ⊤`. Keep `Core.Body`
+   spike branch `Spike/Input/Steps.agda`) and `Body C = (BlockC ⊎ AwaitC (Nav ⊎ C)) ⋆ ⊤`. Keep `Core.Body`
    unchanged: Stage 1 must not make every existing deck break. (independent; one agent)
 2. **Elaboration.** New `Slides.Steps.Input` (or extend `Slides.Steps`): `elab : Lowering BlockC
    DeckBlockC` with `pause ↦ await next`; and a second pass `steps′` that wraps
