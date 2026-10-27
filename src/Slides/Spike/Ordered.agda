@@ -39,7 +39,7 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 
 open import Container.Pick using (pick2; pick4)
-open import Container.Lowering using (translate)
+open import Container.Lowering using (Lowering; lower; translate)
 open import Slides.Cong using (cong₄)
 
 open import Slides.Diagram.Scalar
@@ -222,3 +222,22 @@ dToQ .position {inj₂ E.Lt}         q = q
 
 toQ : ∀ {V} → E.DExpr V → QExpr V
 toQ = translate dToQ
+
+-- The discrete reading as a *lowering* (a Kleisli map, `Container.Lowering`): the nodes that are
+-- not the same in ℕ and ℚ are sent to programs that compute the ℕ value in ℚ, so no side
+-- condition is left.  The monus is `max (a − b) 0` (real subtraction clamped) and a percentage
+-- is `⌊p·x / 100⌋`; every other node is its namesake.
+lowerD : Lowering E.DExprC QC
+lowerD (inj₁ (inj₁ Zero))    = impure (inj₁ (inj₁ Zero) , λ ())
+lowerD (inj₁ (inj₁ (Lit n))) = impure (inj₁ (inj₁ (Lit n)) , λ ())
+lowerD (inj₁ (inj₁ Plus))    = impure (inj₁ (inj₁ Plus) , pure)
+lowerD (inj₁ (inj₁ Max))     = impure (inj₁ (inj₁ Max) , pure)
+lowerD (inj₁ (inj₁ (Pct p))) = divByQ 99 (mulLitQ p (pure tt))
+lowerD (inj₁ (inj₂ Sub))     = impure (inj₁ (inj₁ Max) , pick2 (impure (inj₁ (inj₂ Sub) , pure)) zeroQ)
+lowerD (inj₂ (E.DivBy d))      = impure (inj₂ (inj₂ (inj₁ (DivBy d))) , pure)
+lowerD (inj₂ (E.ModBy d))      = impure (inj₂ (inj₂ (inj₁ (ModBy d))) , pure)
+lowerD (inj₂ (E.MulLit n))     = impure (inj₂ (inj₂ (inj₁ (MulLit n))) , pure)
+lowerD (inj₂ E.Lt)             = impure (inj₂ (inj₁ Lt) , pure)
+
+lowerQ : ∀ {V} → E.DExpr V → QExpr V
+lowerQ = lower lowerD

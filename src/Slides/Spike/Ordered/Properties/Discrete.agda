@@ -25,11 +25,13 @@ open import Slides.Diagram.NatQ using (ι)
 open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Diagram.Signature
 open import Slides.Diagram.Signature.Properties using (foldT-translate)
-open import Slides.Diagram.Expr using (opsH; ExprOp; exprArity)
+open import Slides.Diagram.Expr using (opsH; ExprOp; exprArity; Zero; Lit; Plus; Max; Pct; Sub)
 open import Slides.Diagram.Expr.Properties.Faithful using (ExprSide; ι-node)
 open import Slides.Diagram.Euclid
 open import Slides.Spike.Ordered
 open import Slides.Spike.Ordered.Properties
+open import Slides.Spike.Ordered.Properties.Laws using (pull; foldT-lower)
+open import Slides.Diagram.NatQ.Properties using (ι-+; ι-⊔)
 
 -- the side conditions of a node: those of the core and sub layers only
 DSide : (s : Shape DExprC) → (Position DExprC s → ℕ) → Set
@@ -59,3 +61,31 @@ faithful-D ρ e f = trans (go e f) (sym (foldT-translate dToQ (qH ratQ) (ι ∘ 
     go (impure (s , k)) (f , ex) =
       trans (node-ι s (λ q → evalD natD ρ (k q)) ex)
             (restrict dToQ (qH ratQ) .Handler.respects s (λ q → go (k q) (f q)))
+
+------------------------------------------------------------------------
+-- The same with no side condition: the lowering
+
+-- one node: the program a node is lowered to computes the ℕ value, read in ℚ
+node-ι′ : ∀ s (k : Position DExprC s → ℕ) →
+          ι (dH natD .Handler.handle s k) ≡ pull lowerD (qH ratQ) .Handler.handle s (λ q → ι (k q))
+node-ι′ (inj₁ (inj₁ Zero))    k = refl
+node-ι′ (inj₁ (inj₁ (Lit n))) k = refl
+node-ι′ (inj₁ (inj₁ Plus))    k = ι-+ (k zero) (k (suc zero))
+node-ι′ (inj₁ (inj₁ Max))     k = ι-⊔ (k zero) (k (suc zero))
+node-ι′ (inj₁ (inj₁ (Pct p))) k = ι-pct p (k tt)
+node-ι′ (inj₁ (inj₂ Sub))     k = ι-monus (k zero) (k (suc zero))
+node-ι′ (inj₂ (DivBy d))      k = node-ι (inj₂ (DivBy d)) k tt
+node-ι′ (inj₂ (ModBy d))      k = node-ι (inj₂ (ModBy d)) k tt
+node-ι′ (inj₂ (MulLit n))     k = node-ι (inj₂ (MulLit n)) k tt
+node-ι′ (inj₂ Lt)             k = node-ι (inj₂ Lt) k tt
+
+-- A discrete template at a tick is its lowering at `ι` of the tick: for every template and tick.
+discrete-is-ordered : ∀ {V} (ρ : V → ℕ) (e : DExpr V) →
+                      ι (evalD natD ρ e) ≡ evalQ ratQ (ι ∘ ρ) (lowerQ e)
+discrete-is-ordered ρ e = trans (go e) (sym (foldT-lower lowerD (qH ratQ) (ι ∘ ρ) e))
+  where
+    go : ∀ e → ι (evalD natD ρ e) ≡ foldT (pull lowerD (qH ratQ)) (ι ∘ ρ) e
+    go (pure v)         = refl
+    go (impure (s , k)) =
+      trans (node-ι′ s (λ q → evalD natD ρ (k q)))
+            (pull lowerD (qH ratQ) .Handler.respects s (λ q → go (k q)))

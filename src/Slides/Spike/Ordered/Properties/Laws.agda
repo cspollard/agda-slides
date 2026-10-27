@@ -26,7 +26,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 
 open import Container.FreeMonad using (Eq)
 open import Container.FreeMonad.Properties using (bind-pure; bind-assoc)
-open import Container.Lowering using (translate)
+open import Container.Lowering using (Lowering; lower; translate)
 
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Signature
@@ -57,6 +57,25 @@ foldT-bind : ∀ {Σ V W S} (H : Handler Σ S) (ρ : W → S) (σ : V → Term �
              foldT H ρ (e >>= σ) ≡ foldT H (λ v → foldT H ρ (σ v)) e
 foldT-bind H ρ σ (pure v)         = refl
 foldT-bind H ρ σ (impure (s , k)) = H .Handler.respects s (λ q → foldT-bind H ρ σ (k q))
+
+-- the fold depends on the assignment only pointwise
+foldT-cong : ∀ {Σ V S} (H : Handler Σ S) {ρ ρ′ : V → S} → (∀ v → ρ v ≡ ρ′ v) → (e : Term Σ V) →
+             foldT H ρ e ≡ foldT H ρ′ e
+foldT-cong H h (pure v)         = h v
+foldT-cong H h (impure (s , k)) = H .Handler.respects s (λ q → foldT-cong H h (k q))
+
+-- fusion for a lowering (`Container.Lowering.lower-fusion`, concretely): folding a lowered term is
+-- folding the original with the handler pulled back along the lowering
+pull : ∀ {Σ Σ′ S} → Lowering Σ Σ′ → Handler Σ′ S → Handler Σ S
+pull l H .Handler.handle s k   = foldT H k (l s)
+pull l H .Handler.respects s e = foldT-cong H e (l s)
+
+foldT-lower : ∀ {Σ Σ′ V S} (l : Lowering Σ Σ′) (H : Handler Σ′ S) (ρ : V → S) (e : Term Σ V) →
+              foldT H ρ (lower l e) ≡ foldT (pull l H) ρ e
+foldT-lower l H ρ (pure v)         = refl
+foldT-lower l H ρ (impure (s , k)) =
+  trans (foldT-bind H ρ (λ q → lower l (k q)) (l s))
+        (foldT-cong H (λ q → foldT-lower l H ρ (k q)) (l s))
 
 ------------------------------------------------------------------------
 -- Layout is natural along evaluation

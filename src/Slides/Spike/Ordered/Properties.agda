@@ -132,3 +132,25 @@ record IsFloorHom {S T : Set} (O : FloorOps S) (P : FloorOps T) (h : S → T) : 
 ι-floor : IsFloorHom natFloor ratFloor ι
 ι-floor = record { h-divBy = ι-divBy′ ; h-modBy = ι-modBy ; h-mulLit = ι-mulLit }
   where ι-divBy′ = λ d a → ι-divBy d a
+
+------------------------------------------------------------------------
+-- The monus and the percentage, as the lowering reads them
+
+private
+  sub-nonpos : ∀ {p q} → p ℚ.≤ q → p ℚ.- q ℚ.≤ ℚ.0ℚ
+  sub-nonpos {p} {q} pq = subst (λ x → p ℚ.- q ℚ.≤ x) (ℚP.+-inverseʳ q) (ℚP.+-monoˡ-≤ (ℚ.- q) pq)
+
+  sub-nonneg : ∀ {p q} → q ℚ.≤ p → ℚ.0ℚ ℚ.≤ p ℚ.- q
+  sub-nonneg {p} {q} qp = subst (λ x → x ℚ.≤ p ℚ.- q) (ℚP.+-inverseʳ q) (ℚP.+-monoˡ-≤ (ℚ.- q) qp)
+
+-- `a ∸ b` is the real difference clamped at 0, with no side condition
+ι-monus : ∀ a b → ι (a ∸ b) ≡ (ι a ℚ.- ι b) ℚ.⊔ ℚ.0ℚ
+ι-monus a b with b ℕ.≤ᵇ a in eq
+... | true  = trans (ι-∸ a b (ℕP.≤ᵇ⇒≤ b a (subst T (sym eq) _)))
+                    (sym (ℚP.p≥q⇒p⊔q≡p (sub-nonneg (ι-≤ b a eq))))
+... | false = trans (cong ι (ℕP.m≤n⇒m∸n≡0 (ℕP.<⇒≤ (ℕP.≰⇒> (λ (h : b ℕ.≤ a) → subst T eq (ℕP.≤⇒≤ᵇ h))))))
+                    (sym (ℚP.p≤q⇒p⊔q≡q (sub-nonpos (ι-≰ b a eq))))
+
+-- `x·p/100` rounded down is the floor of `p·x/100` in ℚ
+ι-pct : ∀ p x → ι ((x * p) / 100) ≡ FloorOps.divBy ratFloor 99 (FloorOps.mulLit ratFloor p (ι x))
+ι-pct p x = trans (ι-divBy 99 (x * p)) (cong (FloorOps.divBy ratFloor 99) (trans (cong ι (ℕP.*-comm x p)) (ι-mulLit p x)))
