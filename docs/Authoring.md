@@ -411,4 +411,4 @@ Configuration (`Slides.Backend.Reveal.RevealConfig`): title, location of reveal.
 
 ## Tests
 
-`make check` typechecks everything; `make example talk plain showcase` renders the example decks; `make test` diffs them against `tests/golden/`; `make test-browser` and `make test-playwright` load them in Chrome; `make test-negative` checks that undeclared resources are rejected.
+`make check` typechecks everything; `make example talk plain showcase` renders the example decks; `make test` diffs them against `tests/golden/`; `make test-browser` and `make test-playwright` load them in Chrome; `make test-negative` checks that undeclared resources, key conflicts and a deck on a backend without `Nav` are rejected (and that the controls typecheck).

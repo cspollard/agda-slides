@@ -119,7 +119,7 @@ Implicit assumptions about reveal's key handling that leak (section 6, surprises
 
 Preconditions: the core exists (`Slides.Input.{Prog,Nav,Machine,Supports,Lowering,Label}`), merged
 into `stage1-port` (or this branch rebased onto it). Every step ends with: `make check`,
-`make REVEAL=... example talk plain showcase pairs`, `make test test-negative test-negative-pending`,
+`make REVEAL=... example talk plain showcase pairs`, `make test test-negative`,
 `make test-browser-all`, and an empty `git diff` on `tests/golden`.
 
 1. **Types.** Add `Slides.Input.Deck`: `DeckBlockC = BlockC ⊎ AwaitC Nav` (as the spike's
@@ -141,7 +141,7 @@ into `stage1-port` (or this branch rebased onto it). Every step ends with: `make
    `tick`; no overview). Each carries `bind` by kind and a decoder for `goto`/`gotoLabel`
    (reveal: `#/h[/v]` zero-based, plain: `#n` one-based), `inj-injective`, and the decidable
    conflict check (no instance search in core: use a `Fin` table or `True (conflict? ..)` as
-   `tests/negative-pending/TwoCommandsOneInput.agda`). Define them but do not yet use them to produce output. (agent C)
+   `tests/negative/TwoCommandsOneKey.agda`; done: `Slides.Backend.{Reveal,Plain}.Supports`). Define them but do not yet use them to produce output. (agent C)
 5. **`present`.** `renderReveal`/`renderPlain` gain a `Supports`-aware entry: `present : (b : Supports) → NavTotal b → Deck C → Forest`
    whose body is `lowerDeck ∘ elab` followed by the existing `steps`/`renderBody`. The old
    `renderReveal : RevealConfig → Deck → String` stays as `present` at the default supports (so every example and
