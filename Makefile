@@ -205,3 +205,30 @@ test-pairs:
 	cd tests/browser && npm install --silent
 	node tests/browser/pairs.mjs out pairs
 	@if [ -d out/pairs-local ]; then node tests/browser/pairs.mjs out pairs-local; fi
+
+# Pin how decks are navigated (next/prev/first/last/goto/overview, fragments, both backends,
+# and that the two backends walk a deck identically).  Needs `make example talk plain showcase`
+# and `npm install` in tests/browser once.  The Stage 1 port (plan/Unify.md, docs/NavInventory.md)
+# must leave it unchanged.
+.PHONY: test-nav test-browser-all
+test-nav:
+	cd tests/browser && npm install --silent
+	node tests/browser/nav.mjs out
+
+# Every browser test that needs only local files (test-pairs needs a CDN and is left out).
+test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav
+
+# Draft negative tests of the Stage 1 port (tests/negative-pending/README.md): the negatives must be
+# rejected, the controls must typecheck.
+.PHONY: test-negative-pending
+test-negative-pending:
+	@if out=$$($(AGDA) -i tests/negative-pending tests/negative-pending/NoNavBackend.agda 2>&1); then \
+	  echo "FAIL NoNavBackend typechecks but should not"; exit 1; \
+	elif echo "$$out" | grep -q "nothing != just"; then echo "ok   NoNavBackend is rejected"; \
+	else echo "FAIL NoNavBackend failed for another reason:"; echo "$$out"; exit 1; fi
+	@if out=$$($(AGDA) -i tests/negative-pending tests/negative-pending/TwoCommandsOneInput.agda 2>&1); then \
+	  echo "FAIL TwoCommandsOneInput typechecks but should not"; exit 1; \
+	elif echo "$$out" | grep -q "No instance of type"; then echo "ok   TwoCommandsOneInput is rejected"; \
+	else echo "FAIL TwoCommandsOneInput failed for another reason:"; echo "$$out"; exit 1; fi
+	@for f in tests/negative-pending/controls/*.agda; do \
+	  $(AGDA) -i tests/negative-pending/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
