@@ -194,6 +194,18 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
    still in the runtime modules; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
    target `make spike`). `--erasure` was not tried. Peak memory is still set by the single
    `make check` process; the lever is fewer, smaller interfaces per module.
+10. **Unify more of the core ideas.** Diagrams, animations and slides are each built the same
+    way (a free monad over a container, interpreted by an algebra), yet they are separate
+    languages with separate backends. Investigate whether they can be one language, or one
+    family sharing structure: a slide as a diagram whose leaves are text, images and nested
+    diagrams; an animation as a diagram over a time-indexed scalar (`Anim S T` as `Dia` over
+    `ℚ → …`, so a still diagram is the constant animation); a deck as an animation over slide
+    indices (sequence of slides is `Seq`, simultaneous elements are `Par`). Questions to settle
+    first: which containers are really the same (`Seq`/`Par` against `Beside`/`Above`/`Atop`);
+    whether one layout algebra can serve all three, so that `layout-natural`, the assembly proofs
+    and the delta/phases encoding are proved once; what the backends (`Reveal`, `Plain`, the
+    JS player) lose or gain; and the cost to compile time. Aim to remove code and duplicated
+    proofs, not to add a layer; keep the existing theorems as corollaries.
 
 ## Risks
 
