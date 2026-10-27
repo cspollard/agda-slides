@@ -49,6 +49,24 @@ backend machine is the generic machine of `skipDeck p` seen through `dec`) and
 and `disjoint?` decides it over a finite list of inputs; `conflict?` is the finite-table case
 (`S → I` injective). `⊕-left`, `⊕-right` (`Binding.Properties`): disjoint kinds lose nothing.
 
+## Decks that await (port steps 1-3)
+
+`Slides.Core.Body` is unchanged (`pause` is still a layout command), so no deck changes. The
+stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X`,
+`DeckBlockC C = BlockAwaitC (Nav ⊎ C)`, `Body⁺ X`, `DeckC⁺ X` (slides whose bodies are `Body⁺ X`),
+and `toProg : Body⁺ X → Prog X ⊤` (scenes `Shape BlockC`), so `Supports.lowerDeck` applies to a body.
+
+* `Slides.Steps.Input`: `elab` (`pause ↦ await next`, a Kleisli lowering; `elabDeck` slide by
+  slide), and the second pass `stepsBy step?` (mode, `afterBy`, `hasStep`) where `step?` says
+  which awaited commands are steps: `isNext` for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a
+  backend vocabulary. `stepsDeck` lifts it to decks.
+* `Slides.Lower`: `lowerCmd b` (supported renamed, unsupported skipped), `lowerCmdBlock`,
+  `lowerCmdBody`, `lowerCmdDeck`. Awaits occur only at body level, so nothing else is touched.
+* Laws: `Slides.Steps.Properties` (`stepsBy-elab : stepsBy isNext (elab b) ≡ steps b`, `goBy-bind`,
+  `afterBy-bind`, `after-∨`, `hasStep-bind`, `go-bind`, `go-bind-elab`, `elab-bind`);
+  `Slides.Lower.Properties` (`lowerCmd-supported/unsupported`, `lowerCmdBody-lowerDeck`,
+  `steps-lowered`, `steps-pipeline`).
+
 ## Deferred
 
 * `‖` (parallel programs at `C₁ ⊎ C₂`): needs a `ParC` node with a join; the product lemma
