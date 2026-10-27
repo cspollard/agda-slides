@@ -226,7 +226,7 @@ semantics*, which is what the backends can actually compile.
 
 ## 8. Answers so far and open questions
 
-Answered: user input comes early, as a parameter of the program (section 3). `blackBox`
+Decided (author): user input comes early, as a parameter of the program (section 3). `blackBox`
 segments can go once templates cover the decks (a flipbook remains as a lowering target,
 not as syntax).
 
@@ -250,10 +250,28 @@ not as syntax).
   separate language. No downside to keeping discrete *control*; the only thing to avoid is
   keeping two full *value* languages for ever.
 
+Decided (author), in answer to the earlier open questions:
+- **Disjointness:** total composition at `C₁ ⊎ C₂`; the conflict check is at binding (the
+  sum-indexed design). No `uses` index.
+- **Clock:** `tick` is a command like any other; backends without a clock lower animations to
+  rest frames.
+- **Inputs:** the framework is parametric in the command type from the start; no fixed
+  input vocabulary is baked into the language. A *deck* is a program that requires a
+  standard navigation vocabulary, `Nav = next | prev | goto n | first | last` (and the
+  fragment steps that `pause` produces), so a deck is `Prog (Nav ⊎ C) …`: any backend that
+  presents decks must support `Nav` (reveal: arrows, hash, overview; plain: buttons). Extra
+  commands (`click`, `tick`, chords, sliders) are further summands that a deck may add and
+  a backend may or may not support. A backend that lacks `Nav` cannot present a deck at
+  all (rejected, not lowered); one that lacks an extra command lowers it.
+
+Consequences for the stages: Stage 1 defines `Nav` and a `Backend.Supports` interface
+(`supports : Set`, an embedding `Nav ↪ supports`, `bind`) first; `Slides.Steps` and reveal's
+and plain's navigation are ported onto it with unchanged output. Stage 0's spike includes
+the `Supports` embedding and checks that the conflict check at binding is decidable and cheap.
+
 Open:
-4. Disjointness: total composition at `C₁ ⊎ C₂` with the conflict check at binding (cheaper), or
-   a `uses` index and a disjointness proof at each `‖` (closer to your sentence)?
-5. Is `tick` (a clock) a command like any other, so that clockless backends lower animations
-   to rest frames? (This plan assumes yes.)
-6. Which inputs should the first version support beyond next/prev/goto: click on a named
-   element, a key chord, a slider value?
+1. Which commands beyond `Nav` come first: `tick` (clock) is assumed; `click name`, key
+   chords and a slider value are candidates. A slider value is a variable of a behaviour,
+   not a command, and needs its own treatment.
+2. Should `Nav` include `goto` by name (a slide label) as well as by index, so decks can be
+   linked and reordered without renumbering?
