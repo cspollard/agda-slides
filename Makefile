@@ -2,7 +2,10 @@
 # a clean check of the Pairs modules by about 12% (see plan/Plan.md item 9) for about
 # 0.5 GB more peak memory.  Override (`make check AGDA_RTS=`) to use the defaults.
 AGDA_RTS ?= +RTS -A1g -RTS
-AGDA ?= agda $(AGDA_RTS)
+# Extra Agda options, empty by default; for profiling or debugging, e.g.
+#   make check AGDA_FLAGS='--profile=modules' AGDA_RTS='+RTS -A1g -s -RTS'
+AGDA_FLAGS ?=
+AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 
 .PHONY: check clean
 
@@ -18,10 +21,13 @@ check:
 
 # All executables share one compile directory: MAlonzo output is per module,
 # so the (large) library part is translated and compiled by GHC once.
-# GHCFLAGS=-O1 for optimised builds.
+# The defaults are the fastest build: no optimisation (-O0) and every core
+# (-j: the GHC step of PairsMain takes 76 s with -j1 and 23 s with -j10, for about
+# 1.2 GB more memory; GHCJOBS=-j1 to serialise).  GHCFLAGS=-O1 for optimised builds.
 GHCFLAGS ?= -O0
+GHCJOBS ?= -j
 BUILD_DIR = _build/ghc
-COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS)
+COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS) --ghc-flag=$(GHCJOBS)
 
 # What the standalone (plain) decks need next to index.html.
 PLAIN_FILES = assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg
