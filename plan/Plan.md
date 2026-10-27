@@ -187,11 +187,27 @@ reference is `docs/Authoring.md`. Finished work is not listed here (see `git log
      0.3 s (the instantiation cost now shows in `ParamCorrect`, 57 s: net -27 s for the pair).
      A cold `make example talk plain showcase pairs animref` (GHC included) took 627 s, agda
      peaking at 1.8 GB resident.
-   Remaining: `Anim.Track` (`reversal`) and `PairsScalar` belong to the hot-proofs work;
+   - *`X.Properties` split* (convention in `docs/Design.md`, "Module conventions"). Every proof
+     module was renamed to `X.Properties` (or a topic `X.Properties.<Topic>`), and the mixed modules
+     were split: `Track`, `Continuous`, `NatQ`, `Delta`, `Timeline`, `Anim.Syntax`, `Footprint`,
+     `Signature`, `Expr`, `Euclid`, `Names`, `Lower`, `Render`, `Backend.Plain`/`Reveal`/`XML`,
+     `Share` (the AVL membership modules), `Container.Lowering`/`Interpret`/`Sum`/`FreeMonad`/
+     `FreeMonad.Algebraic`; `ExprQ` became `Expr.Properties.Faithful`. `tests/check_closure.py`
+     (in `make test`) fails if an executable's closure holds a `.Properties` or `Anim.Assembly`
+     module. Executable closures (modules / lines), before -> after: PairsMain 50 / 8,003 -> 50 / 6,997;
+     IntroMain 50 / 7,526 -> 50 / 6,458; ShowcaseMain 50 / 7,442 -> 50 / 6,455; Plain/TalkMain
+     49 / 7,212 -> 49 / 6,235; AnimRefMain 56 / 8,868 -> 54 / 7,002.
+   - *Measured* (same machine): clean typecheck of Everything 197 s, peak RSS 6.25 GB (the same
+     tree before the splits but after the renames: 330 s, 5.9 GB; the recorded baseline above was
+     358 s, 4.9 GB, so the memory did not drop: more, smaller interfaces are loaded at once). Cold
+     compile of PairsMain (`agda --compile`, `-O0`, agda and GHC together, parsnip pre-built):
+     276 s, 2.6 GB before -> 108 s, 2.2 GB after; the generated Haskell goes from 605 modules /
+     1.10 M lines to 482 / 0.58 M.
+   Remaining: `Anim.Track` (`reversal`) and `Examples.Pairs.Properties` belong to the hot-proofs work;
    `ContinuousAssembly` (107 s) and `Continuous` (67 s) are now outside every deck executable
    except `animref`, and could be sped up by explicit signatures / `abstract` for the big `with`
-   proofs; the proof parts of `Expr`, `Euclid`, `Anim.Syntax`, `Delta` (about 300 lines in all) are
-   still in the runtime modules; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
+   proofs; the categorical objects of `Container.*` (`Free₀`, `Alg`, `Poly`) keep their proofs because they are
+   the definitions; `Slides.Spike.Reveal` is kept (documented in `docs/Design.md`,
    target `make spike`). `--erasure` was not tried. Peak memory is still set by the single
    `make check` process; the lever is fewer, smaller interfaces per module.
 
