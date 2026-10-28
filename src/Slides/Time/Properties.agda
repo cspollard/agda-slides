@@ -7,7 +7,8 @@
 module Slides.Time.Properties where
 
 open import Data.Bool using (Bool; true; false)
-open import Data.Maybe using (Maybe)
+open import Data.Maybe using (Maybe; just; nothing)
+import Data.Maybe as Maybe
 open import Data.Nat as ℕ using (ℕ)
 open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
@@ -61,6 +62,14 @@ module _ (K : Clock) (L : ClockLaws K) where
   parAt-dur : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) →
               proj₁ (parAt _⊙_ A B) ≡ proj₁ A ℕ.⊔ proj₁ B
   parAt-dur _⊙_ A B = refl
+
+-- overlay commutes with a map that is a homomorphism of the overlay
+mergeM-map : ∀ {A B : Set} (f : A → B) (⊙ : A → A → A) (⊙′ : B → B → B) →
+             (∀ x y → f (⊙ x y) ≡ ⊙′ (f x) (f y)) → ∀ a b →
+             Maybe.map f (mergeM ⊙ a b) ≡ mergeM ⊙′ (Maybe.map f a) (Maybe.map f b)
+mergeM-map f ⊙ ⊙′ h nothing  b        = refl
+mergeM-map f ⊙ ⊙′ h (just x) nothing  = refl
+mergeM-map f ⊙ ⊙′ h (just x) (just y) = cong just (h x y)
 
 ------------------------------------------------------------------------
 -- The instances

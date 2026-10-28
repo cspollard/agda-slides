@@ -1,155 +1,93 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of `Par` once frames are laid out (`Slides.Diagram.Place.Properties.Laws`, `Commute`).
+-- Laws of `Par` once frames are laid out (`Slides.Diagram.Place.Properties.Laws`, `Commute`), in any
+-- clock `K` whose scalar is lawful.
 --
---   * `Par` is associative: merging laid-out frames is associative up to `≈ᴸ`
---     (`mergeL-assoc`, from `⊙-assoc`; the unit laws of `merge` hold on the nose)
---   * `par`, which pads the shorter side with empty frames, lays out like the
---     unpadded `Par` on frames of non-negative size (`par-layout`): padding by
---     `none` is invisible.  This is the place where the unit laws of `atop` are
---     needed, and with them the `Valid` hypothesis.
+--   * `Par` is associative: at every time, overlaying laid-out frames is associative up to `≈ᴸ`
+--     (`par-assoc`, from `⊙-assoc`)
+--   * `Par` is commutative up to a permutation of draws and anchors (`par-comm`, `Commute`)
+--   * absence is the unit of `Par`, on the nose (`par-gap`): a gap is `Delay k (Hold 0 _)`, which shows
+--     nothing at any time, so the old padding with empty frames and its law (`par-layout`: padded
+--     `par` lays out like the unpadded `Par` on frames of non-negative size, which needed the unit
+--     laws of `atop` and the `Valid` hypothesis) have no analogue: `par` is `∥ᵃ`.
 
 module Slides.Anim.Syntax.Properties.Laws where
 
-open import Data.List using (List; []; _∷_; _++_; length; replicate; map; applyUpTo)
-import Data.List.Properties as LP
-open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
-open import Data.List.Relation.Unary.All using (All; _∷_; [])
-open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_; _≤_; suc)
-import Data.Nat.Properties as ℕP
-open import Data.Sum using (inj₁; inj₂)
-open import Data.Bool using (true; false; T)
+open import Data.Maybe using (Maybe; just; nothing)
+import Data.Maybe as Maybe
+import Data.Maybe.Relation.Binary.Pointwise as MP
+open import Data.Product using (proj₂)
 open import Relation.Binary using (IsEquivalence)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
 
 open import Slides.Diagram.Draw using (Layout)
-open import Slides.Diagram.Scalar using (Ops)
-open import Slides.Diagram.Ordered using (OOps; ratO)
+open import Slides.Diagram.Ordered using (OOps)
 import Slides.Diagram.Syntax as DS
-open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℤ; lawfulℚ)
+open import Slides.Diagram.Place.Properties.Laws using (IsLawful; module Proofs; lawfulℚ)
 import Slides.Diagram.Place.Properties.Commute as Commute
+open import Slides.Time using (Clock; ClockLaws; mergeM)
+open import Slides.Time.Properties using (ratLaws)
+open import Slides.Time.Rat using (ratClock)
+import Slides.Anim.Track as Tr
 open import Slides.Anim.Syntax
-open import Slides.Anim.Syntax.Properties
-open import Slides.Anim.Timeline
+open import Slides.Anim.Sample
+open import Slides.Anim.Sample.Properties using (frames-par; gap-absent)
 
-open import Slides.Anim.Timeline.Properties
-module For {S : Set} (Q : OOps S) (L : IsLawful (OOps.ops Q)) where
-  private O = OOps.ops Q
-  open Ops O using (0#)
+module For (K : Clock) (LK : ClockLaws K) (L : IsLawful (OOps.ops (Clock.O K))) where
+  private
+    O = OOps.ops (Clock.O K)
+    S = Clock.T K
   open Proofs O L
-  open Commute.For O L using (mergeL; layout-merge)
+  open Commute.For O L using (mergeM-comm; _≈ᵖ_)
   open import Slides.Diagram.Equality R.isEquivalence
 
+  -- the laid-out frame at a time
   private
-    ≈ᴸ-refl : ∀ {l} → l ≈ᴸ l
-    ≈ᴸ-refl = IsEquivalence.refl ≈ᴸ-isEquivalence
+    lay : Maybe (DS.Dia S) → Maybe (Layout S)
+    lay = Maybe.map LW.layout
 
-    reflᴸ : ∀ xs → Pointwise _≈ᴸ_ xs xs
-    reflᴸ xs = PW.refl ≈ᴸ-refl
+    ≈ᴸ-sym : ∀ {a b} → a ≈ᴸ b → b ≈ᴸ a
+    ≈ᴸ-sym = IsEquivalence.sym ≈ᴸ-isEquivalence
+
+    ≈ᴸ-refl : ∀ {a} → a ≈ᴸ a
+    ≈ᴸ-refl = IsEquivalence.refl ≈ᴸ-isEquivalence
 
   ----------------------------------------------------------------------
   -- Associativity
 
-  mergeL-assoc : ∀ xs ys zs → Pointwise _≈ᴸ_ (mergeL (mergeL xs ys) zs) (mergeL xs (mergeL ys zs))
-  mergeL-assoc []       ys       zs       = reflᴸ _
-  mergeL-assoc (x ∷ xs) []       zs       = reflᴸ _
-  mergeL-assoc (x ∷ xs) (y ∷ ys) []       = reflᴸ _
-  mergeL-assoc (x ∷ xs) (y ∷ ys) (z ∷ zs) =
-    IsEquivalence.sym ≈ᴸ-isEquivalence (⊙-assoc x y z) ∷ mergeL-assoc xs ys zs
+  mergeM-assoc : ∀ (x y z : Maybe (DS.Dia S)) →
+                 MP.Pointwise _≈ᴸ_ (lay (mergeM DS.atop (mergeM DS.atop x y) z)) (lay (mergeM DS.atop x (mergeM DS.atop y z)))
+  mergeM-assoc nothing  nothing  nothing  = MP.nothing
+  mergeM-assoc nothing  nothing  (just z) = MP.just ≈ᴸ-refl
+  mergeM-assoc nothing  (just y) nothing  = MP.just ≈ᴸ-refl
+  mergeM-assoc nothing  (just y) (just z) = MP.just ≈ᴸ-refl
+  mergeM-assoc (just x) nothing  nothing  = MP.just ≈ᴸ-refl
+  mergeM-assoc (just x) nothing  (just z) = MP.just ≈ᴸ-refl
+  mergeM-assoc (just x) (just y) nothing  = MP.just ≈ᴸ-refl
+  mergeM-assoc (just x) (just y) (just z) = MP.just (≈ᴸ-sym (⊙-assoc (LW.layout x) (LW.layout y) (LW.layout z)))
+
+  par-assoc : ∀ val (a b c : Anim) τ →
+              MP.Pointwise _≈ᴸ_ (lay (proj₂ (frames K val ((a ∥ᵃ b) ∥ᵃ c)) τ)) (lay (proj₂ (frames K val (a ∥ᵃ (b ∥ᵃ c))) τ))
+  par-assoc val a b c τ
+    rewrite frames-par K val (a ∥ᵃ b) c τ | frames-par K val a b τ
+          | frames-par K val a (b ∥ᵃ c) τ | frames-par K val b c τ =
+    mergeM-assoc (proj₂ (frames K val a) τ) (proj₂ (frames K val b) τ) (proj₂ (frames K val c) τ)
 
   ----------------------------------------------------------------------
-  -- Padding with empty frames is invisible
+  -- Commutativity
 
-  -- `k` empty frames after the shorter operand
-  padˡ : ∀ xs ys k → length xs + k ≡ length ys → All Valid ys →
-         Pointwise _≈ᴸ_ (mergeL (xs ++ replicate k empty) ys) (mergeL xs ys)
-  padˡ []       []       ℕ.zero    _  _         = []
-  padˡ []       (y ∷ ys) (suc k)   eq (v ∷ vs)  =
-    ⊙-unitˡ y v ∷ padˡ [] ys k (ℕP.suc-injective eq) vs
-  padˡ (x ∷ xs) (y ∷ ys) k         eq (v ∷ vs)  =
-    ≈ᴸ-refl ∷ padˡ xs ys k (ℕP.suc-injective eq) vs
-  padˡ (x ∷ xs) []       k         ()  _
-  padˡ []       []       (suc k)   ()  _
-  padˡ []       (y ∷ ys) ℕ.zero    ()  _
-
-  padʳ₀ : ∀ xs k → k ≡ length xs → All Valid xs → Pointwise _≈ᴸ_ (mergeL xs (replicate k empty)) xs
-  padʳ₀ []       ℕ.zero    _  _        = []
-  padʳ₀ (x ∷ xs) (suc k)   eq (v ∷ vs) = ⊙-unitʳ x v ∷ padʳ₀ xs k (ℕP.suc-injective eq) vs
-  padʳ₀ []       (suc k)   ()  _
-  padʳ₀ (x ∷ xs) ℕ.zero    ()  _
-
-  padʳ : ∀ xs ys k → length ys + k ≡ length xs → All Valid xs →
-         Pointwise _≈ᴸ_ (mergeL xs (ys ++ replicate k empty)) (mergeL xs ys)
-  padʳ []       []       ℕ.zero    _  _         = []
-  padʳ (x ∷ xs) []       (suc k)   eq (v ∷ vs)  =
-    ⊙-unitʳ x v ∷ padʳ₀ xs k (ℕP.suc-injective eq) vs
-  padʳ (x ∷ xs) (y ∷ ys) k         eq (v ∷ vs)  =
-    ≈ᴸ-refl ∷ padʳ xs ys k (ℕP.suc-injective eq) vs
-  padʳ []       (y ∷ ys) k         ()  _
-  padʳ (x ∷ xs) []       ℕ.zero    ()  _
-  padʳ []       []       (suc k)   ()  _
+  par-comm : ∀ val (a b : Anim) τ →
+             MP.Pointwise _≈ᵖ_ (lay (proj₂ (frames K val (a ∥ᵃ b)) τ)) (lay (proj₂ (frames K val (b ∥ᵃ a)) τ))
+  par-comm val a b τ rewrite frames-par K val a b τ | frames-par K val b a τ =
+    mergeM-comm (proj₂ (frames K val a) τ) (proj₂ (frames K val b) τ)
 
   ----------------------------------------------------------------------
-  -- The timeline of a padded animation
+  -- Absence is the unit of `Par`
 
-  ε : DS.Dia S
-  ε = DS.spacer 0# 0#
+  par-gap : ∀ val (a : Anim) τ n → proj₂ (frames K val (a ∥ᵃ gap n)) τ ≡ proj₂ (frames K val a) τ
+  par-gap val a τ n rewrite frames-par K val a (gap n) τ | gap-absent K LK val n τ = mergeM-nothing (proj₂ (frames K val a) τ)
+    where mergeM-nothing : ∀ {A : Set} {f : A → A → A} (m : Maybe A) → mergeM f m nothing ≡ m
+          mergeM-nothing nothing  = refl
+          mergeM-nothing (just _) = refl
 
-  private
-    map-const : ∀ {A B : Set} (c : B) (xs : List A) → map (λ _ → c) xs ≡ replicate (length xs) c
-    map-const c []       = refl
-    map-const c (x ∷ xs) = cong (c ∷_) (map-const c xs)
-
-  timeline-none : ∀ m → timeline DS.atop (frames Q) (none O m) ≡ replicate m ε
-  timeline-none m =
-    trans (map-const ε (applyUpTo (λ i → i) m)) (cong (λ n → replicate n ε) (LP.length-applyUpTo (λ i → i) m))
-
-  -- pad: the frames of `a`, then empty frames up to `n`
-  timeline-pad : ∀ n (a : Anim S (Seg S)) →
-                 timeline DS.atop (frames Q) (pad O n a) ≡ timeline DS.atop (frames Q) a ++ replicate (n ∸ dur a) ε
-  timeline-pad n a with dur a <ᵇ n in eq
-  ... | true  = cong (timeline DS.atop (frames Q) a ++_) (timeline-none (n ∸ dur a))
-  ... | false = trans (sym (LP.++-identityʳ _)) (cong (λ k → timeline DS.atop (frames Q) a ++ replicate k ε) (sym (le⇒∸0 eq)))
-    where
-      le⇒∸0 : (dur a <ᵇ n) ≡ false → n ∸ dur a ≡ 0
-      le⇒∸0 e = ℕP.m≤n⇒m∸n≡0 (ℕP.≮⇒≥ {dur a} {n} (λ h → subst T e (ℕP.<⇒<ᵇ {dur a} {n} h)))
-
-  ----------------------------------------------------------------------
-  -- `par` lays out like the unpadded `Par`
-
-  private
-    lay : List (DS.Dia S) → List (Layout S)
-    lay = map LW.layout
-
-    lay-pad : ∀ (xs : List (DS.Dia S)) k → lay (xs ++ replicate k ε) ≡ lay xs ++ replicate k empty
-    lay-pad xs k = trans (LP.map-++ LW.layout xs (replicate k ε)) (cong (lay xs ++_) (LP.map-replicate LW.layout k ε))
-
-    -- the timeline of `par` and of the unpadded `Par`, laid out
-    lay-par : ∀ (a b : Anim S (Seg S)) →
-              lay (timeline DS.atop (frames Q) (par O a b))
-              ≡ mergeL (lay (timeline DS.atop (frames Q) a) ++ replicate (dur b ∸ dur a) empty)
-                       (lay (timeline DS.atop (frames Q) b) ++ replicate (dur a ∸ dur b) empty)
-    lay-par a b =
-      trans (cong lay (cong₂ (merge DS.atop) (timeline-pad (dur b) a) (timeline-pad (dur a) b)))
-      (trans (layout-merge (timeline DS.atop (frames Q) a ++ replicate (dur b ∸ dur a) ε) (timeline DS.atop (frames Q) b ++ replicate (dur a ∸ dur b) ε))
-             (cong₂ mergeL (lay-pad (timeline DS.atop (frames Q) a) (dur b ∸ dur a)) (lay-pad (timeline DS.atop (frames Q) b) (dur a ∸ dur b))))
-
-    lay-∥ : ∀ (a b : Anim S (Seg S)) →
-            lay (timeline DS.atop (frames Q) (a ∥ᵃ b)) ≡ mergeL (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b))
-    lay-∥ a b = layout-merge (timeline DS.atop (frames Q) a) (timeline DS.atop (frames Q) b)
-
-    len : ∀ (a : Anim S (Seg S)) → length (lay (timeline DS.atop (frames Q) a)) ≡ dur a
-    len a = trans (LP.length-map LW.layout (timeline DS.atop (frames Q) a)) (length-dur Q a)
-
-  par-layout : ∀ (a b : Anim S (Seg S)) →
-               All Valid (lay (timeline DS.atop (frames Q) a)) → All Valid (lay (timeline DS.atop (frames Q) b)) →
-               Pointwise _≈ᴸ_ (lay (timeline DS.atop (frames Q) (par O a b))) (lay (timeline DS.atop (frames Q) (a ∥ᵃ b)))
-  par-layout a b va vb with ℕP.≤-total (dur a) (dur b)
-  ... | inj₁ le rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 le | LP.++-identityʳ (lay (timeline DS.atop (frames Q) b)) =
-        padˡ (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b)) (dur b ∸ dur a)
-             (trans (cong (_+ (dur b ∸ dur a)) (len a)) (trans (ℕP.m+[n∸m]≡n le) (sym (len b)))) vb
-  ... | inj₂ ge rewrite lay-par a b | lay-∥ a b | ℕP.m≤n⇒m∸n≡0 ge | LP.++-identityʳ (lay (timeline DS.atop (frames Q) a)) =
-        padʳ (lay (timeline DS.atop (frames Q) a)) (lay (timeline DS.atop (frames Q) b)) (dur a ∸ dur b)
-             (trans (cong (_+ (dur a ∸ dur b)) (len b)) (trans (ℕP.m+[n∸m]≡n ge) (sym (len a)))) va
-
-module ForRats = For ratO lawfulℚ
+module ForRats = For ratClock ratLaws lawfulℚ

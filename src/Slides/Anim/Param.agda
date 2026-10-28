@@ -65,15 +65,18 @@ pieces : ∀ {A} → T.Track A → List (T.Piece A)
 pieces = T.foldT (λ p → p ∷ []) _++_
 
 -- a segment: the window is the track's duration
+segDrive : ℕ → T.Track ℚ → Anim → Maybe (T.Track ℚ × Tmpl)
+segDrive n tr (pure d) with n ≟ T.dur tr
+... | yes _ = just (tr , d)
+... | no _  = nothing
+segDrive _ _ _ = nothing
+
+segHold : ℕ → Anim → Maybe (T.Track ℚ × Tmpl)
+segHold n (impure (Drive tr , j)) = segDrive n tr (j tt)
+segHold _ _ = nothing
+
 segOf : Anim → Maybe (T.Track ℚ × Tmpl)
-segOf (impure (Hold n , k)) with k tt
-... | impure (Drive tr , j) with j tt
-...   | pure d with n ≟ T.dur tr
-...     | yes _ = just (tr , d)
-...     | no _  = nothing
-segOf (impure (Hold n , k)) | impure (Drive tr , j) | impure _ = nothing
-segOf (impure (Hold n , k)) | pure _  = nothing
-segOf (impure (Hold n , k)) | impure (_ , _) = nothing
+segOf (impure (Hold n , k)) = segHold n (k tt)
 segOf _ = nothing
 
 -- the template of a leaf, with its variable renamed to the leaf's own
@@ -103,8 +106,11 @@ place i t₀ a with segOf a
 ...   | _ = nothing
 
 -- the symbolic frames: the frames of the symbolic scene, over the free scalar (a gap is empty)
+symTM : Scene (Dia (OExpr ℕ)) → TM natClock (Dia (OExpr ℕ))
+symTM = sample natClock atop (λ _ x → x) (λ _ _ → 0) (λ d → d)
+
 symbolicFrames : Scene (Dia (OExpr ℕ)) → List (Dia (OExpr ℕ))
-symbolicFrames s = tabulate (spacer zero′ zero′) (sample natClock atop (λ _ x → x) (λ _ _ → 0) (λ d → d) s)
+symbolicFrames s = tabulate (spacer zero′ zero′) (symTM s)
 
 segmentsOf : List Leaf → List (ℕ × List (T.Piece ℚ))
 segmentsOf = map (λ l → Leaf.start l , pieces (Leaf.track l))

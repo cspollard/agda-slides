@@ -14,9 +14,10 @@ open import Data.Fin using (zero; suc)
 open import Data.Unit using (tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
-open import Slides.Diagram.Syntax using (mapDia)
+open import Slides.Diagram.Syntax using (mapDia; atop)
 open import Slides.Diagram.Ordered using (evalO)
 open import Slides.Time
+open import Slides.Time.Properties using (mergeM-map)
 import Slides.Anim.Track as Tr
 open import Slides.Anim.Syntax
 open import Slides.Anim.Sample
@@ -51,6 +52,12 @@ module _ (K : Clock) where
   ... | true  = refl
   ... | false = refl
 
+  -- `Par` overlays the frames of its operands, at every time (absence is the unit)
+  frames-par : ∀ val (a b : Anim) τ →
+               proj₂ (frames K val (a ∥ᵃ b)) τ
+               ≡ mergeM atop (proj₂ (frames K val a) τ) (proj₂ (frames K val b) τ)
+  frames-par val a b τ = mergeM-map (λ g → g 0#) (atopR K) atop (λ _ _ → refl) (proj₂ (readA K val a) τ) (proj₂ (readA K val b) τ)
+
 module _ (K : Clock) (L : ClockLaws K) where
   open Clock K
   open ClockLaws L
@@ -58,3 +65,14 @@ module _ (K : Clock) (L : ClockLaws K) where
   -- whole ticks are in the window exactly when the naturals are
   win-ι : ∀ n k → win K n (ι k) ≡ (k ℕ.<ᵇ n)
   win-ι n k rewrite sym ι-0 | ι-<ᵇ k 0 | ι-<ᵇ k n = refl
+
+  -- the empty window shows nothing, so a gap shows nothing at any time
+  win-zero : ∀ τ → win K 0 τ ≡ false
+  win-zero τ rewrite ι-0 with τ <ᵇ 0#
+  ... | true  = refl
+  ... | false = refl
+
+  gap-absent : ∀ val n τ → proj₂ (frames K val (gap n)) τ ≡ nothing
+  gap-absent val n τ with τ <ᵇ ι n
+  ... | true  = refl
+  ... | false rewrite win-zero (τ - ι n) = refl

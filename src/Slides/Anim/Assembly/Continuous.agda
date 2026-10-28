@@ -58,7 +58,7 @@ import Slides.Anim.Track as Tr
 open import Slides.Time using (mergeM)
 open import Slides.Time.Rat using (ratClock)
 open import Slides.Time.Nat using (natClock)
-open import Slides.Time.Properties using (ratLaws; natLaws)
+open import Slides.Time.Properties using (ratLaws; natLaws; mergeM-map)
 open import Slides.Anim.Syntax
 open import Slides.Anim.Sample
 open import Slides.Anim.Sample.Properties using (win-ι)
@@ -107,13 +107,6 @@ RelRd : Maybe (Rd ratClock) → Maybe (Rd natClock) → Set
 RelRd a b = RelC (Maybe.map (λ g → g ℚ.0ℚ) a) (Maybe.map (λ g → g 0) b)
 
 private
-  mergeM-map : ∀ {A B : Set} (f : A → B) (⊙ : A → A → A) (⊙′ : B → B → B) →
-               (∀ x y → f (⊙ x y) ≡ ⊙′ (f x) (f y)) → ∀ a b →
-               Maybe.map f (mergeM ⊙ a b) ≡ mergeM ⊙′ (Maybe.map f a) (Maybe.map f b)
-  mergeM-map f ⊙ ⊙′ h nothing  b        = refl
-  mergeM-map f ⊙ ⊙′ h (just x) nothing  = refl
-  mergeM-map f ⊙ ⊙′ h (just x) (just y) = cong just (h x y)
-
   RelRd-mergeM : ∀ {a b a′ b′} → RelRd a b → RelRd a′ b′ →
                  RelRd (mergeM (atopR ratClock) a a′) (mergeM (atopR natClock) b b′)
   RelRd-mergeM {a} {b} {a′} {b′} ra rb

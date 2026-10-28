@@ -38,6 +38,7 @@ open import Slides.Time
 open import Slides.Anim.Arith using (<ᵇ-ge)
 open import Slides.Anim.Sample
 open import Slides.Anim.Sample.Properties using (win-ι)
+open import Slides.Time.Nat using (natClock)
 
 module Calculus (K₁ K₂ : Clock) (L₁ : ClockLaws K₁) (L₂ : ClockLaws K₂) where
   private
@@ -118,11 +119,12 @@ module Over
     layoutℕ : Dia ℕ → Layout ℕ
     layoutℕ = LayoutWith.layout natOps
 
-  -- one frame against one symbolic frame, at the assignments satisfying `G`; a frame that is
-  -- there on one side is there on the other
-  data Rel (G : (ℕ → ℕ) → Set) : Maybe (Dia ℕ) → Maybe Sym → Set where
+  -- one frame (a reader of the template parameter, at the zero parameter: a segment binds its own)
+  -- against one symbolic frame, at the assignments satisfying `G`; a frame that is there on one
+  -- side is there on the other
+  data Rel (G : (ℕ → ℕ) → Set) : Maybe (Rd natClock) → Maybe Sym → Set where
     noFrame : Rel G nothing nothing
-    bothFrames : ∀ {x y} → (∀ ρ → G ρ → layoutℕ x ≡ interp y ρ) → Rel G (just x) (just y)
+    bothFrames : ∀ {g y} → (∀ ρ → G ρ → layoutℕ (g 0) ≡ interp y ρ) → Rel G (just g) (just y)
 
   Rel-⇒ : ∀ {G G′ : (ℕ → ℕ) → Set} → (∀ ρ → G ρ → G′ ρ) → ∀ {a b} → Rel G′ a b → Rel G a b
   Rel-⇒ f noFrame        = noFrame
@@ -130,13 +132,8 @@ module Over
 
   -- `atop` of the frames is `atop` of the symbolic frames (`interp-atop`)
   Rel-mergeM : ∀ {G₁ G₂ : (ℕ → ℕ) → Set} {a b a′ b′} → Rel G₁ a a′ → Rel G₂ b b′ →
-               Rel (λ ρ → G₁ ρ × G₂ ρ) (mergeM atop a b) (mergeM atopS a′ b′)
+               Rel (λ ρ → G₁ ρ × G₂ ρ) (mergeM (atopR natClock) a b) (mergeM atopS a′ b′)
   Rel-mergeM noFrame         rb         = Rel-⇒ (λ ρ → proj₂) rb
   Rel-mergeM (bothFrames ra) noFrame    = Rel-⇒ (λ ρ → proj₁) (bothFrames ra)
   Rel-mergeM (bothFrames {x} {x′} ra) (bothFrames {y} {y′} rb) = bothFrames λ ρ (g₁ , g₂) →
     trans (cong₂ PN.atop (ra ρ g₁) (rb ρ g₂)) (interp-atop x′ y′ ρ)
-
-  -- one frame against a symbolic one, as the statement of the assembly theorem
-  Rel-just : ∀ {G F m} → Rel G (just F) m →
-             ∃ λ S → m ≡ just S × (∀ ρ → G ρ → layoutℕ F ≡ interp S ρ)
-  Rel-just (bothFrames {y = y} r) = y , refl , r
