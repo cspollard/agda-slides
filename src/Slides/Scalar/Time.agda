@@ -3,12 +3,9 @@
 -- Time: instants and durations.  Sampling depends on this theory (and Coupling) only.
 --
 -- `Time T` is an ordered monoid with the embedding of whole ticks `tick : ℕ → T` (an order
--- embedding and monoid map) and `floor : T → ℕ`, the right adjoint of `tick` on the
--- non-negative instants: `tick n ≤ x  iff  n ≤ floor x` (`floor-gal`).  From this alone:
--- `floor (tick n) = n`, and `hold x = tick (floor x)` is the sample-and-hold of a tick clock.
--- The remainder `x - hold x` (loops, the phase within a tick) needs exact subtraction, which
--- is the separate optional layer `Sub` of Core (`Rem`).  ℕ and ℚ are models; density and
--- induction are not in the theory and are hypotheses where used.
+-- embedding and monoid map) and `floor : T → ℕ`, right adjoint to `tick` on non-negative
+-- instants: `tick n ≤ x  iff  n ≤ floor x`.  From this: `floor (tick n) = n`, and
+-- `hold x = tick (floor x)`.  The remainder `x - hold x` needs the optional `Sub` layer (`Rem`).
 --
 -- Signature: `TimeC` has the one command `Hold`; its ℕ reading is the identity.
 
@@ -66,13 +63,9 @@ record Time (T : Set) : Set₁ where
     rem-split : ∀ {x} → 0# ≤ x → hold x + rem x ≡ x
     rem-split 0≤x = sub-add (hold-≤ 0≤x)
 
-    rem-below : ∀ {x} → 0# ≤ x → ¬ (tick (ℕ.suc (floor x)) ≤ x)
-    rem-below 0≤x h = ℕP.1+n≰n (proj₁ (floor-gal 0≤x) h)
-
     rem-tick : ∀ n → rem (tick n) ≡ 0#
     rem-tick n = trans (cong (λ y → tick n - y) (hold-tick n)) (sub-self (tick n))
 
-------------------------------------------------------------------------
 -- The signature
 
 data TimeOp : Set where

@@ -38,7 +38,6 @@ natScale = record
   ; ·-1 = ℕP.*-identityˡ ; ·-zero = λ _ → refl ; ·-* = ℕP.*-assoc
   ; ·-+ = λ r s x → ℕP.*-distribʳ-+ x r s ; ·-dist = ℕP.*-distribˡ-+ ; ·-mono = λ {r} _ → ℕP.*-monoʳ-≤ r }
 
--- ticks are the instants themselves
 natTime : Time ℕ
 natTime = record
   { ord = natMon ; tick = λ n → n ; floor = λ n → n

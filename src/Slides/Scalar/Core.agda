@@ -2,12 +2,11 @@
 
 -- The ordered monoid shared by Space and Time, its exact-subtraction layer, and homomorphisms.
 --
--- Lengths and durations are both a commutative, cancellative monoid `(0#, +)` with a total
--- decidable order and a join `_⊔_` (the frame union of Space, the longer of two durations in
--- Time).  Subtraction is a separate optional layer `Sub`: exact where the minuend is the
--- larger (ℕ's monus has this law and no other).  `IsOrdMonHom` is a model homomorphism
--- (an order embedding); `h-sub` shows it preserves exact subtraction from these laws alone.
--- Equality is `_≡_`; nothing here mentions ℕ or ℚ.
+-- Lengths and durations are both a cancellative commutative monoid `(0#, +)` with a total
+-- decidable order and a join `_⊔_` (frame union; the longer duration).  Subtraction is the
+-- optional layer `Sub`, exact where the minuend is the larger (all ℕ's monus promises).
+-- `IsOrdMonHom` is an order-embedding model homomorphism; `h-sub` shows it preserves exact
+-- subtraction from the laws.  Equality is `_≡_`.
 
 module Slides.Scalar.Core where
 

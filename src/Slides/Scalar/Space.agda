@@ -8,10 +8,9 @@
 -- also ℕ over itself (whole-number scaling).  There are no ticks here; a tick read as a
 -- length is Coupling.
 --
--- Signature: `SpaceC` is a container, one command per operation (arity = the operands);
--- `Term SpaceC V = SpaceC ⋆ V` are the symbolic scalars of a layout (leaves are variables),
--- read by `pfold` with `spaceH`, the handler of a model.  Two commands are not preserved by
--- the map ℕ → ℚ and are lowered (`Slides.Scalar.Hom`).
+-- Signature: `SpaceC`, one command per operation; `SpaceC ⋆ V` are the symbolic scalars of a
+-- layout, read by `pfold` with the handler `spaceH` of a model.  Two commands are lowered
+-- along ℕ → ℚ (`Slides.Scalar.Hom`).
 
 module Slides.Scalar.Space where
 

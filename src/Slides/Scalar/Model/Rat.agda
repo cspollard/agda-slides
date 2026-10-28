@@ -48,7 +48,6 @@ ratSub = record
   ; sub-add = λ {a} {b} _ → trans (ℚP.+-comm b (a - b))
       (trans (ℚP.+-assoc a (ℚ.- b) b) (trans (cong (λ y → a + y) (ℚP.+-inverseˡ b)) (ℚP.+-identityʳ a))) }
 
--- a percentage is multiplication by `p/100`
 ratPct : ℕ → ℚ → ℚ
 ratPct p x = (+ p / 100) * x
 
@@ -65,21 +64,17 @@ ratScale = record
   ; ·-+ = λ r s x → ℚP.*-distribʳ-+ x r s ; ·-dist = ℚP.*-distribˡ-+
   ; ·-mono = λ {r} 0≤r x≤y → ℚP.*-monoˡ-≤-nonNeg r {{ℚ.nonNegative 0≤r}} x≤y }
 
-------------------------------------------------------------------------
 -- Whole ticks inside ℚ: `ι n = n/1`, and its facts (the only place ℚ is computed in)
-
-ι : ℕ → ℚ
-ι n = + n / 1
 
 private
   coprime-1 : ∀ n → ℕC.Coprime n 1
   coprime-1 n (_ , d∣1) = ℕDv.∣1⇒≡1 d∣1
 
-ι-mk : ∀ n → ι n ≡ mkℚ (+ n) 0 (coprime-1 n)
-ι-mk n = ℚP.normalize-coprime (coprime-1 n)
+ι : ℕ → ℚ
+ι n = mkℚ (+ n) 0 (coprime-1 n)    -- n/1, written without the gcd normalisation
 
 toℚᵘ-ι : ∀ n → ℚ.toℚᵘ (ι n) ℚᵘ.≃ ℚᵘ.mkℚᵘ (+ n) 0
-toℚᵘ-ι n = ℚP.toℚᵘ-fromℚᵘ (ℚᵘ.mkℚᵘ (+ n) 0)
+toℚᵘ-ι n = ℚᵘP.≃-refl
 
 ι-+ : ∀ a b → ι (a ℕ.+ b) ≡ ι a + ι b
 ι-+ a b = ℚP.toℚᵘ-injective
@@ -97,7 +92,7 @@ toℚᵘ-ι n = ℚP.toℚᵘ-fromℚᵘ (ℚᵘ.mkℚᵘ (+ n) 0)
 
 -- the comparison, as a boolean, is preserved and reflected
 ι-≤ᵇ : ∀ a b → (ι a ℚ.≤ᵇ ι b) ≡ (a ℕ.≤ᵇ b)
-ι-≤ᵇ a b rewrite ι-mk a | ι-mk b | ℕP.*-identityʳ a | ℕP.*-identityʳ b
+ι-≤ᵇ a b rewrite ℕP.*-identityʳ a | ℕP.*-identityʳ b
                | ℤP.+◃n≡+n a | ℤP.+◃n≡+n b = refl
 
 ι-mono : ∀ {a b} → a ℕ.≤ b → ι a ≤ ι b
@@ -106,12 +101,10 @@ toℚᵘ-ι n = ℚP.toℚᵘ-fromℚᵘ (ℚᵘ.mkℚᵘ (+ n) 0)
 ι-reflect : ∀ {a b} → ι a ≤ ι b → a ℕ.≤ b
 ι-reflect {a} {b} h = ℕP.≤ᵇ⇒≤ a b (subst T (ι-≤ᵇ a b) (ℚP.≤⇒≤ᵇ {ι a} {ι b} h))
 
--- The floor, read as a whole number of ticks (negatives clamp to 0).
 ratFloor : ℚ → ℕ
 ratFloor q = ℤ.∣ ℚ.floor q ∣
 
 private
-  -- n ≤ ⌊m/d⌋ iff n·d ≤ m
   div-gal : ∀ n m d → (n ℕ.* ℕ.suc d ℕ.≤ m → n ℕ.≤ m ℕ./ ℕ.suc d) × (n ℕ.≤ m ℕ./ ℕ.suc d → n ℕ.* ℕ.suc d ℕ.≤ m)
   div-gal n m d =
     (λ h → subst (ℕ._≤ _) (ℕD.m*n/n≡m n (ℕ.suc d)) (ℕD./-monoˡ-≤ (ℕ.suc d) h)) ,
@@ -119,7 +112,7 @@ private
 
   -- n/1 ≤ m/(d+1) iff n·(d+1) ≤ m  (`pos-*` turns ℤ products of naturals into ℕ ones)
   ι≤ : ∀ n m d .(c : ℕC.Coprime m (ℕ.suc d)) → (ι n ≤ mkℚ (+ m) d c → n ℕ.* ℕ.suc d ℕ.≤ m) × (n ℕ.* ℕ.suc d ℕ.≤ m → ι n ≤ mkℚ (+ m) d c)
-  ι≤ n m d c rewrite ι-mk n =
+  ι≤ n m d c =
     (λ h → subst (n ℕ.* ℕ.suc d ℕ.≤_) (ℕP.*-identityʳ m)
              (ℤ.drop‿+≤+ (subst₂ ℤ._≤_ (sym (ℤP.pos-* n (ℕ.suc d))) (sym (ℤP.pos-* m 1)) (ℚ.drop-*≤* h)))) ,
     (λ h → ℚ.*≤* (subst₂ ℤ._≤_ (ℤP.pos-* n (ℕ.suc d)) (ℤP.pos-* m 1)
@@ -139,7 +132,6 @@ ratTime = record
   ; tick-0 = refl ; tick-+ = ι-+ ; tick-mono = ι-mono ; tick-reflect = ι-reflect
   ; floor-gal = λ {n} {x} → ratFloor-gal n x }
 
--- ratio of two durations (0 against 0), and the easings
 ratRatio : ℚ → ℚ → ℚ
 ratRatio t d with d ℚP.≟ 0ℚ
 ... | yes _   = 0ℚ
@@ -155,8 +147,7 @@ ratCoupling = record
   { ratio = ratRatio ; ease = ratEase
   ; ratio-scale = λ r d d≢0 → scale-ratio r d d≢0
   ; ease-0 = λ { Linear → refl ; Step → refl ; StepStart → refl }
-  ; ease-1 = λ { Linear → refl ; Step → refl ; StepStart → refl }
-  ; ease-linear = λ _ → refl }
+  ; ease-1 = λ { Linear → refl ; Step → refl ; StepStart → refl }}
   where
     scale-ratio : ∀ r d → ¬ (d ≡ 0ℚ) → ratRatio (r * d) d ≡ r
     scale-ratio r d d≢0 with d ℚP.≟ 0ℚ

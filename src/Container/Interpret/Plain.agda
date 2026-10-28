@@ -13,8 +13,7 @@
 --   (`pfold-bind`); for a handler into a monoid this is the statement that the fold of a
 --   bind is the fold with the continuation folded;
 -- * fusion along a container morphism (`pfold-translate`) and along a lowering
---   (`pfold-lower`), with the pulled-back handler written out;
--- * a map commuting with the handlers commutes with the fold (`pfold-hom`).
+--   (`pfold-lower`), with the pulled-back handler written out.
 --
 -- Equality of programs is `_≈⋆_` (propositional equality of leaves).
 
@@ -27,7 +26,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Data.Container.Relation.Binary.Pointwise using () renaming (_,_ to _,ₚ_)
 open import Function.Bundles using (Func)
 open import Relation.Binary.Bundles using (Setoid)
-open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; cong; trans)
+open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Categories.Functor.Algebra using (F-Algebra)
@@ -97,17 +96,6 @@ module _ {C : Container s p} {a ℓ} (A : Setoid a ℓ) where
     pfold-translate m f (pure _)         = A.refl
     pfold-translate m f (impure (a , k)) =
       c _ (λ q → pfold-translate m f (k (position m q)))
-
--- A map that commutes with the handlers commutes with the fold (a homomorphism of algebras);
--- the target handler must respect pointwise-equal children.
-
-module _ {C : Container s p} {A : Set x} {B : Set y} (h : A → B)
-         {H₁ : Handler C A} {H₂ : Handler C B} (c : Congruent C (≡P.setoid B) H₂) where
-
-  pfold-hom : (∀ a k → h (H₁ a k) ≡ H₂ a (λ q → h (k q))) →
-              ∀ {X : Set} (f : X → A) (t : C ⋆ X) → h (pfold C H₁ f t) ≡ pfold C H₂ (λ v → h (f v)) t
-  pfold-hom e f (pure _)         = refl
-  pfold-hom e f (impure (a , k)) = trans (e a _) (c a (λ q → pfold-hom e f (k q)))
 
 -- A congruent handler is an algebra of the polynomial functor, and `pfold` is its fold.
 
