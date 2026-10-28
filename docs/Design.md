@@ -63,10 +63,10 @@ handlers fold the content algebra over the body they contain. Further strata
 
 **`pause`.** `Slides.Steps.steps` elaborates a body into a pause-free one: after a
 `pause`, content commands become `fragment`s and other layout commands
-`stepped`; `notes` are left alone. The mode flows through sequencing and
-`go-bind` proves how (`go m (b₁ >> b₂)` elaborates `b₂` in the mode `after m b₁`),
-so a pause in one component affects what follows. Both backends apply it to each
-slide body.
+`stepped`; `notes` are left alone. It is the page of the body's scene (a pause is
+`Delay 1`, a command starts at the tick of the pauses before it; `docs/Stage4.md`), so a
+pause in one component affects what follows because sequencing is substitution in the scene.
+Both backends apply it to each slide body.
 
 **Authoring conveniences.** A string literal at type `Text` or `Inline` is plain
 text (the user's module needs `fromString` and the instance `tt : ⊤` in scope;

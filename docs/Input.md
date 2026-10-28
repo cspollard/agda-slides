@@ -54,26 +54,29 @@ inputs. `choice-∈`, `bind-kind` (`Binding.Properties`): disjoint kinds lose no
 ## Decks that await
 
 `Slides.Core.Body` is unchanged (`pause` is still a layout command), so no deck changes. The
-stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = BlockC ⊎ AwaitC X ⊎ LabelC` (a body may carry `label l`; `toProgC` maps it to `Slides.Input`'s `label`),
-`DeckBlockC C = BlockAwaitC (Nav ⊎ C)`, `Body⁺ X`, and `toProg : Body⁺ X → Prog X ⊤` (scenes `Shape BlockC`), so `Supports.lowerDeck` applies to a body.
+stratified wrapper is `Slides.Input.Deck`: `BlockAwaitC X = ProgC X` (scenes `Shape BlockC`, an awaited command, a label),
+`DeckBlockC C = BlockAwaitC (Nav ⊎ C)` and `Body⁺ X = Prog X ⊤`: a body that awaits *is* a program (the positions of `BlockC` are all `⊤`; the old
+`toProgC`/`toProg` and the second copy of the lowering are gone), so `Supports.lowerDeck` applies to a body directly.
 
-* `Slides.Steps.Input`: `elab` (`pause ↦ await next`, a Kleisli lowering), and the second pass
-  `stepsBy step?` (mode, `afterBy`) where `step?` says which awaited commands are steps: `isNext`
-  for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a backend vocabulary.
-* `Slides.Lower`: `lowerCmd b` (supported renamed, unsupported skipped), `lowerCmdBlock`,
-  `lowerCmdBody`, and `presentBody b` (the whole pipeline on a body). Awaits occur only at body level, so nothing
-  else is touched; the backends lift it to decks (next section).
-* Laws: `Slides.Steps.Properties` (`stepsBy-elab : stepsBy isNext (elab b) ≡ steps b`, `goBy-bind`,
-  `go-bind`, `go-bind-elab`, `elab-bind`); `Slides.Lower.Properties` (`lowerCmdBody-bind`,
-  `lowerCmdBody-lowerDeck`, `steps-lowered`, `steps-pipeline`).
+* `Slides.Steps`: `elab` (`pause ↦ await next`, a Kleisli lowering), `sceneBy step?` (a program that awaits as a
+  scene of `TimeC`: `show c ; k = c ∥ k`, a step is `Delay 1`) where `step?` says which awaited commands are steps:
+  `isNext` for `Nav ⊎ C`, `isNextS b` (decodes to `next`) for a backend vocabulary, and `stepsBy` (the page: the
+  performance of the scene, `Slides.Anim.Perform`, with every command that starts after tick 0 a fragment).
+  `steps` is the page of an elaborated body.
+* `Slides.Lower`: `presentBody b` (`elab`, `Supports.lowerDeck b`, `stepsBy (isNextS b)`: the whole pipeline on a body).
+  Awaits occur only at body level, so nothing else is touched; the backends lift it to decks (next section).
+* Laws: `Slides.Steps.Properties` (`scene-elab`, `dur-sceneBy`, `shown-chunks`: step `j` shows the first `j + 1` chunks,
+  `machine-shown`: the machine after `j` `next`s views the scene at tick `j`); `Slides.Lower.Properties`
+  (`scene-lowered`, `steps-pipeline`).  The old mode-threading laws (`go-bind`, `goBy-bind`, the `go`/`goBy` bridge)
+  are gone with the second pass: sequencing is substitution in the scene.
 
 ## Slide labels
 
 A physical `goto` addresses a *slide* (`#/intro`, `#3`); `navM`'s `goto k` is a *position* (a count of `next`s). The bridge is a label at the start of every slide, `Slides.Input.Slides`:
 
 * Authoring: `slideAs "intro" body`, or `labelled "intro" opts` in `slideWith`/`stackWith` (`SlideOptions.label`; a stack's label names its first slide). Labels are opt-in: unlabelled decks are unchanged.
-* `slides d` lists the slides (a stack flattened, as plain does); `deckBody`/`deckProg d` is one program: per slide `label (autoLabel i)` (the numeral of `i + 1`, plain's `#n`), the user label, the elaborated body, and an `await next` between consecutive slides. `labelTable (deckProg d)` and `navDeck` then do slide-addressed goto through the position machine.
-* `Slides.Input.Slides.Properties`: `slide-table` (`labelTable (deckProg d)` is the first match in the independent list `entries`: slide `i` starts after the pauses and `next`s of the earlier slides) and `auto-start` (the label of slide `i` resolves to `startOf`, when no user label is a numeral: `Fresh`). New sequencing laws in `Navigation.Properties`: `nextCount-bind`, `labelFrom-bind`. Examples by `refl`: `Slides.Input.Example` (`Slides.Examples.Labels`).
+* `slides d` lists the slides (a stack flattened, as plain does); `deckBody (slides d)` is one program (a `Prog`): per slide `label (autoLabel i)` (the numeral of `i + 1`, plain's `#n`), the user label, the elaborated body, and an `await next` between consecutive slides. `labelTable (deckBody (slides d))` and `navDeck` then do slide-addressed goto through the position machine.
+* `Slides.Input.Slides.Properties`: `slide-table` (`labelTable (deckBody (slides d))` is the first match in the independent list `entries`: slide `i` starts after the pauses and `next`s of the earlier slides) and `auto-start` (the label of slide `i` resolves to `startOf`, when no user label is a numeral: `Fresh`). New sequencing laws in `Navigation.Properties`: `nextCount-bind`, `labelFrom-bind`. Examples by `refl`: `Slides.Input.Example` (`Slides.Examples.Labels`).
 * Caveat: a `pause` is one `await next` in the machine but `Slides.Steps` wraps each later command in its own fragment, so machine positions are not physical fragment indices; the table is exact for slides (the ordinal), not for fragment steps.
 * Hashes: reveal reads `#/id` as `gotoLabel id` (`Hash.named`; round trip `reveal-render`); plain reads `#n` only (`plain.js` is a golden asset), so it has no label hash. The slide's label is its `id` attribute (`slideAttrs` in `Backend.Common`; a labelled stack carries it on its outer section). Test: `make labels test-labels` (`tests/browser/labels.mjs`).
 
@@ -113,7 +116,7 @@ Two things the deck side (steps 2, 5-7) still has to settle: (a) physical `goto`
 ## Presenting and binding as data
 
 `Slides.Backend.{Reveal,Plain}.present b nt cfg d` renders a deck on a backend `b` with `NavTotal` evidence
-`nt`: each slide body goes through `Slides.Lower.presentBody b` (`elab`, `lowerCmdBody b`,
+`nt`: each slide body goes through `Slides.Lower.presentBody b` (`elab`, `Supports.lowerDeck b`,
 `stepsBy (isNextS b)`) and then the existing `renderBody`; the deck algebra `deckAlgBy f` takes that per-body
 pass as a parameter, so the lifting to a deck is its two clauses (`slide`, and `stack` with a `map`).
 `renderReveal` and `renderPlain` are `present` at `revealSupports` and `plainSupports`. Law

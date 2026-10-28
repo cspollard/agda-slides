@@ -16,7 +16,7 @@
 -- `steps` is the page of an elaborated body.  Backends apply it to each slide body before rendering.
 -- What step `j` shows is the scene at tick `j` (`Slides.Steps.Properties`); the page keeps only
 -- whether a command is shown from the start, so every later command is a fragment of its own (a
--- reveal.js click each), however many ticks apart.  Laws: `Slides.Steps.Properties`.
+-- reveal.js click each), even two that share a tick.  Laws: `Slides.Steps.Properties`.
 
 module Slides.Steps where
 

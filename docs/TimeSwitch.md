@@ -114,4 +114,4 @@ Param.Properties) 486 to 443 code lines, so the "250 new lines" gate is not appr
 * `Repeat`'s tick law; all-τ agreement of `seqW`/`seqAt`; fractional-time assembly (browser-tested);
   `AllExact`/`place` support only `Seq`/`Par`/`Delay`/`Hold`/segments (`Repeat`, a bare `Drive`, a free leaf
   have no parametric encoding and no assembly statement).
-* Stage 4 (deck embedding, `Body⁺`/`Prog` collapse) not started.
+* Stage 4 landed on branch `deck-scene` (`docs/Stage4.md`, section 6).
