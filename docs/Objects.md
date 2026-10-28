@@ -31,8 +31,9 @@ connectives placing frames relative to each other) over a Space scalar.  Size is
 named anchors.  Printers (SVG, others) are maps over its primitive list.  One drawing
 vocabulary (**[decided]**: merge the three legacy ones).  Layout is natural in the scalar.
 
-**Scene** over leaves: the free algebra of a temporal signature (sequence, parallel overlay,
-windowing, shifting, repetition, driving a leaf by a track) over those leaves, after Hudak's
+**Scene** over leaves: the free algebra of a temporal signature (primitive: parallel overlay,
+windowing, shifting, driving a leaf by a moving value; sequence and repetition are derived
+forms, sequence being a window and a shift under overlay) over those leaves, after Hudak's
 temporal media.  Meaning: a sparse list of events (onset, duration, leaf in local time);
 the pointwise reading "time to maybe-leaf" is a fold of it, with relative windows and a shift
 action so nested clocks are one law.  **[decided]** Interpolation is in scope: a moving
@@ -41,8 +42,11 @@ of diagrams with a time variable; a *deck* is a scene of scenes with content lea
 (**[decided]**); pause is a one-tick delay.
 
 **Program** over user commands: the free monad adding "wait for a command" to scenes.  Meaning:
-a Moore machine (state yields a scene, a command yields the next state); a backend binds a
-subset of the commands.  Navigation state is machine state.
+a Moore machine (state yields a scene reading, a command yields the next state); scene
+operations over waiting children are the synchronous product of their machines; a scene is a
+program that never waits.  A backend binds a subset of the commands.  Navigation state is
+machine state.  **[decided]** The machine yields the *visible slide*; the accumulated view
+(chunks so far) is derived and agrees with it for the pause fragment.
 
 **Content**: flow content (text, lists, math, tables) laid out by the browser; a separate leaf
 carrier sharing the temporal and input structure, not the geometry.
@@ -69,11 +73,8 @@ composition of programs; opaque black-box frames; time domains beyond the Time t
 ## Open, defer until the step that needs it
 Fade as a window or an opacity scalar (Step 4: both can exist).
 
-**[decided, Step 5]** Deck-level machine view: the machine yields the *visible slide* (the flat deck
-scene read at the tick); the accumulated view is derived (on a slide the chunks so far, `accum-step`),
-and coincides with it for the pause fragment.  Program machines output a scene reading and take the
-synchronous product over scene operations; a pause is `Delay 1` under `Par` in a deck and a wait for
-`next` in its program (`pause-agree`).
+**[decided, Step 5]** Deck: slides are leaves of a scene in sequence; labels are slide data, not
+commands; a pause is a one-tick delay under overlay in a deck and a wait for `next` in its program.
 
 ## Literature
 Hudak (temporal media); Elliott and Hudak, *Functional Reactive Animation*, ICFP 1997; Elliott,
