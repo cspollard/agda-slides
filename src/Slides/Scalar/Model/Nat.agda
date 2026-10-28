@@ -13,6 +13,8 @@ open import Relation.Binary.PropositionalEquality using (refl)
 
 open import Slides.Scalar.Core
 open import Slides.Scalar.Space
+open import Slides.Scalar.Time
+open import Data.Product.Base using (_,_)
 
 natMon : OrdMon ℕ
 natMon = record
@@ -35,3 +37,10 @@ natScale = record
   { 0r = 0 ; 1r = 1 ; _+r_ = _+_ ; _*r_ = _*_ ; _≤r_ = ℕ._≤_ ; _·_ = _*_
   ; ·-1 = ℕP.*-identityˡ ; ·-zero = λ _ → refl ; ·-* = ℕP.*-assoc
   ; ·-+ = λ r s x → ℕP.*-distribʳ-+ x r s ; ·-dist = ℕP.*-distribˡ-+ ; ·-mono = λ {r} _ → ℕP.*-monoʳ-≤ r }
+
+-- ticks are the instants themselves
+natTime : Time ℕ
+natTime = record
+  { ord = natMon ; tick = λ n → n ; floor = λ n → n
+  ; tick-0 = refl ; tick-+ = λ _ _ → refl ; tick-mono = λ h → h ; tick-reflect = λ h → h
+  ; floor-gal = λ _ → (λ h → h) , (λ h → h) }
