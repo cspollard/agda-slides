@@ -67,8 +67,13 @@ One single-sorted signature for everything; value-dependent switching (full FRP)
 composition of programs; opaque black-box frames; time domains beyond the Time theory.
 
 ## Open, defer until the step that needs it
-Machine view at deck level (accumulated content or visible slide: Step 5); fade as a window or
-an opacity scalar (Step 4: both can exist).
+Fade as a window or an opacity scalar (Step 4: both can exist).
+
+**[decided, Step 5]** Deck-level machine view: the machine yields the *visible slide* (the flat deck
+scene read at the tick); the accumulated view is derived (on a slide the chunks so far, `accum-step`),
+and coincides with it for the pause fragment.  Program machines output a scene reading and take the
+synchronous product over scene operations; a pause is `Delay 1` under `Par` in a deck and a wait for
+`next` in its program (`pause-agree`).
 
 ## Literature
 Hudak (temporal media); Elliott and Hudak, *Functional Reactive Animation*, ICFP 1997; Elliott,
