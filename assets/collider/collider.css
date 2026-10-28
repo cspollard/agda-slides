@@ -120,3 +120,11 @@
 /* reveal.js chrome */
 .reveal .controls { color: var(--blue); }
 .reveal .progress { color: var(--blue); }
+
+/* The likelihood scan */
+.reveal svg .tmpl { fill: var(--crimson); opacity: .3; stroke: none; }
+.reveal svg .pt { fill: var(--ink); stroke: none; }
+.reveal svg .eb { stroke: var(--ink); stroke-width: 2; }
+.reveal svg .cur { fill: var(--blue); stroke: none; }
+.reveal svg .now { fill: var(--crimson); stroke: none; }
+.reveal svg .mu { stroke: var(--crimson); stroke-width: 2; stroke-dasharray: 6 5; }
