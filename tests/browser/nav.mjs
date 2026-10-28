@@ -1,6 +1,6 @@
 // Pins how a deck is NAVIGATED, end to end, in both browser backends.  This is the
-// behaviour that Stage 1 of plan/Unify.md ports onto `Nav` commands bound by a backend
-// (`Supports`); the port must leave every assertion here unchanged (docs/NavInventory.md).
+// behaviour that Stage 1 of the legacy plan (plan/Unify.md in ../agda-slides-legacy) ports onto `Nav` commands bound by a backend
+// (`Supports`); the port must leave every assertion here unchanged (../agda-slides-legacy/docs/NavInventory.md).
 //
 // Commands exercised (Nav = next | prev | goto n | first | last, plus fragment steps):
 //   reveal : ArrowRight/ArrowDown/Space/PageDown (next), ArrowLeft/ArrowUp/Shift+Space/PageUp

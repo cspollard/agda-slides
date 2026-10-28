@@ -1,7 +1,9 @@
 # agda-slides
 
 Scientific slide decks, diagrams and animations as small typed languages in Agda
-(`--safe --without-K`): free monads over containers, meaning given by algebras.
+(`--safe --without-K`): free monads over containers, meaning given by algebras.  Goals: a
+Container/FreeMonad-based DSL for high-quality scientific decks, exported to JS slides, plain
+HTML and other backends.
 
 The library is being rebuilt from first principles; start with `docs/Objects.md` (what the
 objects are and how they relate) and `plan/Rebuild.md` (the order of work).  The previous

@@ -17,6 +17,10 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
   named hypotheses; generic facts in `Container.*`, never per language.
 - Parallelism: steps 2 and 3 are independent after step 1; steps 4 and 5 after both; 6 after 5.
 
+## Status (2026-10-28)
+Steps 0 to 3 are done and merged: container lemmas +194 lines (budget 300), scalar theories 700 (budget 700),
+Diagram and Layout 1819 (budget 2500); `make check` clean, 17 s cold.  Next: Step 4 (Scene).
+
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
    out read-only; stale branches and worktrees removed; this branch holds only `Container.*`,
@@ -48,6 +52,16 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
 
 Total target about 11k lines against 18.4k.  These are targets from the legacy estimates, not
 measurements; revisit after step 2.
+
+## Future plans
+- **Setoid equality throughout.**  The scalar theories state their laws with `≡`.  Make the theory
+  records setoid-based (laws up to a carried equivalence, folds into setoids via the existing
+  `Container` setoid algebras), so that models with non-canonical representatives fit: an
+  unnormalised ℚ (numerator and positive denominator, equality by cross-multiplication, normalise
+  once at the boundary) defers gcd cost, which made `Hom` exponential when `ι n` was written `n / 1`.
+  Do this when a model needs it or after Step 4, whichever is first; not before measuring where
+  ℚ arithmetic is slow.  Lighter fixes first: literals in coprime form, fixed-denominator scalars.
+- Discharge `PctDigital`; Bézier easing; halving for centring; `Min` and `ModBy` nodes.
 
 ## Open items carried over from the legacy work
 Image background and slide-number command; inline ASCII documentation for modules as they are
