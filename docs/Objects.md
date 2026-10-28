@@ -43,7 +43,8 @@ of diagrams with a time variable; a *deck* is a scene of scenes with content lea
 
 **Program** over user commands: the free monad adding "wait for a command" to scenes.  Meaning:
 a Moore machine (state yields a scene reading, a command yields the next state); scene
-operations over waiting children are the synchronous product of their machines; a scene is a
+operations over waiting children are the synchronous product of their machines (**[decided]**; true
+parallel composition of programs is not supported); a scene is a
 program that never waits.  A backend binds a subset of the commands.  Navigation state is
 machine state.  **[decided]** The machine yields the *visible slide*; the accumulated view
 (chunks so far) is derived and agrees with it for the pause fragment.
