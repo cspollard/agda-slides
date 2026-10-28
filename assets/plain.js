@@ -40,11 +40,21 @@
     syncAll(slides[current], true);
   }
 
+  // the fragments that appear together with `f`: those with its `data-fragment-index`
+  // (a fragment without one is a step of its own)
+  function group(f, fs) {
+    var k = f.getAttribute('data-fragment-index');
+    return k === null ? [f] : fs.filter(function (g) { return g.getAttribute('data-fragment-index') === k; });
+  }
+
   function next() {
     var hidden = fragments(slides[current]).filter(function (f) {
       return !f.classList.contains('visible');
     });
-    if (hidden.length) { hidden[0].classList.add('visible'); syncAll(slides[current], false); }
+    if (hidden.length) {
+      group(hidden[0], hidden).forEach(function (f) { f.classList.add('visible'); });
+      syncAll(slides[current], false);
+    }
     else if (current < slides.length - 1) show(current + 1, false);
   }
 
@@ -52,7 +62,10 @@
     var shown = fragments(slides[current]).filter(function (f) {
       return f.classList.contains('visible');
     });
-    if (shown.length) { shown[shown.length - 1].classList.remove('visible'); syncAll(slides[current], false); }
+    if (shown.length) {
+      group(shown[shown.length - 1], shown).forEach(function (f) { f.classList.remove('visible'); });
+      syncAll(slides[current], false);
+    }
     else if (current > 0) show(current - 1, true);
   }
 

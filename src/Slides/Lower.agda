@@ -100,7 +100,8 @@ module _ (l : Lowering ContentC ContentC) where
   layout pause            = pause
   layout (classed k c)    = classed k (lower l c)
   layout (placed x y w h c) = placed x y w h (lower l c)
-  layout (stepped s sh)   = stepped s (layout sh)
+  layout (late k c)       = late k (lower l c)
+  layout (stepped k sh)   = stepped k (layout sh)
 
   -- Lower the content commands of a body, and the content nested in its
   -- layout commands.

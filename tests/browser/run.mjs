@@ -47,13 +47,12 @@ async function open(dir, ready) {
   eq('horizontal slides', await ev(() => Reveal.getHorizontalSlides().length), 14);
   eq('total slides (stack counts twice)', await ev(() => Reveal.getTotalSlides()), 15);
 
-  // `pause`: three blocks become fragments; notes do not.
+  // `pause`: three blocks become fragments of one chunk (one index, one click); notes do not.
   await ev(() => Reveal.slide(1));
   eq('pause: fragments on the slide', await ev(() => Reveal.getCurrentSlide().querySelectorAll('.fragment').length), 3);
   eq('pause: none visible at first', await visible(), 0);
-  await key('ArrowRight'); eq('pause: step 1', await visible(), 1);
-  await key('ArrowRight'); eq('pause: step 2', await visible(), 2);
-  await key('ArrowRight'); eq('pause: step 3', await visible(), 3);
+  eq('pause: one fragment index', await ev(() => new Set(Array.from(Reveal.getCurrentSlide().querySelectorAll('.fragment')).map(f => f.dataset.fragmentIndex)).size), 1);
+  await key('ArrowRight'); eq('pause: one click shows the whole chunk', await visible(), 3);
   await key('ArrowRight'); eq('pause: next key moves to the next slide', (await idx()).h, 2);
   await key('ArrowLeft');  eq('back: returns to the paused slide', (await idx()).h, 1);
   check('notes are not in a fragment',
@@ -162,12 +161,10 @@ async function open(dir, ready) {
   await key('ArrowRight'); eq('right: next slide', await active(), 1);
   eq('hash is the slide number', await ev(() => location.hash), '#2');
   eq('pause: fragments hidden at first', await visible(), 0);
-  await key('Space');      eq('pause: step 1', await visible(), 1);
-  await key('ArrowRight'); eq('pause: step 2', await visible(), 2);
-  await key('ArrowRight'); eq('pause: step 3', await visible(), 3);
+  await key('Space');      eq('pause: one click shows the whole chunk', await visible(), 3);
   await key('ArrowRight'); eq('pause: then the next slide', await active(), 2);
   await key('ArrowLeft');  eq('back: previous slide with all fragments shown', [await active(), await visible()].join(','), '1,3');
-  await key('ArrowLeft');  eq('back: unreveals the last fragment', await visible(), 2);
+  await key('ArrowLeft');  eq('back: unreveals the whole chunk', await visible(), 0);
   await page.evaluate(() => { location.hash = '#13'; });
   await page.reload(); await page.waitForSelector('.slide.active');
   check('diagram: svg with a marker, fragment hidden then shown', await ev(() =>

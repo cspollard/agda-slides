@@ -98,6 +98,7 @@ module _ {C : Set} where
   elab-count (impure (inj₂ (classed _ _) , k)) = elab-count (k tt)
   elab-count (impure (inj₂ (placed _ _ _ _ _) , k)) = elab-count (k tt)
   elab-count (impure (inj₂ (stepped _ _) , k)) = elab-count (k tt)
+  elab-count (impure (inj₂ (late _ _) , k)) = elab-count (k tt)
 
   elab-no-label : ∀ n b l → labelFrom n (elab {C} b) l ≡ nothing
   elab-no-label n (pure _)                      l = refl
@@ -109,6 +110,7 @@ module _ {C : Set} where
   elab-no-label n (impure (inj₂ (classed _ _) , k)) l = elab-no-label n (k tt) l
   elab-no-label n (impure (inj₂ (placed _ _ _ _ _) , k)) l = elab-no-label n (k tt) l
   elab-no-label n (impure (inj₂ (stepped _ _) , k)) l = elab-no-label n (k tt) l
+  elab-no-label n (impure (inj₂ (late _ _) , k)) l = elab-no-label n (k tt) l
 
 ------------------------------------------------------------------------
 -- The table of a deck

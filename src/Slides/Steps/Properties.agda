@@ -6,17 +6,20 @@
 --   dur-sceneBy  the duration of the scene of a program is its number of steps
 --   chunks       a body cut at its pauses: the commands shown from the start, then one chunk per pause
 --   shown-chunks step `j` shows the first `j + 1` chunks: the scene sampled at tick `j` of the ℕ clock
+--   events-bound the fragment indices of a page are ticks, between 1 and the number of steps
 --   machine-shown  the state of the deck machine after `j` `next`s views exactly that
 --
--- The page keeps only whether a command starts after tick 0 (`Slides.Steps.emit`), so these are
--- statements about ticks, not about reveal.js clicks.
+-- The page gives a command that starts at tick `k > 0` the fragment index `k` (`Slides.Steps.emit`), so a
+-- chunk is one reveal.js click.
 
 module Slides.Steps.Properties where
 
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.List.Base using (List; []; _∷_; _++_; concat; take)
 open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
-open import Data.Nat.Base using (ℕ; zero; suc; _+_)
+open import Data.Nat.Base using (ℕ; zero; suc; _+_; _≤_; z≤n; s≤s)
+open import Data.List.Relation.Unary.All as All using (All; []; _∷_)
+open import Data.List.Relation.Unary.All.Properties using (map⁺)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit.Base using (⊤; tt)
@@ -33,6 +36,7 @@ open import Slides.Time.Nat using (natClock)
 open import Slides.Input.Navigation (Shape BlockC) using (replay)
 open import Slides.Anim.Syntax using (Scene; dur; _∥ᵃ_; delay)
 open import Slides.Anim.Sample using (sample; TM)
+open import Slides.Anim.Perform using (perform)
 open import Slides.Steps
 
 ------------------------------------------------------------------------
@@ -51,6 +55,7 @@ module _ {C C′ : Set} where
   scene-elab (impure (inj₂ (classed _ _) , k)) = cong (pure _ ∥ᵃ_) (scene-elab (k tt))
   scene-elab (impure (inj₂ (placed _ _ _ _ _) , k)) = cong (pure _ ∥ᵃ_) (scene-elab (k tt))
   scene-elab (impure (inj₂ (stepped _ _) , k)) = cong (pure _ ∥ᵃ_) (scene-elab (k tt))
+  scene-elab (impure (inj₂ (late _ _) , k)) = cong (pure _ ∥ᵃ_) (scene-elab (k tt))
 
 ------------------------------------------------------------------------
 -- Ticks
@@ -145,3 +150,22 @@ module _ {C : Set} (_≟_ : DecidableEquality (Nav ⊎ C)) where
   machine-shown (impure (inj₂ (classed cl c) , k)) j = show-case (inj₂ (classed cl c)) (k tt) j (machine-shown (k tt) j)
   machine-shown (impure (inj₂ (placed x y w h c) , k)) j = show-case (inj₂ (placed x y w h c)) (k tt) j (machine-shown (k tt) j)
   machine-shown (impure (inj₂ (stepped st l) , k)) j = show-case (inj₂ (stepped st l)) (k tt) j (machine-shown (k tt) j)
+  machine-shown (impure (inj₂ (late st c) , k)) j = show-case (inj₂ (late st c)) (k tt) j (machine-shown (k tt) j)
+
+------------------------------------------------------------------------
+-- The page: fragment indices are ticks
+
+-- Every command starts at a tick of the scene, between 0 and the number of steps.  The page gives a
+-- command that starts at tick `k > 0` the fragment index `k` (`Slides.Steps.emit`), so the indices of
+-- a slide's fragments are among `1 … ticks`: at most one per pause, the commands of a chunk sharing
+-- theirs.  (Every index is used when every chunk has a command that is shown; an empty chunk, or one
+-- of only notes, leaves its index out, and reveal.js shows the others in order.)
+module _ {X : Set} (step? : X → Bool) where
+
+  events-bound : ∀ p → All (λ e → proj₁ e ≤ ticks step? p) (proj₂ (perform (sceneBy step? p)))
+  events-bound (pure _)                     = z≤n ∷ []
+  events-bound (impure (inj₁ c , k))        = z≤n ∷ events-bound (k tt)
+  events-bound (impure (inj₂ (inj₁ x) , k)) with step? x
+  ... | true  = map⁺ (All.map s≤s (events-bound (k tt)))
+  ... | false = events-bound (k tt)
+  events-bound (impure (inj₂ (inj₂ _) , k)) = events-bound (k tt)

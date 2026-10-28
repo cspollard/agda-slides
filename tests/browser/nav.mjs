@@ -42,24 +42,31 @@ async function open(dir, ready, hash = '') {
 }
 
 // ---- reveal ---------------------------------------------------------------------------
-// state: [flat leaf-slide index, visible fragments on it]; leaf = a slide that is not a stack
+// A step is a group of fragments with one `data-fragment-index` (a `pause` chunk), or a fragment without one.
+// state: [flat leaf-slide index, visible steps on it]; leaf = a slide that is not a stack
 const revealState = page => page.evaluate(() => {
   const leaves = Array.from(document.querySelectorAll('.slides section')).filter(s => !s.querySelector(':scope > section'));
+  const steps = ns => { const ks = new Set(); let u = 0; ns.forEach(n => { const k = n.getAttribute('data-fragment-index'); if (k === null) u++; else ks.add(k); }); return u + ks.size; };
   const cur = Reveal.getCurrentSlide();
-  return [leaves.indexOf(cur), cur.querySelectorAll('.fragment.visible').length];
+  return [leaves.indexOf(cur), steps(Array.from(cur.querySelectorAll('.fragment.visible')))];
 });
 const revealHV = page => page.evaluate(() => { const i = Reveal.getIndices(); return [i.h, i.v]; });
 
-// the shape of a deck: fragments per leaf slide
-const revealShape = page => page.evaluate(() =>
-  Array.from(document.querySelectorAll('.slides section')).filter(s => !s.querySelector(':scope > section'))
-    .map(s => s.querySelectorAll('.fragment').length));
-const plainShape = page => page.evaluate(() =>
-  Array.from(document.querySelectorAll('.slide')).map(s => s.querySelectorAll('.fragment').length));
+// the shape of a deck: steps per leaf slide
+const revealShape = page => page.evaluate(() => {
+  const steps = ns => { const ks = new Set(); let u = 0; ns.forEach(n => { const k = n.getAttribute('data-fragment-index'); if (k === null) u++; else ks.add(k); }); return u + ks.size; };
+  return Array.from(document.querySelectorAll('.slides section')).filter(s => !s.querySelector(':scope > section'))
+    .map(s => steps(Array.from(s.querySelectorAll('.fragment'))));
+});
+const plainShape = page => page.evaluate(() => {
+  const steps = ns => { const ks = new Set(); let u = 0; ns.forEach(n => { const k = n.getAttribute('data-fragment-index'); if (k === null) u++; else ks.add(k); }); return u + ks.size; };
+  return Array.from(document.querySelectorAll('.slide')).map(s => steps(Array.from(s.querySelectorAll('.fragment'))));
+});
 const plainState = page => page.evaluate(() => {
   const ss = Array.from(document.querySelectorAll('.slide'));
   const i = ss.findIndex(s => s.classList.contains('active'));
-  return [i, ss[i].querySelectorAll('.fragment.visible').length];
+  const steps = ns => { const ks = new Set(); let u = 0; ns.forEach(n => { const k = n.getAttribute('data-fragment-index'); if (k === null) u++; else ks.add(k); }); return u + ks.size; };
+  return [i, steps(Array.from(ss[i].querySelectorAll('.fragment.visible')))];
 });
 
 // press `key` until the state stops changing (at most `limit` times); the trace of states
@@ -95,20 +102,16 @@ let revealTrace;
   eq('starts on the first slide', await hv(), [0, 0]);
   await key('ArrowLeft'); eq('prev at the first slide: stays', await hv(), [0, 0]);
 
-  // next / prev through the fragments of a `pause` slide (slide 1: three fragments)
+  // next / prev through the fragments of a `pause` slide (slide 1: three fragments, one chunk: one step)
   await key('ArrowRight'); eq('ArrowRight: slide 1, nothing shown', await st(), [1, 0]);
   eq('events: slide change', await fragLog(), ['slidechanged']);
-  await key('ArrowRight'); eq('ArrowRight: fragment 1', await st(), [1, 1]);
-  await key('ArrowRight'); eq('ArrowRight: fragment 2', await st(), [1, 2]);
-  await key('ArrowRight'); eq('ArrowRight: fragment 3', await st(), [1, 3]);
-  eq('events: one fragmentshown per step', await fragLog(), ['fragmentshown', 'fragmentshown', 'fragmentshown']);
+  await key('ArrowRight'); eq('ArrowRight: the chunk', await st(), [1, 1]);
+  eq('events: one fragmentshown per step', await fragLog(), ['fragmentshown']);
   await key('ArrowRight'); eq('ArrowRight: next slide', await st(), [2, 0]);
   eq('events: slide change', await fragLog(), ['slidechanged']);
-  await key('ArrowLeft');  eq('ArrowLeft: back to slide 1 with every fragment shown', await st(), [1, 3]);
-  await key('ArrowLeft');  eq('ArrowLeft: hides the last fragment', await st(), [1, 2]);
-  eq('events: slidechanged then fragmenthidden (x2)', await fragLog(), ['slidechanged', 'fragmenthidden']);
-  await key('ArrowLeft'); await key('ArrowLeft');
-  eq('ArrowLeft x2: no fragment shown', await st(), [1, 0]);
+  await key('ArrowLeft');  eq('ArrowLeft: back to slide 1 with every fragment shown', await st(), [1, 1]);
+  await key('ArrowLeft');  eq('ArrowLeft: hides the chunk', await st(), [1, 0]);
+  eq('events: slidechanged then fragmenthidden', await fragLog(), ['slidechanged', 'fragmenthidden']);
   await key('ArrowLeft');  eq('ArrowLeft: slide 0', await st(), [0, 0]);
 
   // the other next/prev keys
@@ -146,7 +149,7 @@ let revealTrace;
   eq('hashchange #/8/1: second slide of the stack', await hv(), [8, 1]);
   await page.evaluate(() => { location.hash = '#/1'; });
   await page.waitForFunction(() => Reveal.getIndices().h === 1, null, { timeout: 5000 });
-  eq('hashchange #/1 (backwards): the target shows all its fragments', await st(), [1, 3]);
+  eq('hashchange #/1 (backwards): the target shows all its fragments', await st(), [1, 1]);
 
   // a vertical stack (slide 8, two slides)
   await page.evaluate(() => Reveal.slide(8, 0));
@@ -227,15 +230,11 @@ let plainTrace;
 
   await key('ArrowRight'); eq('ArrowRight: slide 1', await st(), [1, 0]);
   eq('hash follows the slide', await hash(), '#2');
-  await key('ArrowRight'); eq('ArrowRight: fragment 1', await st(), [1, 1]);
-  await key('ArrowDown');  eq('ArrowDown: fragment 2', await st(), [1, 2]);
-  await key('Space');      eq('Space: fragment 3', await st(), [1, 3]);
+  await key('ArrowRight'); eq('ArrowRight: the chunk', await st(), [1, 1]);
   await key('PageDown');   eq('PageDown: next slide', await st(), [2, 0]);
   eq('hash follows the slide (2)', await hash(), '#3');
-  await key('ArrowLeft');  eq('ArrowLeft: slide 1 with every fragment shown', await st(), [1, 3]);
-  await key('ArrowUp');    eq('ArrowUp: hides a fragment', await st(), [1, 2]);
-  await key('PageUp');     eq('PageUp: hides a fragment', await st(), [1, 1]);
-  await key('ArrowLeft');  eq('ArrowLeft: hides the last fragment', await st(), [1, 0]);
+  await key('ArrowLeft');  eq('ArrowLeft: slide 1 with every fragment shown', await st(), [1, 1]);
+  await key('ArrowUp');    eq('ArrowUp: hides the chunk', await st(), [1, 0]);
   await key('ArrowLeft');  eq('ArrowLeft: slide 0', await st(), [0, 0]);
   eq('hash follows going back', await hash(), '#1');
   check('progress bar at the first slide', Math.abs(parseFloat(await bar()) - 100 / 15) < 1e-3, await bar());

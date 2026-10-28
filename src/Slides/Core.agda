@@ -119,8 +119,11 @@ data LayoutShape : Set where
   -- content in a box at a fixed position: left, top, width, height, in whole
   -- percentages of the slide
   placed   : (x y w h : ℕ) → Content → LayoutShape
-  -- a layout command that appears on a later step (produced by `Slides.Steps`)
-  stepped  : (style : Maybe String) → LayoutShape → LayoutShape
+  -- content, or a layout command, that appears at the given step (a tick of the slide's scene, at
+  -- least 1; the commands of one chunk share it).  Produced by `Slides.Steps`, a reveal.js
+  -- fragment with `data-fragment-index` the step.
+  late     : (step : ℕ) → Content → LayoutShape
+  stepped  : (step : ℕ) → LayoutShape → LayoutShape
 
 LayoutC : Container 0ℓ 0ℓ
 LayoutC = LayoutShape ▷ λ _ → ⊤

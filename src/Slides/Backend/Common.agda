@@ -196,6 +196,10 @@ fragmentClass : Maybe String → String
 fragmentClass nothing  = "fragment"
 fragmentClass (just s) = "fragment " ++ˢ s
 
+-- A fragment that appears at step `k`: reveal.js shows the fragments of one index together.
+fragmentAt : ℕ → Attrs
+fragmentAt k = ("class" , "fragment") ∷ ("data-fragment-index" , show k) ∷ []
+
 -- The layout algebra.
 renderLayout : LayoutShape → Forest
 renderLayout (columns cs) =
@@ -226,8 +230,10 @@ renderLayout (placed x y w h c) =
 renderLayout pause = []
 renderLayout (classed cls c) =
   hElement "div" (("class" , cls) ∷ []) (renderContentProgram c) ∷ []
-renderLayout (stepped style l) =
-  hElement "div" (("class" , fragmentClass style) ∷ []) (renderLayout l) ∷ []
+renderLayout (late k c) =
+  hElement "div" (fragmentAt k) (renderContentProgram c) ∷ []
+renderLayout (stepped k l) =
+  hElement "div" (fragmentAt k) (renderLayout l) ∷ []
 
 layoutα : Func (Poly₀ LayoutC ForestSetoid) ForestSetoid
 layoutα = commandα renderLayout

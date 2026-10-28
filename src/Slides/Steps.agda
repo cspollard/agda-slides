@@ -11,12 +11,12 @@
 --               for the deck vocabulary `Nav ⊎ C`, and its pull-back along the decoder for a
 --               backend vocabulary (`Slides.Lower.Properties.scene-lowered`);
 --   stepsBy     the page: the performance of the scene (`Slides.Anim.Perform`: each command with the
---               tick it starts at) with a command that starts after tick 0 wrapped in a fragment.
+--               tick it starts at) with a command that starts at tick `k > 0` wrapped in a fragment of index `k`.
 --
 -- `steps` is the page of an elaborated body.  Backends apply it to each slide body before rendering.
 -- What step `j` shows is the scene at tick `j` (`Slides.Steps.Properties`); the page keeps only
--- whether a command is shown from the start, so every later command is a fragment of its own (a
--- reveal.js click each), even two that share a tick.  Laws: `Slides.Steps.Properties`.
+-- when a command starts: a command that starts at tick `k > 0` is a fragment with index `k`, so the
+-- commands of one chunk (between two pauses) share an index and appear at one click.  Laws: `Slides.Steps.Properties`.
 
 module Slides.Steps where
 
@@ -86,17 +86,17 @@ private
   cmd : Leaf → Body
   cmd s = impure (s , λ _ → pure tt)
 
--- A command that starts after tick 0 is a fragment (content) or a `stepped` command (layout);
+-- A command that starts at tick `k > 0` is `late k` (content) or `stepped k` (layout), a fragment of index `k`;
 -- notes and scripts are not shown on the slide, so they never are.
 emit : ℕ → Maybe Leaf → Body
 emit _       nothing                  = pure tt
 emit zero    (just s)                 = cmd s
 emit (suc _) (just (inj₁ (notes t)))  = cmd (inj₁ (notes t))
 emit (suc _) (just (inj₁ (script j))) = cmd (inj₁ (script j))
-emit (suc _) (just (inj₁ c))          = cmd (inj₂ (fragment nothing (impure (c , λ _ → pure tt))))
-emit (suc _) (just (inj₂ l))          = cmd (inj₂ (stepped nothing l))
+emit (suc k) (just (inj₁ c))          = cmd (inj₂ (late (suc k) (impure (c , λ _ → pure tt))))
+emit (suc k) (just (inj₂ l))          = cmd (inj₂ (stepped (suc k) l))
 
--- The page of a scene: its commands in order, a late one a fragment.
+-- The page of a scene: its commands in order, each with the tick it starts at.
 page : Scene (Maybe Leaf) → Body
 page a = foldr place (pure tt) (proj₂ (perform a))
   where place : ℕ × Maybe Leaf → Body → Body
