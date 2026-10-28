@@ -45,12 +45,24 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
     classed "authors" (p■ "Chris Pollard · Warwick")
 ```
 
-**2. The question.**
+```agda
+  slide $ do
+    heading 2 "scientific impact of curiosity-driven particle physics"
+    bullets
+      ( "Standard Model (SM): mass is granted to particles via their interactions with the Higgs boson."
+      ∷ "first demonstrated in the 1960s → took ~50 to experimentally verify!"
+      ∷ "finally, an explanation for why radiactive decay is not instant"
+      ∷ "top quark has the mass of a gold atom"
+      -- TODO: impact on cosmology
+      ∷ []
+      )
+    animateLoop "d-lhc" 100 16 lhcAnim
+```
 
 ```agda
   slide $ do
     heading 2 "the Large Hadron Collider"
-    incremental
+    bullets
       ( "the Large Hadron Collider (LHC) produces 1 billion $pp$ collisions every second at $m_{pp} = 13.6$ TeV"
       ∷ "why?"
       ∷ "rare processes: 1B collisions to get a Higgs boson, on average"
@@ -60,7 +72,28 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
     animateLoop "d-lhc" 100 16 lhcAnim
 ```
 
+```agda
+  slide $ do
+    heading 2 "an early spin-off"
+    -- TODO
+    -- A nice figure
+    bullets
+      ( "the LHC collaborations are enormous: ATLAS is ~5000 physicists"
+      ∷ "need to coordinate work on detector design, data processing, analysis, etc"
+      ∷ "collaborative tools and information-sharing are critical"
+      ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
+      ∷ "clearly they have grown beyond their initial purpose!"
+      ∷ []
+      )
+```
+
 **3. The trigger.**
+
+TODO:
+- approximate rates (40MHz -> 100kHz -> 10kHz)
+- hardware triggers (ML on FPGAs)
+- software triggers (fast ML on GPUs and conventional CPUs)
+- hls4ml: https://fastmachinelearning.org/hls4ml/
 
 ```agda
   slide $ do
@@ -70,57 +103,26 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       (p■ "we cannot keep everything, and we cannot look at everything by eye.")
 ```
 
-**4. The pipeline.**
+**4. computing grid.**
 
 ```agda
   slide $ do
-    heading 2 "from collision to discovery"
-    animate "d-pipeline" 100 400 pipelineActs
+    heading 2 "the computing grid"
 ```
-
-**5. Section: the tools.**
-
-```agda
-  sectionSlide "four tools the LHC pushed forward"
-```
-
-**6. The tools.**
 
 ```agda
   slide $ do
-    heading 2 "four ideas, now everywhere"
-    classed "card blue"
-      (do h■ 3 "machine learning"
-          p■ "boosted decision trees and neural networks sort signal from background, long before it was fashionable.")
-    classed "card crimson"
-      (do h■ 3 "simulation & statistics"
-          p■ "Monte Carlo simulation and likelihood fits turn raw counts into a calibrated claim.")
-    classed "card plum"
-      (do h■ 3 "data engineering"
-          p■ "real-time triggers, columnar data and a worldwide computing grid.")
-    classed "card rust"
-      (do h■ 3 "open science"
-          p■ ("the web began at CERN " ∷ cite "TBL89" ∷ "; today the data and the software are open." ∷ []))
-```
-
-**7. Machine learning.**
-
-```agda
-  slide $ do
-    heading 2 "machine learning on every collision"
+    heading 2 "statistical inference"
     columns
       ( (do Content.bullets
               ( "each event is a few thousand numbers: where and when the detector fired"
-              ∷ "a network learns which events look like the signal"
-              ∷ ("graph neural networks treat particles as " ∷ emph "points that interact" ∷ [])
-              ∷ "same ideas: image recognition, fraud detection, medicine"
-              ∷ []))
+              ∷ [])
+              )
       ∷ (do Content.diagram (compile "d-hist" 100 histogram)
             p■ "a signal (red) is a small bump on a smooth background")
-      ∷ [])
+      ∷ []
+      )
 ```
-
-**8. Statistics.**
 
 ```agda
   slide $ do
@@ -133,18 +135,27 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       (p■ "the same logic checks a medical trial or an A/B test.")
 ```
 
-**9. A likelihood scan.**
+TODO: socks example
+
+- you want to estimate the fraction of black socks in your drawer
+- you pull out one sock: it is black
+- you pull out another sock: it is blue.
+- what is your estimate of the fraction of black socks?
+- what numbers did you keep in your head to make that calculation possible?
 
 ```agda
   slide $ do
-    heading 2 "estimating a likelihood: slide the template"
+    heading 2 "an example with socks"
+```
+
+```agda
+  slide $ do
+    heading 2 "estimating a parameter: slide the template"
     animate "d-scan" 75 120 (scan scanSteps 0 ∷ [])
     displayMath nllFormula
     classed "callout blue"
       (p■ "the best-fit mean is where -2 ln L is smallest. near the minimum the curve is a parabola, and its width is the uncertainty.")
 ```
-
-**10. More data, a tighter curve.**
 
 ```agda
   slide $ do
@@ -153,8 +164,6 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
     classed "callout blue"
       (p■ "each batch of events makes the minimum sharper: the width of the curve is the uncertainty, and it shrinks with the data.")
 ```
-
-**11. Simulation-based inference.**
 
 ```agda
   slide $ do

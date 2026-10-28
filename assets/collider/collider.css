@@ -131,3 +131,10 @@
 
 /* a title set in two headings: close the gap between the lines */
 .reveal h1 + h1 { margin-top: -.05em; }
+
+/* The LHC animation (src/Slides/Examples/LHC.agda) */
+.reveal svg .pipe { fill: var(--muted); stroke: none; }
+.reveal svg .bunch { fill: var(--rust); stroke: none; }
+.reveal svg .halo { fill: var(--rust); opacity: .25; stroke: none; }
+.reveal svg .burst { fill: var(--crimson); opacity: .5; stroke: none; }
+.reveal svg .spark { fill: var(--crimson); stroke: none; }
