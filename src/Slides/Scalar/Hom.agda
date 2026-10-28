@@ -37,10 +37,14 @@ open import Slides.Scalar.Model.Rat
 
 ι-hom : IsOrdMonHom natMon ratMon ι
 ι-hom = record { h-0 = refl ; h-+ = ι-+ ; h-mono = ι-mono ; h-reflect = ι-reflect }
+ι-scale-hom : IsScaleHom natScale ratScale ι ι
+ι-scale-hom = record { h-· = ι-* }
+ι-time-hom : IsTimeHom natTime ratTime ι
+ι-time-hom = record { ord = ι-hom ; h-tick = λ _ → refl ; h-floor = Time.floor-tick ratTime }
 ι-⊔ : ∀ a b → ι (a ℕ.⊔ b) ≡ ι a ℚ.⊔ ι b
 ι-⊔ = IsOrdMonHom.h-⊔ ι-hom
 ι-scale : ∀ r x → ι (Scale._·_ natScale r x) ≡ Scale._·_ ratScale (ι r) (ι x)
-ι-scale = ι-*
+ι-scale = IsScaleHom.h-· ι-scale-hom
 ι-sub : ∀ {a b} → b ℕ.≤ a → ι (a ∸ b) ≡ ι a ℚ.- ι b
 ι-sub = IsOrdMonHom.h-sub ι-hom natSub ratSub
 ι-sub-fails : ¬ (ι (0 ∸ 1) ≡ ι 0 ℚ.- ι 1)
@@ -48,7 +52,7 @@ open import Slides.Scalar.Model.Rat
 ι-pct-fails : ¬ (ι (Space.pct natSpace 50 1) ≡ Space.pct ratSpace 50 (ι 1))
 ι-pct-fails ()
 ι-hold : ∀ n → ι (Time.hold natTime n) ≡ Time.hold ratTime (ι n)
-ι-hold n = sym (Time.hold-tick ratTime n)
+ι-hold = IsTimeHom.h-hold ι-time-hom
 
 -- Lowering
 

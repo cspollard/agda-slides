@@ -66,6 +66,18 @@ record Time (T : Set) : Set₁ where
     rem-tick : ∀ n → rem (tick n) ≡ 0#
     rem-tick n = trans (cong (λ y → tick n - y) (hold-tick n)) (sub-self (tick n))
 
+-- A time homomorphism: an order embedding carrying whole ticks to whole ticks and preserving
+-- the floor; so it preserves `hold`.
+record IsTimeHom {T T′} (Tm : Time T) (Tn : Time T′) (h : T → T′) : Set where
+  private module A = Time Tm ; module B = Time Tn
+  field
+    ord     : IsOrdMonHom A.ord B.ord h
+    h-tick  : ∀ n → h (A.tick n) ≡ B.tick n
+    h-floor : ∀ x → B.floor (h x) ≡ A.floor x
+
+  h-hold : ∀ x → h (A.hold x) ≡ B.hold (h x)
+  h-hold x = trans (h-tick _) (cong B.tick (sym (h-floor x)))
+
 -- The signature
 
 data TimeOp : Set where
