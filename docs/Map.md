@@ -12,7 +12,8 @@ which can be parked.  Line counts are approximate (main at the time of writing).
 | `Container.*` | containers, polynomial functors, `⊎`, free monad, folds (`Interpret`), Kleisli lowerings; the generic algebra every language below is an instance of | 1.8k |
 | `Slides.Diagram.{Syntax,Signature,Expr,Ordered,Scalar,NatQ}` | the diagram language and the **layered scalar signature**: core, sub (`Expr`), ordered/floor/ease (`Ordered`), scalars `Ops`, ℕ inside ℚ | 1.5k |
 | `Slides.Diagram.{Place,Layout,Draw,Geometry,Names,Delta,...}` | layout algebra into `Layout S`, names, diffs, text metrics; `Place.Properties.*` are the layout laws | 3.5k |
-| `Slides.Anim.*` | animations: `Syntax` (free monad), `Track` (easings, pieces), `Continuous`, `Timeline`, `Footprint`, `Render`; shipped data `Formula`, `Param`, `Phases`, `Share`, `SharePhases`; assembly proofs `Assembly.*` (*theory*) | 5.3k |
+| `Slides.Time.*` | the time model `Clock` (`Slides.Time`), its instances ℚ (`Rat`) and ℕ (`Nat`), the skeleton laws (`Properties`, *theory*); `docs/TimeSwitch.md` | 0.3k |
+| `Slides.Anim.*` | animations: `Syntax` (free monad over the one temporal container `TimeC`), `Sample` (its reading in any clock), `Track` (easings, pieces), `Continuous` (the ℚ clock), `Timeline` (the ℕ clock), `Footprint`, `Render`; shipped data `Formula`, `Param`, `Phases`, `Share`, `SharePhases`; assembly proofs `Assembly.*`, `Param.Properties` (*theory*) | 5.2k |
 | `Slides.Input.*` | user input as a parameter: `Nav`, `Machine`, `Supports`, `Binding`, `Deck`, `Slides` (labels) | 1.2k |
 | `Slides.{Core,DSL,Components,Steps,Lower,Literals,Math,Resources}` | deck vocabulary (`BlockC`/`DeckC`), `do`-notation, `pause` elaboration, lowerings | 1.0k |
 | `Slides.Backend.*` | `HTML`, `Common`, `Diagram` (SVG), `Reveal`, `Plain`, `Input`/`*.Supports`, `Restyle`; `*.Properties` are structural laws | 2.3k |
@@ -25,8 +26,8 @@ evaluator is tested, not proved.
 ## Critical path of the time migration
 
 `Container.*` → `Slides.Diagram.{Signature,Expr,Ordered*,Scalar,NatQ}` → `Slides.Diagram.Syntax`
-→ `Slides.Anim.{Syntax,Track,Continuous,Timeline,Footprint,Render}` → `Slides.Anim.Assembly*`
-→ `Slides.Anim.{Formula,Param,Phases,Share*}`.  Slowest checks (cold, ms, from the last profile):
+→ `Slides.Time*` → `Slides.Anim.{Syntax,Track,Sample,Continuous,Timeline,Footprint,Render}` →
+`Slides.Anim.Assembly*` → `Slides.Anim.{Formula,Param,Phases,Share*}`.  Slowest checks (cold, ms, from the last profile):
 `Anim.Param.Properties` 96k, `Anim.Assembly.Continuous` 45k, `Anim.Continuous.Properties` 44k,
 `Examples.Pairs.Properties` 35k.
 

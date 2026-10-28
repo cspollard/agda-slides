@@ -14,7 +14,7 @@ open import Slides.Anim.Render using (renderBoth)
 open import Slides.Diagram.Syntax
 open import Slides.Diagram using (defaultStyle)
 
-acts : ℕ → List (Anim ℕ (Seg ℕ))
+acts : ℕ → List (Anim)
 acts zero = hold 1 (rectangle 1 1 defaultStyle) ∷ []
 acts _    = hold 2 (rectangle 1 1 defaultStyle) ∷ []
 
