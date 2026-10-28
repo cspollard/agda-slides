@@ -41,6 +41,13 @@ Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold
 5. **Program.**  The free monad with a wait command; the Moore machine; navigation; deck as
    scene of scenes with the pause convention; decide the machine view (accumulated or visible).
    Budget: 1k (legacy 1.2k plus the deck elaboration).
+5b. **Cleanup of homomorphisms (after Step 5, before Step 6).**  (i) Generic lemma in `Container`:
+   a homomorphism of handlers, with a lowering where an operation is not preserved, makes the
+   fold commute; restate `digitise`, `tick-hom` and layout naturality as instances.  (ii) Homomorphism
+   records for Space, Time and Coupling (scaling, hold, floor), replacing the per-operation theorems.
+   (iii) Layouts as a monoid under overlay with absence as unit; `Par` and assembly laws as
+   instances.  (iv) Correct `docs/Objects.md`: `Seq` and `Repeat` are derived forms of the Scene
+   signature.  Budget: net negative lines.
 6. **Content and backends.**  Content carrier; the shared deck algebra; reveal and plain
    backends; the event-list shipping format and the generated page evaluator (JS).  Measure page
    size against the goldens before adding any sharing.  Budget: 2.5k (legacy 3.3k plus 2.5k
