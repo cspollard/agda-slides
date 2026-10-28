@@ -14,8 +14,8 @@ AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 # and need `--guardedness`, so they are checked on their own.
 check:
 	@mkdir -p _build
-	@(echo "module Everything where"; for f in $$(find src -name '*.agda' ! -name '*Main.agda' ! -name Driver.agda ! -path '*/Spike/*' | sort); do \
-	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.agda$$##')"; done) > _build/Everything.agda
+	@(echo "module Everything where"; for f in $$(find src \( -name '*.agda' -o -name '*.lagda.md' \) ! -name '*Main.agda' ! -name Driver.agda ! -path '*/Spike/*' | sort); do \
+	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.l\?agda\(\.md\)\?$$##')"; done) > _build/Everything.agda
 	$(AGDA) -i _build _build/Everything.agda
 	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda -o -path '*/Spike/*.agda'); do $(AGDA) $$f || exit 1; done
 
@@ -199,6 +199,32 @@ pairs-local:
 	ln -sfn $(REVEAL) out/pairs-local/reveal
 	cp $(PAIRS_FILES) out/pairs-local/
 	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
+
+# The outreach deck "How collider physics is accelerating data science", a literate Agda file
+# (src/Slides/Examples/Collider.lagda.md).  `make collider` loads reveal.js and KaTeX from a CDN
+# (out/collider/); `make collider-local REVEAL=…` links a local copy (out/collider-local/).
+COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css
+
+.PHONY: collider collider-local
+collider:
+	mkdir -p out/collider $(BUILD_DIR)
+	cp $(COLLIDER_FILES) out/collider/
+	$(call run-main,src/Slides/Examples/ColliderMain.agda,cdn)
+
+collider-local:
+	mkdir -p out/collider-local $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/collider-local/reveal
+	cp $(COLLIDER_FILES) out/collider-local/
+	$(call run-main,src/Slides/Examples/ColliderMain.agda,local)
+
+# Serve a rendered deck over the local network with Python's basic web server:
+# `make serve NAME=collider PORT=8080` serves out/collider/ and prints the URL.
+PORT ?= 8080
+.PHONY: serve
+serve:
+	@test -d out/$(NAME) || { echo "out/$(NAME) does not exist: render the deck first (e.g. make collider)"; exit 1; }
+	@echo "serving out/$(NAME) at http://$$(ipconfig getifaddr $$(route -n get default 2>/dev/null | awk '/interface:/{print $$2}') 2>/dev/null || hostname -I 2>/dev/null | cut -d' ' -f1 || echo localhost):$(PORT)/"
+	python3 -m http.server $(PORT) --directory out/$(NAME) --bind 0.0.0.0
 
 # A deck with a non-default key binding (src/Slides/Examples/KeysMain.agda): not a golden.
 .PHONY: keys test-keys
