@@ -26,7 +26,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
-open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-translate; pfold-rel)
+open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-rel-translate)
 open import Slides.Diagram.Syntax
 
 Usage : Set
@@ -86,8 +86,8 @@ usageCong (Connect _ _ _ _ _) e rewrite e tt = refl
 -- names do not depend on sizes
 usage-mapDia : ∀ {S T} (f : S → T) (d : Dia S) → usage (mapDia f d) ≡ usage d
 usage-mapDia f d =
-  trans (pfold-translate (≡P.setoid Usage) usageCong (mapC f) (λ ()) d)
-        (pfold-rel _≡_ (λ o k k′ e → trans (same o k) (usageCong o e)) (λ ()) d)
+  pfold-rel-translate (mapC f) (λ x y → y ≡ x)
+    (λ o k k′ e → trans (usageCong (mapOp f o) (λ q → e (position (mapC f) q))) (same o k)) (λ ()) d
   where
     same : ∀ o k → usageH (mapOp f o) (λ q → k (position (mapC f) q)) ≡ usageH o k
     same (Rectangle _ _ _)   k = refl

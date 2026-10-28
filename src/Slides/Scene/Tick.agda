@@ -30,14 +30,14 @@ import Data.Maybe as Maybe
 open import Data.Nat using (ℕ)
 import Data.Nat as ℕ
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
-open import Data.Container.Core using (_⇒_; shape; position)
+open import Data.Container.Core using (_⇒_; position)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Data.Unit using (tt)
 open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂; sym; trans; subst)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
-open import Container.Interpret.Plain using (Handler; pfold; pfold-rel; pfold-translate)
+open import Container.Interpret.Plain using (pfold-rel-translate)
 open import Container.Lowering using (translate)
 open import Slides.Scene.Syntax
 import Slides.Scene.Events {D = D₁} M₁ Sb₁ as E₁
@@ -166,9 +166,6 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
       (trans (cong (λ z → O₁.select (O₁._≤?_ O₁.0# t) z nothing) (cong just (trans (cong (ℓ₂ a) (param-h q t)) (ℓ-ok a _))))
              (sym (map-select (O₁._≤?_ O₁.0# t) _ nothing)))
 
-  pulled : Handler (SceneC T₁ D₁) S₂.Timed
-  pulled o k = S₂.dirH (mapOp o) (λ q → k (position mapSC q))
-
   rel-hom : ∀ o {k : arity o → S₁.Timed} {k′ : arity o → S₂.Timed} → (∀ p → R (k p) (k′ p)) →
             R (S₁.dirH o k) (S₂.dirH (mapOp o) (λ q → k′ (position mapSC q)))
   rel-hom Seq        {k} {k′} e = rel-seq {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
@@ -182,8 +179,4 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
   tick-hom : ∀ s → proj₁ (S₂.sample ℓ₂ (mapScene s)) ≡ h (proj₁ (S₁.sample ℓ₁ s)) ×
                    (∀ t q → proj₂ (S₂.sample ℓ₂ (mapScene s)) (h t) (Maybe.map g q)
                             ≡ Maybe.map F (proj₂ (S₁.sample ℓ₁ s) t q))
-  tick-hom s = trans (cong proj₁ f) (proj₁ r) ,
-               λ t q → trans (cong (λ z → proj₂ z (h t) (Maybe.map g q)) f) (proj₂ r t q)
-    where
-      r = pfold-rel R {hA = S₁.dirH} {hB = pulled} (λ o k k′ e → rel-hom o {k} {k′} e) rel-leaf s
-      f = pfold-translate (≡P.setoid S₂.Timed) S₂.dirCong mapSC (S₂.leafT ℓ₂) s
+  tick-hom = pfold-rel-translate mapSC R (λ o k k′ e → rel-hom o {k} {k′} e) rel-leaf

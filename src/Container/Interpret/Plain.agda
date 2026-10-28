@@ -12,9 +12,9 @@
 -- * the bind law: folding a substitution is folding with the substituted programs folded
 --   (`pfold-bind`); for a handler into a monoid this is the statement that the fold of a
 --   bind is the fold with the continuation folded;
--- * fusion along a container morphism (`pfold-translate`) and along a lowering
---   (`pfold-lower`), with the pulled-back handler written out;
--- * related handlers give related folds (`pfold-rel`).
+-- * homomorphisms of handlers, up to a lowering of the source (`pfold-hom`); fusion along a
+--   lowering or a morphism is the case `φ = id` with the pulled-back handler;
+-- * related handlers give related folds (`pfold-rel`, and along a morphism `pfold-rel-translate`).
 --
 -- Equality of programs is `_≈⋆_` (propositional equality of leaves).
 
@@ -82,21 +82,17 @@ module _ {C : Container s p} {a ℓ} (A : Setoid a ℓ) where
     pfold-bind g e (pure y)         = e y
     pfold-bind g e (impure (_ , k)) = c _ (λ q → pfold-bind g e (k q))
 
-    -- Fusion along a lowering: lower every command, or fold it with the lowering folded.
-    pfold-lower : ∀ {X : Set x} {D : Container s p} (l : Lowering D C) (f : X → A.Carrier) (t : D ⋆ X) →
-                  pfold C h f (lower l t)
-                    A.≈ pfold D (λ a k → pfold C h k (l a)) f t
-    pfold-lower l f (pure _)         = A.refl
-    pfold-lower l f (impure (a , k)) =
-      pfold-bind (λ q → lower l (k q)) (λ q → pfold-lower l f (k q)) (l a)
-
-    -- Fusion along a container morphism.
-    pfold-translate : ∀ {X : Set x} {D : Container s p} (m : D ⇒ C) (f : X → A.Carrier) (t : D ⋆ X) →
-                      pfold C h f (translate m t)
-                        A.≈ pfold D (λ a k → h (shape m a) (λ q → k (position m q))) f t
-    pfold-translate m f (pure _)         = A.refl
-    pfold-translate m f (impure (a , k)) =
-      c _ (λ q → pfold-translate m f (k (position m q)))
+    -- Homomorphisms of handlers: a function `φ` that commutes with each command, up to the
+    -- lowering `l` of the source command into the target language, commutes with the fold.
+    -- The fusion laws below, and digitisation, are instances.
+    pfold-hom : ∀ {α} {A : Set α} {X : Set x} {D : Container s p} (φ : A → A.Carrier)
+                (hA : Handler D A) (l : Lowering D C) →
+                (∀ a k → φ (hA a k) A.≈ pfold C h (λ q → φ (k q)) (l a)) →
+                ∀ (f : X → A) t → φ (pfold D hA f t) A.≈ pfold C h (λ v → φ (f v)) (lower l t)
+    pfold-hom φ hA l hom f (pure _)         = A.refl
+    pfold-hom φ hA l hom f (impure (a , k)) =
+      A.trans (hom a _) (A.sym (pfold-bind (λ q → lower l (k q))
+                                           (λ q → A.sym (pfold-hom φ hA l hom f (k q))) (l a)))
 
 -- Folds preserve a relation: if two handlers send related children to related results then
 -- they send related programs to related results (the fundamental lemma of logical relations).
@@ -112,6 +108,21 @@ module _ {C : Container s p} {a b r} {A : Set a} {B : Set b} (R : A → B → Se
               R (pfold C hA f t) (pfold C hB g t)
   pfold-rel e (pure v)         = e v
   pfold-rel e (impure (c , k)) = hom c _ _ (λ q → pfold-rel e (k q))
+
+-- The same along a container morphism `m`, the second program being the translation of the first.
+-- The commutation is stated against the handler pulled back along `m`, so no congruence is needed.
+-- (The identity morphism gives `pfold-rel` up to `translate-id`.)
+
+module _ {C D : Container s p} (m : C ⇒ D) {a b r} {A : Set a} {B : Set b} (R : A → B → Set r)
+         {hA : Handler C A} {hB : Handler D B}
+         (hom : ∀ c (k : Position C c → A) (k′ : Position C c → B) → (∀ q → R (k q) (k′ q)) →
+               R (hA c k) (hB (shape m c) (λ q → k′ (position m q)))) where
+
+  pfold-rel-translate : ∀ {X : Set x} {f : X → A} {g : X → B} → (∀ v → R (f v) (g v)) → ∀ t →
+                        R (pfold C hA f t) (pfold D hB g (translate m t))
+  pfold-rel-translate e (pure v)         = e v
+  pfold-rel-translate e (impure (c , k)) =
+    hom c (λ q → pfold C hA _ (k q)) (λ q → pfold D hB _ (translate m (k q))) (λ q → pfold-rel-translate e (k q))
 
 -- A congruent handler is an algebra of the polynomial functor, and `pfold` is its fold.
 

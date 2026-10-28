@@ -42,7 +42,7 @@ open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
-open import Container.Interpret.Plain using (pfold; pfold-bind; pfold-cong; pfold-ext; pfold-rel; pfold-translate)
+open import Container.Interpret.Plain using (pfold; pfold-bind; pfold-cong; pfold-ext; pfold-rel-translate)
 open import Container.Lowering.Properties using (_≈⋆_)
 open import Container.Sum using (inl)
 open import Slides.Scene.Syntax using (Scene; Op; arity)
@@ -145,12 +145,10 @@ await-ignore M n rewrite ⌊⌋-no n = refl
 -- the algebra of constant machines is the scene algebra
 inject-const : ∀ {A : Set} (f : A → O.Carrier) (s : Scene T D A) →
                Bisim O (sem (λ a → constM (f a)) (inject s)) (constM (pfold (SceneC T D) hS f s))
-inject-const f s = bisim-trans O (pfold-translate (MachineS O C) hP-cong inl (λ a → constM (f a)) s)
-  (pfold-rel (λ M x → Bisim O M (constM x)) {hA = λ o k → prodM o k} {hB = hS} hom
-             (λ a → bisim-refl O) s)
+inject-const f s = pfold-rel-translate inl (λ x M → Bisim O M (constM x)) hom (λ a → bisim-refl O) s
   where
-    hom : ∀ o k (k′ : arity o → O.Carrier) → (∀ q → Bisim O (k q) (constM (k′ q))) →
+    hom : ∀ o (k′ : arity o → O.Carrier) k → (∀ q → Bisim O (k q) (constM (k′ q))) →
           Bisim O (prodM o k) (constM (hS o k′))
-    hom o k k′ e = record
+    hom o k′ k e = record
       { R = λ s _ → ∀ q → R (e q) (s q) tt ; R-init = λ q → R-init (e q)
       ; R-out = λ r → hS-c o (λ q → R-out (e q) (r q)) ; R-step = λ r c q → R-step (e q) (r q) c }

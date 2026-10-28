@@ -20,7 +20,7 @@
 --      Dia T ────layout_T────▶ Layout T
 --
 -- Proof: one equation per placement operation (`*-nat`), then the generic fusion of
--- `Container.Interpret.Plain` (`pfold-translate` for `mapDia`, `pfold-rel` for `mapLayout`).
+-- `Container.Interpret.Plain` (`pfold-rel-translate`: the relation is `mapLayout h l ≡ l′`).
 
 open import Slides.Scalar.Core using (OrdMon; IsOrdMonHom)
 open import Slides.Scalar.Space using (Space)
@@ -41,7 +41,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Relation.Nullary using (yes; no)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
-open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-translate; pfold-rel)
+open import Container.Interpret.Plain using (Handler; Congruent; pfold-rel-translate)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Style using (Style)
@@ -302,13 +302,7 @@ module _ (pn : PctNat) where
     okOp (Named _)           = tt
     okOp (Connect _ pa _ pb _) = portNat pa , portNat pb
 
-    pullH : Handler (DiagramC S) (Layout T)
-    pullH o k = LT.layoutH (mapOp h o) (λ q → k (position (mapC h) q))
-
-    pullCong : Congruent (DiagramC S) (≡P.setoid (Layout T)) pullH
-    pullCong o e = LT.layoutCong (mapOp h o) (λ q → e (position (mapC h) q))
-
   layout-natural : ∀ t → LT.layout (mapDia h t) ≡ mapLayout h (LS.layout t)
-  layout-natural t =
-    trans (pfold-translate (≡P.setoid (Layout T)) LT.layoutCong (mapC h) (λ ()) t)
-          (sym (pfold-rel (λ l l′ → mapLayout h l ≡ l′) (λ o k k′ e → trans (layoutH-nat o k (okOp o)) (pullCong o e)) (λ ()) t))
+  layout-natural t = sym (pfold-rel-translate (mapC h) (λ l l′ → mapLayout h l ≡ l′)
+    (λ o k k′ e → trans (layoutH-nat o k (okOp o)) (LT.layoutCong (mapOp h o) (λ q → e (position (mapC h) q))))
+    (λ ()) t)

@@ -27,7 +27,7 @@ import Data.Nat.Properties as ℕP
 import Data.Rational.Properties as ℚP
 open import Data.Product.Base using (_,_)
 
-open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-bind)
+open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-hom)
 open import Container.Lowering using (Lowering; lower; ret)
 open import Slides.Scalar.Core
 open import Slides.Scalar.Space
@@ -105,6 +105,4 @@ module _ (pct-ok : PctDigital) where
   -- Digitisation: a lowered ℕ-term at the image of its variables is ι of its ℕ reading.
   digitise : ∀ {V : Set} (ρ : V → ℕ) (t : ScC ⋆ V) →
              ι (pfold ScC scNat ρ t) ≡ pfold ScC scRat (ι ∘ ρ) (lower lowerS t)
-  digitise ρ (pure _)         = refl
-  digitise ρ (impure (a , k)) = trans (cmd a (λ q → pfold ScC scNat ρ (k q)))
-    (sym (pfold-bind (≡P.setoid ℚ) cℚ (λ q → lower lowerS (k q)) (λ q → sym (digitise ρ (k q))) (lowerS a)))
+  digitise ρ t = pfold-hom (≡P.setoid ℚ) cℚ ι scNat lowerS cmd ρ t
