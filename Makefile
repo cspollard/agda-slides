@@ -19,6 +19,26 @@ check:
 	$(AGDA) -i _build _build/Everything.agda
 	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda -o -path '*/Spike/*.agda'); do $(AGDA) $$f || exit 1; done
 
+# The inner loop while migrating: only the modules the migration touches (the containers,
+# diagrams and animations; the rest is loaded as imports and cached).  Not a gate: `make check`
+# still is.
+.PHONY: check-core
+check-core:
+	@mkdir -p _build
+	@(echo "module Core where"; for f in $$(find src/Container src/Slides/Diagram src/Slides/Anim -name '*.agda' | sort); do \
+	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.agda$$##')"; done) > _build/Core.agda
+	$(AGDA) -i _build _build/Core.agda
+
+# Parking: move leaf modules (proof-only `.Properties`, examples) to park/ while migrating, and
+# put them back afterwards; see tests/park.py and docs/Map.md.  `make park WHY='...' MODS='A.B C.D'`.
+.PHONY: park unpark parked
+park:
+	@python3 tests/park.py park "$(WHY)" $(MODS)
+unpark:
+	@python3 tests/park.py unpark
+parked:
+	@python3 tests/park.py status
+
 .PHONY: html
 html:
 	@mkdir -p build
@@ -83,7 +103,7 @@ example:
 
 # Golden-file tests for the example decks (run `make example talk plain showcase` first).
 .PHONY: test test-browser
-test:
+test: parked
 	python3 tests/check_closure.py
 	python3 tests/check_plain_keys.py
 	diff -u tests/golden/intro.index.html out/intro/index.html
