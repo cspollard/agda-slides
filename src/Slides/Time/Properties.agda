@@ -1,0 +1,58 @@
+{-# OPTIONS --safe --without-K #-}
+
+-- THEORY MODULE.  The laws of the temporal skeleton, stated against any `Clock` (so at ℚ they are
+-- corollaries): `Par` runs both sides at the same time and takes the longer duration; `Seq` runs
+-- the first side up to its duration, then the second from its own time 0 (right-continuity at the
+-- boundary).  Only the clock laws are used.
+module Slides.Time.Properties where
+
+open import Data.Bool using (Bool; true; false)
+open import Data.Maybe using (Maybe)
+open import Data.Nat as ℕ using (ℕ)
+open import Data.Product using (_,_; proj₁; proj₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
+
+open import Slides.Time
+
+module _ (K : Clock) where
+  open Clock K
+  open Sem K
+
+  seqAt-before : ∀ {A} (n m : ℕ) (f g : T → A) τ → (τ <ᵇ ι n) ≡ true →
+                 proj₂ (seqAt (n , f) (m , g)) τ ≡ f τ
+  seqAt-before n m f g τ h rewrite h = refl
+
+  seqAt-after : ∀ {A} (n m : ℕ) (f g : T → A) τ → (τ <ᵇ ι n) ≡ false →
+                proj₂ (seqAt (n , f) (m , g)) τ ≡ g (τ - ι n)
+  seqAt-after n m f g τ h rewrite h = refl
+
+  private
+    lt-irrefl : ∀ n → (n ℕ.<ᵇ n) ≡ false
+    lt-irrefl ℕ.zero    = refl
+    lt-irrefl (ℕ.suc n) = lt-irrefl n
+
+    ι-self : ∀ n → ι n - ι n ≡ 0#
+    ι-self n = trans (sym (ι-∸ n n (≤-refl n))) ι-0′
+      where
+        ≤-refl : ∀ n → n ℕ.≤ n
+        ≤-refl ℕ.zero    = ℕ.z≤n
+        ≤-refl (ℕ.suc n) = ℕ.s≤s (≤-refl n)
+        ι-0′ : ι (n ℕ.∸ n) ≡ 0#
+        ι-0′ = trans (cong ι (n∸n n)) ι-0
+          where n∸n : ∀ n → n ℕ.∸ n ≡ 0
+                n∸n ℕ.zero    = refl
+                n∸n (ℕ.suc n) = n∸n n
+
+  -- at the boundary the second takes over, from its own time 0
+  seqAt-boundary : ∀ {A} (n m : ℕ) (f g : T → A) →
+                   proj₂ (seqAt (n , f) (m , g)) (ι n) ≡ g 0#
+  seqAt-boundary n m f g =
+    trans (seqAt-after n m f g (ι n) (trans (ι-<ᵇ n n) (lt-irrefl n))) (cong g (ι-self n))
+
+  parAt-time : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) τ →
+               proj₂ (parAt _⊙_ A B) τ ≡ mergeM _⊙_ (proj₂ A τ) (proj₂ B τ)
+  parAt-time _⊙_ A B τ = refl
+
+  parAt-dur : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) →
+              proj₁ (parAt _⊙_ A B) ≡ proj₁ A ℕ.⊔ proj₁ B
+  parAt-dur _⊙_ A B = refl

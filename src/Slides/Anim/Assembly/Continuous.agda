@@ -49,7 +49,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
-open import Slides.Diagram.Ordered using (natO; evalO; termOps)
+open import Slides.Diagram.Ordered using (natO; evalO; termOps; _<ᵇℚ_)
 open import Slides.Diagram.Ordered.Properties.Faithful using (AllLayout; FaithfulO; faithful-layout)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (natOps; ratOps)
@@ -61,7 +61,9 @@ import Slides.Diagram.Place.Properties.Atop as AN
 import Slides.Anim.Track as Tr
 import Slides.Anim.Track.Properties as TrP
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (timeline; frames; mergeM)
+open import Slides.Anim.Timeline using (timeline; frames)
+open import Slides.Time using (mergeM)
+open import Slides.Diagram.Ordered.Properties using (ι-<ᵇ)
 open import Slides.Anim.Timeline.Properties using (length-dur)
 open import Slides.Anim.Continuous
 open import Slides.Anim.Continuous.Properties
@@ -137,7 +139,7 @@ AllExact⇒Good (impure (Par , c)) (e₁ , e₂) k =
 -- outside `[0, ticks)` nothing is shown at a whole tick
 leafAt-out : ∀ tr d k → (k <ᵇ Tr.dur tr) ≡ false → proj₂ (leafAt tr d) (ι k) ≡ nothing
 leafAt-out tr d k hk
-  rewrite sampleAt-dur Tr.ℚLerp tr | TrP.sample-dur Tr.ℚLerp tr | ι-<ᵗ k (Tr.dur tr) | hk | zero≤ι k = refl
+  rewrite sampleAt-dur Tr.ℚLerp tr | TrP.sample-dur Tr.ℚLerp tr | ι-<ᵇ k (Tr.dur tr) | hk | zero≤ι k = refl
 
 ------------------------------------------------------------------------
 -- Arithmetic of ticks
@@ -183,14 +185,14 @@ assembly (impure (Seq , c)) T eq k H with lift2-just seqAt (animAt (c zero)) (an
     m = dur (c (suc zero))
     A-dur = animAt-dur (c zero) A e₁
     step : proj₂ (seqAt A B) (ι k)
-           ≡ (if ι k <ᵗ ι n then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι n))
-    step = cong (λ x → if ι k <ᵗ ι x then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι x)) A-dur
+           ≡ (if ι k <ᵇℚ ι n then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι n))
+    step = cong (λ x → if ι k <ᵇℚ ι x then proj₂ A (ι k) else proj₂ B (ι k ℚ.- ι x)) A-dur
     go : nth (timeline atop (frames natO) (c zero) ++ timeline atop (frames natO) (c (suc zero))) k
          ≡ (if k <ᵇ n then nth (timeline atop (frames natO) (c zero)) k
             else nth (timeline atop (frames natO) (c (suc zero))) (k ∸ n)) →
          RelC (proj₂ (seqAt A B) (ι k))
               (nth (timeline atop (frames natO) (c zero) ++ timeline atop (frames natO) (c (suc zero))) k)
-    go e rewrite step | e | ι-<ᵗ k n with k <ᵇ n in ek
+    go e rewrite step | e | ι-<ᵇ k n with k <ᵇ n in ek
     ... | true  = assembly (c zero) A e₁ k (λ _ → proj₁ (H (<ᵇ-+ˡ {k} {n} m ek)) refl)
     ... | false rewrite sym (ι-∸ k n (<ᵇ-ge ek)) =
       assembly (c (suc zero)) B e₂ (k ∸ n) (λ t → proj₂ (H (<ᵇ-shift {k} {n} {m} ek t)) refl)

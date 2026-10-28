@@ -34,13 +34,8 @@ open import Data.Product using (proj₁; proj₂)
 open import Data.Container.FreeMonad using (_⋆_)
 open import Slides.Diagram.Syntax using (Dia)
 open import Slides.Diagram.Ordered using (OOps)
+open import Slides.Time using (mergeM)
 open import Slides.Anim.Syntax
-
--- what is shown when at most one of two parts is running, or both: they go over each other
-mergeM : ∀ {F : Set} → (F → F → F) → Maybe F → Maybe F → Maybe F
-mergeM _⊙_ nothing  y        = y
-mergeM _⊙_ x        nothing  = x
-mergeM _⊙_ (just x) (just y) = just (x ⊙ y)
 
 module _ {F : Set} (_⊙_ : F → F → F) where
 

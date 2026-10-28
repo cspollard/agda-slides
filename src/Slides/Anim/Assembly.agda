@@ -31,7 +31,8 @@ open import Slides.Diagram.Scalar using (natOps)
 import Slides.Diagram.Place natOps as PN
 open import Slides.Anim.Arith using (<ᵇ-ge)
 open import Slides.Anim.Nth
-open import Slides.Anim.Timeline using (merge; mergeM)
+open import Slides.Anim.Timeline using (merge)
+open import Slides.Time using (mergeM)
 
 private
   layoutℕ : Dia ℕ → Layout ℕ

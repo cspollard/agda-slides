@@ -23,11 +23,11 @@ open import Slides.Diagram.NatQ using (ι)
 open import Slides.Diagram.NatQ.Properties using (ι-≤ᵇ; ι-∸; ι-ratio)
 import Slides.Anim.Track as Tr
 import Slides.Anim.Track.Properties as TrP
-open import Slides.Anim.Timeline using (mergeM)
+open import Slides.Diagram.Ordered.Properties using (ι-<ᵇ)
 open import Slides.Anim.Syntax using (units; bodyAt; track; content; template; blackBox; dur; Seq; Par)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Ordered.Properties.Faithful using (AllLayout; FaithfulO; faithful-layout)
-open import Slides.Diagram.Ordered using (natO; termOps)
+open import Slides.Diagram.Ordered using (natO; termOps; _<ᵇℚ_)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps; natOps)
 open import Slides.Diagram.Syntax using (atop)
@@ -37,24 +37,10 @@ open import Slides.Anim.Continuous
 ------------------------------------------------------------------------
 -- Whole ticks: the continuous sample is the discrete one
 
-private
-  lt-suc : ∀ a b → not (a ℕ.<ᵇ b) ≡ (b ℕ.<ᵇ suc a)
-  lt-suc zero    zero    = refl
-  lt-suc zero    (suc b) = refl
-  lt-suc (suc a) zero    = refl
-  lt-suc (suc a) (suc b) = lt-suc a b
-
-  nat-not : ∀ m n → not (n ℕ.≤ᵇ m) ≡ (m ℕ.<ᵇ n)
-  nat-not m zero    = refl
-  nat-not m (suc n) = lt-suc n m
-
-ι-<ᵗ : ∀ k n → (ι k <ᵗ ι n) ≡ (k ℕ.<ᵇ n)
-ι-<ᵗ k n = trans (cong not (ι-≤ᵇ n k)) (nat-not k n)
-
 ratioAt-ι : ∀ k d → ratioAt (ι k) d ≡ Tr.ratio k d
 ratioAt-ι k zero    = refl
 ratioAt-ι k (suc d) =
-  trans (cong (λ c → if c then ι k ℚ.* (+ 1 / suc d) else 1ℚ) (ι-<ᵗ k (suc d))) (go (k ℕ.<ᵇ suc d))
+  trans (cong (λ c → if c then ι k ℚ.* (+ 1 / suc d) else 1ℚ) (ι-<ᵇ k (suc d))) (go (k ℕ.<ᵇ suc d))
   where go : ∀ b → (if b then ι k ℚ.* (+ 1 / suc d) else 1ℚ) ≡ (if b then + k / suc d else 1ℚ)
         go true  = ι-ratio k d
         go false = refl
@@ -72,7 +58,7 @@ sampleAt-ι : ∀ {A} (L : Tr.Lerp A) (tr : Tr.Track A) k →
              proj₂ (sampleAt L tr) (ι k) ≡ proj₂ (Tr.sample L tr) k
 sampleAt-ι L (pure p) k = pieceAt-ι L p k
 sampleAt-ι L (impure (_ , c)) k
-  rewrite sampleAt-dur L (c zero) | ι-<ᵗ k (proj₁ (Tr.sample L (c zero)))
+  rewrite sampleAt-dur L (c zero) | ι-<ᵇ k (proj₁ (Tr.sample L (c zero)))
   with k ℕ.<ᵇ proj₁ (Tr.sample L (c zero)) in eq
 ... | true  = sampleAt-ι L (c zero) k
 ... | false = trans (cong (proj₂ (sampleAt L (c (suc zero))))
@@ -82,39 +68,11 @@ sampleAt-ι L (impure (_ , c)) k
 
 -- the first facts about the track at real time: a piece holds `to` once it is over, at a
 -- boundary the *later* piece takes over (right-continuity), and sequencing offsets time
-piece-hold : ∀ {A} (L : Tr.Lerp A) d a b e τ → (τ <ᵗ ι d) ≡ false →
+piece-hold : ∀ {A} (L : Tr.Lerp A) d a b e τ → (τ <ᵇℚ ι d) ≡ false →
              pieceAt L (Tr.piece d a b e) τ ≡ b
 piece-hold L zero    a b e τ _ = trans (cong (λ p → Tr.Lerp.lerp L p a b) (TrP.progress-1 e)) (Tr.Lerp.lerp-1 L a b)
 piece-hold L (suc d) a b e τ h
   rewrite h = trans (cong (λ p → Tr.Lerp.lerp L p a b) (TrP.progress-1 e)) (Tr.Lerp.lerp-1 L a b)
-
-seqAt-before : ∀ {A} (n m : ℕ) (f g : ℚ → A) τ → (τ <ᵗ ι n) ≡ true →
-               proj₂ (seqAt (n , f) (m , g)) τ ≡ f τ
-seqAt-before n m f g τ h rewrite h = refl
-
-seqAt-after : ∀ {A} (n m : ℕ) (f g : ℚ → A) τ → (τ <ᵗ ι n) ≡ false →
-              proj₂ (seqAt (n , f) (m , g)) τ ≡ g (τ ℚ.- ι n)
-seqAt-after n m f g τ h rewrite h = refl
-
--- at the boundary the second takes over, from its own time 0
-seqAt-boundary : ∀ {A} (n m : ℕ) (f g : ℚ → A) →
-                 proj₂ (seqAt (n , f) (m , g)) (ι n) ≡ g 0ℚ
-seqAt-boundary n m f g = trans (seqAt-after n m f g (ι n) (trans (ι-<ᵗ n n) (lt-irrefl n)))
-                               (cong g (ℚP.+-inverseʳ (ι n)))
-  where lt-irrefl : ∀ n → (n ℕ.<ᵇ n) ≡ false
-        lt-irrefl zero    = refl
-        lt-irrefl (suc n) = lt-irrefl n
-
--- the structure-preserving laws of time: `Par` runs both sides at the same `τ` and takes the
--- longer duration; `Seq` runs the first side up to its duration (`seqAt-before`), then the
--- second from its own time 0 (`seqAt-after`, `seqAt-boundary`)
-parAt-time : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) τ →
-             proj₂ (parAt _⊙_ A B) τ ≡ mergeM _⊙_ (proj₂ A τ) (proj₂ B τ)
-parAt-time _⊙_ A B τ = refl
-
-parAt-dur : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) →
-            proj₁ (parAt _⊙_ A B) ≡ proj₁ A ℕ.⊔ proj₁ B
-parAt-dur _⊙_ A B = refl
 
 -- the duration of the timed frames is the duration of the animation
 segAt-dur : ∀ s T → segAt s ≡ just T → proj₁ T ≡ Tr.dur (track s)
@@ -150,7 +108,7 @@ leafAt-ι : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
            proj₂ (leafAt tr d) (ι k) ≡ just (instQ d (proj₂ (Tr.sample Tr.ℚLerp tr) k))
 leafAt-ι tr d k hk
   rewrite sampleAt-dur Tr.ℚLerp tr | TrP.sample-dur Tr.ℚLerp tr
-        | ι-<ᵗ k (Tr.dur tr) | hk | zero≤ι k
+        | ι-<ᵇ k (Tr.dur tr) | hk | zero≤ι k
   = cong (λ q → just (instQ d q)) (sampleAt-ι Tr.ℚLerp tr k)
 
 -- ... and that is the discrete frame sent through `ι` whenever the discrete reading was

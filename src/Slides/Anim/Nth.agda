@@ -24,7 +24,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym;
 open import Slides.Diagram.Ordered using (OOps)
 import Slides.Anim.Track as T
 open import Slides.Anim.Syntax
-open import Slides.Anim.Timeline using (merge; frames; mergeM)
+open import Slides.Anim.Timeline using (merge; frames)
+open import Slides.Time using (mergeM)
 
 
 ------------------------------------------------------------------------

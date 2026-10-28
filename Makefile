@@ -25,7 +25,7 @@ check:
 .PHONY: check-core
 check-core:
 	@mkdir -p _build
-	@(echo "module Core where"; for f in $$(find src/Container src/Slides/Diagram src/Slides/Anim -name '*.agda' | sort); do \
+	@(echo "module Core where"; for f in $$(find src/Container src/Slides/Diagram src/Slides/Anim src/Slides/Time src/Slides/Time.agda -name '*.agda' | sort); do \
 	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.agda$$##')"; done) > _build/Core.agda
 	$(AGDA) -i _build _build/Core.agda
 

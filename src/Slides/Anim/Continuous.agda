@@ -69,10 +69,11 @@ open import Data.Fin using (zero; suc)
 open import Slides.Diagram.NatQ using (ι)
 
 import Slides.Anim.Track as Tr
-open import Slides.Anim.Timeline using (mergeM)
+open import Slides.Time using (module Sem)
+open import Slides.Time.Rat using (ratClock)
 open import Slides.Anim.Syntax using (Anim; Seg; SegBody; foldA; track; content; template; blackBox)
 open import Slides.Diagram.Draw using (Layout)
-open import Slides.Diagram.Ordered using (OExpr; evalO; ratO)
+open import Slides.Diagram.Ordered using (OExpr; evalO; ratO; _<ᵇℚ_)
 open import Slides.Diagram.Layout using (module LayoutWith)
 open import Slides.Diagram.Scalar using (ratOps)
 open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
@@ -80,25 +81,17 @@ open import Slides.Diagram.Syntax using (Dia; atop; mapDia)
 ------------------------------------------------------------------------
 -- Real time on a track
 
--- strict comparison of times
-_<ᵗ_ : ℚ → ℚ → Bool
-τ <ᵗ σ = not (σ ℚ.≤ᵇ τ)
-
 -- how far through `d` ticks the time `τ` is (clamped above; a negative time never reaches a
 -- piece, see `leafAt`)
 ratioAt : ℚ → ℕ → ℚ
 ratioAt τ zero    = 1ℚ
-ratioAt τ (suc d) = if τ <ᵗ ι (suc d) then τ ℚ.* (+ 1 / suc d) else 1ℚ
+ratioAt τ (suc d) = if τ <ᵇℚ ι (suc d) then τ ℚ.* (+ 1 / suc d) else 1ℚ
 
 pieceAt : ∀ {A} → Tr.Lerp A → Tr.Piece A → ℚ → A
 pieceAt L (Tr.piece d a b e) τ = Tr.Lerp.lerp L (Tr.progress e (ratioAt τ d)) a b
 
--- a length in ticks and a function of real time
-Timed : Set → Set
-Timed A = ℕ × (ℚ → A)
-
-seqAt : ∀ {A} → Timed A → Timed A → Timed A
-seqAt (n , f) (m , g) = n ℕ.+ m , λ τ → if τ <ᵗ ι n then f τ else g (τ ℚ.- ι n)
+-- the temporal skeleton, read in the clock ℚ (`Slides.Time`: `Timed`, `seqAt`, `parAt`)
+open Sem ratClock public
 
 sampleAt : ∀ {A} → Tr.Lerp A → Tr.Track A → Timed A
 sampleAt L = Tr.foldT (λ p → Tr.ticks p , pieceAt L p) seqAt
@@ -113,13 +106,8 @@ instQ d q = mapDia (evalO ratO (λ _ → q)) d
 
 -- a segment is running on `0 ≤ τ < ticks`; there its template is at the track's value
 leafAt : Tr.Track ℚ → Dia (OExpr ⊤) → Timed (Maybe (Dia ℚ))
-leafAt tr d = proj₁ s , λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵗ ι (proj₁ s)) then just (instQ d (proj₂ s τ)) else nothing
+leafAt tr d = proj₁ s , λ τ → if (0ℚ ℚ.≤ᵇ τ) ∧ (τ <ᵇℚ ι (proj₁ s)) then just (instQ d (proj₂ s τ)) else nothing
   where s = sampleAt Tr.ℚLerp tr
-
--- running in parallel: the same time on both sides; a side that is not running adds nothing
--- (`Slides.Anim.Timeline.merge`)
-parAt : ∀ {F : Set} → (F → F → F) → Timed (Maybe F) → Timed (Maybe F) → Timed (Maybe F)
-parAt _⊙_ (n , f) (m , g) = n ℕ.⊔ m , λ τ → mergeM _⊙_ (f τ) (g τ)
 
 -- the timed frames of an animation all of whose segments are templates
 bodyAt′ : Tr.Track ℚ → SegBody ℕ → Maybe (Timed (Maybe (Dia ℚ)))
