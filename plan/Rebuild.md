@@ -18,7 +18,7 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
 - Parallelism: steps 2 and 3 are independent after step 1; steps 4 and 5 after both; 6 after 5.
 
 ## Status (2026-10-28)
-Steps 0 to 4 are done and merged: container lemmas +194 lines (budget 300), scalar theories 700 (700),
+Steps 0 to 5 are done and merged (Step 5: Program 645, Deck/Content 793, of 1600; 26 s cold): container lemmas +194 lines (budget 300), scalar theories 700 (700),
 Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold.  Step 5 (Program, Deck) on branch `rebuild-step5`: Program 645 lines, Deck 793 (1438 of 1600).
 
 ## Steps
