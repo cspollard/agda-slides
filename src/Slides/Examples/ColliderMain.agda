@@ -1,4 +1,6 @@
-{-# OPTIONS --without-K --guardedness #-}
+-- TODO
+-- unsolved metas
+{-# OPTIONS --allow-unsolved-metas --guardedness #-}
 
 -- Executable: render `Slides.Examples.Collider.collider` with reveal.js to
 -- `out/collider/` (reveal.js from a CDN) or `out/collider-local/` (a local copy).
@@ -17,7 +19,8 @@ open import IO using (_>>=_)
 
 import Slides.Backend.Reveal as Reveal
 open import Slides.Driver
-open import Slides.Examples.Collider using (collider)
+-- open import Slides.Examples.Collider using (collider)
+open import Slides.Examples.ColliderSlides using (collider)
 
 theme : Reveal.Theme
 theme = record Reveal.whiteTheme { stylesheets = "slides.css" ∷ "collider.css" ∷ [] }

@@ -1,6 +1,8 @@
 *.agdai
 MAlonzo/
 _build/
+build/
+html/
 out/
 .DS_Store
 node_modules/

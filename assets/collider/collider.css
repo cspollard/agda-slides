@@ -128,3 +128,6 @@
 .reveal svg .cur { fill: var(--blue); stroke: none; }
 .reveal svg .now { fill: var(--crimson); stroke: none; }
 .reveal svg .mu { stroke: var(--crimson); stroke-width: 2; stroke-dasharray: 6 5; }
+
+/* a title set in two headings: close the gap between the lines */
+.reveal h1 + h1 { margin-top: -.05em; }
