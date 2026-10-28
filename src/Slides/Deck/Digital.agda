@@ -21,7 +21,6 @@ open import Data.Nat.Base using (ℕ)
 open import Data.Product.Base using (proj₁; proj₂)
 open import Data.Rational using (ℚ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
-import Data.List.Properties as ListP
 
 open import Slides.Scalar.Model.Nat using (natMon; natSub)
 open import Slides.Scalar.Model.Rat using (ratMon; ratSub; ι)
@@ -31,11 +30,12 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Read using (ℓ; visible)
 
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) _++_ ListP.++-assoc as SN
-import Slides.Scene.Sample {ℚ} {⊥} {Flow} ratMon ratSub (λ ()) _++_ ListP.++-assoc as SQ
+open import Slides.Diagram.Overlay using (listOverlay)
+import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as SN
+import Slides.Scene.Sample {ℚ} {⊥} {Flow} ratMon ratSub (λ ()) listOverlay as SQ
 
 open import Slides.Scene.Tick {ℕ} {ℚ} {⊥} {⊥} {Flow} {Flow} natMon natSub ratMon ratSub ι ι-hom
-  (λ ()) (λ ()) (λ x → x) (λ ()) _++_ ListP.++-assoc _++_ ListP.++-assoc (λ x → x) (λ _ _ → refl)
+  (λ ()) (λ ()) (λ x → x) (λ ()) listOverlay listOverlay (λ x → x) (record { F-⊙ = λ _ _ → refl })
   using (mapScene; tick-hom)
 
 -- leaves are read as themselves on the ℚ clock too

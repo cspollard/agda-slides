@@ -36,7 +36,7 @@ open import Slides.Scalar.Hom using (ScC)
 open import Slides.Diagram.Draw using (Layout; mkLayout)
 open import Slides.Diagram.Syntax using (Dia; mapDia)
 import Slides.Diagram.Place Sp as P
-open import Slides.Diagram.Laws Sp using (⊔-assoc)
+open import Slides.Diagram.Laws Sp using (ovl; layoutOverlay) public
 open import Slides.Diagram.Layout Sp using (layout)
 open import Slides.Scene.Syntax
 open Space Sp using (_⊔_; _-_)
@@ -44,16 +44,9 @@ open Space Sp using (_⊔_; _-_)
 ------------------------------------------------------------------------
 -- Frames overlay
 
-ovl : Layout T → Layout T → Layout T
-ovl a b = P.overlay (P.width a ⊔ P.width b) (P.height a ⊔ P.height b) a b
-
-ovl-assoc : ∀ a b c → ovl (ovl a b) c ≡ ovl a (ovl b c)
-ovl-assoc (mkLayout wa ha da aa) (mkLayout wb hb db ab) (mkLayout wc hc dc ac)
-  rewrite ⊔-assoc wa wb wc | ⊔-assoc ha hb hc | ListP.++-assoc da db dc | ListP.++-assoc aa ab ac = refl
-
 open import Slides.Scene.Events {T} {D} (Space.ord Sp) (Space.sub Sp) public
-open import Slides.Scene.Sample {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp) val ovl ovl-assoc public
-open import Slides.Scene.Laws {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp) val ovl ovl-assoc
+open import Slides.Scene.Sample {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp) val layoutOverlay public
+open import Slides.Scene.Laws {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp) val layoutOverlay
   using (actives; leafAt; overlay; sample-assembly)
 
 ------------------------------------------------------------------------

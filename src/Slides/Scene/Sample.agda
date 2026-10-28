@@ -20,9 +20,9 @@
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub)
+open import Slides.Diagram.Overlay using (Overlays; module Absent)
 
-module Slides.Scene.Sample {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T)
-       (_⊙_ : X → X → X) (⊙-assoc : ∀ a b c → (a ⊙ b) ⊙ c ≡ a ⊙ (b ⊙ c)) where
+module Slides.Scene.Sample {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T) (O : Overlays X) where
 
 open import Data.Empty using (⊥-elim)
 open import Data.Fin using (zero; suc)
@@ -48,20 +48,7 @@ open Sub Sb
 ------------------------------------------------------------------------
 -- Overlay with absence as unit
 
-merge : Maybe X → Maybe X → Maybe X
-merge nothing  y        = y
-merge (just a) nothing  = just a
-merge (just a) (just b) = just (a ⊙ b)
-
-merge-nothing : ∀ x → merge x nothing ≡ x
-merge-nothing nothing  = refl
-merge-nothing (just _) = refl
-
-merge-assoc : ∀ x y z → merge (merge x y) z ≡ merge x (merge y z)
-merge-assoc nothing  y        z        = refl
-merge-assoc (just a) nothing  z        = refl
-merge-assoc (just a) (just b) nothing  = refl
-merge-assoc (just a) (just b) (just c) = cong just (⊙-assoc a b c)
+open Absent O public
 
 -- the driver of the leaf, else the driver of the context, read at local time
 orElse : Maybe D → Maybe D → Maybe D

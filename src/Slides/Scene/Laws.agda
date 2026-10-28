@@ -19,9 +19,9 @@
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub)
+open import Slides.Diagram.Overlay using (Overlays)
 
-module Slides.Scene.Laws {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T)
-       (_⊙_ : X → X → X) (⊙-assoc : ∀ a b c → (a ⊙ b) ⊙ c ≡ a ⊙ (b ⊙ c)) where
+module Slides.Scene.Laws {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T) (O : Overlays X) where
 
 open import Data.Bool using (Bool; true; false; _∧_; not; if_then_else_)
 open import Data.Empty using (⊥-elim)
@@ -44,7 +44,8 @@ open import Container.Interpret.Plain using (pfold; pfold-bind)
 open import Slides.Scene.Syntax
 open import Slides.Scene.Events {T} {D} M Sb
 open import Slides.Scene.Arith M Sb
-open import Slides.Scene.Sample {T} {D} {X} M Sb val _⊙_ ⊙-assoc
+open import Slides.Scene.Sample {T} {D} {X} M Sb val O
+open Overlays O
 open OrdMon M
 open Sub Sb
 

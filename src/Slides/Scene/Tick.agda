@@ -5,13 +5,14 @@
 -- A scene over the durations of one clock maps to a scene over another by `h` on its durations
 -- (`mapScene`, a container morphism, so `translate`).  If `h` is an order embedding
 -- (`IsOrdMonHom`, which preserves `⊔`, comparisons and exact differences), drivers are carried
--- (`g-val`) and overlay is (`F-⊙`), then reading the mapped scene at `h t` is reading the
+-- (`g-val`) and overlay is (`IsOverlayHom`), then reading the mapped scene at `h t` is reading the
 -- original at `t` (`tick-hom`): durations map by `h`, and the frames by `F`, given that leaves
 -- do (`ℓ-ok`).  It is the logical relation `R` over the signature, one lemma per operation.
 -- `Slides.Scene.Digital` instantiates it at `ι` with `digitise` for the leaves.
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub; IsOrdMonHom)
+open import Slides.Diagram.Overlay using (Overlays; IsOverlayHom)
 
 module Slides.Scene.Tick
   {T₁ T₂ D₁ D₂ X₁ X₂ : Set}
@@ -19,9 +20,7 @@ module Slides.Scene.Tick
   (h : T₁ → T₂) (H : IsOrdMonHom M₁ M₂ h)
   (val₁ : D₁ → T₁ → T₁) (val₂ : D₂ → T₂ → T₂) (g : D₁ → D₂)
   (g-val : ∀ c τ → val₂ (g c) (h τ) ≡ h (val₁ c τ))
-  (_⊙₁_ : X₁ → X₁ → X₁) (⊙₁-assoc : ∀ a b c → (a ⊙₁ b) ⊙₁ c ≡ a ⊙₁ (b ⊙₁ c))
-  (_⊙₂_ : X₂ → X₂ → X₂) (⊙₂-assoc : ∀ a b c → (a ⊙₂ b) ⊙₂ c ≡ a ⊙₂ (b ⊙₂ c))
-  (F : X₁ → X₂) (F-⊙ : ∀ x y → F (x ⊙₁ y) ≡ F x ⊙₂ F y) where
+  (O₁ : Overlays X₁) (O₂ : Overlays X₂) (F : X₁ → X₂) (HF : IsOverlayHom O₁ O₂ F) where
 
 open import Data.Empty using (⊥-elim)
 open import Data.Fin using (zero; suc)
@@ -42,14 +41,15 @@ open import Container.Lowering using (translate)
 open import Slides.Scene.Syntax
 import Slides.Scene.Events {D = D₁} M₁ Sb₁ as E₁
 import Slides.Scene.Events {D = D₂} M₂ Sb₂ as E₂
-import Slides.Scene.Sample {D = D₁} {X₁} M₁ Sb₁ val₁ _⊙₁_ ⊙₁-assoc as S₁
-import Slides.Scene.Sample {D = D₂} {X₂} M₂ Sb₂ val₂ _⊙₂_ ⊙₂-assoc as S₂
+import Slides.Scene.Sample {D = D₁} {X₁} M₁ Sb₁ val₁ O₁ as S₁
+import Slides.Scene.Sample {D = D₂} {X₂} M₂ Sb₂ val₂ O₂ as S₂
 private
   module O₁ = OrdMon M₁
   module O₂ = OrdMon M₂
   module Sb₁′ = Sub Sb₁
   module Sb₂′ = Sub Sb₂
 open IsOrdMonHom H
+open IsOverlayHom HF
 
 ------------------------------------------------------------------------
 -- The scene map
@@ -92,11 +92,6 @@ private
   map-select (yes _) x y = refl
   map-select (no _)  x y = refl
 
-  merge-h : ∀ x y → S₂.merge (mapM x) (mapM y) ≡ mapM (S₁.merge x y)
-  merge-h nothing  y        = refl
-  merge-h (just a) nothing  = refl
-  merge-h (just a) (just b) = cong just (sym (F-⊙ a b))
-
   pos-h : ∀ w → E₂.pos (h w) ≡ h (E₁.pos w)
   pos-h w = trans (cong (λ z → z O₂.⊔ h w) (sym h-0)) (sym (h-⊔ O₁.0# w))
 
@@ -131,7 +126,7 @@ R x y = proj₁ y ≡ h (proj₁ x) × ∀ t q → proj₂ y (h t) (Maybe.map g 
 
 rel-par : ∀ {x x′ y y′} → R x x′ → R y y′ → R (S₁.parT x y) (S₂.parT x′ y′)
 rel-par {dx , rx} {_ , rx′} {dy , ry} {_ , ry′} (refl , a) (refl , b) =
-  sym (h-⊔ dx dy) , λ t q → trans (cong₂ S₂.merge (a t q) (b t q)) (merge-h (rx t q) (ry t q))
+  sym (h-⊔ dx dy) , λ t q → trans (cong₂ S₂.merge (a t q) (b t q)) (sym (merge-map (rx t q) (ry t q)))
 
 rel-hold : ∀ w {x x′} → R x x′ → R (S₁.holdT w x) (S₂.holdT (h w) x′)
 rel-hold w {_ , r} {_ , r′} (_ , a) rewrite pos-h w =

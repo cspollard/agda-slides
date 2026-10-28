@@ -29,7 +29,6 @@ open import Data.Unit using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
-import Data.List.Properties as ListP
 
 open import Level using (lift)
 open import Container.Lowering using (Lowering; lower; _⋙_)
@@ -44,7 +43,8 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Read using (ℓ; accumL; go-visible; visible)
 
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) _++_ ListP.++-assoc as S
+open import Slides.Diagram.Overlay using (listOverlay)
+import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
 -- the machine's output is the direct reading; a waiting machine shows nothing
 absent : S.Timed

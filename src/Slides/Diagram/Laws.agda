@@ -29,6 +29,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 
 open import Container.Interpret.Plain using (Handler; pfold; pfold-rel)
 open import Slides.Diagram.Draw
+open import Slides.Diagram.Overlay using (Overlays)
+import Data.List.Properties as ListP
 open import Slides.Diagram.Syntax
 open Space Sp
 import Slides.Diagram.Place Sp as P
@@ -90,6 +92,17 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
 ⊔-assoc a b c = ≤-antisym
   (⊔-lub (⊔-lub (⊔-ub₁ a _) (≤-trans (⊔-ub₁ b c) (⊔-ub₂ a _))) (≤-trans (⊔-ub₂ b c) (⊔-ub₂ a _)))
   (⊔-lub (≤-trans (⊔-ub₁ a b) (⊔-ub₁ _ c)) (⊔-lub (≤-trans (⊔-ub₂ a b) (⊔-ub₁ _ c)) (⊔-ub₂ _ c)))
+
+-- Layouts overlay in the join of their frames, the drawings and anchors concatenating
+ovl : Layout S → Layout S → Layout S
+ovl a b = P.overlay (P.width a ⊔ P.width b) (P.height a ⊔ P.height b) a b
+
+layoutOverlay : Overlays (Layout S)
+layoutOverlay = record { _⊙_ = ovl ; ⊙-assoc = assoc }
+  where
+    assoc : ∀ a b c → ovl (ovl a b) c ≡ ovl a (ovl b c)
+    assoc (mkLayout wa ha da aa) (mkLayout wb hb db ab) (mkLayout wc hc dc ac)
+      rewrite ⊔-assoc wa wb wc | ⊔-assoc ha hb hc | ListP.++-assoc da db dc | ListP.++-assoc aa ab ac = refl
 
 size-beside-assoc : ∀ a b c → size (beside (beside a b) c) ≡ size (beside a (beside b c))
 size-beside-assoc a b c =
