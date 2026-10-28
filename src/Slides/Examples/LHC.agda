@@ -4,8 +4,8 @@
 -- two counter-circulating proton bunches (orange/rust circles) that collide
 -- at the bottom-center of the pipe, and a particle flash on collision.
 --
--- The diagram language has no ellipse (a `segment` runs top-left to bottom-right only, and
--- there is no path), so the pipe is a ring of 256 small dots, each at a point of the ellipse.  The
+-- The diagram language has no ellipse, so the pipe is a `polyline` through 128 points of it
+-- (a closed ring: the last point is the first), drawn round-capped by the CSS class `pipe`.  The
 -- bunches ride the same ellipse: a position is a table of 64 values (one per tick of the loop)
 -- read by a binary tree of `lt`, so it is a formula in the tick and the template ships formulas, not
 -- frames.  The scalar layers have no sine, so the tables come from `trig`, a 17-entry sine table with
@@ -27,7 +27,7 @@ import Data.Rational as ℚ
 open import Data.Unit using (⊤)
 
 open import Slides.Diagram using (withClass; defaultStyle; Style)
-open import Slides.Diagram.Syntax using (Dia; disc; spacer; place; overlay)
+open import Slides.Diagram.Syntax using (Dia; disc; polyline; spacer; place; overlay)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Ordered using (OOps; OrdOps; FloorOps; natO; termO; tO; OExpr)
 open import Slides.Anim.Syntax using (Anim; tweenD)
@@ -37,8 +37,13 @@ import Slides.Anim.Track as T
 -- Dimensions and period
 
 W H : ℕ
-W = 480
-H = 230
+-- every length is in units of 1/K of the original size: whole numbers then round to a quarter of
+-- what they did, and the polyline of the pipe is smooth (the page scales the drawing to its width)
+K : ℕ
+K = 4
+
+W = 480 * K
+H = 230 * K
 
 -- ticks in one lap of a bunch
 period : ℕ
@@ -46,10 +51,10 @@ period = 64
 
 -- the ellipse: centre and radii
 CX CY RX RY : ℕ
-CX = 240
-CY = 100
-RX = 220
-RY = 85
+CX = 240 * K
+CY = 100 * K
+RX = 220 * K
+RY = 85 * K
 
 cls : String → Style
 cls c = withClass c defaultStyle
@@ -121,12 +126,12 @@ module PipeFrame {S : Set} (D : OOps S) where
   canvas : List (Dia S) → Dia S
   canvas = foldr (λ d acc → overlay (lit W) (lit H) acc d) (spacer (lit W) (lit H))
 
-  -- the pipe: dots two units across, about four apart, so that they read as a line
-  pipeDot : ℕ → Dia S
-  pipeDot a = put (lit (proj₁ (ellipseAt a) ∸ 2)) (lit (proj₂ (ellipseAt a) ∸ 2)) (disc (lit 2) (cls "pipe"))
+  -- the pipe: one closed polyline through 128 points of the ellipse (the 129th is the first)
+  pipePoint : ℕ → S × S
+  pipePoint k = lit (proj₁ (ellipseAt (2 * k))) , lit (proj₂ (ellipseAt (2 * k)))
 
   pipeRing : List (Dia S)
-  pipeRing = map pipeDot (applyUpTo (λ a → a) 256)
+  pipeRing = put (lit 0) (lit 0) (polyline (map pipePoint (applyUpTo (λ k → k) 129)) (cls "pipe")) ∷ []
 
   -- the value of a table at the tick u, as a binary tree of comparisons over the indices
   -- `off … off + length vs` (the fuel is the depth of the tree)
@@ -151,13 +156,13 @@ module PipeFrame {S : Set} (D : OOps S) where
   -- the flash after a collision at the bottom, tick 0: a burst that grows for 8 ticks and shrinks
   -- for 8, and sparks that fly out for 16
   burstR : S → S
-  burstR u = lt u (lit 8) (mulLit 3 u) (lt u (lit 16) (mulLit 3 (lit 16 ⊖ u)) (lit 0))
+  burstR u = lt u (lit 8) (mulLit (3 * K) u) (lt u (lit 16) (mulLit (3 * K) (lit 16 ⊖ u)) (lit 0))
 
   sparkD : S → S
-  sparkD u = lt u (lit 16) (lit 6 ⊕ mulLit 3 u) (lit 0)
+  sparkD u = lt u (lit 16) (lit (6 * K) ⊕ mulLit (3 * K) u) (lit 0)
 
   sparkR : S → S
-  sparkR u = lt u (lit 16) (lit 3) (lit 0)
+  sparkR u = lt u (lit 16) (lit (3 * K)) (lit 0)
 
   -- a spark flies from the collision point along (cos , sin), squashed to 60 % vertically
   spark : S → (ℕ × Bool) × (ℕ × Bool) → Dia S
@@ -171,8 +176,8 @@ module PipeFrame {S : Set} (D : OOps S) where
   -- a bunch at (x , y): a soft halo and a core
   bunch : S → S → List (Dia S)
   bunch x y =
-      put (x ⊖ lit 11) (y ⊖ lit 11) (disc (lit 11) (cls "halo"))
-    ∷ put (x ⊖ lit 7) (y ⊖ lit 7) (disc (lit 7) (cls "bunch"))
+      put (x ⊖ lit (11 * K)) (y ⊖ lit (11 * K)) (disc (lit (11 * K)) (cls "halo"))
+    ∷ put (x ⊖ lit (7 * K)) (y ⊖ lit (7 * K)) (disc (lit (7 * K)) (cls "bunch"))
     ∷ []
 
   lhcDia : S → Dia S
