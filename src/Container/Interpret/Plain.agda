@@ -34,7 +34,6 @@ open import Categories.Functor.Algebra using (F-Algebra)
 
 open import Container.FreeMonad.Algebraic using (module Alg)
 open import Container.Lowering
-open import Container.Lowering.Properties using (_≈⋆_)
 
 private
   variable

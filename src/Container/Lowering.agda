@@ -27,6 +27,8 @@ open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; Shape; Position; _⇒_; shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 
+open import Relation.Binary.PropositionalEquality using (setoid)
+
 open import Container.Polynomial
 open import Container.FreeMonad
 open import Container.FreeMonad.Algebraic
@@ -34,6 +36,14 @@ open import Container.FreeMonad.Algebraic
 private
   variable
     s p c a b d : Level
+
+------------------------------------------------------------------------
+-- Equality of programs: equal shapes, pointwise equal continuations, equal leaves
+
+infix 4 _≈⋆_
+
+_≈⋆_ : ∀ {C : Container s p} {X : Set c} → C ⋆ X → C ⋆ X → Set (c ⊔ s ⊔ p)
+_≈⋆_ {C = C} {X = X} = Eq {C = C} (setoid X)
 
 ------------------------------------------------------------------------
 -- Lowerings

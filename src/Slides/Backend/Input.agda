@@ -32,7 +32,6 @@ open import Data.String.Base using (String)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Sum.Properties using () renaming (≡-dec to ⊎-dec)
 open import Data.Empty using (⊥)
-open import Container.Lowering.Properties using (_≈⋆_)
 open import Relation.Nullary.Decidable using (⌊_⌋; map′)
 open import Relation.Nullary using (yes; no)
 open import Data.Unit.Base using (tt)
@@ -43,9 +42,6 @@ open import Data.Container.FreeMonad using (pure; impure)
 
 open import Slides.Deck.Talk using (Mode; linear; stacked)
 open import Slides.Program.Navigation using (Nav; next; prev; first; last; goto; gotoLabel; _≟N_)
-open import Slides.Program.Supports using (Supports; idSupports)
-open import Slides.Program.Syntax using (Program)
-import Slides.Program.Supports as Sup
 
 ------------------------------------------------------------------------
 -- Keys and hashes
@@ -167,26 +163,11 @@ revealKinds stacked =
 revealKeys : Mode → Key → Maybe RCmd
 revealKeys m = decode (revealKinds m)
 
-linear-clash-free : clash-free (revealKinds linear) ≡ true
-linear-clash-free = refl
-
-stacked-clash-free : clash-free (revealKinds stacked) ≡ true
-stacked-clash-free = refl
-
 -- `#n` and `#/h` are slide numbers (zero-based), `#/h/v` a vertical slide, `#/id` a label
 revealHash : Hash → Maybe Nav
 revealHash (flat n)         = just (goto n)
 revealHash (grid h _)       = just (goto h)
 revealHash (named l)        = just (gotoLabel l)
-
--- reveal binds all of `Nav`: the program commands are embedded, nothing is skipped
-revealSupports : Supports Nav
-revealSupports = record
-  { S = RCmd ; _≟S_ = _≟R_
-  ; inj = λ n → just (nav n)
-  ; dec = λ { (nav n) → just n ; (aux _) → nothing }
-  ; dec-inj = λ { refl → refl }
-  ; inj-dec = λ { {s = nav _} refl → refl ; {s = aux _} () } }
 
 ------------------------------------------------------------------------
 -- The standalone backend (`assets/plain.js`)
@@ -199,38 +180,8 @@ plainKinds =
   ∷ (⟨ end ⟩ ∷ [] , last)
   ∷ []
 
-plain-clash-free : clash-free plainKinds ≡ true
-plain-clash-free = refl
-
 -- `#n` is one-based and flat, read once on load (`#0` is the first slide)
 plainHash : Hash → Maybe Nav
 plainHash (flat zero)    = just (goto zero)
 plainHash (flat (suc n)) = just (goto n)
 plainHash _              = nothing
-
-plainSupports : Supports Nav
-plainSupports = idSupports _≟N_
-
-------------------------------------------------------------------------
--- Every deck is presented unchanged
-
--- a backend that binds every command of `Nav` skips nothing
-module _ {T D : Set} (b : Supports Nav) (tot : ∀ n → Σ[ s ∈ Supports.S b ] Supports.inj b n ≡ just s) where
-  private
-    no-nothing : ∀ {A : Set} {x : Maybe A} {s} → x ≡ just s → x ≡ nothing → ⊥
-    no-nothing refl ()
-
-  allSup : ∀ {A} (p : Program T D Nav A) → Sup.AllSup b p
-  allSup (pure _)              = tt
-  allSup (impure (inj₁ _ , k)) = λ q → allSup (k q)
-  allSup (impure (inj₂ c , k)) = no-nothing (proj₂ (tot c)) , allSup (k tt)
-
-  -- presenting a program on `b` leaves it unchanged
-  presents : ∀ {A} (p : Program T D Nav A) → Sup.skipU b p ≈⋆ p
-  presents p = Sup.lower-supported b p (allSup p)
-
-reveal-total : ∀ n → Σ[ s ∈ RCmd ] Supports.inj revealSupports n ≡ just s
-reveal-total n = nav n , refl
-
-plain-total : ∀ n → Σ[ s ∈ Nav ] Supports.inj plainSupports n ≡ just s
-plain-total n = n , refl

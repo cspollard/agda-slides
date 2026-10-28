@@ -31,10 +31,8 @@ private
 ------------------------------------------------------------------------
 -- Equality of programs
 
-infix 4 _≈⋆_
-
-_≈⋆_ : ∀ {C : Container s p} {X : Set c} → C ⋆ X → C ⋆ X → Set (c ⊔ s ⊔ p)
-_≈⋆_ {C = C} {X = X} = Eq {C = C} (setoid X)
+-- (the relation itself is in `Container.Lowering`, so that folds need not import the laws)
+open import Container.Lowering using (_≈⋆_) public
 
 refl≈ : ∀ {C : Container s p} {X : Set c} (t : C ⋆ X) → t ≈⋆ t
 refl≈ {X = X} = refl⋆ (setoid X)
