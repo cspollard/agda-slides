@@ -19,6 +19,7 @@ names-mapDia f (pure ())
 names-mapDia f (impure (Rectangle _ _ _ , k))  = refl
 names-mapDia f (impure (Disc _ _ , k))         = refl
 names-mapDia f (impure (Segment _ _ _ , k))    = refl
+names-mapDia f (impure (Polyline _ _ , k))     = refl
 names-mapDia f (impure (Text _ _ _ _ , k))     = refl
 names-mapDia f (impure (Spacer _ _ , k))       = refl
 names-mapDia f (impure (Beside _ , k))

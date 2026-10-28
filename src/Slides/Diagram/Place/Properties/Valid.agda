@@ -20,7 +20,7 @@ import Data.Rational.Properties as ℚP
 open import Data.Nat using (ℕ)
 open import Data.List using ([]; _∷_; map; _++_)
 open import Data.List.Relation.Binary.Pointwise as PW using (Pointwise; _∷_; [])
-open import Data.Product using (_×_; _,_; proj₂)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; subst)
 
@@ -35,7 +35,7 @@ open import Data.Fin using (zero; suc)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Slides.Diagram.Syntax
-  using ( Dia; Op; Rectangle; Disc; Segment; Text; Spacer; Beside; Above; Atop
+  using ( Dia; Op; Rectangle; Disc; Segment; Polyline; Text; Spacer; Beside; Above; Atop
         ; LabelAbove; LabelBelow; Place; Overlay; Named; Connect )
 import Slides.Diagram.Notation as Nt
 
@@ -81,6 +81,16 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
   nonneg-⊔ : ∀ {x y} → Nonneg x → Nonneg y → Nonneg (x ⊔ y)
   nonneg-⊔ {x} {y} hx hy = R.trans (R.sym (⊔-assoc 0# x y)) (⊔-cong hx R.refl)
 
+  -- the maximum of any list is non-negative, whatever the list: it ends in `0`
+  nonneg-⊔ʳ : ∀ {x m} → Nonneg m → Nonneg (x ⊔ m)
+  nonneg-⊔ʳ {x} {m} hm =
+    R.trans (R.sym (⊔-assoc 0# x m))
+      (R.trans (⊔-cong (⊔-comm 0# x) R.refl) (R.trans (⊔-assoc x 0# m) (⊔-cong R.refl hm)))
+
+  nonneg-maximum : ∀ xs → Nonneg (maximum xs)
+  nonneg-maximum []       = nonneg-0
+  nonneg-maximum (x ∷ xs) = nonneg-⊔ʳ (nonneg-maximum xs)
+
   ----------------------------------------------------------------------
   -- Every operation keeps a layout valid
 
@@ -95,6 +105,9 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
 
   valid-segment : ∀ {w h s} → Nonneg w → Nonneg h → Valid (segment w h s)
   valid-segment nw nh = nw , nh
+
+  valid-polyline : ∀ {pts s} → Valid (polyline pts s)
+  valid-polyline {pts} = nonneg-maximum (map proj₁ pts) , nonneg-maximum (map proj₂ pts)
 
   valid-disc : ∀ {r s} → Nonneg r → Valid (disc r s)
   valid-disc nr = nonneg-+ nr nr , nonneg-+ nr nr
@@ -159,6 +172,7 @@ module For {S : Set} (O : Ops S) (L : IsLawful O) (Ord : IsOrdered O L) where
   valid-layout (impure (Rectangle w h s , k)) ((nw , nh) , _) = valid-rectangle {w} {h} {s} nw nh
   valid-layout (impure (Disc r s , k)) (nr , _)             = valid-disc {r} {s} nr
   valid-layout (impure (Segment w h s , k)) ((nw , nh) , _) = valid-segment {w} {h} {s} nw nh
+  valid-layout (impure (Polyline pts s , k)) _              = valid-polyline {pts} {s}
   valid-layout (impure (Text pct size t s , k)) _           = valid-text pct size t s
   valid-layout (impure (Spacer w h , k)) ((nw , nh) , _)    = valid-spacer {w} {h} nw nh
   valid-layout (impure (Beside al , k)) (_ , ok) =

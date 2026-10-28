@@ -41,7 +41,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong�
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Scalar
 open import Slides.Diagram.Syntax
-  using ( Algebra; fold; Rectangle; Disc; Segment; Text; Spacer
+  using ( Algebra; fold; Rectangle; Disc; Segment; Polyline; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect
         ; top; middle; bottom; left; centred; right )
 open import Slides.Diagram.TextMetrics using (textWidth)
@@ -505,6 +505,7 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   sizeAlgebra (Rectangle w h _)   _ = w , h
   sizeAlgebra (Disc r _)          _ = dbl r , dbl r
   sizeAlgebra (Segment w h _)     _ = w , h
+  sizeAlgebra (Polyline pts _)    _ = maximum (map proj₁ pts) , maximum (map proj₂ pts)
   sizeAlgebra (Text pct size t _) _ = fromℕ ((textWidth size t *ℕ pct) /ℕ 100) , fromℕ ((size *ℕ 3) /ℕ 2)
   sizeAlgebra (Spacer w h)        _ = w , h
   sizeAlgebra (Beside _) k =
@@ -534,6 +535,7 @@ module Proofs {S : Set} (O : Ops S) (L : IsLawful O) where
   size-fusion (impure (Rectangle _ _ _ , _)) = R.refl , R.refl
   size-fusion (impure (Disc _ _ , _))        = R.refl , R.refl
   size-fusion (impure (Segment _ _ _ , _))   = R.refl , R.refl
+  size-fusion (impure (Polyline _ _ , _))    = R.refl , R.refl
   size-fusion (impure (Text _ _ _ _ , _))    = R.refl , R.refl
   size-fusion (impure (Spacer _ _ , _))      = R.refl , R.refl
   size-fusion (impure (Beside _ , k)) = +-cong w₀ w₁ , ⊔-cong h₀ h₁

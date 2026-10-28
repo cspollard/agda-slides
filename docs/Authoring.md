@@ -145,6 +145,7 @@ stages = compile "d-stages" 100 (margin 10 20 10 30
 | Combinator | Effect |
 |---|---|
 | `rectangle w h style`, `disc r style`, `segment w h style`, `spacer w h` | leaves (`segment` is a line across a `w × h` box; `segment w 0` is a rule) |
+| `polyline pts style` | a connected line through the points `(x , y)` of a list, in the diagram's own coordinates (origin top-left, y down); the frame reaches the largest x and the largest y, so a point is never at a negative coordinate; it is how to draw a curve, or a ring by a closed list (`segment w h` is the line through `(0, 0)` and `(w, h)`; a polyline is also the only way to draw a line that rises to the right in a box). It is drawn as one `<line>` per pair of neighbours, so a thick curve shows small notches at the joins unless its class sets `stroke-linecap: round` |
 | `text size s style`, `bold size s style`, `lines size ss style`, `paragraph align size maxWidth s style` | text (see below) |
 | `hcat gap ds`, `vcat gap ds` | a row or column, centred on the other axis; `hcatA` / `vcatA` take an alignment (`top middle bottom`, `left centred right`) |
 | `beside a b`, `above a b`, `atop a b` | binary forms (`besideA`, `aboveA` with an alignment); `atop` centres `b` on `a` |

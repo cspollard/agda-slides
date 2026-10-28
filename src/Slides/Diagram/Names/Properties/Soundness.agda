@@ -37,7 +37,7 @@ open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry using (Port; centred)
 open import Slides.Diagram.Names
 open import Slides.Diagram.Syntax
-  using ( Dia; fold; Rectangle; Disc; Segment; Text; Spacer
+  using ( Dia; fold; Rectangle; Disc; Segment; Polyline; Text; Spacer
         ; Beside; Above; Atop; LabelAbove; LabelBelow; Place; Overlay; Named; Connect )
 import Slides.Diagram.Layout as Lay
 open import Slides.Diagram.Place O
@@ -103,6 +103,7 @@ names-fusion (pure ())
 names-fusion (impure (Rectangle _ _ _ , _)) = refl
 names-fusion (impure (Disc _ _ , _))        = refl
 names-fusion (impure (Segment _ _ _ , _))   = refl
+names-fusion (impure (Polyline _ _ , _))    = refl
 names-fusion (impure (Text _ _ _ _ , _))    = refl
 names-fusion (impure (Spacer _ _ , _))      = refl
 names-fusion (impure (Beside al , k)) =
@@ -159,6 +160,7 @@ Draws (pure ())
 Draws (impure (Rectangle _ _ _ , _)) = ⊤
 Draws (impure (Disc _ _ , _))        = ⊤
 Draws (impure (Segment _ _ _ , _))   = ⊤
+Draws (impure (Polyline _ _ , _))    = ⊤
 Draws (impure (Text _ _ _ _ , _))    = ⊤
 Draws (impure (Spacer _ _ , _))      = ⊤
 Draws (impure (Beside _ , k))        = (i : Fin 2) → Draws (k i)
@@ -211,6 +213,7 @@ soundness (pure ())
 soundness (impure (Rectangle _ _ _ , _)) _ = tt
 soundness (impure (Disc _ _ , _)) _        = tt
 soundness (impure (Segment _ _ _ , _)) _   = tt
+soundness (impure (Polyline _ _ , _)) _    = tt
 soundness (impure (Text _ _ _ _ , _)) _    = tt
 soundness (impure (Spacer _ _ , _)) _      = tt
 soundness (impure (Beside _ , k)) h = fin2 (soundness (k zero) (++ˡ h)) (soundness (k (suc zero)) (++ʳ h))

@@ -31,10 +31,12 @@ open import Level using (0ℓ)
 open import Data.Fin using (zero; suc)
 open import Data.Product.Base using (_,_)
 open import Data.Unit using (tt)
+open import Data.List using (List; []; _∷_; map)
+open import Data.Product.Base using (_×_)
 open import Data.Container.Core using (_⇒_; _▷_; shape; position)
 open import Data.Container.FreeMonad using (_⋆_; impure)
 open import Relation.Binary.Bundles using (Setoid)
-open import Relation.Binary.PropositionalEquality using (refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂)
 open import Function using (id; _∘_)
 
 open import Container.Lowering using (translate; lower; embed)
@@ -49,6 +51,7 @@ mapOp : ∀ {S T} → (S → T) → Op S → Op T
 mapOp f (Rectangle w h s)     = Rectangle (f w) (f h) s
 mapOp f (Disc r s)            = Disc (f r) s
 mapOp f (Segment w h s)       = Segment (f w) (f h) s
+mapOp f (Polyline pts s)      = Polyline (map (onPair f) pts) s
 mapOp f (Text pct size t s)   = Text pct size t s
 mapOp f (Spacer w h)          = Spacer (f w) (f h)
 mapOp f (Beside al)           = Beside al
@@ -66,6 +69,7 @@ posOf : ∀ {S T} (f : S → T) (o : Op S) → arity (mapOp f o) → arity o
 posOf f (Rectangle _ _ _)   x = x
 posOf f (Disc _ _)          x = x
 posOf f (Segment _ _ _)     x = x
+posOf f (Polyline _ _)      x = x
 posOf f (Text _ _ _ _)      x = x
 posOf f (Spacer _ _)        x = x
 posOf f (Beside _)          x = x
@@ -88,6 +92,7 @@ mapDia-translate : ∀ {S T} (f : S → T) (d : Dia S) → mapDia f d ≈⋆ tra
 mapDia-translate f (impure (Rectangle w h s , k))     = refl , λ ()
 mapDia-translate f (impure (Disc r s , k))            = refl , λ ()
 mapDia-translate f (impure (Segment w h s , k))       = refl , λ ()
+mapDia-translate f (impure (Polyline pts s , k))      = refl , λ ()
 mapDia-translate f (impure (Text pct size t s , k))   = refl , λ ()
 mapDia-translate f (impure (Spacer w h , k))          = refl , λ ()
 mapDia-translate f (impure (Beside al , k))           = refl , λ { zero → mapDia-translate f (k zero) ; (suc zero) → mapDia-translate f (k (suc zero)) }
@@ -107,10 +112,22 @@ mapDia-lower f d = trans≈ (mapDia-translate f d) (sym≈ (lower-embed (scalarM
 ------------------------------------------------------------------------
 -- Functoriality (equality of programs)
 
+-- the points of a polyline: sending them through `id` and through `g ∘ f` is the identity and
+-- sending them through `f` and then `g` (a point is a pair, so each is `refl` for one point)
+map-onPair-id : ∀ {S : Set} (pts : List (S × S)) → map (onPair (id {A = S})) pts ≡ pts
+map-onPair-id []        = refl
+map-onPair-id (p ∷ pts) = cong₂ _∷_ refl (map-onPair-id pts)
+
+map-onPair-∘ : ∀ {S T U : Set} (f : S → T) (g : T → U) (pts : List (S × S)) →
+               map (onPair g) (map (onPair f) pts) ≡ map (onPair (g ∘ f)) pts
+map-onPair-∘ f g []        = refl
+map-onPair-∘ f g (p ∷ pts) = cong₂ _∷_ refl (map-onPair-∘ f g pts)
+
 translate-id : ∀ {S} (d : Dia S) → translate (scalarMor (id {A = S})) d ≈⋆ d
 translate-id (impure (Rectangle w h s , k))     = refl , λ ()
 translate-id (impure (Disc r s , k))            = refl , λ ()
 translate-id (impure (Segment w h s , k))       = refl , λ ()
+translate-id (impure (Polyline pts s , k))      = cong (λ ps → Polyline ps s) (map-onPair-id pts) , λ ()
 translate-id (impure (Text pct size t s , k))   = refl , λ ()
 translate-id (impure (Spacer w h , k))          = refl , λ ()
 translate-id (impure (Beside al , k))           = refl , λ { zero → translate-id (k zero) ; (suc zero) → translate-id (k (suc zero)) }
@@ -128,6 +145,7 @@ translate-∘ : ∀ {S T U} (f : S → T) (g : T → U) (d : Dia S) →
 translate-∘ f g (impure (Rectangle w h s , k))     = refl , λ ()
 translate-∘ f g (impure (Disc r s , k))            = refl , λ ()
 translate-∘ f g (impure (Segment w h s , k))       = refl , λ ()
+translate-∘ f g (impure (Polyline pts s , k))      = cong (λ ps → Polyline ps s) (map-onPair-∘ f g pts) , λ ()
 translate-∘ f g (impure (Text pct size t s , k))   = refl , λ ()
 translate-∘ f g (impure (Spacer w h , k))          = refl , λ ()
 translate-∘ f g (impure (Beside al , k))           = refl , λ { zero → translate-∘ f g (k zero) ; (suc zero) → translate-∘ f g (k (suc zero)) }

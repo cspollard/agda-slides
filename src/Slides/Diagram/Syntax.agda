@@ -30,9 +30,9 @@ module Slides.Diagram.Syntax where
 open import Level using (0ℓ)
 open import Data.Empty using (⊥)
 open import Data.Fin using (Fin; zero; suc)
-open import Data.List using (List; []; _∷_)
+open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ; _+_; _≤ᵇ_)
-open import Data.Product using (_,_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _≟_) renaming (_++_ to _++ˢ_)
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (if_then_else_)
@@ -90,6 +90,18 @@ data Op (S : Set) : Set where
   --         |  \   h
   --         +---* (w,h)
   Segment   : (w h : S) → Style → Op S
+  -- A connected line through the points, in the frame's own coordinates (units, origin at the
+  -- top-left, y down).  The frame is the extent of the points from the origin: as wide as the
+  -- largest x and as high as the largest y, so every point is inside it and none needs a negative
+  -- coordinate.  Fewer than two points draw nothing.  A `Segment` is the polyline through
+  -- `(0, 0)` and `(w, h)`, and a curve is a polyline through enough of its points.
+  --
+  --   (0,0)+---------------+
+  --        |    p₂         |
+  --        |   /  \   p₄   |
+  --        | p₁    p₃ /    |   frame: max x by max y
+  --        +---------------+
+  Polyline  : (pts : List (S × S)) → Style → Op S
   -- One line of text at a font size, centred in its frame.  The frame is as
   -- wide as the characters (measured from a table; markup counts as
   -- characters) times `widthPct` percent (a heavier font is wider), and
@@ -200,6 +212,7 @@ arity : ∀ {S} → Op S → Set
 arity (Rectangle _ _ _) = ⊥
 arity (Disc _ _)        = ⊥
 arity (Segment _ _ _)   = ⊥
+arity (Polyline _ _)    = ⊥
 arity (Text _ _ _ _)    = ⊥
 arity (Spacer _ _)      = ⊥
 arity (Beside _)        = Fin 2
@@ -241,6 +254,9 @@ disc r s = impure (Disc r s , λ ())
 
 segment : ∀ {S} → S → S → Style → Dia S
 segment w h s = impure (Segment w h s , λ ())
+
+polyline : ∀ {S} → List (S × S) → Style → Dia S
+polyline pts s = impure (Polyline pts s , λ ())
 
 text bold : ∀ {S} → ℕ → String → Style → Dia S
 text size t s = impure (Text 100 size t s , λ ())
@@ -300,12 +316,17 @@ connect a sa b sb = connectP a (side sa) b (side sb)
 connectEW : ∀ {S} → String → String → Style → Dia S → Dia S
 connectEW a b = connect a east b west
 
+-- a map on both coordinates of a point
+onPair : ∀ {S T : Set} → (S → T) → S × S → T × T
+onPair f p = f (proj₁ p) , f (proj₂ p)
+
 -- Change of scalar: a diagram with sizes in `S` becomes one with sizes in `T`.
 -- This is the action of `Dia` on functions (a fold, rebuilding each operation).
 rescale : ∀ {S T} → (S → T) → Algebra S (Dia T)
 rescale f (Rectangle w h s)       _ = rectangle (f w) (f h) s
 rescale f (Disc r s)              _ = disc (f r) s
 rescale f (Segment w h s)         _ = segment (f w) (f h) s
+rescale f (Polyline pts s)        _ = polyline (map (onPair f) pts) s
 rescale f (Text pct size t s)     _ = impure (Text pct size t s , λ ())
 rescale f (Spacer w h)            _ = spacer (f w) (f h)
 rescale f (Beside al)             k = besideA al (k zero) (k (suc zero))

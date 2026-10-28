@@ -28,7 +28,7 @@ open import Slides.Diagram.Scalar using (Ops)
 module Slides.Diagram.Place {S : Set} (O : Ops S) where
 
 open import Data.Bool using (if_then_else_)
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.List using (List; []; _∷_; map; foldr; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -106,6 +106,25 @@ disc r s = layout (dbl r) (dbl r) (circle (dbl r) (dbl r) r s ∷ []) []
 -- a line from the top-left to the bottom-right corner
 segment : S → S → Style → Layout S
 segment w h s = layout w h (line 0# 0# (dbl w) (dbl h) s ∷ []) []
+
+-- the neighbouring pairs of a list: `pairs (a ∷ b ∷ c ∷ []) = (a , b) ∷ (b , c) ∷ []`
+pairs : ∀ {A : Set} → List A → List (A × A)
+pairs (a ∷ b ∷ rest) = (a , b) ∷ pairs (b ∷ rest)
+pairs _              = []
+
+-- the largest of a list of sizes (`0#` for none)
+maximum : List S → S
+maximum = foldr _⊔_ 0#
+
+-- the line between two points (in units; the drawing command is in half units)
+chord : Style → (S × S) × (S × S) → Draw S
+chord s p = line (dbl (proj₁ (proj₁ p))) (dbl (proj₂ (proj₁ p)))
+                 (dbl (proj₁ (proj₂ p))) (dbl (proj₂ (proj₂ p))) s
+
+-- a connected line through the points: one `chord` per neighbouring pair, in a frame that reaches
+-- the largest x and the largest y
+polyline : List (S × S) → Style → Layout S
+polyline pts s = layout (maximum (map proj₁ pts)) (maximum (map proj₂ pts)) (map (chord s) (pairs pts)) []
 
 -- text: as wide as its characters (`pct` percent, for a heavier font), and
 -- `size * 3/2` high

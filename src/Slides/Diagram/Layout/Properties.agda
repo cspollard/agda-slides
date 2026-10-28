@@ -93,6 +93,34 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
   segment-natural : ∀ w ht s → mapLayout h (PS.segment w ht s) ≡ PT.segment (h w) (h ht) s
   segment-natural w ht s rewrite h-0 | h-dbl w | h-dbl ht = refl
 
+  maximum-natural : ∀ xs → h (PS.maximum xs) ≡ PT.maximum (map h xs)
+  maximum-natural []       = h-0
+  maximum-natural (x ∷ xs) = trans (h-⊔ x (PS.maximum xs)) (cong (OT._⊔_ (h x)) (maximum-natural xs))
+
+  map-proj₁ : ∀ pts → map h (map proj₁ pts) ≡ map proj₁ (map (onPair h) pts)
+  map-proj₁ []       = refl
+  map-proj₁ (p ∷ ps) = cong (h (proj₁ p) ∷_) (map-proj₁ ps)
+
+  map-proj₂ : ∀ pts → map h (map proj₂ pts) ≡ map proj₂ (map (onPair h) pts)
+  map-proj₂ []       = refl
+  map-proj₂ (p ∷ ps) = cong (h (proj₂ p) ∷_) (map-proj₂ ps)
+
+  chord-natural : ∀ s p → mapDraw h (PS.chord s p) ≡ PT.chord s (onPair h (proj₁ p) , onPair h (proj₂ p))
+  chord-natural s ((a , b) , (c , d)) rewrite h-dbl a | h-dbl b | h-dbl c | h-dbl d = refl
+
+  pairs-natural : ∀ pts s →
+    map (mapDraw h) (map (PS.chord s) (PS.pairs pts)) ≡ map (PT.chord s) (PT.pairs (map (onPair h) pts))
+  pairs-natural []            s = refl
+  pairs-natural (p ∷ [])      s = refl
+  pairs-natural (p ∷ q ∷ pts) s = cong₂ _∷_ (chord-natural s (p , q)) (pairs-natural (q ∷ pts) s)
+
+  polyline-natural : ∀ pts s → mapLayout h (PS.polyline pts s) ≡ PT.polyline (map (onPair h) pts) s
+  polyline-natural pts s =
+    cong₃ (λ w ht ds → layout w ht ds [])
+      (trans (maximum-natural (map proj₁ pts)) (cong PT.maximum (map-proj₁ pts)))
+      (trans (maximum-natural (map proj₂ pts)) (cong PT.maximum (map-proj₂ pts)))
+      (pairs-natural pts s)
+
   text-natural : ∀ pct size t s → mapLayout h (PS.text pct size t s) ≡ PT.text pct size t s
   text-natural pct size t s
     rewrite h-fromℕ ((textWidth size t * pct) / 100) | h-fromℕ ((size * 3) / 2) = refl
@@ -231,6 +259,7 @@ module _ {S T : Set} (O : Ops S) (P : Ops T) (h : S → T) (Hom : IsOpsHom O P h
   layout-natural (impure (Rectangle w ht s , k)) = rectangle-natural w ht s
   layout-natural (impure (Disc r s , k))         = disc-natural r s
   layout-natural (impure (Segment w ht s , k))   = segment-natural w ht s
+  layout-natural (impure (Polyline pts s , k))   = polyline-natural pts s
   layout-natural (impure (Text pct size t s , k)) = text-natural pct size t s
   layout-natural (impure (Spacer w ht , k))      = spacer-natural w ht
   layout-natural (impure (Beside al , k))        =

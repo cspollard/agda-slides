@@ -55,6 +55,7 @@ module LayoutWith {S : Set} (O : Ops S) where
   layoutAlgebra (Rectangle w h s)   _ = P.rectangle w h s
   layoutAlgebra (Disc r s)          _ = P.disc r s
   layoutAlgebra (Segment w h s)     _ = P.segment w h s
+  layoutAlgebra (Polyline pts s)    _ = P.polyline pts s
   layoutAlgebra (Text pct size t s) _ = P.text pct size t s
   layoutAlgebra (Spacer w h)        _ = P.spacer w h
   layoutAlgebra (Beside al)         k = P.besideA al (k zero) (k (suc zero))
