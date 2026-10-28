@@ -4,40 +4,50 @@
 -- two counter-circulating proton bunches (orange/rust circles) that collide
 -- at the bottom-center of the pipe, and a particle flash on collision.
 --
+-- The diagram language has no ellipse (a `segment` runs top-left to bottom-right only, and
+-- there is no path), so the pipe is a ring of 256 small dots, each at a point of the ellipse.  The
+-- bunches ride the same ellipse: a position is a table of 64 values (one per tick of the loop)
+-- read by a binary tree of `lt`, so it is a formula in the tick and the template ships formulas, not
+-- frames.  The scalar layers have no sine, so the tables come from `trig`, a 17-entry sine table with
+-- linear interpolation (under 0.2 % off).  The bunches meet at the bottom at tick 0 and pass each
+-- other at the top at tick 32 (two beams in one pipe); only the meeting at the bottom flashes.
+--
 -- Written over `OOps S` so it can be evaluated either at `ℕ` (for static frames)
 -- or at `OExpr ⊤` (as a discrete template for smooth `tweenD` in reveal.js).
 
 module Slides.Examples.LHC where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; foldr; applyUpTo) renaming (_++_ to _++ˡ_)
-open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _/_; _%_; _⊓_) renaming (_⊔_ to _⊔ᴺ_)
-open import Data.Product using (_×_; _,_)
+open import Data.List using (List; []; _∷_; map; foldr; applyUpTo; length; splitAt) renaming (_++_ to _++ˡ_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _/_; _%_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 open import Data.Integer using (+_)
 import Data.Rational as ℚ
 open import Data.Unit using (⊤)
 
 open import Slides.Diagram using (withClass; defaultStyle; Style)
-open import Slides.Diagram.Syntax using (Dia; disc; segment; spacer; place; overlay)
+open import Slides.Diagram.Syntax using (Dia; disc; spacer; place; overlay)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Ordered using (OOps; OrdOps; FloorOps; natO; termO; tO; OExpr)
 open import Slides.Anim.Syntax using (Anim; tweenD)
 import Slides.Anim.Track as T
 
 ------------------------------------------------------------------------
--- Dimensions and Period
+-- Dimensions and period
 
 W H : ℕ
-W = 600
-H = 340
+W = 480
+H = 230
 
+-- ticks in one lap of a bunch
 period : ℕ
-period = 32
+period = 64
 
+-- the ellipse: centre and radii
 CX CY RX RY : ℕ
-CX = 300
-CY = 155
+CX = 240
+CY = 100
 RX = 220
 RY = 85
 
@@ -45,54 +55,55 @@ cls : String → Style
 cls c = withClass c defaultStyle
 
 ------------------------------------------------------------------------
--- 16-point Ellipse Geometry (scaled to 1000)
+-- Trigonometry in whole numbers
+--
+-- An angle is a number of 1/256 turns.  `trig a` is (cos , sin) of it, each as a magnitude
+-- in tenthousandths and a flag that it is negative.
 
-cos1000 sin1000 : ℕ → ℕ × Bool
-cos1000 0  = 1000 , false
-cos1000 1  = 924  , false
-cos1000 2  = 707  , false
-cos1000 3  = 383  , false
-cos1000 4  = 0    , false
-cos1000 5  = 383  , true
-cos1000 6  = 707  , true
-cos1000 7  = 924  , true
-cos1000 8  = 1000 , true
-cos1000 9  = 924  , true
-cos1000 10 = 707  , true
-cos1000 11 = 383  , true
-cos1000 12 = 0    , false
-cos1000 13 = 383  , false
-cos1000 14 = 707  , false
-cos1000 15 = 924  , false
-cos1000 _  = 0    , false
+-- sin of 0, 5.625°, … 90°, then 90° again so that interpolation at the end has a neighbour
+sinTable : List ℕ
+sinTable = 0 ∷ 980 ∷ 1951 ∷ 2903 ∷ 3827 ∷ 4714 ∷ 5556 ∷ 6344 ∷ 7071
+         ∷ 7730 ∷ 8315 ∷ 8819 ∷ 9239 ∷ 9569 ∷ 9808 ∷ 9952 ∷ 10000 ∷ 10000 ∷ []
 
-sin1000 0  = 0    , false
-sin1000 1  = 383  , false
-sin1000 2  = 707  , false
-sin1000 3  = 924  , false
-sin1000 4  = 1000 , false
-sin1000 5  = 924  , false
-sin1000 6  = 707  , false
-sin1000 7  = 383  , false
-sin1000 8  = 0    , false
-sin1000 9  = 383  , true
-sin1000 10 = 707  , true
-sin1000 11 = 924  , true
-sin1000 12 = 1000 , true
-sin1000 13 = 924  , true
-sin1000 14 = 707  , true
-sin1000 15 = 383  , true
-sin1000 _  = 0    , false
+nth : ℕ → List ℕ → ℕ
+nth _       []       = 0
+nth zero    (x ∷ _)  = x
+nth (suc k) (_ ∷ xs) = nth k xs
 
-ellipsePt : ℕ → ℕ × ℕ
-ellipsePt k =
-  let (cxm , cneg) = cos1000 (k % 16)
-      (sym , sneg) = sin1000 (k % 16)
-      dx = (RX * cxm) / 1000
-      dy = (RY * sym) / 1000
-      px = if cneg then CX ∸ dx else CX + dx
-      py = if sneg then CY ∸ dy else CY + dy
-  in px , py
+-- sin of a first-quadrant angle (a ≤ 64), interpolated between table entries
+qsin : ℕ → ℕ
+qsin a = lo + ((hi ∸ lo) * (a % 4)) / 4
+  where lo = nth (a / 4) sinTable
+        hi = nth (suc (a / 4)) sinTable
+
+-- (cos , sin) in quadrant q at r units into it
+quad : ℕ → ℕ → (ℕ × Bool) × (ℕ × Bool)
+quad 0 r = (qsin (64 ∸ r) , false) , (qsin r , false)
+quad 1 r = (qsin r , true)         , (qsin (64 ∸ r) , false)
+quad 2 r = (qsin (64 ∸ r) , true)  , (qsin r , true)
+quad _ r = (qsin r , false)        , (qsin (64 ∸ r) , true)
+
+trig : ℕ → (ℕ × Bool) × (ℕ × Bool)
+trig a = quad ((a / 64) % 4) (a % 64)
+
+-- a signed value moved up by 10000, so that it is never negative: 0 … 20000
+lifted : ℕ × Bool → ℕ
+lifted (m , neg) = if neg then 10000 ∸ m else 10000 + m
+
+-- a point on the ellipse at angle a (screen coordinates: y grows downwards, so 64 is the bottom)
+ellipseAt : ℕ → ℕ × ℕ
+ellipseAt a =
+    (CX ∸ RX) + RX * lifted (proj₁ (trig a)) / 10000
+  , (CY ∸ RY) + RY * lifted (proj₂ (trig a)) / 10000
+
+-- the first bunch is at angle 64 (the bottom) at tick 0 and turns by 4 units a tick
+cosTable sinTableT : List ℕ
+cosTable   = map (λ k → lifted (proj₁ (trig (64 + 4 * k)))) (applyUpTo (λ k → k) period)
+sinTableT  = map (λ k → lifted (proj₂ (trig (64 + 4 * k)))) (applyUpTo (λ k → k) period)
+
+-- eight directions for the sparks, 45° apart
+sparkDirs : List ((ℕ × Bool) × (ℕ × Bool))
+sparkDirs = map (λ j → trig (32 * j)) (applyUpTo (λ j → j) 8)
 
 ------------------------------------------------------------------------
 -- Generic Frame over any scalar S
@@ -110,99 +121,70 @@ module PipeFrame {S : Set} (D : OOps S) where
   canvas : List (Dia S) → Dia S
   canvas = foldr (λ d acc → overlay (lit W) (lit H) acc d) (spacer (lit W) (lit H))
 
-  -- static ring boundary segment
-  pipeSeg : ℕ × ℕ → ℕ × ℕ → Dia S
-  pipeSeg (x1 , y1) (x2 , y2) =
-    let minX = x1 ⊓ x2
-        minY = y1 ⊓ y2
-        w = (x1 ⊔ᴺ x2) ∸ minX
-        h = (y1 ⊔ᴺ y2) ∸ minY
-    in put (lit minX) (lit minY) (segment (lit w) (lit h) (cls "eb"))
+  -- the pipe: dots two units across, about four apart, so that they read as a line
+  pipeDot : ℕ → Dia S
+  pipeDot a = put (lit (proj₁ (ellipseAt a) ∸ 2)) (lit (proj₂ (ellipseAt a) ∸ 2)) (disc (lit 2) (cls "pipe"))
 
   pipeRing : List (Dia S)
-  pipeRing =
-    applyUpTo (λ i → pipeSeg (ellipsePt i) (ellipsePt (suc i % 16))) 16
+  pipeRing = map pipeDot (applyUpTo (λ a → a) 256)
 
-  -- Proton positions along the 4 quarter arcs of the ellipse:
-  -- bottom-center is at (CX, CY + RY) = (300, 240)
-  -- left vertex is at (CX - RX, CY) = (80, 155)
-  -- top-center is at (CX, CY - RY) = (300, 70)
-  -- right vertex is at (CX + RX, CY) = (520, 155)
-  --
-  -- With period = 32, each quarter is 8 ticks long.
-  -- Proton 1 (clockwise from bottom):
-  --   0..8:   x: 300 -> 80  (step -27.5), y: 240 -> 155 (step -10.6)
-  --   8..16:  x: 80 -> 300  (step +27.5), y: 155 -> 70  (step -10.6)
-  --   16..24: x: 300 -> 520 (step +27.5), y: 70 -> 155  (step +10.6)
-  --   24..32: x: 520 -> 300 (step -27.5), y: 155 -> 240 (step +10.6)
+  -- the value of a table at the tick u, as a binary tree of comparisons over the indices
+  -- `off … off + length vs` (the fuel is the depth of the tree)
+  tree : ℕ → S → ℕ → List ℕ → S
+  tree zero    u off vs        = lit 0
+  tree (suc f) u off []        = lit 0
+  tree (suc f) u off (v ∷ [])  = lit v
+  tree (suc f) u off vs        =
+    lt u (lit (off + length vs / 2))
+       (tree f u off (proj₁ (splitAt (length vs / 2) vs)))
+       (tree f u (off + length vs / 2) (proj₂ (splitAt (length vs / 2) vs)))
 
-  p1X : S → S
-  p1X t =
-    let u = modBy 31 t -- 0..31
-    in lt u (lit 8)
-          (lit 300 ⊖ divBy 7 (mulLit 220 u))
-          (lt u (lit 16)
-              (lit 80 ⊕ divBy 7 (mulLit 220 (u ⊖ lit 8)))
-              (lt u (lit 24)
-                  (lit 300 ⊕ divBy 7 (mulLit 220 (u ⊖ lit 16)))
-                  (lit 520 ⊖ divBy 7 (mulLit 220 (u ⊖ lit 24)))))
+  -- the first bunch, from the tables: x = 80 + 220 (1 + cos), y = 70 + 85 (1 + sin)
+  p1X p1Y : S → S
+  p1X t = lit (CX ∸ RX) ⊕ divBy 9999 (mulLit RX (tree 8 (modBy 63 t) 0 cosTable))
+  p1Y t = lit (CY ∸ RY) ⊕ divBy 9999 (mulLit RY (tree 8 (modBy 63 t) 0 sinTableT))
 
-  p1Y : S → S
-  p1Y t =
-    let u = modBy 31 t
-    in lt u (lit 8)
-          (lit 240 ⊖ divBy 7 (mulLit 85 u))
-          (lt u (lit 16)
-              (lit 155 ⊖ divBy 7 (mulLit 85 (u ⊖ lit 8)))
-              (lt u (lit 24)
-                  (lit 70 ⊕ divBy 7 (mulLit 85 (u ⊖ lit 16)))
-                  (lit 155 ⊕ divBy 7 (mulLit 85 (u ⊖ lit 24)))))
-
-  -- Proton 2 (counter-clockwise from bottom):
-  --   0..8:   x: 300 -> 520 (step +27.5), y: 240 -> 155 (step -10.6)
-  --   8..16:  x: 520 -> 300 (step -27.5), y: 155 -> 70  (step -10.6)
-  --   16..24: x: 300 -> 80  (step -27.5), y: 70 -> 155  (step +10.6)
-  --   24..32: x: 80 -> 300  (step +27.5), y: 155 -> 240 (step +10.6)
-
+  -- the second bunch turns the other way: the mirror image in the vertical axis
   p2X : S → S
-  p2X t =
-    let u = modBy 31 t
-    in lt u (lit 8)
-          (lit 300 ⊕ divBy 7 (mulLit 220 u))
-          (lt u (lit 16)
-              (lit 520 ⊖ divBy 7 (mulLit 220 (u ⊖ lit 8)))
-              (lt u (lit 24)
-                  (lit 300 ⊖ divBy 7 (mulLit 220 (u ⊖ lit 16)))
-                  (lit 80 ⊕ divBy 7 (mulLit 220 (u ⊖ lit 24)))))
+  p2X t = lit (2 * CX) ⊖ p1X t
 
-  p2Y : S → S
-  p2Y = p1Y
+  -- the flash after a collision at the bottom, tick 0: a burst that grows for 8 ticks and shrinks
+  -- for 8, and sparks that fly out for 16
+  burstR : S → S
+  burstR u = lt u (lit 8) (mulLit 3 u) (lt u (lit 16) (mulLit 3 (lit 16 ⊖ u)) (lit 0))
 
-  -- Flash bursts at collision: radius and particle sparks expand during u < 4
-  flashRadius : S → S
-  flashRadius t =
-    let u = modBy 31 t
-    in lt u (lit 4) (lit 4 ⊕ mulLit 4 u) (lit 0)
+  sparkD : S → S
+  sparkD u = lt u (lit 16) (lit 6 ⊕ mulLit 3 u) (lit 0)
 
-  flashSparks : S → List (Dia S)
-  flashSparks t =
-    let u = modBy 31 t
-        r = flashRadius t
-        cx = lit 300
-        cy = lit 240
-    in put (cx ⊖ r) (cy ⊖ r) (disc r (cls "stat crimson"))
-     ∷ put (cx ⊖ divBy 1 r) (cy ⊖ divBy 1 r) (disc (divBy 1 r) (cls "stat rust"))
-     ∷ []
+  sparkR : S → S
+  sparkR u = lt u (lit 16) (lit 3) (lit 0)
+
+  -- a spark flies from the collision point along (cos , sin), squashed to 60 % vertically
+  spark : S → (ℕ × Bool) × (ℕ × Bool) → Dia S
+  spark u ((cm , cn) , (sm , sn)) =
+    let dx = divBy 99 (mulLit (cm / 100) (sparkD u))
+        dy = divBy 99 (mulLit (sm * 60 / 10000) (sparkD u))
+        x  = if cn then lit CX ⊖ dx else lit CX ⊕ dx
+        y  = if sn then lit (CY + RY) ⊖ dy else lit (CY + RY) ⊕ dy
+    in put (x ⊖ sparkR u) (y ⊖ sparkR u) (disc (sparkR u) (cls "spark"))
+
+  -- a bunch at (x , y): a soft halo and a core
+  bunch : S → S → List (Dia S)
+  bunch x y =
+      put (x ⊖ lit 11) (y ⊖ lit 11) (disc (lit 11) (cls "halo"))
+    ∷ put (x ⊖ lit 7) (y ⊖ lit 7) (disc (lit 7) (cls "bunch"))
+    ∷ []
 
   lhcDia : S → Dia S
   lhcDia t =
-    let x1 = p1X t ⊖ lit 6
-        y1 = p1Y t ⊖ lit 6
-        x2 = p2X t ⊖ lit 6
-        y2 = p2Y t ⊖ lit 6
-        bunch1 = put x1 y1 (disc (lit 6) (cls "stat rust"))
-        bunch2 = put x2 y2 (disc (lit 6) (cls "stat rust"))
-    in canvas (pipeRing ++ˡ (bunch1 ∷ bunch2 ∷ flashSparks t))
+    let u = modBy 63 t
+        r = burstR u
+    in canvas
+         ( pipeRing
+         ++ˡ bunch (p1X t) (p1Y t)
+         ++ˡ bunch (p2X t) (p1Y t)
+         ++ˡ (put (lit CX ⊖ r) (lit (CY + RY) ⊖ r) (disc r (cls "burst"))
+              ∷ map (spark u) sparkDirs))
 
 ------------------------------------------------------------------------
 -- Exported Diagrams and Animations
@@ -213,6 +195,6 @@ lhcFrameAt = PipeFrame.lhcDia natO
 lhcTemplate : Dia (OExpr ⊤)
 lhcTemplate = PipeFrame.lhcDia termO tO
 
--- Smooth parametric loop (~0.5s per loop with ms = 16)
+-- Smooth parametric loop: one frame per tick, `period` ticks to a lap
 lhcAnim : Anim
 lhcAnim = tweenD period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear lhcTemplate
