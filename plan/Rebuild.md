@@ -18,8 +18,8 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
 - Parallelism: steps 2 and 3 are independent after step 1; steps 4 and 5 after both; 6 after 5.
 
 ## Status (2026-10-28)
-Steps 0 to 3 are done and merged: container lemmas +194 lines (budget 300), scalar theories 700 (budget 700),
-Diagram and Layout 1819 (budget 2500); `make check` clean, 17 s cold.  Next: Step 4 (Scene).
+Steps 0 to 4 are done and merged: container lemmas +194 lines (budget 300), scalar theories 700 (700),
+Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold.  Next: Step 5 (Program).
 
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
