@@ -15,7 +15,7 @@ AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 check:
 	@mkdir -p _build
 	@(echo "module Everything where"; for f in $$(find src \( -name '*.agda' -o -name '*.lagda.md' \) ! -name '*Main.agda' ! -name Driver.agda ! -path '*/Spike/*' | sort); do \
-	    echo "import $$(echo $${f#src/} | sed 's#/#.#g; s#\.l\?agda\(\.md\)\?$$##')"; done) > _build/Everything.agda
+	    echo "import $$(echo $${f#src/} | sed -E 's#/#.#g; s#\.l?agda(\.md)?$$##')"; done) > _build/Everything.agda
 	$(AGDA) -i _build _build/Everything.agda
 	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda -o -path '*/Spike/*.agda'); do $(AGDA) $$f || exit 1; done
 
