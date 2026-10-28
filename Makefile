@@ -65,3 +65,53 @@ plain:
 	mkdir -p out/plain $(BUILD_DIR)
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
+
+# The showcase deck with both backends: out/showcase/ (reveal.js) and out/showcase-plain/.
+.PHONY: showcase
+showcase:
+	mkdir -p out/showcase out/showcase-plain $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/showcase/reveal
+	cp assets/slides.css assets/animation.js assets/plot.svg out/showcase/
+	cp $(PLAIN_FILES) out/showcase-plain/
+	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
+
+# A deck with a non-default key binding (not a golden), and a deck with named slides.
+.PHONY: keys labels test-keys test-labels
+keys:
+	mkdir -p out/keys $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/keys/reveal
+	cp assets/slides.css assets/animation.js out/keys/
+	$(call run-main,src/Slides/Examples/KeysMain.agda)
+
+labels:
+	mkdir -p out/labels $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/labels/reveal
+	cp assets/slides.css assets/animation.js out/labels/
+	$(call run-main,src/Slides/Examples/LabelsMain.agda)
+
+test-keys: keys
+	cd tests/browser && npm install --silent
+	node tests/browser/keys.mjs out
+
+test-labels: labels
+	cd tests/browser && npm install --silent
+	node tests/browser/labels.mjs out
+
+# Golden-file tests (run `make example talk plain showcase` first), then the browser tests.
+.PHONY: test test-browser
+test:
+	python3 tests/check_closure.py
+	diff -u tests/golden/intro.init.js out/intro/init.js
+	diff -u tests/golden/slides.css out/intro/slides.css
+	diff -u tests/golden/talk.index.html out/talk/index.html
+	diff -u tests/golden/plain.index.html out/plain/index.html
+	diff -u tests/golden/showcase.init.js out/showcase/init.js
+	diff -u tests/golden/plain.js out/plain/plain.js
+	diff -u tests/golden/plain.css out/plain/plain.css
+
+test-browser:
+	python3 tests/check_reveal.py out/intro/index.html
+	python3 tests/check_reveal.py out/talk/index.html
+	python3 tests/check_plain.py out/plain/index.html
+	python3 tests/check_reveal.py out/showcase/index.html
+	python3 tests/check_plain.py out/showcase-plain/index.html
