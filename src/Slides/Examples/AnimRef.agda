@@ -19,13 +19,13 @@ open import Slides.Diagram using (Diagram)
 open import Slides.Diagram.Scalar using (natOps)
 open import Slides.Anim.Footprint using (parI)
 open import Slides.Anim.Render using (frameDiagrams)
-open import Slides.Anim.Timeline using (timeline; frames)
+open import Slides.Anim.Timeline using (timeline)
 open import Slides.Diagram.Syntax using (Dia; atop; rectangle; disc; text; named)
 open import Slides.Diagram.Notation using (_∥_; ↔)
 open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Ordered using (OExpr; natO; termOps; tO; lit; _⊞_; _⊖_; _⊓_; pct)
 import Slides.Diagram.Notation as N
-open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenT; units; _⨾_; _∥ᵃ_; par)
+open import Slides.Anim.Syntax using (Anim; flipTween; tweenT; units; _⨾_; _∥ᵃ_)
 import Slides.Anim.Track as T
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_) 
 open import Data.Unit using (⊤)
@@ -50,8 +50,8 @@ private
 
   steps : Body
   steps = do
-    animate "mover" 60 100 (parI natOps mover counter ∷ [])
-    diagrams (frameDiagrams "ref-mover" 60 (timeline atop (frames natO) (parI natOps mover counter)))
+    animate "mover" 60 100 (parI mover counter ∷ [])
+    diagrams (frameDiagrams "ref-mover" 60 (timeline (parI mover counter)))
 
   -- the same loop as a discrete template (lowered and held): the page's frame at every tick of
   -- the full period must equal the frame Agda computes, and at every quarter tick the frame of the
@@ -59,12 +59,12 @@ private
   dloop : Body
   dloop = do
     animateLoop "dhero" 100 100 (heroD 26 7)
-    diagrams (frameDiagrams "ref-dhero" 100 (timeline atop (frames natO) (heroD 26 7)))
+    diagrams (frameDiagrams "ref-dhero" 100 (timeline (heroD 26 7)))
 
   loop : Body
   loop = do
     animateLoop "hero" 100 100 (hero 7)
-    diagrams (frameDiagrams "ref-hero" 100 (timeline atop (frames natO) (hero 7)))
+    diagrams (frameDiagrams "ref-hero" 100 (timeline (hero 7)))
 
 ------------------------------------------------------------------------
 -- Templates.  A template animation is shipped as a simulator (tracks and formulas) that the
@@ -87,25 +87,25 @@ private
   sliderBox : ∀ {V} → Dia (OExpr V)
   sliderBox = named "slider" (rectangle (lit 40) (lit 30) orange)
 
-  slider : T.Easing → ℕ → Anim ℕ (Seg ℕ)
+  slider : T.Easing → ℕ → Anim
   slider e n = tweenT n (+ 0 / 1) (+ 120 / 1) e (E.↔ tO ∥ sliderBox)
 
 -- a sliderBox sliding right along an easing; the same over 60 and 600 ticks (the formulas are the
 -- same size); linear over whole steps (where the discrete frames agree with the continuous);
 -- steps that jump
-slideT longT vlongT wholeT : Anim ℕ (Seg ℕ)
+slideT longT vlongT wholeT : Anim
 slideT  = slider ease 6
 longT   = slider ease 60
 vlongT  = slider ease 600
 wholeT  = slider T.Linear 6
 
-stepT : Anim ℕ (Seg ℕ)
+stepT : Anim
 stepT = tweenT 4 (+ 0 / 1) (+ 80 / 1) T.Step (E.↔ tO ∥ sliderBox)
       ⨾ tweenT 4 (+ 80 / 1) (+ 120 / 1) T.StepStart (E.↔ tO ∥ sliderBox)
 
 -- a sliderBox that grows (a percentage), a circle that follows it, and a bar that shrinks (a
 -- difference, kept non-negative: ℚ's is real subtraction) against a cap (a maximum); two acts
-growT : Anim ℕ (Seg ℕ)
+growT : Anim
 growT =
     tweenT 4 (+ 0 / 1) (+ 80 / 1) T.Linear
       (named "g" (rectangle tO (lit 20 ⊞ pct 50 tO) blue) ∥ E.↔ (lit 10) ∥ disc (pct 25 tO) blue)
@@ -113,10 +113,10 @@ growT =
       (named "g" (rectangle (tO ⊓ lit 90) (lit 100 ⊖ tO) blue) ∥ E.↔ (lit 10) ∥ text 16 "done" defaultStyle)
 
 -- the two together, of different lengths (the segments' parameters are independent), and
--- with the shorter padded (`par`)
-bothT padT : Anim ℕ (Seg ℕ)
+-- with the shorter simply absent once it has ended (absence is the unit of `Par`)
+bothT padT : Anim
 bothT = slideT ∥ᵃ growT
-padT  = par natOps slideT growT
+padT  = slideT ∥ᵃ growT
 
 private
   natⱼ : ℕ → JSON
@@ -138,7 +138,7 @@ private
   drawJ (arrow a b c d _) = arrayⱼ (stringⱼ "line" ∷ rat (halfQ a) ∷ rat (halfQ b) ∷ rat (halfQ c) ∷ rat (halfQ d) ∷ [])
   drawJ (label x y _ _ _) = arrayⱼ (stringⱼ "text" ∷ rat (halfQ x) ∷ rat (halfQ y) ∷ [])
 
-  frameJ : Anim ℕ (Seg ℕ) → ℚ → JSON
+  frameJ : Anim → ℚ → JSON
   frameJ a τ with frameAt a τ
   ... | nothing = nullⱼ
   ... | just l  = arrayⱼ (map drawJ (Layout.draws l))
@@ -151,7 +151,7 @@ private
           go k zero    = (+ k / 1) ∷ []
           go k (suc m) = (+ k / 1) ∷ (+ (4 * k + 1) / 4) ∷ (+ (2 * k + 1) / 2) ∷ (+ (4 * k + 3) / 4) ∷ go (suc k) m
 
-  refJSON : String → Anim ℕ (Seg ℕ) → String
+  refJSON : String → Anim → String
   refJSON n a = renderJSON (objectFromList
     ( ("ref" , stringⱼ n)
     ∷ ("taus" , arrayⱼ (map rat ts))
@@ -159,30 +159,30 @@ private
     ∷ [] ))
     where ts = taus (dur a)
 
-  tpair : String → Anim ℕ (Seg ℕ) → Body
+  tpair : String → Anim → Body
   tpair n a = do
     animate n 60 100 (a ∷ [])
     script ("(" ++ˢ refJSON n a ++ˢ ")")
 
 private
   -- the same slider over 60 ticks, shipped as edits, for the size comparison
-  longF : Anim ℕ (Seg ℕ)
-  longF = tween 60 (+ 0 / 1) (+ 120 / 1) ease (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
+  longF : Anim
+  longF = flipTween 60 (+ 0 / 1) (+ 120 / 1) ease (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
 
 
   steps60 : Body
   steps60 = do
     animate "elong" 60 100 (longF ∷ [])
-    diagrams (frameDiagrams "ref-elong" 60 (timeline atop (frames natO) longF))
+    diagrams (frameDiagrams "ref-elong" 60 (timeline longF))
 
   -- 6 whole steps: the discrete frames (diagrams) must equal the continuous ones at ticks
-  wholeF : Anim ℕ (Seg ℕ)
-  wholeF = tween 6 (+ 0 / 1) (+ 120 / 1) T.Linear (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
+  wholeF : Anim
+  wholeF = flipTween 6 (+ 0 / 1) (+ 120 / 1) T.Linear (λ x → ↔ (units x) ∥ named "slider" (rectangle 40 30 orange))
 
   whole : Body
   whole = do
     tpair "twhole" wholeT
-    diagrams (frameDiagrams "ref-twhole" 60 (timeline atop (frames natO) wholeF))
+    diagrams (frameDiagrams "ref-twhole" 60 (timeline wholeF))
 
 deck : Deck
 deck = do

@@ -31,7 +31,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Slides.Literals public
 open import Slides.Math using (Math)
 open import Slides.Diagram using (Diagram)
-open import Slides.Anim.Syntax using (Anim; Seg)
+open import Slides.Anim.Syntax using (Anim)
 open import Slides.Anim.Render using (render; renderLoop; renderBoth; uniform?)
 open import Relation.Nullary.Decidable using (True)
 open import Slides.Core hiding (heading; paragraph; bullets; code; displayMath; figure; notes; table; references; slide; stack; columns; box; fragment; pause; placed; diagram; animation; script; mount; classed)
@@ -186,13 +186,13 @@ animation d ds ms rs = liftContent (Content.animation d ds ms rs)
 -- one step of the slide: it plays, a frame every `ms` milliseconds, when the step
 -- is reached, and the slide waits at its last frame.  `name` is unique in the
 -- deck and `width` the displayed percent.
-animate : String → ℕ → ℕ → List (Anim ℕ (Seg ℕ)) → Body
+animate : String → ℕ → ℕ → List (Anim) → Body
 animate n pct ms acts = liftContent (Content.cmd (render n pct ms acts))
 
 -- `animateLoop name width ms a`: the frames of `a` repeat, one every `ms` milliseconds,
 -- while the slide is shown (a track that never rests: marching dashes, a
 -- heartbeat).  `name` is unique in the deck.
-animateLoop : String → ℕ → ℕ → Anim ℕ (Seg ℕ) → Body
+animateLoop : String → ℕ → ℕ → Anim → Body
 animateLoop n pct ms a = liftContent (Content.cmd (renderLoop n pct ms a))
 
 -- JavaScript for the reveal.js and standalone backends, run once when its
@@ -239,6 +239,6 @@ slideAs l = slideWith (labelled l defaultSlide)
 -- `animateBoth name width ms period acts`: the acts of `animate` (one per reveal
 -- step) with a loop of `period` phases running underneath; `acts φ` is the list of
 -- acts at phase `φ` (see `renderBoth`: every phase has acts of the same lengths).
-animateBoth : String → ℕ → ℕ → (period : ℕ) → (acts : ℕ → List (Anim ℕ (Seg ℕ))) →
+animateBoth : String → ℕ → ℕ → (period : ℕ) → (acts : ℕ → List (Anim)) →
               {{_ : True (uniform? period acts)}} → Body
 animateBoth n pct ms period acts = liftContent (Content.cmd (renderBoth n pct ms period acts))

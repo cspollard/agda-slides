@@ -12,8 +12,7 @@ open import Data.Nat using (ℕ)
 open import Slides.Diagram using (defaultStyle; filled)
 open import Slides.Diagram.Syntax using (rectangle; text; named)
 open import Slides.Diagram.Notation using (↔; _∥_)
-open import Slides.Diagram.Scalar using (natOps)
-open import Slides.Anim.Syntax using (Anim; Seg; hold; tweenT; _⨾_)
+open import Slides.Anim.Syntax using (Anim; hold; tweenT; _⨾_)
 open import Slides.Diagram.Ordered using (termOps; tO; lit)
 import Slides.Diagram.Notation as N
 open import Data.Unit using (⊤)
@@ -44,20 +43,20 @@ compare = do
   box "Remark" (do Content.paragraph "Boxes hold content programs, too.")
 
 -- a box moving right while a caption counts, together
-mover : Anim ℕ (Seg ℕ)
+mover : Anim
 mover = at 0 ⨾ at 60 ⨾ at 120
-  where at : ℕ → Anim ℕ (Seg ℕ)
+  where at : ℕ → Anim
         at x = hold 1 (↔ x ∥ named "box" (rectangle 40 30 (filled "#69c" defaultStyle)))
 
-counter : Anim ℕ (Seg ℕ)
+counter : Anim
 counter = say "one" ⨾ say "two" ⨾ say "three"
-  where say : _ → Anim ℕ (Seg ℕ)
+  where say : _ → Anim
         say t = hold 1 (named "caption" (text 24 t defaultStyle))
 
 animated : Body
 animated = do
   heading 2 "Animation"
-  animate "mover" 60 400 (parI natOps mover counter ∷ [])
+  animate "mover" 60 400 (parI mover counter ∷ [])
   notes "A free monad of Seq and Par over frames; each tick is a fragment."
 
 -- a box sliding right with an ease-in-out curve: the position is a parameter
@@ -66,7 +65,7 @@ animated = do
 -- and not the frames (`Slides.Anim.Param`).
 private module E = N.NotationWith (termOps {⊤})
 
-slide′ : Anim ℕ (Seg ℕ)
+slide′ : Anim
 slide′ = tweenT 6 (+ 0 / 1) (+ 120 / 1) (T.Bezier (+ 40) (+ 0) (+ 20) (+ 100))
            (E.↔ tO ∥ named "slider" (rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle)))
 

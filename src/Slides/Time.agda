@@ -4,12 +4,12 @@
 --
 -- A `Clock` is a time domain `T` together with
 --   * the scalar layers of `Slides.Diagram.Ordered` (`OOps T`: the ordered monoid core `0#`, `+`, `⊔`,
---     the tick embedding `fromℕ`, the subtraction, `Lt`/`Min`, floor/mod) and its laws (`QLaws`):
---     the existing model record is reused, not repeated;
---   * the order as a boolean `_<ᵇ_`, the one `lt` selects on (`lt-spec`): the select form stays the
---     algebraic one, the guards of the temporal semantics read the same comparison;
---   * the tick clock `ι = fromℕ : ℕ → T` and the homomorphism laws the proofs use: `0`, `+`, the
---     order (unconditionally) and the exact case of subtraction (`b ≤ a`; the ℕ side is a monus).
+--     the tick embedding `fromℕ`, the subtraction, `Lt`/`Min`, floor/mod): the existing model
+--     record is reused, not repeated.  Its floor/min laws (`QLaws`) are a separate record that a
+--     lemma takes when it needs them (the temporal skeleton does not);
+--   * the order as a boolean `_<ᵇ_`, the one `lt` selects on (`ClockLaws.lt-spec`): the select form
+--     stays the algebraic one, the guards of the temporal semantics read the same comparison;
+--   * the tick clock `ι = fromℕ : ℕ → T`, with its homomorphism laws in `ClockLaws`.
 -- Density, induction, scaling and easing are *not* in the record: a model-specific fact is a named
 -- hypothesis of the lemma that needs it (`Slides.Anim.Track`: the `Scale`/`Ease` layers are ℚ only).
 --
@@ -26,7 +26,7 @@ open import Data.Product using (_×_; _,_)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import Slides.Diagram.Scalar using (Ops)
-open import Slides.Diagram.Ordered using (OOps; QLaws; module OrdOps)
+open import Slides.Diagram.Ordered using (OOps; module OrdOps)
 
 record Clock : Set₁ where
   field
@@ -34,14 +34,19 @@ record Clock : Set₁ where
     O    : OOps T
     _<ᵇ_ : T → T → Bool
   open Ops (OOps.ops O) public
-  open OrdOps (OOps.ord O) using (lt)
+  open OrdOps (OOps.ord O) using (lt) public
 
   -- the tick clock
   ι : ℕ → T
   ι = fromℕ
 
+-- the laws of a model (kept apart from the data, so that what executables read carries no proofs;
+-- `Slides.Time.Properties` has the instances): the select is the order, and `ι` is a homomorphism
+-- for `0`, `+`, the order (unconditionally) and the exact case of subtraction (`b ≤ a`; the ℕ side
+-- is a monus)
+record ClockLaws (K : Clock) : Set where
+  open Clock K
   field
-    laws    : QLaws O
     lt-spec : ∀ a b x y → lt a b x y ≡ (if a <ᵇ b then x else y)
     ι-0     : ι 0 ≡ 0#
     ι-+     : ∀ m n → ι (m ℕ.+ n) ≡ ι m + ι n

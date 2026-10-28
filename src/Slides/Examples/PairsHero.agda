@@ -33,7 +33,7 @@ open import Slides.Diagram.Syntax using (Dia; disc; named; connect; spacer; plac
 open import Slides.Diagram.Notation using (east; west)
 open import Slides.Diagram.Scalar using (Ops)
 open import Slides.Diagram.Ordered using (OOps; OrdOps; FloorOps; natO; OExpr; termO; tO)
-open import Slides.Anim.Syntax using (Anim; Seg; tween; tweenD; units)
+open import Slides.Anim.Syntax using (Anim; flipTween; tweenD; units)
 import Slides.Anim.Track as T
 
 W H period : ℕ
@@ -159,8 +159,8 @@ heroAt : (seed : ℕ) → ℕ → Dia ℕ
 heroAt = Frame.heroFrame natO 26
 
 -- one period of the sway and spin, played as a loop
-hero : ℕ → Anim ℕ (Seg ℕ)
-hero seed = tween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → heroAt seed (units q))
+hero : ℕ → Anim
+hero seed = flipTween period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (λ q → heroAt seed (units q))
 
 -- the same frame over the free algebra, with the tick as the variable: a discrete template
 -- (`n` pairs).  The frame is an overlay of placed dots on a canvas of declared size (`dot`,
@@ -172,5 +172,5 @@ heroT : (n seed : ℕ) → Dia (OExpr ⊤)
 heroT n seed = Frame.heroFrame termO n seed tO
 
 -- the same loop shipped as formulas
-heroD : (n seed : ℕ) → Anim ℕ (Seg ℕ)
+heroD : (n seed : ℕ) → Anim
 heroD n seed = tweenD period (+ 0 ℚ./ 1) (+ period ℚ./ 1) T.Linear (heroT n seed)

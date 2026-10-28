@@ -1,55 +1,41 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The frame-by-frame reading of an animation, and its laws.
+-- The frame-by-frame reading of an animation: the ℕ clock.
 --
--- A timeline is a list of frames, one per tick.  Over any frame type `F` with a
--- way `_⊙_` of putting two frames on top of each other:
---
---   * `Seq` is concatenation (`++`);
---   * `Par` is `merge`, which overlays frame by frame and lets the longer side run
---     on alone once the shorter has ended.  Running on alone is padding with a
---     unit, without needing one: `merge [] ys = ys`.
---
--- So `timeline` is `foldA` into `(List F, ++, merge)`.  For the diagram language
--- take `F = Dia S` and `_⊙_ = atop`; the laws of `atop` (`Slides.Diagram.Place.Properties.Laws`)
--- then transfer to the laws of `Par` once the frames are laid out.
---
--- Laws, with `_≡_` unless the frame operation is involved:
---   * `++` is associative with unit `[]`; `merge` has unit `[]` on both sides
---   * `merge` is associative when `_⊙_` is, commutative when `_⊙_` is
---   * the swap law: `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)` when `a` and `c` last
---     equally long (needs nothing of `_⊙_`)
---   * `length (merge a b) = max`, so `length ∘ timeline = dur` (`dur` is the
---     timeline's length: both are `foldA`s, and the leaf agrees)
+-- `Slides.Anim.Sample` reads an animation in any clock.  In the tick clock (`Slides.Time.Nat`)
+-- a track is read at its whole ticks (`natVal`: the sample of the track, in whole units), the
+-- result is a duration `n` and a function of the tick, and a timeline is its values at the ticks
+-- `0 .. n-1`.  A tick at which nothing is shown (a gap) is the empty frame.  `Par` is the overlay
+-- `atop` (`Slides.Diagram.Place`) frame by frame, with absence the unit; `Seq` and `Delay` shift
+-- the tick; there is no list algebra to prove laws about, the laws are those of `Sem`
+-- (`Slides.Time.Properties`) at the clock ℕ.
 
 module Slides.Anim.Timeline where
 
-open import Data.List using (List; []; _∷_; _++_; map; applyUpTo)
+open import Data.List using (List; applyUpTo)
+open import Data.Maybe using (Maybe; just; nothing; fromMaybe)
+open import Data.Nat as ℕ using (ℕ)
+open import Data.Rational using (ℚ)
+open import Data.Product using (_,_; proj₁; proj₂)
+
+open import Slides.Diagram.Syntax using (Dia; spacer)
+open import Slides.Diagram.Ordered using (zero′)
 import Slides.Anim.Track as T
-open import Data.Maybe using (Maybe; just; nothing)
-open import Data.Nat using (_+_; suc)
-
-open import Data.Fin using (suc)
-open import Data.Product using (proj₁; proj₂)
-open import Data.Container.FreeMonad using (_⋆_)
-open import Slides.Diagram.Syntax using (Dia)
-open import Slides.Diagram.Ordered using (OOps)
-open import Slides.Time using (mergeM)
+open import Slides.Time.Nat using (natClock)
 open import Slides.Anim.Syntax
+open import Slides.Anim.Sample
 
-module _ {F : Set} (_⊙_ : F → F → F) where
+-- the parameter of a track at a tick, in whole units
+natVal : T.Track ℚ → ℕ → ℕ
+natVal tr k = units (proj₂ (T.sample T.ℚLerp tr) k)
 
-  merge : List F → List F → List F
-  merge []       ys       = ys
-  merge (x ∷ xs) []       = x ∷ xs
-  merge (x ∷ xs) (y ∷ ys) = (x ⊙ y) ∷ merge xs ys
+-- what each tick shows, and for how long
+framesN : Anim → TM natClock (Dia ℕ)
+framesN = frames natClock natVal
 
-  -- the timeline of an animation, from the frames of each leaf
-  timeline : ∀ {T} → (T → List F) → AnimC ⋆ T → List F
-  timeline leaf = foldA leaf _++_ merge
+-- the values of a timed function at the ticks `0 .. n-1`, `x₀` where nothing is shown
+tabulate : ∀ {X : Set} → X → TM natClock X → List X
+tabulate x₀ (n , f) = applyUpTo (λ k → fromMaybe x₀ (f k)) n
 
-
--- the diagram language: a segment shows its body at the parameter's value on each tick, frames overlay by `atop`
-frames : ∀ {S} → OOps S → Seg S → List (Dia S)
-frames O s = map (λ t → body O s (proj₂ sampled t)) (applyUpTo (λ i → i) (proj₁ sampled))
-  where sampled = T.sample T.ℚLerp (track s)
+timeline : Anim → List (Dia ℕ)
+timeline a = tabulate (spacer 0 0) (framesN a)

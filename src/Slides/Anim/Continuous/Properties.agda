@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Laws of continuous time: at whole ticks the continuous sample of a track is the discrete one (`sampleAt-ι`),
--- a piece holds its end, `Seq` offsets time and `Par` shares it, the duration of `animAt` is `dur`, and the
+-- a piece holds its end, and the
 -- continuous frame of a template segment at a whole tick is the discrete frame sent through `ι` (`leaf-tick`).
 module Slides.Anim.Continuous.Properties where
 
@@ -24,7 +24,12 @@ open import Slides.Diagram.NatQ.Properties using (ι-≤ᵇ; ι-∸; ι-ratio)
 import Slides.Anim.Track as Tr
 import Slides.Anim.Track.Properties as TrP
 open import Slides.Diagram.Ordered.Properties using (ι-<ᵇ)
-open import Slides.Anim.Syntax using (units; bodyAt; track; content; template; blackBox; dur; Seq; Par)
+open import Slides.Anim.Syntax using (units; seg; dur)
+open import Slides.Anim.Sample using (inst)
+open import Slides.Anim.Sample.Properties using (frames-seg; win-ι)
+open import Slides.Time.Rat using (ratClock)
+open import Slides.Time.Nat using (natClock)
+open import Slides.Time.Properties using (ratLaws)
 open import Slides.Diagram.Draw using (Layout; mapLayout)
 open import Slides.Diagram.Ordered.Properties.Faithful using (AllLayout; FaithfulO; faithful-layout)
 open import Slides.Diagram.Ordered using (natO; termOps; _<ᵇℚ_)
@@ -74,56 +79,36 @@ piece-hold L zero    a b e τ _ = trans (cong (λ p → Tr.Lerp.lerp L p a b) (T
 piece-hold L (suc d) a b e τ h
   rewrite h = trans (cong (λ p → Tr.Lerp.lerp L p a b) (TrP.progress-1 e)) (Tr.Lerp.lerp-1 L a b)
 
--- the duration of the timed frames is the duration of the animation
-segAt-dur : ∀ s T → segAt s ≡ just T → proj₁ T ≡ Tr.dur (track s)
-segAt-dur s T eq = go (track s) (content s) T eq
-  where
-    go : ∀ tr b T → bodyAt′ tr b ≡ just T → proj₁ T ≡ Tr.dur tr
-    go tr (template d) _ refl = trans (sampleAt-dur Tr.ℚLerp tr) (TrP.sample-dur Tr.ℚLerp tr)
-    go tr (blackBox _) _ ()
-
--- the parts of a `lift2` that is there
-lift2-just : ∀ {A : Set} (f : A → A → A) x y {T} → lift2 f x y ≡ just T →
-               ∃₂ λ a b → x ≡ just a × y ≡ just b × f a b ≡ T
-lift2-just f (just a) (just b) refl = a , b , refl , refl , refl
-lift2-just f (just a) nothing  ()
-lift2-just f nothing  y        ()
-
-animAt-dur : ∀ a T → animAt a ≡ just T → proj₁ T ≡ dur a
-animAt-dur (pure s) T eq = segAt-dur s T eq
-animAt-dur (impure (Seq , k)) T eq with lift2-just seqAt (animAt (k zero)) (animAt (k (suc zero))) eq
-... | A , B , e₁ , e₂ , refl = cong₂ ℕ._+_ (animAt-dur (k zero) A e₁) (animAt-dur (k (suc zero)) B e₂)
-animAt-dur (impure (Par , k)) T eq with lift2-just (parAt atop) (animAt (k zero)) (animAt (k (suc zero))) eq
-... | A , B , e₁ , e₂ , refl = cong₂ ℕ._⊔_ (animAt-dur (k zero) A e₁) (animAt-dur (k (suc zero)) B e₂)
-
 ------------------------------------------------------------------------
 -- A template segment at whole ticks
 
-zero≤ι : ∀ k → (0ℚ ℚ.≤ᵇ ι k) ≡ true
-zero≤ι k = ι-≤ᵇ 0 k
-
 -- At a whole tick the continuous frame of a segment is its template at the track's tick
 -- sample, exactly (no flooring).
-leafAt-ι : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
-           proj₂ (leafAt tr d) (ι k) ≡ just (instQ d (proj₂ (Tr.sample Tr.ℚLerp tr) k))
-leafAt-ι tr d k hk
-  rewrite sampleAt-dur Tr.ℚLerp tr | TrP.sample-dur Tr.ℚLerp tr
-        | ι-<ᵇ k (Tr.dur tr) | hk | zero≤ι k
-  = cong (λ q → just (instQ d q)) (sampleAt-ι Tr.ℚLerp tr k)
+framesQ-seg-ι : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
+                proj₂ (framesQ (seg tr d)) (ι k) ≡ just (inst ratClock (proj₂ (Tr.sample Tr.ℚLerp tr) k) d)
+framesQ-seg-ι tr d k hk
+  rewrite frames-seg ratClock ratVal tr d (ι k) | win-ι ratClock ratLaws (Tr.dur tr) k | hk
+  = cong (λ q → just (inst ratClock q d)) (sampleAt-ι Tr.ℚLerp tr k)
 
 -- ... and that is the discrete frame sent through `ι` whenever the discrete reading was
--- exact: the sample is a whole number `m`, and the template's layout is exact at `m`
+-- exact: the parameter is a whole number `m`, and the template's layout is exact at `m`
 -- (`Slides.Diagram.Ordered.Properties.Faithful`: no monus that truncates, no percentage that rounds).
+inst-exact : ∀ d q → q ≡ ι (units q) →
+             AllLayout (FaithfulO (λ _ → units q)) (LayoutWith.layout termOps d) →
+             LayoutWith.layout ratOps (inst ratClock q d)
+             ≡ mapLayout ι (LayoutWith.layout natOps (inst natClock (units q) d))
+inst-exact d q whole ok =
+  trans (cong (λ r → LayoutWith.layout ratOps (inst ratClock r d)) whole)
+        (sym (faithful-layout (λ _ → units q) d ok))
+
 leaf-tick : ∀ tr d k → (k ℕ.<ᵇ Tr.dur tr) ≡ true →
             let q = proj₂ (Tr.sample Tr.ℚLerp tr) k in
             q ≡ ι (units q) →
             AllLayout (FaithfulO (λ _ → units q)) (LayoutWith.layout termOps d) →
-            Maybe.map (LayoutWith.layout ratOps) (proj₂ (leafAt tr d) (ι k))
-            ≡ just (mapLayout ι (LayoutWith.layout natOps (bodyAt natO (template d) q)))
-leaf-tick tr d k hk whole ok rewrite leafAt-ι tr d k hk =
-  cong just (trans (cong (λ r → LayoutWith.layout ratOps (instQ d r)) whole)
-                   (sym (faithful-layout (λ _ → units q) d ok)))
-  where q = proj₂ (Tr.sample Tr.ℚLerp tr) k
+            Maybe.map (LayoutWith.layout ratOps) (proj₂ (framesQ (seg tr d)) (ι k))
+            ≡ just (mapLayout ι (LayoutWith.layout natOps (inst natClock (units q) d)))
+leaf-tick tr d k hk whole ok rewrite framesQ-seg-ι tr d k hk =
+  cong just (inst-exact d (proj₂ (Tr.sample Tr.ℚLerp tr) k) whole ok)
 
 -- a piece of positive length starts at `from` (time 0 is the start)
 piece-start : ∀ {A} (L : Tr.Lerp A) d a b e → pieceAt L (Tr.piece (suc d) a b e) 0ℚ ≡ a

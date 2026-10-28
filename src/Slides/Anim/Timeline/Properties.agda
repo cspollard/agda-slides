@@ -1,107 +1,64 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of the timeline: `merge` is associative and commutative when the overlay is, the swap law of
--- `Seq` and `Par`, and the length of a timeline is the duration of the animation.
+-- Laws of the timeline: its length is the duration of the animation, and the timeline of `Seq` is
+-- the concatenation of the timelines (the tick of the second part shifted by the first duration).
+-- `Par` is the overlay frame by frame with absence the unit: its laws are those of the clock
+-- skeleton (`Slides.Time.Properties`).
 module Slides.Anim.Timeline.Properties where
 
-open import Data.List using (List; []; _∷_; _++_; length; applyUpTo)
-import Slides.Anim.Track as T
-import Slides.Anim.Track.Properties as TP
+open import Data.Bool using (true; false; if_then_else_)
+open import Data.List using (List; _∷_; _++_; length; applyUpTo)
 import Data.List.Properties as LP
-open import Data.Nat using (_+_; _⊔_; suc)
-import Data.Nat.Properties as ℕP
+open import Data.Maybe using (Maybe; just; nothing; fromMaybe)
+import Data.Maybe as Maybe
+open import Data.Nat as ℕ using (ℕ; _+_; _∸_; _<ᵇ_)
+open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 
-open import Data.Fin using (zero; suc)
-open import Data.Product using (_,_; proj₁)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Slides.Diagram.Syntax using (atop)
-open import Slides.Diagram.Ordered using (OOps)
+open import Slides.Diagram.Syntax using (Dia; spacer)
+open import Slides.Time.Nat using (natClock)
+open import Slides.Time.Properties using (natLaws)
 open import Slides.Anim.Syntax
-
-open import Slides.Anim.Timeline hiding (merge; timeline)
-import Slides.Anim.Timeline as TL
-
-module _ {F : Set} (_⊙_ : F → F → F) where
-
-  private
-    merge : List F → List F → List F
-    merge = TL.merge _⊙_
-
-    timeline : ∀ {T} → (T → List F) → AnimC ⋆ T → List F
-    timeline = TL.timeline _⊙_
-
-  merge-unitʳ : ∀ xs → merge xs [] ≡ xs
-  merge-unitʳ []       = refl
-  merge-unitʳ (x ∷ xs) = refl
-
-  merge-assoc : (∀ x y z → (x ⊙ y) ⊙ z ≡ x ⊙ (y ⊙ z)) →
-                ∀ xs ys zs → merge (merge xs ys) zs ≡ merge xs (merge ys zs)
-  merge-assoc assoc []       ys       zs       = refl
-  merge-assoc assoc (x ∷ xs) []       zs       = refl
-  merge-assoc assoc (x ∷ xs) (y ∷ ys) []       =
-    trans (merge-unitʳ (merge (x ∷ xs) (y ∷ ys))) (sym (cong (merge (x ∷ xs)) (merge-unitʳ (y ∷ ys))))
-  merge-assoc assoc (x ∷ xs) (y ∷ ys) (z ∷ zs) =
-    cong₂ _∷_ (assoc x y z) (merge-assoc assoc xs ys zs)
-
-  merge-comm : (∀ x y → x ⊙ y ≡ y ⊙ x) → ∀ xs ys → merge xs ys ≡ merge ys xs
-  merge-comm comm []       []       = refl
-  merge-comm comm []       (y ∷ ys) = refl
-  merge-comm comm (x ∷ xs) []       = refl
-  merge-comm comm (x ∷ xs) (y ∷ ys) = cong₂ _∷_ (comm x y) (merge-comm comm xs ys)
-
-  -- the swap law, at the level of lists
-  merge-swap : ∀ as bs cs ds → length as ≡ length cs →
-               merge (as ++ bs) (cs ++ ds) ≡ merge as cs ++ merge bs ds
-  merge-swap []       bs []       ds _ = refl
-  merge-swap []       bs (c ∷ cs) ds ()
-  merge-swap (a ∷ as) bs []       ds ()
-  merge-swap (a ∷ as) bs (c ∷ cs) ds h =
-    cong ((a ⊙ c) ∷_) (merge-swap as bs cs ds (ℕP.suc-injective h))
-
-  length-merge : ∀ xs ys → length (merge xs ys) ≡ length xs ⊔ length ys
-  length-merge []       ys       = refl
-  length-merge (x ∷ xs) []       = refl
-  length-merge (x ∷ xs) (y ∷ ys) = cong suc (length-merge xs ys)
-
-  timeline-⨾ : ∀ {T} (leaf : T → List F) a b →
-               timeline leaf (a ⨾ b) ≡ timeline leaf a ++ timeline leaf b
-  timeline-⨾ leaf a b = refl
-
-  timeline-∥ : ∀ {T} (leaf : T → List F) a b →
-               timeline leaf (a ∥ᵃ b) ≡ merge (timeline leaf a) (timeline leaf b)
-  timeline-∥ leaf a b = refl
-
-  -- the serial/parallel swap, for animations
-  timeline-swap : ∀ {T} (leaf : T → List F) a b c d →
-                  length (timeline leaf a) ≡ length (timeline leaf c) →
-                  timeline leaf ((a ⨾ b) ∥ᵃ (c ⨾ d)) ≡ timeline leaf ((a ∥ᵃ c) ⨾ (b ∥ᵃ d))
-  timeline-swap leaf a b c d h = merge-swap (timeline leaf a) (timeline leaf b) (timeline leaf c) (timeline leaf d) h
-
-  -- the length of a timeline is the fold of the leaves' lengths
-  length-timeline : ∀ {T} (leaf : T → List F) (m : AnimC ⋆ T) →
-                    length (timeline leaf m) ≡ foldA (λ t → length (leaf t)) _+_ _⊔_ m
-  length-timeline leaf (pure t) = refl
-  length-timeline leaf (impure (Seq , k)) =
-    trans (LP.length-++ (timeline leaf (k zero)))
-          (cong₂ _+_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
-  length-timeline leaf (impure (Par , k)) =
-    trans (length-merge (timeline leaf (k zero)) (timeline leaf (k (suc zero))))
-          (cong₂ _⊔_ (length-timeline leaf (k zero)) (length-timeline leaf (k (suc zero))))
-
-
-frames-length : ∀ {S} (O : OOps S) (s : Seg S) → length (frames O s) ≡ ticks s
-frames-length O s =
-  trans (trans (LP.length-map _ (applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
-               (LP.length-applyUpTo (λ i → i) (proj₁ (T.sample T.ℚLerp (track s)))))
-        (TP.sample-dur T.ℚLerp (track s))
+open import Slides.Anim.Sample
+open import Slides.Anim.Sample.Properties
+open import Slides.Anim.Timeline
+open import Slides.Anim.Arith using (<ᵇ-false)
+import Data.Nat.Properties as ℕP
 
 -- the length of the timeline is the duration
-length-dur : ∀ {S} (O : OOps S) (m : Anim S (Seg S)) → length (TL.timeline atop (frames O) m) ≡ dur m
-length-dur {S} O m = trans (length-timeline atop (frames O) m) (foldA-ext m)
+length-dur : ∀ a → length (timeline a) ≡ dur a
+length-dur a = trans (LP.length-applyUpTo _ _) (frames-dur natClock natVal a)
+
+private
+  applyUpTo-++ : ∀ {A : Set} (f : ℕ → A) n m → applyUpTo f (n + m) ≡ applyUpTo f n ++ applyUpTo (λ i → f (n + i)) m
+  applyUpTo-++ f ℕ.zero    m = refl
+  applyUpTo-++ f (ℕ.suc n) m = cong (f 0 ∷_) (applyUpTo-++ (λ i → f (ℕ.suc i)) n m)
+
+  applyUpTo-ext : ∀ {A : Set} (f g : ℕ → A) n → (∀ k → (k <ᵇ n) ≡ true → f k ≡ g k) → applyUpTo f n ≡ applyUpTo g n
+  applyUpTo-ext f g ℕ.zero    h = refl
+  applyUpTo-ext f g (ℕ.suc n) h = cong₂ _∷_ (h 0 refl) (applyUpTo-ext (λ i → f (ℕ.suc i)) (λ i → g (ℕ.suc i)) n (λ k hk → h (ℕ.suc k) hk))
+
+  -- the frames of `a ⨾ b` at a tick inside it: the first's, or the second's shifted
+  framesN-⨾ : ∀ a b k → (k <ᵇ proj₁ (framesN a) + proj₁ (framesN b)) ≡ true →
+              proj₂ (framesN (a ⨾ b)) k
+              ≡ (if k <ᵇ proj₁ (framesN a) then proj₂ (framesN a) k else proj₂ (framesN b) (k ∸ proj₁ (framesN a)))
+  framesN-⨾ a b k hk rewrite hk with k <ᵇ proj₁ (framesN a)
+  ... | true  = refl
+  ... | false = refl
+
+-- `Seq` is concatenation of timelines
+timeline-⨾ : ∀ a b → timeline (a ⨾ b) ≡ timeline a ++ timeline b
+timeline-⨾ a b =
+  trans (applyUpTo-ext _ G (n + m) (λ k hk → cong (fromMaybe x₀) (framesN-⨾ a b k hk)))
+  (trans (applyUpTo-++ G n m)
+         (cong₂ _++_ (applyUpTo-ext G (λ k → fromMaybe x₀ (proj₂ (framesN a) k)) n (λ k hk → cong (λ c → fromMaybe x₀ (if c then proj₂ (framesN a) k else proj₂ (framesN b) (k ∸ n))) hk))
+                     (applyUpTo-ext (λ i → G (n + i)) (λ i → fromMaybe x₀ (proj₂ (framesN b) i)) m shift)))
   where
-    foldA-ext : (m : Anim S (Seg S)) →
-                foldA (λ t → length (frames O t)) _+_ _⊔_ m ≡ dur m
-    foldA-ext (pure t)               = frames-length O t
-    foldA-ext (impure (Seq , k))     = cong₂ _+_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))
-    foldA-ext (impure (Par , k))     = cong₂ _⊔_ (foldA-ext (k zero)) (foldA-ext (k (suc zero)))
+    n = proj₁ (framesN a)
+    m = proj₁ (framesN b)
+    x₀ : Dia ℕ
+    x₀ = spacer 0 0
+    G : ℕ → Dia ℕ
+    G k = fromMaybe x₀ (if k <ᵇ n then proj₂ (framesN a) k else proj₂ (framesN b) (k ∸ n))
+    shift : ∀ i → (i <ᵇ m) ≡ true → G (n + i) ≡ fromMaybe x₀ (proj₂ (framesN b) i)
+    shift i _ rewrite <ᵇ-false (ℕP.m≤m+n n i) | ℕP.m+n∸m≡n n i = refl

@@ -3,7 +3,7 @@
 -- THEORY MODULE.  The laws of the temporal skeleton, stated against any `Clock` (so at ℚ they are
 -- corollaries): `Par` runs both sides at the same time and takes the longer duration; `Seq` runs
 -- the first side up to its duration, then the second from its own time 0 (right-continuity at the
--- boundary).  Only the clock laws are used.
+-- boundary).  Only the clock laws are used.  The instances of the laws are at the end.
 module Slides.Time.Properties where
 
 open import Data.Bool using (Bool; true; false)
@@ -13,9 +13,14 @@ open import Data.Product using (_,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
 
 open import Slides.Time
+open import Slides.Time.Rat using (ratClock)
+open import Slides.Time.Nat using (natClock)
+import Slides.Diagram.Ordered.Properties as OP
+import Slides.Diagram.NatQ.Properties as NP
 
-module _ (K : Clock) where
+module _ (K : Clock) (L : ClockLaws K) where
   open Clock K
+  open ClockLaws L
   open Sem K
 
   seqAt-before : ∀ {A} (n m : ℕ) (f g : T → A) τ → (τ <ᵇ ι n) ≡ true →
@@ -56,3 +61,14 @@ module _ (K : Clock) where
   parAt-dur : ∀ {F} (_⊙_ : F → F → F) (A B : Timed (Maybe F)) →
               proj₁ (parAt _⊙_ A B) ≡ proj₁ A ℕ.⊔ proj₁ B
   parAt-dur _⊙_ A B = refl
+
+------------------------------------------------------------------------
+-- The instances
+
+ratLaws : ClockLaws ratClock
+ratLaws = record
+  { lt-spec = λ _ _ _ _ → refl ; ι-0 = refl ; ι-+ = NP.ι-+ ; ι-<ᵇ = OP.ι-<ᵇ ; ι-∸ = NP.ι-∸ }
+
+natLaws : ClockLaws natClock
+natLaws = record
+  { lt-spec = λ _ _ _ _ → refl ; ι-0 = refl ; ι-+ = λ _ _ → refl ; ι-<ᵇ = λ _ _ → refl ; ι-∸ = λ _ _ _ → refl }

@@ -15,7 +15,7 @@ open import Slides.Diagram
 open import Slides.Resources
 import Slides.Math as M
 open import Data.Nat using (ℕ)
-open import Slides.Anim.Syntax using (Anim; Seg; hold; _⨾_)
+open import Slides.Anim.Syntax using (Anim; hold; _⨾_)
 open import Slides.Diagram.Syntax using (text)
 
 resources : Resources
@@ -38,7 +38,7 @@ euler : M.Math
 euler = (M.var "e" M.^ ("i" M.* M.greek M.pi)) M.+ 1 M.≡ 0
 
 -- a word that changes, one act per step
-word : String → Anim ℕ (Seg ℕ)
+word : String → Anim
 word w = hold 1 (text 40 w defaultStyle)
 
 showcase : Deck

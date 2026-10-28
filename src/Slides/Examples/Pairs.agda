@@ -14,7 +14,7 @@ module Slides.Examples.Pairs where
 open import Data.List using (List; _∷_; []; map; zipWith)
 open import Data.Bool using (Bool; false; if_then_else_)
 open import Data.Nat using (ℕ; _+_; _∸_; _≡ᵇ_; _≤ᵇ_; _<ᵇ_)
-open import Slides.Anim.Syntax using (Anim; Seg; hold; tween; units; _⨾_)
+open import Slides.Anim.Syntax using (Anim; hold; flipTween; units; _⨾_)
 open import Slides.Anim.Render using (render; renderLoop)
 open import Slides.Examples.PairsHero using (heroD)
 import Slides.Anim.Track as T
@@ -95,8 +95,8 @@ flow : ℕ → String → Style
 flow ph col = cls ("flow " ++ˢ col ++ˢ " ph" ++ˢ show ph)
 
 -- one period of a march: the phase `0 … 7` runs once through the loop
-marching : (ℕ → Dia ℕ) → Anim ℕ (Seg ℕ)
-marching f = tween 8 (+ 0 ℚ./ 1) (+ 8 ℚ./ 1) T.Linear (λ q → f (units q))
+marching : (ℕ → Dia ℕ) → Anim
+marching f = flipTween 8 (+ 0 ℚ./ 1) (+ 8 ℚ./ 1) T.Linear (λ q → f (units q))
 
 -- arrows from `src`, spread along its south edge, to the north edge of each
 -- target (at `endPct` percent along it)
@@ -188,7 +188,7 @@ stagesDia lit ph =
      ▹[ flow ph "am" ] ("st1" ⟶ "st2" ∷ "st2" ⟶ "st3" ∷ []))
 
 -- one reveal step lights up the next stage
-stageActs : ℕ → List (Anim ℕ (Seg ℕ))
+stageActs : ℕ → List (Anim)
 stageActs ph = (hold 1 (stagesDia (λ _ → false) ph) ⨾ hold 1 (stagesDia (_≡ᵇ 1) ph))
              ∷ hold 1 (stagesDia (_≡ᵇ 2) ph)
              ∷ hold 1 (stagesDia (_≡ᵇ 3) ph)
@@ -209,7 +209,7 @@ chainDia k ph =
      ▹[ flow ph "am" ] ("c1" ⟶ "c2" ∷ "c2" ⟶ "c3" ∷ "c3" ⟶ "c4" ∷ []))
 
 -- one reveal step lights one more link; earlier ones stay lit
-chainActs : ℕ → List (Anim ℕ (Seg ℕ))
+chainActs : ℕ → List (Anim)
 chainActs ph = (hold 1 (chainDia 0 ph) ⨾ hold 1 (chainDia 1 ph))
              ∷ hold 1 (chainDia 2 ph)
              ∷ hold 1 (chainDia 3 ph)
@@ -221,8 +221,8 @@ chainActs ph = (hold 1 (chainDia 0 ph) ⨾ hold 1 (chainDia 1 ph))
 -- diagram is a function of it (the tracks of `Slides.Anim.Track`)
 
 -- `ticks` frames of the curve, then the end state: one act, one reveal step
-grow : ℕ → (ℚ.ℚ → Dia ℕ) → Anim ℕ (Seg ℕ)
-grow ticks f = tween ticks (+ 0 ℚ./ 1) (+ 1 ℚ./ 1) (T.Bezier (+ 20) (+ 90) (+ 20) (+ 100)) f
+grow : ℕ → (ℚ.ℚ → Dia ℕ) → Anim
+grow ticks f = flipTween ticks (+ 0 ℚ./ 1) (+ 1 ℚ./ 1) (T.Bezier (+ 20) (+ 90) (+ 20) (+ 100)) f
              ⨾ hold 1 (f (+ 1 ℚ./ 1))
 
 -- `q` of a quantity, in whole units

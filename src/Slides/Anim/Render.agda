@@ -30,10 +30,9 @@ open import Slides.Diagram.Param using (Param)
 open import Slides.Anim.Param using (paramOf)
 open import Slides.Diagram using (Diagram; module Diagram)
 open import Slides.Diagram.Syntax using (Dia; atop; spacer)
-open import Slides.Diagram.Ordered using (natO)
 open import Slides.Diagram.Layout using (compile)
-open import Slides.Anim.Syntax using (Anim; Seg)
-open import Slides.Anim.Timeline using (timeline; frames)
+open import Slides.Anim.Syntax using (Anim)
+open import Slides.Anim.Timeline using (timeline)
 
 private
   -- name each frame `name-i`
@@ -74,15 +73,15 @@ private
   ...   | just pa = paramAnimation d ds pa ms play
 
 -- the acts one after the other; each act is one step
-render : (name : String) (percent ms : ℕ) → List (Anim ℕ (Seg ℕ)) → ContentShape
+render : (name : String) (percent ms : ℕ) → List (Anim) → ContentShape
 render name pct ms acts =
-  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline atop (frames natO) a)) acts)))
-        (concat (map (timeline atop (frames natO)) acts))
+  shape name pct ms (onSteps (restsOf 0 (map (λ a → length (timeline a)) acts)))
+        (concat (map (timeline) acts))
         (paramOf acts)
 
 -- one animation, repeating
-renderLoop : (name : String) (percent ms : ℕ) → Anim ℕ (Seg ℕ) → ContentShape
-renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natO) a) (paramOf (a ∷ []))
+renderLoop : (name : String) (percent ms : ℕ) → Anim → ContentShape
+renderLoop name pct ms a = shape name pct ms looping (timeline a) (paramOf (a ∷ []))
 
 -- Steps over a loop: `acts φ` are the acts at phase `φ` of a loop of `period` phases
 -- (a phase typically only restyles the diagram: an arrow's dashes, a pulse).  Each
@@ -90,18 +89,18 @@ renderLoop name pct ms a = shape name pct ms looping (timeline atop (frames natO
 -- lengths; that is checked by computation (the instance argument is `⊤` when it
 -- holds, and the deck does not typecheck when it does not).
 private
-  lengths : List (Anim ℕ (Seg ℕ)) → List ℕ
-  lengths = map (λ a → length (timeline atop (frames natO) a))
+  lengths : List (Anim) → List ℕ
+  lengths = map (λ a → length (timeline a))
 
-Uniform : ℕ → (ℕ → List (Anim ℕ (Seg ℕ))) → Set
+Uniform : ℕ → (ℕ → List (Anim)) → Set
 Uniform period acts = All (λ φ → lengths (acts φ) ≡ lengths (acts 0)) (upTo period)
 
 uniform? : ∀ period acts → Dec (Uniform period acts)
 uniform? period acts = All.all? (λ φ → ≡-dec _≟_ (lengths (acts φ)) (lengths (acts 0))) (upTo period)
 
-renderBoth : (name : String) (percent ms period : ℕ) (acts : ℕ → List (Anim ℕ (Seg ℕ))) →
+renderBoth : (name : String) (percent ms period : ℕ) (acts : ℕ → List (Anim)) →
              {{_ : True (uniform? period acts)}} → ContentShape
 renderBoth name pct ms period acts =
   shape name pct ms (both (restsOf 0 (lengths (acts 0))) period)
-        (concat (map (λ φ → concat (map (timeline atop (frames natO)) (acts φ))) (upTo period)))
+        (concat (map (λ φ → concat (map (timeline) (acts φ))) (upTo period)))
         nothing
