@@ -61,6 +61,14 @@ record Coupling {K R} (Tm : Time K) (Sb : Sub (Time.ord Tm)) (Sc : Scale (Time.o
   move-end : ∀ e {a b} d → a ≤ b → ¬ (d ≡ 0#) → lerp (progress e d d) a b ≡ b
   move-end e d a≤b d≢0 = trans (cong (λ r → lerp r _ _) (progress-end e d d≢0)) (lerp-1 a≤b)
 
+-- A coupling homomorphism (stated only: ℕ has no coupling): durations map by `h`, ratios by `ρ`,
+-- preserving the ratio of two durations and easing; `lerp` follows given exact differences.
+record IsCouplingHom {K K′ R R′} {Tm : Time K} {Sb Sc} {Tn : Time K′} {Sb′ Sc′}
+                     (C : Coupling Tm Sb Sc) (C′ : Coupling Tn Sb′ Sc′) (h : K → K′) (ρ : R → R′) : Set where
+  field
+    h-ratio : ∀ a b → ρ (Coupling.ratio C a b) ≡ Coupling.ratio C′ (h a) (h b)
+    h-ease  : ∀ e r → ρ (Coupling.ease C e r) ≡ Coupling.ease C′ e (ρ r)
+
 ------------------------------------------------------------------------
 -- The signature
 

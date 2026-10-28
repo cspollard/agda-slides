@@ -49,6 +49,9 @@ open import Slides.Diagram.Syntax
 import Slides.Diagram.Place Sp as PS
 import Slides.Diagram.Place Tp as PT
 import Slides.Diagram.Layout Sp as LS
+open import Slides.Diagram.Overlay using (IsOverlayHom)
+import Slides.Diagram.Laws Sp as LawsS
+import Slides.Diagram.Laws Tp as LawsT
 import Slides.Diagram.Layout Tp as LT
 
 private
@@ -112,6 +115,12 @@ overlay-nat : ∀ w ht a b →
   mapLayout h (PS.overlay w ht a b) ≡ PT.overlay (h w) (h ht) (mapLayout h a) (mapLayout h b)
 overlay-nat w ht (mkLayout _ _ d₁ a₁) (mkLayout _ _ d₂ a₂) =
   cong₂ (mkLayout (h w) (h ht)) (mapDraws-++ d₁ d₂) (anchors-++ a₁ a₂)
+
+-- layouts overlay the same way before and after `h`
+overlay-hom : IsOverlayHom LawsS.layoutOverlay LawsT.layoutOverlay (mapLayout h)
+overlay-hom = record { F-⊙ = λ { x@(mkLayout wa ha _ _) y@(mkLayout wb hb _ _) →
+  trans (overlay-nat (wa A.⊔ wb) (ha A.⊔ hb) x y)
+        (cong₂ (λ w ht → PT.overlay w ht (mapLayout h x) (mapLayout h y)) (h-⊔ wa wb) (h-⊔ ha hb)) } }
 
 combine-nat : ∀ w ht px py qx qy a b →
   mapLayout h (PS.combine w ht (px , py) a (qx , qy) b)

@@ -54,6 +54,11 @@ record Scale {S} (M : OrdMon S) (R : Set) : Set₁ where
     ·-dist : ∀ r x y → r · (x + y) ≡ r · x + r · y
     ·-mono : ∀ {r x y} → 0r ≤r r → x ≤ y → r · x ≤ r · y
 
+-- A scaling homomorphism: the ratios map by `ρ`, the lengths by `h`.
+record IsScaleHom {S S′ R R′} {M : OrdMon S} {N : OrdMon S′} (Sc : Scale M R) (Sc′ : Scale N R′)
+                  (h : S → S′) (ρ : R → R′) : Set where
+  field h-· : ∀ r x → h (Scale._·_ Sc r x) ≡ Scale._·_ Sc′ (ρ r) (h x)
+
 ------------------------------------------------------------------------
 -- The signature
 

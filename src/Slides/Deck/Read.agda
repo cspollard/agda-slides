@@ -39,7 +39,8 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 
 import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) _++_ ListP.++-assoc as S
+open import Slides.Diagram.Overlay using (listOverlay)
+import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
 -- leaves are read as themselves, at any local time
 ℓ : Flow → ℕ → Flow
@@ -111,7 +112,7 @@ nested d n = proj₂ (S.timed slideT d) n nothing
 -- the nested reading is the reading of the flat scene (nesting by substitution)
 flat-visible : ∀ d n → visible (flat d) n ≡ nested d n
 flat-visible d n = cong (λ x → proj₂ x n nothing) (L.sample-bind (S.leafT ℓ) slideScene d)
-  where import Slides.Scene.Laws {ℕ} {⊥} {Flow} natMon natSub (λ ()) _++_ ListP.++-assoc as L
+  where import Slides.Scene.Laws {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as L
 
 -- the ticks of the slides add up
 total : Slide → List Slide → ℕ

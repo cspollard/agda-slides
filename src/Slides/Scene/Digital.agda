@@ -193,19 +193,13 @@ evQ p t = pfold ScC scRat (valuation p) (lowerD t)
 import Slides.Scene.Animation natSpace natTime valN as AN
 import Slides.Scene.Animation ratSpace ratTime valQ as AQ
 
--- frames overlay the same way before and after `ι`
-F-⊙ : ∀ x y → mapLayout ι (AN.ovl x y) ≡ AQ.ovl (mapLayout ι x) (mapLayout ι y)
-F-⊙ x@(mkLayout wa ha da aa) y@(mkLayout wb hb db ab) =
-  trans (N.overlay-nat (wa ℕ.⊔ wb) (ha ℕ.⊔ hb) x y)
-        (cong₂ (λ w h → PQ.overlay w h (mapLayout ι x) (mapLayout ι y)) (ι-⊔ wa wb) (ι-⊔ ha hb))
-
 open import Slides.Scene.Tick {ℕ} {ℚ} {Dn} {Dn} {Layout ℕ} {Layout ℚ}
   (Space.ord natSpace) (Space.sub natSpace) (Space.ord ratSpace) (Space.sub ratSpace)
-  ι ι-hom valN valQ lowerD g-val AN.ovl AN.ovl-assoc AQ.ovl AQ.ovl-assoc (mapLayout ι) F-⊙
+  ι ι-hom valN valQ lowerD g-val AN.layoutOverlay AQ.layoutOverlay (mapLayout ι) N.overlay-hom
   using (mapScene; tick-hom)
 
-import Slides.Scene.Sample {D = Dn} {Layout ℕ} (Space.ord natSpace) (Space.sub natSpace) valN AN.ovl AN.ovl-assoc as SN
-import Slides.Scene.Sample {D = Dn} {Layout ℚ} (Space.ord ratSpace) (Space.sub ratSpace) valQ AQ.ovl AQ.ovl-assoc as SQ
+import Slides.Scene.Sample {D = Dn} {Layout ℕ} (Space.ord natSpace) (Space.sub natSpace) valN AN.layoutOverlay as SN
+import Slides.Scene.Sample {D = Dn} {Layout ℚ} (Space.ord ratSpace) (Space.sub ratSpace) valQ AQ.layoutOverlay as SQ
 
 -- the frame of a scene at the whole tick `n`, on the ℕ clock
 frameN : Scene ℕ Dn SLeaf → ℕ → Maybe (Layout ℕ)
