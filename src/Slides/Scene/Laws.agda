@@ -11,6 +11,9 @@
 --                commutative (`read-perm`);
 --   Seq          associative as a reading, for non-negative durations (`seq-assoc`).
 --
+--   assembly     the reading at a time is the overlay of the active leaves, each read at its
+--                local time (`assembly`, `sample-assembly`);
+--
 -- Not claimed: the swap law `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)` (false: leaves are
 -- eternal, so the operands need a `Windowed` hypothesis); a tick law for `Repeat` beyond ℕ.
 
@@ -20,6 +23,7 @@ open import Slides.Scalar.Core using (OrdMon; Sub)
 module Slides.Scene.Laws {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T)
        (_⊙_ : X → X → X) (⊙-assoc : ∀ a b c → (a ⊙ b) ⊙ c ≡ a ⊙ (b ⊙ c)) where
 
+open import Data.Bool using (Bool; true; false; _∧_; not; if_then_else_)
 open import Data.Empty using (⊥-elim)
 open import Data.Fin using (zero; suc)
 import Data.Nat as ℕ
@@ -31,6 +35,7 @@ open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Unit using (tt)
 open import Relation.Nullary using (yes; no)
+open import Relation.Nullary.Decidable using (does)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂; sym; trans)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
@@ -216,3 +221,52 @@ repeat-zero a = refl
 
 repeat-suc : ∀ {A : Set} n (a : Scene T D A) → mediaOf (repeat (ℕ.suc n) a) ≡ seqM (mediaOf a) (mediaOf (repeat n a))
 repeat-suc n a = refl
+
+------------------------------------------------------------------------
+-- Assembly: the reading at a time is the overlay of the active leaves
+
+presentᵇ : ∀ {L : Set} → Event L → T → Bool
+presentᵇ (event o nothing  _ _) t = does (o ≤? t)
+presentᵇ (event o (just s) _ _) t = does (o ≤? t) ∧ not (does ((o + s) ≤? t))
+
+-- the events present at `t`
+actives : ∀ {L : Set} → List (Event L) → T → List (Event L)
+actives []       t = []
+actives (e ∷ es) t = if presentᵇ e t then e ∷ actives es t else actives es t
+
+-- the leaf of an event, read at its local time
+leafAt : ∀ {L : Set} → (L → T → X) → Event L → T → Maybe D → X
+leafAt ℓ (event o _ c a) t q = ℓ a (param (orElse c q) (t - o))
+
+overlay : List X → Maybe X
+overlay []       = nothing
+overlay (x ∷ xs) = merge (just x) (overlay xs)
+
+readEv-present : ∀ {L} (ℓ : L → T → X) (e : Event L) t q →
+                 readEv ℓ e t q ≡ (if presentᵇ e t then just (leafAt ℓ e t q) else nothing)
+readEv-present ℓ (event o nothing c a) t q with o ≤? t
+... | yes _ = refl
+... | no _  = refl
+readEv-present ℓ (event o (just s) c a) t q with o ≤? t
+... | no _  = refl
+... | yes _ with (o + s) ≤? t
+...   | yes _ = refl
+...   | no _  = refl
+
+assembly : ∀ {L} (ℓ : L → T → X) (es : List (Event L)) t q →
+           readE ℓ es t q ≡ overlay (map (λ e → leafAt ℓ e t q) (actives es t))
+assembly ℓ []       t q = refl
+assembly ℓ (e ∷ es) t q =
+  trans (cong₂ merge (readEv-present ℓ e t q) (assembly ℓ es t q)) (step (presentᵇ e t))
+  where
+    step : ∀ b → merge (if b then just (leafAt ℓ e t q) else nothing)
+                       (overlay (map (λ e → leafAt ℓ e t q) (actives es t)))
+                 ≡ overlay (map (λ e → leafAt ℓ e t q) (if b then e ∷ actives es t else actives es t))
+    step true  = refl
+    step false = refl
+
+-- for a scene: the events active at `t`
+sample-assembly : ∀ {A : Set} (ℓ : A → T → X) (s : Scene T D A) t q →
+  proj₂ (sample ℓ s) t q ≡ overlay (map (λ e → leafAt ℓ e t q) (actives (events s) t))
+sample-assembly ℓ s t q =
+  trans (sym (proj₂ (proj₂ (events-sample ℓ s)) t q)) (assembly ℓ (events s) t q)
