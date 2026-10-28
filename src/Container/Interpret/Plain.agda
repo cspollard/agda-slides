@@ -13,7 +13,8 @@
 --   (`pfold-bind`); for a handler into a monoid this is the statement that the fold of a
 --   bind is the fold with the continuation folded;
 -- * fusion along a container morphism (`pfold-translate`) and along a lowering
---   (`pfold-lower`), with the pulled-back handler written out.
+--   (`pfold-lower`), with the pulled-back handler written out;
+-- * related handlers give related folds (`pfold-rel`).
 --
 -- Equality of programs is `_≈⋆_` (propositional equality of leaves).
 
@@ -96,6 +97,21 @@ module _ {C : Container s p} {a ℓ} (A : Setoid a ℓ) where
     pfold-translate m f (pure _)         = A.refl
     pfold-translate m f (impure (a , k)) =
       c _ (λ q → pfold-translate m f (k (position m q)))
+
+-- Folds preserve a relation: if two handlers send related children to related results then
+-- they send related programs to related results (the fundamental lemma of logical relations).
+-- A handler homomorphism `φ (hA c k) ≡ hB c (φ ∘ k)` is the case `R x y = φ x ≡ y`; "the names
+-- of a layout are the names the usage fold declares" and "layout is natural in the scalar" are
+-- this lemma once each.
+
+module _ {C : Container s p} {a b r} {A : Set a} {B : Set b} (R : A → B → Set r)
+         {hA : Handler C A} {hB : Handler C B}
+         (hom : ∀ c k k′ → (∀ q → R (k q) (k′ q)) → R (hA c k) (hB c k′)) where
+
+  pfold-rel : ∀ {X : Set x} {f : X → A} {g : X → B} → (∀ v → R (f v) (g v)) → ∀ t →
+              R (pfold C hA f t) (pfold C hB g t)
+  pfold-rel e (pure v)         = e v
+  pfold-rel e (impure (c , k)) = hom c _ _ (λ q → pfold-rel e (k q))
 
 -- A congruent handler is an algebra of the polynomial functor, and `pfold` is its fold.
 
