@@ -19,7 +19,7 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
 
 ## Status (2026-10-28)
 Steps 0 to 4 are done and merged: container lemmas +194 lines (budget 300), scalar theories 700 (700),
-Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold.  Next: Step 5 (Program).
+Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold.  Step 5 (Program, Deck) on branch `rebuild-step5`: Program 645 lines, Deck 793 (1438 of 1600).
 
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
