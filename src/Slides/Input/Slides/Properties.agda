@@ -38,7 +38,7 @@ open import Data.Container.Core using (Shape)
 open import Slides.Core
 open import Slides.Input.Deck
 open import Slides.Input.Slides
-open import Slides.Steps.Input using (elab; elabS)
+open import Slides.Steps using (elab; elabS)
 open import Slides.Input (Shape BlockC) using (Prog)
 open import Slides.Input.Navigation (Shape BlockC)
 open import Slides.Input.Navigation.Properties (Shape BlockC)

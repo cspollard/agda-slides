@@ -41,7 +41,7 @@ open import Slides.Input.Deck
 import Slides.Input.Supports (Shape BlockC) as Sup
 open Sup using (Supports)
 open Supports
-open import Slides.Steps.Input using (elab; stepsBy; isNextS)
+open import Slides.Steps using (elab; stepsBy; isNextS)
 
 ------------------------------------------------------------------------
 -- Content lowerings

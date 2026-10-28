@@ -9,7 +9,7 @@
 --   DeckBlockC C   = BlockAwaitC (Nav ⊎ C) the vocabulary of a deck: navigation and extras `C`
 --   Body⁺ X        = Prog X ⊤              a slide body that may await
 --
--- `Slides.Steps.Input.elab` takes a `Body` to a `Body⁺ (Nav ⊎ C)` (`pause ↦ await next`)
+-- `Slides.Steps.elab` takes a `Body` to a `Body⁺ (Nav ⊎ C)` (`pause ↦ await next`)
 -- and `Supports.lowerDeck` lowers the awaited commands to a backend's.  A body that
 -- awaits *is* a `Slides.Input.Prog` over the scene vocabulary `Shape BlockC` (the positions of
 -- `BlockC` are all `⊤`), so `Slides.Input.Supports.lowerDeck` applies to it.

@@ -32,7 +32,7 @@ open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 
 open import Slides.Core
 open import Slides.Input.Deck
-open import Slides.Steps.Input using (elab)
+open import Slides.Steps using (elab)
 
 -- A slide: its user label and its body.
 Slide : Set

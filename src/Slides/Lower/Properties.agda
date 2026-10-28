@@ -8,8 +8,8 @@
 -- Command lowerings (a body that awaits is a `Slides.Input` program, lowered by
 -- `Slides.Input.Supports.lowerDeck`):
 --
---   steps-lowered                              a backend that supports `next` steps the lowered body
---                                              exactly as the source (the pull-back `isNextS` of `isNext`)
+--   scene-lowered                              a backend that supports `next` gives the lowered body the scene
+--                                              of the source (the pull-back `isNextS` of `isNext`)
 --   steps-pipeline                             `elab`, `lowerDeck`, `stepsBy` is `steps`
 
 module Slides.Lower.Properties where
@@ -33,9 +33,9 @@ open Sup using (Supports)
 open Supports
 
 open import Slides.Lower
-open import Slides.Steps using (stepL; wrapC; steps)
-open import Slides.Steps.Input
-open import Slides.Steps.Properties using (stepsBy-elab)
+open import Slides.Steps
+open import Slides.Steps.Properties using (scene-elab)
+open import Slides.Anim.Syntax using (_∥ᵃ_)
 
 finalFrame-looping : ∀ d ds → finalFrame d ds looping ≡ d
 finalFrame-looping d ds = refl
@@ -71,22 +71,18 @@ module _ {C : Set} (b : Supports C) where
     unsupported-not-next (inj₁ (gotoLabel _)) _ = refl
     unsupported-not-next (inj₂ _) _ = refl
 
-    steps-lowered : ∀ m (x : Body⁺ (Nav ⊎ C)) →
-      goBy (isNextS b) m (Sup.lowerDeck b x) ≡ goBy isNext m x
-    steps-lowered m (pure _) = refl
-    steps-lowered m (impure (inj₁ (inj₁ c) , k)) =
-      cong (λ w → wrapC m c >>= λ _ → w) (steps-lowered m (k tt))
-    steps-lowered m (impure (inj₁ (inj₂ l) , k)) =
-      cong (λ w → proj₂ (stepL m l) >>= λ _ → w) (steps-lowered (proj₁ (stepL m l)) (k tt))
-    steps-lowered m (impure (inj₂ (inj₂ _) , k)) = steps-lowered m (k tt)
-    steps-lowered m (impure (inj₂ (inj₁ c) , k)) with inj b c in e
+    -- the pull-back `isNextS` of `isNext` gives the scene of the source
+    scene-lowered : ∀ (x : Body⁺ (Nav ⊎ C)) → sceneBy (isNextS b) (Sup.lowerDeck b x) ≡ sceneBy isNext x
+    scene-lowered (pure _) = refl
+    scene-lowered (impure (inj₁ c , k)) = cong (pure _ ∥ᵃ_) (scene-lowered (k tt))
+    scene-lowered (impure (inj₂ (inj₂ _) , k)) = scene-lowered (k tt)
+    scene-lowered (impure (inj₂ (inj₁ c) , k)) with inj b c in e
     ... | just s  rewrite e =
-      trans (steps-lowered (m ∨ isNextS b s) (k tt))
-            (cong (λ n → goBy isNext n (k tt)) (cong (m ∨_) (isNextS-supported c s e)))
+      trans (cong (λ t → later t (sceneBy (isNextS b) (Sup.lowerDeck b (k tt)))) (isNextS-supported c s e))
+            (cong (later (isNext c)) (scene-lowered (k tt)))
     ... | nothing rewrite e =
-      trans (steps-lowered m (k tt))
-            (cong (λ n → goBy isNext n (k tt)) (trans (sym (∨-identityʳ m)) (cong (m ∨_) (sym (unsupported-not-next c e)))))
+      trans (scene-lowered (k tt)) (sym (cong (λ t → later t (sceneBy isNext (k tt))) (unsupported-not-next c e)))
 
-    -- `elab`, the command lowering, then the second pass: `steps`.
+    -- `elab`, the command lowering, then the page: `steps`.
     steps-pipeline : ∀ (body : Body) → stepsBy (isNextS b) (Sup.lowerDeck b (elab body)) ≡ steps body
-    steps-pipeline body = trans (steps-lowered false (elab body)) (stepsBy-elab body)
+    steps-pipeline body = cong page (trans (scene-lowered (elab body)) (scene-elab body))
