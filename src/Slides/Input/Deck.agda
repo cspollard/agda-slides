@@ -5,14 +5,14 @@
 -- `Slides.Core.Body` is unchanged: a body there is a program over `BlockC` and `pause`
 -- is a layout command.  The vocabulary with awaited commands is a stratified wrapper:
 --
---   BlockAwaitC X  = BlockC ⊎ AwaitC X ⊎ LabelC   a block command, an awaited command `X`, or a label
+--   BlockAwaitC X  = ProgC X: a block command (`Shape BlockC`), an awaited command `X`, or a label
 --   DeckBlockC C   = BlockAwaitC (Nav ⊎ C) the vocabulary of a deck: navigation and extras `C`
---   Body⁺ X        = BlockAwaitC X ⋆ ⊤     a slide body that may await
+--   Body⁺ X        = Prog X ⊤              a slide body that may await
 --
 -- `Slides.Steps.Input.elab` takes a `Body` to a `Body⁺ (Nav ⊎ C)` (`pause ↦ await next`)
--- and `Slides.Lower.lowerCmdBody` lowers the awaited commands to a backend's.  A body is
--- a `Slides.Input.Prog` over the scene vocabulary `Shape BlockC` through `toProg`, so
--- `Slides.Input.Supports.lowerDeck` applies to it.
+-- and `Supports.lowerDeck` lowers the awaited commands to a backend's.  A body that
+-- awaits *is* a `Slides.Input.Prog` over the scene vocabulary `Shape BlockC` (the positions of
+-- `BlockC` are all `⊤`), so `Slides.Input.Supports.lowerDeck` applies to it.
 
 module Slides.Input.Deck where
 
@@ -31,25 +31,13 @@ open import Slides.Core
 open import Slides.Input (Shape BlockC) public using (Nav; next; prev; first; last; goto; gotoLabel; AwaitC; LabelC; ProgC; Prog)
 
 BlockAwaitC : Set → Container 0ℓ 0ℓ
-BlockAwaitC X = BlockC ⊎C (AwaitC X ⊎C LabelC)
+BlockAwaitC = ProgC
 
 DeckBlockC : Set → Container 0ℓ 0ℓ
 DeckBlockC C = BlockAwaitC (Nav ⊎ C)
 
 Body⁺ : Set → Set
-Body⁺ X = BlockAwaitC X ⋆ ⊤
-
--- A body that awaits is a program of `Slides.Input` with scenes `Shape BlockC`.
-toProgC : ∀ {X : Set} → BlockAwaitC X ⇒ ProgC X
-CC._⇒_.shape    toProgC (inj₁ s) = inj₁ s
-CC._⇒_.shape    toProgC (inj₂ x) = inj₂ x
-CC._⇒_.position toProgC {inj₁ (inj₁ _)}        p = p
-CC._⇒_.position toProgC {inj₁ (inj₂ _)}        p = p
-CC._⇒_.position toProgC {inj₂ (inj₁ _)}        p = p
-CC._⇒_.position toProgC {inj₂ (inj₂ _)}        p = p
-
-toProg : ∀ {X : Set} → Body⁺ X → Prog X ⊤
-toProg = translate toProgC
+Body⁺ X = Prog X ⊤
 
 -- The awaited commands, and the labels, as body commands.
 awaitIn : ∀ {X : Set} → AwaitC X ⇒ BlockAwaitC X

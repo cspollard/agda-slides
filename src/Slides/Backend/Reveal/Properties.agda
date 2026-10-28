@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Structural properties of the Reveal rendering: one top-level `<section>` per slide command, in order, and `renderDeck`
--- commutes with sequencing of decks.  Presenting a deck (`present`: `elab`, `lowerCmdBody`,
+-- commutes with sequencing of decks.  Presenting a deck (`present`: `elab`, `lowerDeck`,
 -- `stepsBy`) renders it as `steps` did, for every backend that supports `next`.
 module Slides.Backend.Reveal.Properties where
 

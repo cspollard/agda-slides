@@ -71,19 +71,19 @@ module Slides where
   opaque
     unfolding autoLabel
 
-    _ : labelTable (deckProg {⊤} labels) (autoLabel 0) ≡ just 0
+    _ : labelTable (deckBody {⊤} (slides labels)) (autoLabel 0) ≡ just 0
     _ = refl
-    _ : labelTable (deckProg {⊤} labels) (autoLabel 2) ≡ just 3
+    _ : labelTable (deckBody {⊤} (slides labels)) (autoLabel 2) ≡ just 3
     _ = refl
-    _ : labelTable (deckProg {⊤} labels) (autoLabel 5) ≡ just 6
+    _ : labelTable (deckBody {⊤} (slides labels)) (autoLabel 5) ≡ just 6
     _ = refl
 
     -- a user label is the start of its slide; a stack's label is that of its first slide
-    _ : labelTable (deckProg {⊤} labels) "details" ≡ just 1
+    _ : labelTable (deckBody {⊤} (slides labels)) "details" ≡ just 1
     _ = refl
-    _ : labelTable (deckProg {⊤} labels) "more" ≡ just 4
+    _ : labelTable (deckBody {⊤} (slides labels)) "more" ≡ just 4
     _ = refl
-    _ : labelTable (deckProg {⊤} labels) "end" ≡ just 6
+    _ : labelTable (deckBody {⊤} (slides labels)) "end" ≡ just 6
     _ = refl
-    _ : labelTable (deckProg {⊤} labels) "nowhere" ≡ nothing
+    _ : labelTable (deckBody {⊤} (slides labels)) "nowhere" ≡ nothing
     _ = refl

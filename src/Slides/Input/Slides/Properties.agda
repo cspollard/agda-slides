@@ -5,7 +5,7 @@
 -- The specification is independent of the program: slide `i` starts after the pauses and the
 -- `next`s between the earlier slides (`entries`, `startOf`).
 --
---   slide-table   `labelTable (deckProg d)` is the first match in `entries`: a label resolves to the
+--   slide-table   `labelTable (deckBody (slides d))` is the first match in `entries`: a label resolves to the
 --                 start of the first slide that carries it
 --   auto-start    the label of slide `i` resolves to the position where slide `i` starts, when no user
 --                 label is a numeral (`Fresh`)
@@ -87,16 +87,8 @@ private
 
 module _ {C : Set} where
 
-  toProg-bind : ∀ (x : Body⁺ (Nav ⊎ C)) (f : ⊤ → Body⁺ (Nav ⊎ C)) →
-    toProg (x >>= f) ≡ (toProg x >>= λ q → toProg (f q))
-  toProg-bind (pure _) f = refl
-  toProg-bind (impure (inj₁ (inj₁ c) , k)) f = cong (λ w → impure (inj₁ (inj₁ c) , λ _ → w)) (toProg-bind (k tt) f)
-  toProg-bind (impure (inj₁ (inj₂ l) , k)) f = cong (λ w → impure (inj₁ (inj₂ l) , λ _ → w)) (toProg-bind (k tt) f)
-  toProg-bind (impure (inj₂ (inj₁ a) , k)) f = cong (λ w → impure (inj₂ (inj₁ a) , λ _ → w)) (toProg-bind (k tt) f)
-  toProg-bind (impure (inj₂ (inj₂ l) , k)) f = cong (λ w → impure (inj₂ (inj₂ l) , λ _ → w)) (toProg-bind (k tt) f)
-
   -- The elaborated slide awaits as many `next`s as it has pauses, and carries no label.
-  elab-count : ∀ b → nextCount (toProg (elab {C} b)) ≡ pauses b
+  elab-count : ∀ b → nextCount (elab {C} b) ≡ pauses b
   elab-count (pure _)                      = refl
   elab-count (impure (inj₁ _ , k))         = elab-count (k tt)
   elab-count (impure (inj₂ pause , k))     = cong suc (elab-count (k tt))
@@ -107,7 +99,7 @@ module _ {C : Set} where
   elab-count (impure (inj₂ (placed _ _ _ _ _) , k)) = elab-count (k tt)
   elab-count (impure (inj₂ (stepped _ _) , k)) = elab-count (k tt)
 
-  elab-no-label : ∀ n b l → labelFrom n (toProg (elab {C} b)) l ≡ nothing
+  elab-no-label : ∀ n b l → labelFrom n (elab {C} b) l ≡ nothing
   elab-no-label n (pure _)                      l = refl
   elab-no-label n (impure (inj₁ _ , k))         l = elab-no-label n (k tt) l
   elab-no-label n (impure (inj₂ pause , k))     l = elab-no-label (n + 1) (k tt) l
@@ -131,17 +123,16 @@ module _ {C : Set} where
 
   private
     after-elab : ∀ n b (k : Body⁺ (Nav ⊎ C)) l →
-      labelFrom n (toProg (elab b >>= λ _ → k)) l ≡ labelFrom (n + pauses b) (toProg k) l
+      labelFrom n (elab b >>= λ _ → k) l ≡ labelFrom (n + pauses b) k l
     after-elab n b k l =
-      trans (cong (λ p → labelFrom n p l) (toProg-bind (elab b) (λ _ → k)))
-     (trans (labelFrom-bind n (toProg (elab b)) (λ _ → toProg k) l)
-     (trans (cong (λ r → r <∣> labelFrom (n + nextCount (toProg (elab b))) (toProg k) l) (elab-no-label n b l))
-            (cong (λ m → labelFrom (n + m) (toProg k) l) (elab-count b))))
+      trans (labelFrom-bind n (elab b) (λ _ → k) l)
+     (trans (cong (λ r → r <∣> labelFrom (n + nextCount (elab b)) k l) (elab-no-label n b l))
+            (cong (λ m → labelFrom (n + m) k l) (elab-count b)))
 
   -- One slide, then `k`: its labels first, then `k` after the slide's pauses.
   slideK-from : ∀ n i o b (k : Body⁺ (Nav ⊎ C)) l →
-    labelFrom n (toProg (slideK i (o , b) k)) l
-    ≡ (lookupE l (slideEs i n o) <∣> labelFrom (n + pauses b) (toProg k) l)
+    labelFrom n (slideK i (o , b) k) l
+    ≡ (lookupE l (slideEs i n o) <∣> labelFrom (n + pauses b) k l)
   slideK-from n i nothing b k l with ⌊ autoLabel i Str.≟ l ⌋
   ... | true  = refl
   ... | false = after-elab n b k l
@@ -152,7 +143,7 @@ module _ {C : Set} where
   ...   | false = after-elab n b k l
 
   rest-from : ∀ n i ss l →
-    labelFrom n (toProg (rest {C} i ss)) l ≡ lookupE l (entries i (n + 1) ss)
+    labelFrom n (rest {C} i ss) l ≡ lookupE l (entries i (n + 1) ss)
   rest-from n i []             l = refl
   rest-from n i ((o , b) ∷ ss) l =
     trans (slideK-from (n + 1) i o b (rest (suc i) ss) l)
@@ -160,7 +151,7 @@ module _ {C : Set} where
            (sym (lookupE-++ l (slideEs i (n + 1) o) _)))
 
   deckBody-from : ∀ ss l →
-    labelTable (toProg (deckBody {C} ss)) l ≡ lookupE l (entries 0 0 ss)
+    labelTable (deckBody {C} ss) l ≡ lookupE l (entries 0 0 ss)
   deckBody-from []             l = refl
   deckBody-from ((o , b) ∷ ss) l =
     trans (slideK-from 0 0 o b (rest 1 ss) l)
@@ -168,7 +159,7 @@ module _ {C : Set} where
            (sym (lookupE-++ l (slideEs 0 0 o) _)))
 
   -- `labelTable` of a deck is the slide-start table.
-  slide-table : ∀ (d : Deck) l → labelTable (deckProg {C} d) l ≡ lookupE l (entries 0 0 (slides d))
+  slide-table : ∀ (d : Deck) l → labelTable (deckBody {C} (slides d)) l ≡ lookupE l (entries 0 0 (slides d))
   slide-table d = deckBody-from (slides d)
 
 ------------------------------------------------------------------------
@@ -207,7 +198,7 @@ lookup-auto j st ((o , b) ∷ ss) (suc i) (f ∷ fr) (s<s lt)
             (λ {u} eo e → f eo (suc (j + i)) e)
   = lookup-auto (suc j) (st + pauses b + 1) ss i fr lt
 
--- `labelTable (deckProg d)` resolves the label of slide `i` to its start.
+-- `labelTable (deckBody (slides d))` resolves the label of slide `i` to its start.
 auto-start : ∀ {C : Set} (d : Deck) i → Fresh (slides d) → i < length (slides d) →
-  labelTable (deckProg {C} d) (autoLabel i) ≡ just (startOf 0 (slides d) i)
+  labelTable (deckBody {C} (slides d)) (autoLabel i) ≡ just (startOf 0 (slides d) i)
 auto-start d i fr lt = trans (slide-table d (autoLabel i)) (lookup-auto 0 0 (slides d) i fr lt)

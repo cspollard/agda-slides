@@ -11,11 +11,10 @@
 --                   what plain's `#n` says
 --   deckBody ss     one body: `label (autoLabel i)`, the user label if any, the elaborated slide,
 --                   and an `await next` between consecutive slides (a `next` at the end of a
---                   slide goes to the next one)
---   deckProg d      `toProg` of it: a `Slides.Input.Deck` program, so `navDeck`, `labelTable`
---                   and `Supports.present` apply
+--                   slide goes to the next one); it is a `Slides.Input.Prog`, so `navDeck`,
+--                   `labelTable` and `Supports.present` apply
 --
--- `Slides.Input.Slides.Properties`: `labelTable (deckProg d)` is the slide-start table
+-- `Slides.Input.Slides.Properties`: `labelTable (deckBody (slides d))` is the slide-start table
 -- (`slide-table`), and the label of slide `i` resolves to the position where it starts
 -- (`auto-start`).
 
@@ -70,6 +69,3 @@ module _ {C : Set} where
   deckBody : List Slide → Body⁺ (Nav ⊎ C)
   deckBody []       = pure tt
   deckBody (s ∷ ss) = slideK 0 s (rest 1 ss)
-
-  deckProg : Deck → Prog (Nav ⊎ C) ⊤
-  deckProg d = toProg (deckBody (slides d))

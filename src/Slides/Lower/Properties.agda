@@ -5,14 +5,12 @@
 -- Content lowerings: `finalFrame` of a loop, and of an animation with no steps, is the
 -- first frame.
 --
--- Command lowerings (`lowerCmd`, `lowerCmdBody`):
+-- Command lowerings (a body that awaits is a `Slides.Input` program, lowered by
+-- `Slides.Input.Supports.lowerDeck`):
 --
---   lowerCmdBody-bind                          the lowering of a body is a monad morphism (`lower-bind`)
---   lowerCmdBody-lowerDeck                     on a body seen as a `Slides.Input` program it *is*
---                                              `Slides.Input.Supports.lowerDeck`
 --   steps-lowered                              a backend that supports `next` steps the lowered body
 --                                              exactly as the source (the pull-back `isNextS` of `isNext`)
---   steps-pipeline                             `elab`, `lowerCmdBody`, `stepsBy` is `steps`
+--   steps-pipeline                             `elab`, `lowerDeck`, `stepsBy` is `steps`
 
 module Slides.Lower.Properties where
 
@@ -51,26 +49,6 @@ finalFrame-no-steps d (f ∷ fs)  = refl
 
 module _ {C : Set} (b : Supports C) where
 
-  -- The lowering of a sequence is the sequence of the lowerings.
-  lowerCmdBody-bind : ∀ (x : Body⁺ (Nav ⊎ C)) (f : ⊤ → Body⁺ (Nav ⊎ C)) →
-    lowerCmdBody b (x >>= f) ≈⋆ (lowerCmdBody b x >>= λ q → lowerCmdBody b (f q))
-  lowerCmdBody-bind = lower-bind (lowerCmdBlock b)
-
-  -- It is `Slides.Input.Supports.lowerDeck` on the program a body denotes.
-  lowerCmdBody-lowerDeck : ∀ (x : Body⁺ (Nav ⊎ C)) →
-    toProg (lowerCmdBody b x) ≡ Sup.lowerDeck b (toProg x)
-  lowerCmdBody-lowerDeck (pure _) = refl
-  lowerCmdBody-lowerDeck (impure (inj₁ (inj₁ c) , k)) =
-    cong (λ w → impure (inj₁ (inj₁ c) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
-  lowerCmdBody-lowerDeck (impure (inj₁ (inj₂ l) , k)) =
-    cong (λ w → impure (inj₁ (inj₂ l) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
-  lowerCmdBody-lowerDeck (impure (inj₂ (inj₂ l) , k)) =
-    cong (λ w → impure (inj₂ (inj₂ l) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
-  lowerCmdBody-lowerDeck (impure (inj₂ (inj₁ c) , k)) with inj b c in e
-  ... | just s  rewrite e =
-    cong (λ w → impure (inj₂ (inj₁ s) , λ _ → w)) (lowerCmdBody-lowerDeck (k tt))
-  ... | nothing rewrite e = lowerCmdBody-lowerDeck (k tt)
-
   -- A backend that supports `next` keeps every step: the lowered body is stepped as the source.
   module _ (ns : Σ[ s ∈ S b ] inj b (inj₁ next) ≡ just s) where
 
@@ -94,7 +72,7 @@ module _ {C : Set} (b : Supports C) where
     unsupported-not-next (inj₂ _) _ = refl
 
     steps-lowered : ∀ m (x : Body⁺ (Nav ⊎ C)) →
-      goBy (isNextS b) m (lowerCmdBody b x) ≡ goBy isNext m x
+      goBy (isNextS b) m (Sup.lowerDeck b x) ≡ goBy isNext m x
     steps-lowered m (pure _) = refl
     steps-lowered m (impure (inj₁ (inj₁ c) , k)) =
       cong (λ w → wrapC m c >>= λ _ → w) (steps-lowered m (k tt))
@@ -110,5 +88,5 @@ module _ {C : Set} (b : Supports C) where
             (cong (λ n → goBy isNext n (k tt)) (trans (sym (∨-identityʳ m)) (cong (m ∨_) (sym (unsupported-not-next c e)))))
 
     -- `elab`, the command lowering, then the second pass: `steps`.
-    steps-pipeline : ∀ (body : Body) → stepsBy (isNextS b) (lowerCmdBody b (elab body)) ≡ steps body
+    steps-pipeline : ∀ (body : Body) → stepsBy (isNextS b) (Sup.lowerDeck b (elab body)) ≡ steps body
     steps-pipeline body = trans (steps-lowered false (elab body)) (stepsBy-elab body)
