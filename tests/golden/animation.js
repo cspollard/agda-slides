@@ -63,7 +63,8 @@ function SlidesAnimation(shown) {
   // ---- layout: Slides.Diagram.Place (sizes in units, positions in half units)
   function sh(d, dx, dy) {
     var r = Object.assign({}, d);
-    if (d.k === 'line' || d.k === 'arrow') { r.a += dx; r.b += dy; r.c += dx; r.d += dy; } else { r.x += dx; r.y += dy; }
+    if (d.k === 'poly') r.pts = d.pts.map(function (q) { return [q[0] + dx, q[1] + dy]; });
+    else if (d.k === 'line' || d.k === 'arrow') { r.a += dx; r.b += dy; r.c += dx; r.d += dy; } else { r.x += dx; r.y += dy; }
     return r;
   }
   function inFrame(w, h, dx, dy, L) {
@@ -87,11 +88,16 @@ function SlidesAnimation(shown) {
   function find(as, n) { for (var i = 0; i < as.length; i++) if (as[i][0] === n) return as[i][1]; return null; }
   function lay(n, p) {
     if (typeof n === 'string') n = TAB[n];
-    var o = n[0], x, y, A, B, w, h;
+    var o = n[0], x, y, A, B, w, h, i, ps;
     switch (o) {
       case 'R': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'rect', x: 0, y: 0, w: w, h: h, s: n[3] }]);
       case 'S': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'line', a: 0, b: 0, c: 2 * w, d: 2 * h, s: n[3] }]);
       case 'D': x = ev(n[1], p); return prim(2 * x, 2 * x, [{ k: 'circle', x: 2 * x, y: 2 * x, r: x, s: n[2] }]);
+      case 'E': x = ev(n[1], p); y = ev(n[2], p);
+        return prim(2 * x, 2 * y, [{ k: 'ellipse', x: 2 * x, y: 2 * y, rx: x, ry: y, s: n[3] }]);
+      case 'Y': ps = []; w = 0; h = 0;
+        for (i = 3; i + 1 < n.length; i += 2) { x = ev(n[i], p); y = ev(n[i + 1], p); w = Math.max(w, x); h = Math.max(h, y); ps.push([2 * x, 2 * y]); }
+        return prim(w, h, [{ k: 'poly', c: n[1], pts: ps, s: n[2] }]);
       case 'T': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'label', x: w, y: h, n: n[3], t: n[4], s: n[5] }]);
       case 'P': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'path', x: 0, y: 0, d: n[3], s: n[4] }]);
       case '_': return prim(ev(n[1], p), ev(n[2], p), []);
@@ -171,6 +177,9 @@ function SlidesAnimation(shown) {
       case 'rect': a = { x: r3(d.x / 2), y: r3(d.y / 2), width: r3(d.w), height: r3(d.h) }; if (s.rx !== undefined) a.rx = s.rx;
         return el('rect', shape(s, a));
       case 'circle': return el('circle', shape(s, { cx: r3(d.x / 2), cy: r3(d.y / 2), r: r3(d.r) }));
+      case 'ellipse': return el('ellipse', shape(s, { cx: r3(d.x / 2), cy: r3(d.y / 2), rx: r3(d.rx), ry: r3(d.ry) }));
+      case 'poly': return el(d.c ? 'polygon' : 'polyline',
+        shape(s, { points: d.pts.map(function (q) { return r3(q[0] / 2) + ',' + r3(q[1] / 2); }).join(' ') }));
       case 'line': return el('line', shape(s, { x1: r3(d.a / 2), y1: r3(d.b / 2), x2: r3(d.c / 2), y2: r3(d.d / 2) }));
       case 'arrow': a = shape(s, { x1: r3(d.a / 2), y1: r3(d.b / 2), x2: r3(d.c / 2), y2: r3(d.d / 2) });
         a['marker-end'] = 'url(#' + name + '-arrow)'; return el('line', a);
