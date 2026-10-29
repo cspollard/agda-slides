@@ -9,3 +9,5 @@ node_modules/
 # Private talks: kept out of version control
 talks-private/
 drawings/
+build/
+html/
