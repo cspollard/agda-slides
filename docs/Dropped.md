@@ -70,7 +70,7 @@ Container-level: `diff -r` shows every legacy `Container/**` file kept; only `_�
 Difficulty and priority use the standing rule: identity and composition laws and general
 invariants are proved wherever possible.
 
-1. **Valid layouts and the unit laws of the empty diagram** (legacy `Place/Properties/Valid` and
+1. **RESTATED (Step 9, `Slides.Diagram.Valid`, `Convenience.Properties`)**: `Valid` (a `Set`-valued fold), `valid-size`, `valid-layout`; `besideA-unitˡʳ`, `aboveA-unitˡʳ`, `atop-unitˡʳ` and their `layout-*` forms for valid diagrams; `gap-beside/above/atop` (no hypothesis), `gap-∥`, `gap-═`, `gap-⊙`, `margin-zero` (valid `d`).  Frames only: positions of drawings are not claimed non-negative.  **Valid layouts and the unit laws of the empty diagram** (legacy `Place/Properties/Valid` and
    `Laws`: `valid-*` for every operation, `valid-layout` under `WellSized`, `∥/═/⊙-unitˡʳ`,
    term-level units, `gap-∥`, `gap-═`, `gap-⊙`, `margin-zero`, `nonneg-⊔`, `invalid-rectangle`;
    ~35 names).  Statement: if every sized leaf has non-negative size then every layout has
@@ -80,26 +80,26 @@ invariants are proved wherever possible.
    `Space` does not say so").  This is the identity law of the layout monoid structure.
    Difficulty medium (a `Nonneg` predicate, or a `0 ≤` law in `Space`; ℕ gets it free).
    **Priority high.**
-2. **Functoriality of scalar maps** (legacy `Layout/mapLayout-∘`, `mapLayout-cong`,
+2. **RESTATED (Step 9, `Slides.Diagram.Functoriality`, `Slides.Scene.Functoriality`, `Plain.pfold-translate`)**: `mapDia-id`, `mapDia-∘`, `mapLayout-id`, `mapLayout-∘`, `mapScene-id`, `mapScene-∘`, `fold-mapDia`, `fold-mapScene`.  Congruence in the map (`f ≗ g`) is not stated (needs the same case analysis again, no use found).  **Functoriality of scalar maps** (legacy `Layout/mapLayout-∘`, `mapLayout-cong`,
    `MapFusion/mapDia-id`, `mapDia-∘`, `fold-mapDia`).  `mapDia f = translate (mapC f)`, and
    `translate-id`/`translate-∘` exist, but `mapC id ≡ id` and `mapC (g ∘ f) ≡ mapC g ∘ mapC f`
    (shape equality, one clause per `Op`) were never stated, nor `mapLayout id = id`,
    `mapLayout (g ∘ f)`, nor the same for `mapScene`.  These are the identity/composition laws of the
    change-of-scalar functors that `layout-natural` and `tick-hom` are about.  Difficulty easy;
    **priority high.**
-3. **Duration and boundary laws of scenes** (legacy `Syntax/Properties/dur-⨾`, `dur-gap`,
+3. **RESTATED (Step 9, `Slides.Scene.Duration`)**: `duration-seq/hold/delay/drive/repeat/gap`, `win-zero`, `absent-sample`, `gap-sample`, `par-gap`, `duration-par-gap`, `seq-before`, `seq-after`, `seq-boundary`.  **Duration and boundary laws of scenes** (legacy `Syntax/Properties/dur-⨾`, `dur-gap`,
    `Time/Properties/seqAt-before/after/boundary`, `Syntax/Laws/par-gap`).  Rebuild has
    `duration-par` and `duration-nonneg` only: no `duration (a ⨾ b) = duration a + duration b`,
    `duration (hold d a) = d`, `duration (delay …)`, `duration (repeat n a) = n · duration a`, no
    statement that the second operand of `⨾` takes over exactly at the boundary from its own time 0,
    and no unit of `Par` (a scene that shows nothing).  Difficulty easy (folds; most by `refl` once
    `Events` is unfolded); priority high (they are the skeleton laws named in Legacy.md).
-4. **`atop` commutativity and associativity up to permutation, and layout-level `Par`**
+4. **RESTATED (Step 9, `Slides.Diagram.Commute`)**: `atop-assoc` (on the nose), `atop-comm` and `ovl-comm` up to `≈ᵖ` (same frame, drawings and anchors up to `↭`).  Scene-level footprint (gap 8) remains.  **`atop` commutativity and associativity up to permutation, and layout-level `Par`**
    (legacy `Place/Properties/Commute.atop-comm`, `Laws/⊙-assoc`, `Syntax/Laws/par-comm` at
    layouts).  Rebuild has the sizes (`size-atop-comm`, `size-atop-assoc`) and `par-comm-events`
    but not the frame-and-drawings statement up to `↭`.  Matters because `Par` of scenes lays out
    by `atop`.  Difficulty medium; priority medium.
-5. **Periodicity and the remainder under ι** (legacy `Ordered/ι-modBy`, `ι-divBy`,
+5. **PARTLY RESTATED (Step 9: `IsTimeHom.h-rem`, `Hom.ι-rem`; remaining: the loop law that a repeated scene reads `t mod n` ticks)**: **Periodicity and the remainder under ι** (legacy `Ordered/ι-modBy`, `ι-divBy`,
    `Laws/loop-period`, `Anim/Loop`).  `IsTimeHom` has `h-tick`, `h-floor`, hence `h-hold`, but nothing
    for `Time.rem`; no statement that a looped or repeated scene reads `t mod n` ticks.  `Scene/Laws`
    lists "a tick law for `Repeat` beyond ℕ" as unclaimed.  Difficulty easy for `h-rem`, medium for
@@ -139,9 +139,9 @@ invariants are proved wherever possible.
 12. **`glue` unit and associativity** (legacy `Steps/bind-assoc`; rebuild has `glue-nil` and
     `chunks-++` but not `glue` as a monoid).  Follows from `chunks-++` on images of `chunks`; only
     needed if `glue` is used elsewhere.  Easy; low.
-13. **`win-zero`-style emptiness for `Hold 0`** (legacy `win-zero`, `gap-absent`): covered for decks
+13. **RESTATED (Step 9: `win-zero`, `absent-sample`)**: **`win-zero`-style emptiness for `Hold 0`** (legacy `win-zero`, `gap-absent`): covered for decks
     by `hold-out`, not for general scenes.  Folded into gap 3.
-14. **Layout/`mapScene` congruence lemmas** (legacy `mapDraw-cong`, `mapAnchor-cong`): folded into gap 2.
+14. **Not restated (see 2)**: **Layout/`mapScene` congruence lemmas** (legacy `mapDraw-cong`, `mapAnchor-cong`): folded into gap 2.
 
 Top ten by priority: 1 (high), 2 (high), 3 (high), 4, 5, 6, 7 (medium), 8, 9, 10 (low).
 

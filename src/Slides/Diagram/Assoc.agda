@@ -10,8 +10,8 @@
 -- groupings agree because exact subtraction composes, `(y - x) + (z - y) ≡ z - x` for
 -- `x ≤ y ≤ z` (`sub-trans`), which is all the centring arithmetic needs.  The proof is one
 -- generic statement about shifted lists (`Shapes.assoc-shape`), used for drawings and anchors.
--- (`atop` is not associative on the nose: it is a join of frames, centred, and `⊔` loses
--- the order in which the children were met; its sizes are `Laws.size-atop-assoc`.)
+-- (`atop`, a join of frames, centred, is associative too, and commutative up to the order of the
+-- drawings: `Slides.Diagram.Commute`.)
 
 open import Slides.Scalar.Space using (Space)
 

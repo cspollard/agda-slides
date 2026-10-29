@@ -11,9 +11,8 @@
 --   * annotations do not change a layout's frame or drawings (`named-frame`).
 --
 -- Associativity of beside and above is `Slides.Diagram.Assoc`; validity (non-negative frames) and the
--- units of the empty diagram, which hold for non-negative sizes only, are `Slides.Diagram.Valid`.  Not
--- claimed (the legacy proved it over a ring, `Place/Properties/Commute`): commutativity of `atop` up to
--- a permutation of the drawings.
+-- units of the empty diagram, which hold for non-negative sizes only, are `Slides.Diagram.Valid`.  Associativity of
+-- `atop` and its commutativity up to a permutation of the drawings are `Slides.Diagram.Commute`.
 
 open import Slides.Scalar.Space using (Space)
 
