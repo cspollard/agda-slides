@@ -358,9 +358,10 @@ frame s = canvas
     ∷ [] )
   where m = scanLo + s
 
--- the part that stays: the axes and the data
-background : Dia ℕ
-background = canvas (axes ++ˡ dataPoints)
+-- the parts that stay: the axes, under everything, and the data, over everything
+background foreground : Dia ℕ
+background = canvas axes
+foreground = canvas dataPoints
 
 -- a leaf present from the start for `d` ticks (a scene with a window)
 steady : ℕ → Dia ℕ → Anim
@@ -371,9 +372,9 @@ steps : ℕ → ℕ → Anim
 steps zero    s = frame′ 1 (still (frame s))
 steps (suc k) s = frame′ 1 (still (frame s)) ⨾ steps k (suc s)
 
--- the background all along, the steps over it
+-- the axes all along, the steps over them, the data over the steps
 scan : ℕ → ℕ → Anim
-scan k s = steady (suc k) background ∥ steps k s
+scan k s = steady (suc k) background ∥ steps k s ∥ steady (suc k) foreground
 
 nllFormula : M.Math
 nllFormula = M.raw "-2\\ln L(\\mu) = \\sum_i \\frac{(n_i - \\nu_i(\\mu))^2}{\\sigma_i^2} + \\mathrm{const}"
@@ -446,14 +447,13 @@ curveMin amp cs = foldr _⊓_ (nllWith amp cs scanLo) (applyUpTo (λ k → nllWi
 curveDot : ℕ → List ℕ → ℕ → Dia ℕ
 curveDot amp cs k = put (427 + 12 * k) (237 ∸ (nllWith amp cs (scanLo + k) ∸ curveMin amp cs) / 175) (disc 3 (cls "cur"))
 
--- the picture after batch s (counting from 0), 175 units of -2 ln L (times 100) per pixel
+-- the picture after batch s (counting from 0), the data over the template, 175 units of -2 ln L (times 100) per pixel
 growFrame : ℕ → List ℕ → Dia ℕ
 growFrame s cs = canvas
-  ( concat (zipWith pointN (applyUpTo (λ i → i) 16) cs)
-  ++ˡ map (columnA amp) (applyUpTo (λ j → j) 64)
+  ( map (columnA amp) (applyUpTo (λ j → j) 64)
   ++ˡ map (curveDot amp cs) (applyUpTo (λ k → k) (suc scanSteps))
   ++ˡ put 560 20 (text 24 ("events: " ++ˢ show (foldr _+_ 0 cs)) (cls "big"))
-    ∷ [] )
+    ∷ concat (zipWith pointN (applyUpTo (λ i → i) 16) cs) )
   where amp = 10 * suc s / 3
 
 -- each batch is shown for three ticks, over the axes

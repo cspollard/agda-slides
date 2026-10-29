@@ -131,6 +131,7 @@ TODO:
     displayMath significance
     pause
     paragraph ("particle physics asks for " ∷ inlineMath fiveSigma ∷ ": a fluke about once in 3.5 million tries." ∷ [])
+    pause
     classed "callout blue"
       (p■ "the same logic checks a medical trial or an A/B test.")
 ```
