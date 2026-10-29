@@ -14,3 +14,4 @@
   how it interacts with labels and stacks (reveal counts stacks as one slide by
   default).
 - [ ] allow nested bullet points
+- [ ] A general 3D module (`Slides.Trig`, views, solids, projection to `Dia`), extracted from `Examples/ATLAS.agda`, with ℚ and polynomial trig of a user-chosen order. Plan in `plan/3D.md`.
