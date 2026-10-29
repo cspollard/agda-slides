@@ -15,10 +15,10 @@ speaker line on the title slide.
 module Slides.Examples.Collider where
 
 open import Data.Bool using (Bool; false; if_then_else_)
-open import Data.List using (List; _∷_; []; zipWith; zip; map; foldr; concat; applyUpTo) renaming (_++_ to _++ˡ_)
+open import Data.List using (List; _∷_; []; zipWith; map; foldr; concat; applyUpTo; reverse)
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_; _/_; _%_; _⊓_; _≡ᵇ_; _≤ᵇ_)
 open import Data.Nat.Show using (show)
-open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Product using (_×_; _,_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.Container.FreeMonad using (pure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
@@ -222,7 +222,7 @@ nll m = foldr _+_ 0
 ```
 
 The scan runs `m = 20 … 44` (μ from 5 to 11), 25 steps.  On the left the template is drawn as
-columns of width 5; on the right each step adds one dot.  `base` is the left axis, 230 down.
+one outline of columns of width 5; on the right each step adds one dot.  The baseline of the left plot is 230 down.
 
 ```agda
 scanLo scanSteps : ℕ
@@ -243,22 +243,31 @@ put = place W H
 canvas : List (Dia ℕ) → Dia ℕ
 canvas = layers W H
 
--- a data point with its error bar and caps
-point : ℕ → ℕ × ℕ → List (Dia ℕ)
-point i (n , e) =
-    put (36 + 20 * i) (226 ∸ 5 * n) (disc 4 (cls "pt"))
-  ∷ put (40 + 20 * i) (230 ∸ 5 * n ∸ e) (segment 0 (2 * e) (cls "eb"))
-  ∷ put (35 + 20 * i) (230 ∸ 5 * n ∸ e) (segment 10 0 (cls "eb"))
-  ∷ put (35 + 20 * i) (230 ∸ 5 * n + e) (segment 10 0 (cls "eb"))
-  ∷ []
+-- A filled shape is one `path`, not a rectangle per column: a template is 64 columns, and the
+-- page ships (and draws) one outline of a few hundred bytes instead of 64 boxes.
+
+-- the data points `(y , e)` of the 16 bins (a centre and a half height of the bar): a dot each,
+-- and one path of all the error bars with their caps
+points : List (ℕ × ℕ) → List (Dia ℕ)
+points ys = path W H (foldr _++ˢ_ "" (zipWith bar xs ys)) (cls "eb")
+          ∷ zipWith (λ x (y , _) → put (x ∸ 4) (y ∸ 4) (disc 4 (cls "pt"))) xs ys
+  where
+    xs = applyUpTo (λ i → 40 + 20 * i) 16
+    bar : ℕ → ℕ × ℕ → String
+    bar x (y , e) = "M" ++ˢ show x ++ˢ " " ++ˢ show (y ∸ e) ++ˢ "V" ++ˢ show (y + e)
+                  ++ˢ "M" ++ˢ show (x ∸ 5) ++ˢ " " ++ˢ show (y ∸ e) ++ˢ "h10"
+                  ++ˢ "M" ++ˢ show (x ∸ 5) ++ˢ " " ++ˢ show (y + e) ++ˢ "h10"
 
 dataPoints : List (Dia ℕ)
-dataPoints = concat (zipWith point (applyUpTo (λ i → i) 16) (zip counts errs))
+dataPoints = points (zipWith (λ n e → 230 ∸ 5 * n , e) counts errs)
 
--- the template centred at m, as 64 columns
-column : ℕ → ℕ → Dia ℕ
-column m j = put (28 + 5 * j) (230 ∸ 200 * tmpl (dist j m) / 1000)
-                (rectangle 5 (200 * tmpl (dist j m) / 1000) (cls "tmpl"))
+-- the template as an outline, 64 columns 5 wide standing on the baseline (230), of heights `h j` up to `hi`
+outline : ℕ → (ℕ → ℕ) → Dia ℕ
+outline hi h = put 28 (230 ∸ hi) (path 320 hi ("M0 " ++ˢ show hi ++ˢ stepped 5 (map h (applyUpTo (λ j → j) 64))) (cls "tmpl"))
+  where
+    stepped : ℕ → List ℕ → String
+    stepped x []       = "V" ++ˢ show hi ++ˢ "Z"
+    stepped x (c ∷ cs) = "V" ++ˢ show (hi ∸ c) ++ˢ "H" ++ˢ show x ++ˢ stepped (x + 5) cs
 
 -- the dot of step s on the likelihood curve: 315 units of -2 ln L (times 100) per pixel
 dot : ℕ → Dia ℕ
@@ -284,15 +293,15 @@ axes =
   ∷ put 410 0 (text 18 "-2 ln L(μ)" (cls "dim"))
   ∷ []
 
--- what moves at step s: the template and its mean, the curve so far, the dot and the readout
+-- what moves at step s: the template and its mean, the marker and the readout, and under them the
+-- curve so far, newest dot first so that frames share their dots (the list is the stack, last on the bottom)
 frame : ℕ → Dia ℕ
 frame s = canvas
-  ( map (column m) (applyUpTo (λ j → j) 64)
-  ++ˡ put (30 + 5 * m) 20 (segment 0 210 (cls "mu"))
-    ∷ map dot (applyUpTo (λ k → k) (suc s))
-  ++ˡ put (424 + 12 * s) (232 ∸ (nll m ∸ nllMin) / 315 ∸ 3) (disc 6 (cls "now"))
-    ∷ put 600 20 (text 24 (readout m) (cls "big"))
-    ∷ [] )
+  ( outline 200 (λ j → 200 * tmpl (dist j m) / 1000)
+  ∷ put (30 + 5 * m) 20 (segment 0 210 (cls "mu"))
+  ∷ put (424 + 12 * s) (232 ∸ (nll m ∸ nllMin) / 315 ∸ 3) (disc 6 (cls "now"))
+  ∷ put 600 20 (text 24 (readout m) (cls "big"))
+  ∷ map dot (reverse (applyUpTo (λ k → k) (suc s))) )
   where m = scanLo + s
 
 -- the parts that stay: the axes, under everything, and the data, over everything
@@ -363,34 +372,24 @@ stages =
   ∷ (0 ∷ 3 ∷ 4 ∷ 8 ∷ 10 ∷ 22 ∷ 26 ∷ 36 ∷ 51 ∷ 39 ∷ 16 ∷ 12 ∷ 7 ∷ 3 ∷ 3 ∷ 0 ∷ [])
   ∷ []
 
--- a data point and its error bar at four pixels per count
-pointN : ℕ → ℕ → List (Dia ℕ)
-pointN i n =
-    put (36 + 20 * i) (226 ∸ 4 * n) (disc 4 (cls "pt"))
-  ∷ put (40 + 20 * i) (230 ∸ 4 * n ∸ errBar n) (segment 0 (2 * errBar n) (cls "eb"))
-  ∷ put (35 + 20 * i) (230 ∸ 4 * n ∸ errBar n) (segment 10 0 (cls "eb"))
-  ∷ put (35 + 20 * i) (230 ∸ 4 * n + errBar n) (segment 10 0 (cls "eb"))
-  ∷ []
-
--- the template at the true mean (m = 32), `amp` high at its peak
-columnA : ℕ → ℕ → Dia ℕ
-columnA amp j = put (28 + 5 * j) (230 ∸ 4 * amp * tmpl (dist j 32) / 1000)
-                    (rectangle 5 (4 * amp * tmpl (dist j 32) / 1000) (cls "tmpl"))
-
--- the likelihood of the counts so far: one dot per position, from its own minimum
+-- the likelihood of the counts so far: a curve through one point per position, from its own minimum
 curveMin : ℕ → List ℕ → ℕ
 curveMin amp cs = foldr _⊓_ (nllWith amp cs scanLo) (applyUpTo (λ k → nllWith amp cs (scanLo + k)) (suc scanSteps))
 
-curveDot : ℕ → List ℕ → ℕ → Dia ℕ
-curveDot amp cs k = put (427 + 12 * k) (237 ∸ (nllWith amp cs (scanLo + k) ∸ curveMin amp cs) / 175) (disc 3 (cls "cur"))
+curve : ℕ → List ℕ → Dia ℕ
+curve amp cs = path W H (go "M" (applyUpTo (λ k → k) (suc scanSteps))) (cls "curve")
+  where
+    go : String → List ℕ → String
+    go _   []       = ""
+    go cmd (k ∷ ks) = cmd ++ˢ show (427 + 12 * k) ++ˢ " " ++ˢ show (237 ∸ (nllWith amp cs (scanLo + k) ∸ curveMin amp cs) / 175) ++ˢ go "L" ks
 
 -- the picture after batch s (counting from 0), the data over the template, 175 units of -2 ln L (times 100) per pixel
 growFrame : ℕ → List ℕ → Dia ℕ
 growFrame s cs = canvas
-  ( map (columnA amp) (applyUpTo (λ j → j) 64)
-  ++ˡ map (curveDot amp cs) (applyUpTo (λ k → k) (suc scanSteps))
-  ++ˡ put 560 20 (text 24 ("events: " ++ˢ show (foldr _+_ 0 cs)) (cls "big"))
-    ∷ concat (zipWith pointN (applyUpTo (λ i → i) 16) cs) )
+  ( outline 160 (λ j → 4 * amp * tmpl (dist j 32) / 1000)
+  ∷ curve amp cs
+  ∷ put 560 20 (text 24 ("events: " ++ˢ show (foldr _+_ 0 cs)) (cls "big"))
+  ∷ points (map (λ n → 230 ∸ 4 * n , errBar n) cs) )
   where amp = 10 * suc s / 3
 
 -- each batch is shown for three ticks, over the axes

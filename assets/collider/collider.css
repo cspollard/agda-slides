@@ -126,6 +126,7 @@
 .reveal svg .pt { fill: var(--ink); stroke: none; }
 .reveal svg .eb { stroke: var(--ink); stroke-width: 2; }
 .reveal svg .cur { fill: var(--blue); stroke: none; }
+.reveal svg .curve { fill: none; stroke: var(--blue); stroke-width: 3; stroke-linejoin: round; }
 .reveal svg .now { fill: var(--crimson); stroke: none; }
 .reveal svg .mu { stroke: var(--crimson); stroke-width: 2; stroke-dasharray: 6 5; }
 

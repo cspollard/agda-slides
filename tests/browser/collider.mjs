@@ -77,7 +77,7 @@ const at = (id, t) => page.evaluate(([id, t]) => {
   const centres = c => [...svg.querySelectorAll('circle.' + c)].map(e => [+e.getAttribute('cx'), +e.getAttribute('cy')]);
   return { box: svg.getAttribute('viewBox'), n: svg.children.length - 1, count, text: [...svg.querySelectorAll('text')].map(e => e.textContent),
            pipe: count('pipe'), bunch: centres('bunch'), burst: count('burst'), spark: count('spark'),
-           pt: count('pt'), cur: count('cur'), now: count('now'), tmpl: count('tmpl'), mu: count('mu') };
+           pt: count('pt'), cur: count('cur'), now: count('now'), tmpl: count('tmpl'), mu: count('mu'), curve: count('curve') };
 }, [id, t]);
 const dur = id => page.evaluate(id => document.getElementById(id + '-frames').dataset.duration, id);
 const near = (a, b) => Math.abs(a - b) <= 2;
@@ -119,12 +119,14 @@ eq('d-grow: 36 ticks', await dur('d-grow'), '36');
 for (const [t, events] of [[0, 20], [2.9, 20], [3, 36], [35, 240]]) {
   const f = await at('d-grow', t);
   eq(`d-grow t=${t}: events`, f.text.includes('events: ' + events), true);
-  eq(`d-grow t=${t}: 16 points, 25 curve dots`, [f.pt, f.cur], [16, 25]);
+  eq(`d-grow t=${t}: 16 points, one curve and one template`, [f.pt, f.curve, f.tmpl], [16, 1, 1]);
 }
 {
   // the peak of the template at the true mean grows with the batches (amp = 10 (s + 1) / 3, four pixels a count)
   const peak = t => page.evaluate(t => { const a = document.getElementById('d-grow-frames'); a._show(t);
-    return Math.max(...[...a.querySelectorAll('rect.tmpl')].map(e => +e.getAttribute('height'))); }, t);
+    // the template is one path `M0 hi V y₀ H 5 V y₁ …`: the peak is `hi` less the smallest y
+    const d = a.querySelector('path.tmpl').getAttribute('d'), hi = +d.match(/^M0 (\d+)/)[1];
+    return hi - Math.min(...[...d.matchAll(/V(\d+)/g)].map(m => +m[1])); }, t);
   const p0 = await peak(0), p35 = await peak(35);
   eq('d-grow: the template peak is 12 high at the first batch and 160 at the last', [p0, p35], [12, 160]);
 }
