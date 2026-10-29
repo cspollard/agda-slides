@@ -68,7 +68,7 @@ data Op (S : Set) : Set where
   Ellipse           : (rx ry : S) → Style → Op S
   Polyline          : (closed : Bool) → List (S × S) → Style → Op S   -- points from the frame's top-left
   Text              : (w h : S) (size : ℕ) → String → Style → Op S   -- frame as measured
-  Path              : (w h : S) → String → Style → Op S              -- `d` in the frame's units
+  Path              : (w h : S) → String → Style → Op S              -- opaque `d` in the frame's units: not scalar-parametric
   Spacer            : (w h : S) → Op S
   Beside            : VAlign → Op S
   Above             : Align → Op S
