@@ -274,25 +274,27 @@ stackDia = layers stackSide stackSide (map layer (applyUpTo (λ k → k) 8))
 
 A sock seen from the side: a leg that bends into an angled foot with a rounded toe, a cuff with
 two stripes, and a leaf-shaped heel patch beside the ankle.  The outline and the white heel and toe
-patches are curves (`path`, in a 200 × 290 frame); one function draws a sock of any colour.
+patches are curves (`path`, in a 210 × 318 frame); one function draws a sock of any colour.
 
 ```agda
 sockW sockH : ℕ
-sockW = 200
-sockH = 290
+sockW = 210
+sockH = 318
 
+-- the outline, the white heel and toe patches, and the two cuff stripes (the curves were traced
+-- from the sock icon at https://www.svgrepo.com/show/83256/women-socks.svg and smoothed)
 sockOutline sockToe sockHeel sockStripes : String
-sockOutline = "M70,0 L70,95 C70,125 58,142 44,162 L14,206 C2,224 6,250 24,262 C42,274 64,270 76,254 L150,168 C164,152 170,134 170,112 L170,0 Z"
-sockToe     = "M14,206 C2,224 6,250 24,262 C42,274 64,270 76,254 C58,244 30,228 14,206 Z"
-sockHeel    = "M156,118 C182,130 192,160 174,184 C160,200 134,208 104,210 C122,186 146,160 156,118 Z"
-sockStripes = "M70,18 L170,18 M70,38 L170,38"
+sockOutline = "M176,198 C179,196 188,192 192,188 C197,184 201,179 203,173 C205,168 206,161 206,154 C206,148 204,142 202,136 C200,130 197,124 196,118 C194,112 195,106 194,99 C194,93 194,87 194,80 C194,74 194,68 194,61 C194,55 194,49 194,42 C194,36 194,30 194,24 C194,17 194,8 194,5 L187,0 L102,0 L97,6 C97,9 97,19 97,25 C97,31 97,38 97,44 C97,50 97,57 97,63 C97,69 97,76 97,82 C97,88 97,95 96,101 C96,107 95,114 93,120 C91,126 89,132 86,137 C83,143 79,148 76,153 C72,158 68,163 64,168 C61,173 57,179 53,184 C50,189 46,194 42,199 C38,204 35,209 31,214 C27,219 23,224 20,229 C16,235 12,239 8,245 C6,250 3,256 2,262 C0,268 1,275 2,281 C4,287 7,293 11,298 C15,303 20,307 26,310 C31,312 38,314 44,314 C50,314 57,313 62,310 C68,308 73,304 78,300 C83,296 86,291 91,286 C95,281 99,277 103,272 C108,267 112,262 116,258 C120,253 124,248 128,244 C133,239 137,234 141,229 C145,225 149,220 154,215 C158,211 164,205 168,202 C171,200 175,199 176,198 Z"
+sockHeel    = "M185,125 C185,125 187,126 188,127 C189,128 190,131 191,133 C192,135 192,138 193,140 C194,142 194,144 194,146 C195,149 195,151 196,153 C196,155 196,158 196,160 C196,162 195,165 195,167 C194,169 193,171 192,173 C191,175 190,177 188,178 C187,180 185,182 183,183 C181,184 179,185 177,186 C175,187 173,188 171,189 C169,190 166,192 165,192 C164,191 163,188 163,186 C162,184 162,181 162,179 C161,177 161,175 161,172 C161,170 161,168 161,166 C162,163 162,161 162,159 C163,157 164,154 164,152 C165,150 166,148 167,146 C168,144 170,142 171,140 C172,138 173,137 175,135 C176,133 178,131 180,130 C181,128 184,126 185,125 Z"
+sockToe     = "M68,296 C67,297 64,299 61,301 C59,302 56,303 53,303 C51,304 48,304 45,304 C42,304 39,304 36,303 C34,302 31,301 29,300 C26,299 24,297 22,295 C20,293 18,291 16,288 C15,286 14,283 13,281 C12,278 11,275 11,272 C11,270 11,267 11,264 C12,261 13,258 14,256 C15,254 18,252 19,251 C20,252 24,253 27,254 C29,256 32,257 34,258 C37,260 39,261 42,263 C44,265 46,266 48,268 C50,270 52,272 54,274 C56,276 58,279 60,281 C61,283 63,286 64,288 C66,290 67,294 68,296 Z"
+sockStripes = "M107,10 H184 V23 H107 Z M107,33 H184 V44 H107 Z"
 
 sock : String → Dia ℕ
 sock colour =
   layers sockW sockH
-    ( path sockW sockH sockStripes (stroked "#fff" (thick 6 defaultStyle))
+    ( path sockW sockH sockStripes (filled "#fff" defaultStyle)
     ∷ path sockW sockH sockHeel (filled "#fff" (stroked "#262626" (thick 4 defaultStyle)))
-    ∷ path sockW sockH sockToe (filled "#fff" defaultStyle)
+    ∷ path sockW sockH sockToe (filled "#fff" (stroked "#262626" (thick 4 defaultStyle)))
     ∷ path sockW sockH sockOutline (filled colour (stroked "#262626" (thick 4 defaultStyle)))
     ∷ [] )
 

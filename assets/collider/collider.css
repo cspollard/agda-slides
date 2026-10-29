@@ -692,3 +692,43 @@
   stroke-dasharray: none;
   opacity: 1;
 }
+
+/* the title animation (src/Slides/Examples/TitleAnim.agda) */
+.reveal svg .beam {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 3;
+  stroke-dasharray: 4 10;
+  stroke-linecap: round;
+}
+
+.reveal svg .block,
+.reveal svg .average {
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.reveal svg .block.top { fill: #e3a98a; }
+.reveal svg .block.left { fill: #c4683f; }
+.reveal svg .block.right { fill: #a5532e; }
+.reveal svg .average.top { fill: #8fb0d4; }
+.reveal svg .average.left { fill: #4f7fb0; }
+.reveal svg .average.right { fill: #2c5a8a; }
+
+.reveal svg .curve {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.reveal svg .interval {
+  fill: none;
+  stroke: var(--crimson);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.reveal svg .axis {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}

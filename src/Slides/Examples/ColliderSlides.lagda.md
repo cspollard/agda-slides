@@ -17,6 +17,7 @@ open import Slides.Deck.DSL
 open import Slides.Examples.Collider using
   ( higgsDia; topDia; fiveSigma; grow; histogram; nllFormula; resources; scan
   ; scanSteps; significance; simDia; gridDia; pairsDia; socksDia; webDia; stages; tilesDia; lhcAnim; triggerAnim )
+open import Slides.Examples.TitleAnim using (titleAnim)
 open import Slides.Examples.ATLAS using (atlasTurned; atlasBare)
 
 open Checked resources
@@ -30,16 +31,12 @@ collider = do
 
 
 ```agda
-  -- TODO: add a nice animation of protons colliding at the LHC, particles coalescing
-  -- into a set of 8 cubical blocks, representing a data tensor.
-  -- The data tensors combine into a single static tensor of the same size that
-  -- represnts the full dataset (PAIRS style).
-  -- As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
   slide $ do
     heading 1 "how collider physics is"
     heading 1 "accelerating data science"
     classed "subtitle" (p■ "the biggest machine ever built as a data-science lab")
     classed "authors" (p■ "Chris Pollard · Warwick")
+    animateLoop "d-title" 85 1000 titleAnim
 
   slide $ do
     heading 2 "curiosity-driven particle physics"
@@ -167,7 +164,7 @@ collider = do
     heading 2 "billions of enormous events"
     diagram "d-pairs" 60 pairsDia
     pause
-    paragraph ("this is a widespread problem: need to infer over many observations of complex data...")
+    paragraph ("this is a widespread problem: inference over many observations of complex data...")
     columns
       ( (f■ $ c■ "callout" (p■ "large-scale medical research"))
       ∷ (f■ $ c■ "callout" (p■ "electoral polling data"))

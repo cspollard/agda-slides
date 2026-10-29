@@ -159,7 +159,7 @@ word below x (c ∷ cs) = letter below (x + advance / 2) c ∷ word below (x + a
 
 -- France below the line on the left, Switzerland above it on the right, centred on a point of the curve
 countries : Dia ℕ
-countries = canvas (word true (centredAt 130 "France") (toList "France") ++ˡ word false (centredAt 350 "Switzerland") (toList "Switzerland"))
+countries = canvas (word true (centredAt 130 "Switzerland") (toList "Switzerland") ++ˡ word false (centredAt 350 "France") (toList "France"))
   where lenˢ : String → ℕ
         lenˢ t = length (toList t)
         centredAt : ℕ → String → ℕ
