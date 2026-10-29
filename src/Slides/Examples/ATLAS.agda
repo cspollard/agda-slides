@@ -31,12 +31,12 @@
 -- so they can be taken or left out as needed:
 --
 --   background                                  the page
---   detector  clusters                          the quiet cells with their tracker; the lit cells
+--   detector  clusters                          the quiet cells with their tracker; the same with the lit cells
 --   jet  electron  muon  photon  vertex         the particles
 --   legend  heading                             the text
 --   scene layers                                a diagram of layers laid over the background
 --
--- and `atlasIn V T` is all of them (`atlas`: dark and flat, `atlasTurned`: dark and turned a
+-- and `atlasIn V T` is all of them (`atlas`: light and flat, `atlasTurned`: light and turned a
 -- little).  For example, the detector and the muon alone on white, a little turned:
 --
 --   open Parts (withBackground "#ffffff" light) turned
@@ -46,8 +46,8 @@ module Slides.Examples.ATLAS where
 
 open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; -_ to negᶻ; ∣_∣ to absᶻ)
-open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; _++_)
+open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; -_ to negᶻ; ∣_∣ to absᶻ; _≤ᵇ_ to _≤ᶻᵇ_)
+open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; foldr; _++_)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
@@ -252,10 +252,10 @@ module Parts (T : Theme) (V : View) where
   wall : ℕ → ℕ → ℕ → List (ℕ × ℕ)
   wall r₀ r₁ a = pt r₀ a (negᶻ end) ∷ pt r₁ a (negᶻ end) ∷ pt r₁ a end ∷ pt r₀ a end ∷ []
 
-  -- a face is seen when its outward normal (nx , _) has a positive component towards the viewer,
-  -- which is nx times the sine of the yaw
-  seen : ℤ → Bool
-  seen nx = positive (nx *ᶻ proj₂ (sc yaw))
+  -- how far towards the viewer the point (r , a , z) is, to compare: the turn about the vertical
+  -- axis takes the point's x to a depth of x times the sine of the yaw
+  depth : ℕ → ℕ → ℤ → ℤ
+  depth r a z = (((+ r) *ᶻ proj₁ (sc a)) *ᶻ proj₂ (sc yaw)) +ᶻ ((z *ᶻ + 100) *ᶻ proj₁ (sc yaw))
 
   -- the page, rounded
   background : Dia ℕ
@@ -289,63 +289,74 @@ module Parts (T : Theme) (V : View) where
   starts : Layer → List ℕ
   starts (layer _ _ hi w n _ _ _ _) = applyUpTo (λ j → hi + w * j) n
 
-  -- a face: a translucent fill with an opaque outline over it.  Faces are drawn from the back
-  -- to the front, so what lies behind shows through the fill of what is in front of it, and
-  -- the outlines behind are dimmed by that fill.
-  face : Layer → List (ℕ × ℕ) → List (Dia ℕ)
-  face L ps = put 0 0 (polygon ps (paint fill fill 0 80))
-            ∷ put 0 0 (polygon ps (line rim 1))
-            ∷ []
-    where open Layer L
+  -- a face with the depth of a point in it (r , a , z): a translucent fill with an opaque
+  -- outline over it
+  Face : Set
+  Face = ℤ × List (Dia ℕ)
 
-  -- the end faces nearest the viewer, as in the flat view
-  front : Layer → List (Dia ℕ)
-  front L = concat (map (λ a → face L (cell r₀ r₁ a w end)) (starts L))
-    where open Layer L
+  face : String → String → ℕ → ℤ → List (ℕ × ℕ) → Face
+  face fl rm o d ps = d , ( put 0 0 (polygon ps (paint fl fl 0 o))
+                          ∷ put 0 0 (polygon ps (line rm 1)) ∷ [] )
 
-  -- the rest of the layer: the surfaces facing the viewer and the walls of the cut
-  rear : Layer → List (Dia ℕ)
-  rear L = walls ++ concat (map surface (starts L))
+  -- the faces of a cell of a layer, all of them: both end faces, and the surfaces at its two
+  -- radii.  The fill is faint enough to see the far side through the near one.
+  cellFaces : String → String → ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → List Face
+  cellFaces fl rm o bias r₀ r₁ a w = ends ++ surfaces
+    where
+      mid rmid : ℕ
+      mid  = a + w / 2
+      rmid = (r₀ + r₁) / 2
+      ends = face fl rm o (depth rmid mid end +ᶻ + bias) (cell r₀ r₁ a w end)
+           ∷ face fl rm o (depth rmid mid (negᶻ end) +ᶻ + bias) (cell r₀ r₁ a w (negᶻ end))
+           ∷ []
+      surfaces = face fl rm o (depth r₁ mid (+ 0) +ᶻ + bias) (patch r₁ a w)
+               ∷ (if 0 <ᵇ r₀ then face fl rm o (depth r₀ mid (+ 0) +ᶻ + bias) (patch r₀ a w) ∷ [] else [])
+
+  -- the faces of a layer: its cells, and the walls the cut leaves
+  layerFaces : Layer → List Face
+  layerFaces L = walls ++ concat (map (λ a → cellFaces fill rim 30 0 r₀ r₁ a w) (starts L))
     where
       open Layer L
-      surface : ℕ → List (Dia ℕ)
-      surface a = if seen (proj₁ (sc (a + w / 2))) then face L (patch r₁ a w) else []
-
-      -- the cut runs from the end of the last cell round to the start of the first
       lo : ℕ
       lo = (hi + n * w) % 1024
+      wallAt : ℕ → Face
+      wallAt a = face fill rim 30 (depth ((r₀ + r₁) / 2) a (+ 0)) (wall r₀ r₁ a)
+      walls = if 1024 <ᵇ n * w + 1 then [] else wallAt lo ∷ wallAt hi ∷ []
 
-      walls : List (Dia ℕ)
-      walls = if 1024 <ᵇ n * w + 1 then []
-              else (if seen (negᶻ (proj₂ (sc lo))) then face L (wall r₀ r₁ lo) else [])
-                ++ (if seen (proj₂ (sc hi)) then face L (wall r₀ r₁ hi) else [])
-
-  -- the lit cells of a layer: each a whole volume, its six faces translucent with an outline, over
-  -- the rest (seen through the detector)
-  lit : Layer → List (Dia ℕ)
-  lit L = concat (map volume lits)
+  -- the faces of the lit cells of a layer, whole volumes: the cell's faces and its two walls.  A
+  -- lit face goes a little in front of the quiet one it overlaps.
+  litFaces : Layer → List Face
+  litFaces L = concat (map volume lits)
     where
       open Layer L
-      volume : Lit → List (Dia ℕ)
-      volume (a , l) = concat (map solid
-        ( cell r₀ r₁ a w end ∷ patch r₁ a w ∷ wall r₀ r₁ a ∷ wall r₀ r₁ (a + w) ∷ patch r₀ a w
-        ∷ cell r₀ r₁ a w (negᶻ end) ∷ []))
-        where
-          solid : List (ℕ × ℕ) → List (Dia ℕ)
-          solid ps = put 0 0 (polygon ps (paint litC litC 0 (glow l * 38 / 100)))
-                   ∷ put 0 0 (polygon ps (line litC 1)) ∷ []
+      volume : Lit → List Face
+      volume (a , l) = cellFaces litC litC (glow l * 38 / 100) 1 r₀ r₁ a w
+        ++ map wallAt (a ∷ a + w ∷ [])
+        where wallAt = λ b → face litC litC (glow l * 38 / 100) (depth ((r₀ + r₁) / 2) b (+ 0) +ᶻ + 1) (wall r₀ r₁ b)
+
+  -- insertion sort by depth, the farthest first
+  insert : Face → List Face → List Face
+  insert p []       = p ∷ []
+  insert p (q ∷ qs) = if proj₁ p ≤ᶻᵇ proj₁ q then p ∷ q ∷ qs else q ∷ insert p qs
+
+  sortFaces : List Face → List Face
+  sortFaces = foldr insert []
 
   -- the silicon layers: rings round the end face of the tracker
   silicons : List (Dia ℕ)
   silicons = map (λ r → put 0 0 (polygon (arcPts r 0 1024 end) (faded 70 (thick 1 (stroked silicon defaultStyle))))) (siliconR ++ 100 ∷ [])
 
-  -- the detector: the silicon layers over the layers, the outermost behind
-  detector : List (Dia ℕ)
-  detector = silicons ++ concat (map front layers′) ++ concat (map rear (reverse layers′))
+  -- the detector: the silicon layers over every face of every layer, the nearest on top.  With the
+  -- lit cells, each goes in its place among them, so whatever lies in front of a lit cell (the
+  -- tracker, the solenoid, the layers outside) shows over it.
+  stack : Bool → List (Dia ℕ)
+  stack lit? = silicons ++ concat (map proj₂ (reverse (sortFaces
+    (concat (map layerFaces layers′) ++ (if lit? then concat (map litFaces layers′) else [])))))
 
-  -- the clusters: the lit cells
-  clusters : List (Dia ℕ)
-  clusters = concat (map lit layers′)
+  -- the quiet cells with their tracker, and the same with the lit cells (the clusters)
+  detector clusters : List (Dia ℕ)
+  detector = stack false
+  clusters = stack true
 
   ----------------------------------------------------------------------
   -- The particles
@@ -420,7 +431,7 @@ module Parts (T : Theme) (V : View) where
   atlas = scene
     ( legend ∷ heading ∷ vertex
     ∷ muon ++ electron ++ jet ++ photon
-    ++ clusters ++ detector )
+    ++ clusters )
 
 atlasIn : View → Theme → Dia ℕ
 atlasIn V T = Parts.atlas T V
