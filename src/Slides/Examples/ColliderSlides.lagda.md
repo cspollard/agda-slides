@@ -49,13 +49,12 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
   slide $ do
     heading 2 "scientific impact of curiosity-driven particle physics"
     bullets
-      ( "Standard Model (SM): mass is granted to particles via their interactions with the Higgs boson."
+      $ "Standard Model (SM): mass is granted to particles via their interactions with the Higgs boson."
       ∷ "first demonstrated in the 1960s → took ~50 to experimentally verify!"
       ∷ "finally, an explanation for why radiactive decay is not instant"
       ∷ "top quark has the mass of a gold atom"
       -- TODO: impact on cosmology
       ∷ []
-      )
     animateLoop "d-lhc" 75 16 lhcAnim
 ```
 
@@ -63,12 +62,11 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
   slide $ do
     heading 2 "the Large Hadron Collider"
     bullets
-      ( "the Large Hadron Collider (LHC) produces 1 billion $pp$ collisions every second at $m_{pp} = 13.6$ TeV"
+      $ "the Large Hadron Collider (LHC) produces 1 billion $pp$ collisions every second at $m_{pp} = 13.6$ TeV"
       ∷ "why?"
       ∷ "rare processes: 1B collisions to get a Higgs boson, on average"
       ∷ ("in 2012 it revealed the " ∷ emph "Higgs boson" ∷ " " ∷ cite "ATLAS12" ∷ " " ∷ cite "CMS12" ∷ [])
       ∷ []
-      )
     animateLoop "d-lhc2" 100 16 lhcAnim
 ```
 
@@ -78,13 +76,12 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
     -- TODO
     -- A nice figure
     bullets
-      ( "the LHC collaborations are enormous: ATLAS is ~5000 physicists"
+      $ "the LHC collaborations are enormous: ATLAS is ~5000 physicists"
       ∷ "need to coordinate work on detector design, data processing, analysis, etc"
       ∷ "collaborative tools and information-sharing are critical"
       ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
       ∷ "clearly they have grown beyond their initial purpose!"
       ∷ []
-      )
 ```
 
 **3. The trigger.**
@@ -120,13 +117,12 @@ TODO:
   slide $ do
     heading 2 "a data firehose"
     bullets
-      ( "to contend with this, ATLAS have custom hardware for the \"first-level trigger\""
+      $ "to contend with this, ATLAS have custom hardware for the \"first-level trigger\""
       ∷ "rate must go from ~40MHz to ~100kHz purely based on specialized hardware algorithms"
       ∷ "huge effort to port ML models to FPGAs (programmable hardware) is paying off"
       ∷ "hls4ml: https://fastmachinelearning.org/hls4ml/ and fastML challenges"
       ∷ "being taken up now by private industry"
       ∷ []
-      )
     -- TODO this diagram is not good.
     diagram "d-tiles" 100 tilesDia
     classed "callout"
@@ -144,14 +140,12 @@ TODO:
   slide $ do
     heading 2 "statistical inference"
     columns
-      ( (do Content.bullets
-              ( "each event is a few thousand numbers: where and when the detector fired"
-              ∷ [])
-              )
+      $ (Content.bullets
+          $ "each event is a few thousand numbers: where and when the detector fired"
+          ∷ [])
       ∷ (do Content.diagram "d-hist" 100 histogram
             p■ "a signal (red) is a small bump on a smooth background")
       ∷ []
-      )
 ```
 
 ```agda
@@ -200,12 +194,12 @@ TODO: socks example
   slide $ do
     heading 2 "simulation-based inference"
     diagram "d-sbi" 100 simDia
-    classed "card crimson"
-      (do h■ 3 "the physics problem"
-          p■ ("we can simulate collisions, but not write down " ∷ inlineMath (M.call "p" (M.rel M.mid "x" (M.greek M.theta) ∷ [])) ∷ []))
-    classed "card blue"
-      (do h■ 3 "the data-science payoff"
-          p■ ("a neural network learns the posterior from simulations alone " ∷ cite "CBL20" ∷ []))
+    classed "card crimson" $ do
+      h■ 3 "the physics problem"
+      p■ ("we can simulate collisions, but not write down " ∷ inlineMath (M.call "p" (M.rel M.mid "x" (M.greek M.theta) ∷ [])) ∷ [])
+    classed "card blue" $ do
+      h■ 3 "the data-science payoff"
+      p■ ("a neural network learns the posterior from simulations alone " ∷ cite "CBL20" ∷ [])
 ```
 
 **12. From one event to millions.**
@@ -214,24 +208,24 @@ TODO: socks example
   slide $ do
     heading 2 "one parameter, millions of events"
     paragraph ("a real analysis conditions on a whole " ∷ emph "set" ∷ " of events that share the same θ. training a network on sets that large is too expensive.")
-    classed "card plum"
-      (do h■ 3 "PAIRS: train on two"
-          p■ ("train on sets of at most two events, then finetune on cached summaries. it works for thousands " ∷ cite "WKHP26" ∷ []))
-    classed "card rust"
-      (do h■ 3 "beyond physics"
-          p■ "the same trick applies to images, 3D scenes and molecules: any set of observations that share a hidden cause")
+    classed "card plum" $ do
+      h■ 3 "PAIRS: train on two"
+      p■ ("train on sets of at most two events, then finetune on cached summaries. it works for thousands " ∷ cite "WKHP26" ∷ [])
+    classed "card rust" $ do
+      h■ 3 "beyond physics"
+      p■ "the same trick applies to images, 3D scenes and molecules: any set of observations that share a hidden cause"
 ```
 
 **13. Computing.**
 
 ```agda
-  slide $ resultsTable "built for the LHC, used by everyone"
-          ("tool" ∷ "born for" ∷ "now used for" ∷ [])
-          (("World Wide Web" ∷ "sharing results between labs" ∷ "everything" ∷ [])
-          ∷ ("grid computing" ∷ "analysing LHC data worldwide" ∷ "genomics, climate, astronomy" ∷ [])
-          ∷ ("columnar analysis" ∷ "billions of events" ∷ "any large table" ∷ [])
-          ∷ ("open data" ∷ "reuse of LHC data" ∷ "reproducible research" ∷ [])
-          ∷ [])
+  slide $
+    resultsTable "built for the LHC, used by everyone" ("tool" ∷ "born for" ∷ "now used for" ∷ [])
+      $ ("World Wide Web" ∷ "sharing results between labs" ∷ "everything" ∷ [])
+      ∷ ("grid computing" ∷ "analysing LHC data worldwide" ∷ "genomics, climate, astronomy" ∷ [])
+      ∷ ("columnar analysis" ∷ "billions of events" ∷ "any large table" ∷ [])
+      ∷ ("open data" ∷ "reuse of LHC data" ∷ "reproducible research" ∷ [])
+      ∷ []
 ```
 
 **14. Try it.**
@@ -248,12 +242,11 @@ TODO: socks example
 ```agda
   slide $ do
     classed "closing" (p■ "big questions make better tools.")
-    classed "closing"
-      (Content.bullets
-        ( "collider physics gave us the web, the grid and much of modern data practice"
-        ∷ "its newest ideas are machine learning and open data"
-        ∷ ("questions? " ∷ strong "come and ask." ∷ [])
-        ∷ []))
+    classed "closing" $ Content.bullets
+      $ "collider physics gave us the web, the grid and much of modern data practice"
+      ∷ "its newest ideas are machine learning and open data"
+      ∷ ("questions? " ∷ strong "come and ask." ∷ [])
+      ∷ []
 ```
 
 **16. References.**
