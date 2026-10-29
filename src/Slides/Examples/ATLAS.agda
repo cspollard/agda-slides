@@ -14,16 +14,11 @@
 -- the whole detector, leaving a minimum-ionising trace in both calorimeters and a hit in every
 -- station.
 --
--- Everything is a diagram over whole numbers.  A point of the detector is (r , a , z): a radius,
--- an angle in 1/1024 turns (from the right, growing clockwise on the page, y being downwards)
--- and a position along the beam in hundredths (towards the viewer is positive).  A `View` turns
--- the detector about the vertical axis (`yaw`, which shows its length) and about the line of
--- sight (`roll`, which tilts the picture), and `proj V r a z` is the point on the page, in
--- orthographic projection.  The view `flat` looks down the beam: the cylinder is a set of rings,
--- the transverse plane.  Each layer is drawn as its end face (a ring of cells), the outer
--- surface of the cells that face the viewer, and the walls the cut leaves; the event goes over
--- all of these, as if the detector were transparent.  The sine is `Slides.Examples.LHC`'s table,
--- a little finer in the interpolation.
+-- Everything is a diagram over whole numbers.  A point of the detector is (r , a , z), a
+-- `Slides.Three.Point`, seen in a `Slides.Three.View`.  The view `flat` looks down the beam: the
+-- cylinder is a set of rings, the transverse plane.  Each layer is drawn as its end face (a ring of
+-- cells), the outer surface of the cells that face the viewer, and the walls the cut leaves; the
+-- event goes over all of these, as if the detector were transparent.
 --
 -- The look is a `Theme` (the background and every colour): `dark` is the default, `light` a
 -- light page, and `withBackground c T` any other background.  `Parts T V` has the pieces of the
@@ -46,7 +41,7 @@ module Slides.Examples.ATLAS where
 
 open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; -_ to negᶻ; ∣_∣ to absᶻ; _≤ᵇ_ to _≤ᶻᵇ_)
+open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; -_ to negᶻ; _≤ᵇ_ to _≤ᶻᵇ_)
 open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; foldr; _++_)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -54,7 +49,8 @@ open import Data.String using (String)
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; anchored)
-open import Slides.Examples.LHC using (sinTable; nth)
+open import Slides.Three.Point
+open import Slides.Three.View
 
 ------------------------------------------------------------------------
 -- The frame and the centre of the detector
@@ -74,77 +70,6 @@ put = place W H
 
 canvas : List (Dia ℕ) → Dia ℕ
 canvas = layers W H
-
-------------------------------------------------------------------------
--- Trigonometry: angles in 1/1024 turns
-
--- sin of a first-quadrant angle (a ≤ 256), interpolated between the 17 table entries
-sinQ : ℕ → ℕ
-sinQ a = lo + ((hi ∸ lo) * (a % 16)) / 16
-  where lo = nth (a / 16) sinTable
-        hi = nth (suc (a / 16)) sinTable
-
--- (cos , sin) as a magnitude in tenthousandths and a flag that it is negative
-trig : ℕ → (ℕ × Bool) × (ℕ × Bool)
-trig a = quad ((a / 256) % 4) (a % 256)
-  where
-    quad : ℕ → ℕ → (ℕ × Bool) × (ℕ × Bool)
-    quad 0 r = (sinQ (256 ∸ r) , false) , (sinQ r , false)
-    quad 1 r = (sinQ r , true)          , (sinQ (256 ∸ r) , false)
-    quad 2 r = (sinQ (256 ∸ r) , true)  , (sinQ r , true)
-    quad _ r = (sinQ r , false)         , (sinQ (256 ∸ r) , true)
-
--- (cos , sin) in tenthousandths
-sc : ℕ → ℤ × ℤ
-sc a = signed (proj₁ t) , signed (proj₂ t)
-  where t = trig a
-        signed : ℕ × Bool → ℤ
-        signed (m , neg) = if neg then negᶻ (+ m) else + m
-
-positive : ℤ → Bool
-positive (+ suc _) = true
-positive _         = false
-
-------------------------------------------------------------------------
--- Views
-
--- the turn about the vertical axis and the roll about the line of sight, in 1/1024 turns
-record View : Set where
-  constructor view
-  field
-    yaw roll : ℕ
-
--- looking down the beam, and a little turned (14° and 3°) to show the length
-flat turned : View
-flat   = view 0 0
-turned = view 40 8
-
--- the point on the page of the point at radius r, angle a, and z in hundredths.  The far end
--- (z negative) moves to the right, so the barrel's outer surface shows on the right.
-proj : View → ℕ → ℕ → ℤ → ℕ × ℕ
-proj (view yw rl) r a z = fin CX x₂ , fin CY y₂
-  where
-    c  s  cθ sθ cρ sρ : ℤ
-    c  = proj₁ (sc a)
-    s  = proj₂ (sc a)
-    cθ = proj₁ (sc yw)
-    sθ = proj₂ (sc yw)
-    cρ = proj₁ (sc rl)
-    sρ = proj₂ (sc rl)
-
-    -- the turn about the vertical axis (scaled 10⁸), then the roll (10¹²)
-    x₁ y₁ x₂ y₂ : ℤ
-    x₁ = (((+ r) *ᶻ c) *ᶻ cθ) -ᶻ ((z *ᶻ + 100) *ᶻ sθ)
-    y₁ = ((+ r) *ᶻ s) *ᶻ + 10000
-    x₂ = (x₁ *ᶻ cρ) -ᶻ (y₁ *ᶻ sρ)
-    y₂ = (x₁ *ᶻ sρ) +ᶻ (y₁ *ᶻ cρ)
-
-    scale : ℕ
-    scale = 1000000000000
-
-    -- the centre moved by the scaled offset, to the nearest unit (the offset keeps it positive)
-    fin : ℕ → ℤ → ℕ
-    fin c₀ v = (absᶻ (v +ᶻ + ((c₀ + 2000) * scale + scale / 2)) / scale) ∸ 2000
 
 ------------------------------------------------------------------------
 -- Themes
@@ -228,11 +153,13 @@ record Layer : Set where
 
 module Parts (T : Theme) (V : View) where
   open Theme T
-  open View V using (yaw)
 
-  -- the angles, radii and z of the picture's points
+  -- the point on the page, and the depth, of the point at radius r, angle a, and z in hundredths
   pt : ℕ → ℕ → ℤ → ℕ × ℕ
-  pt = proj V
+  pt r a z = project CX CY V (cyl r a z)
+
+  dp : ℕ → ℕ → ℤ → ℤ
+  dp r a z = depth V (cyl r a z)
 
   end : ℤ
   end = + (half * 100)
@@ -251,11 +178,6 @@ module Parts (T : Theme) (V : View) where
 
   wall : ℕ → ℕ → ℕ → List (ℕ × ℕ)
   wall r₀ r₁ a = pt r₀ a (negᶻ end) ∷ pt r₁ a (negᶻ end) ∷ pt r₁ a end ∷ pt r₀ a end ∷ []
-
-  -- how far towards the viewer the point (r , a , z) is, to compare: the turn about the vertical
-  -- axis takes the point's x to a depth of x times the sine of the yaw
-  depth : ℕ → ℕ → ℤ → ℤ
-  depth r a z = (((+ r) *ᶻ proj₁ (sc a)) *ᶻ proj₂ (sc yaw)) +ᶻ ((z *ᶻ + 100) *ᶻ proj₁ (sc yaw))
 
   -- the page, rounded
   background : Dia ℕ
@@ -306,11 +228,11 @@ module Parts (T : Theme) (V : View) where
       mid rmid : ℕ
       mid  = a + w / 2
       rmid = (r₀ + r₁) / 2
-      ends = face fl rm o (depth rmid mid end +ᶻ + bias) (cell r₀ r₁ a w end)
-           ∷ face fl rm o (depth rmid mid (negᶻ end) +ᶻ + bias) (cell r₀ r₁ a w (negᶻ end))
+      ends = face fl rm o (dp rmid mid end +ᶻ + bias) (cell r₀ r₁ a w end)
+           ∷ face fl rm o (dp rmid mid (negᶻ end) +ᶻ + bias) (cell r₀ r₁ a w (negᶻ end))
            ∷ []
-      surfaces = face fl rm o (depth r₁ mid (+ 0) +ᶻ + bias) (patch r₁ a w)
-               ∷ (if 0 <ᵇ r₀ then face fl rm o (depth r₀ mid (+ 0) +ᶻ + bias) (patch r₀ a w) ∷ [] else [])
+      surfaces = face fl rm o (dp r₁ mid (+ 0) +ᶻ + bias) (patch r₁ a w)
+               ∷ (if 0 <ᵇ r₀ then face fl rm o (dp r₀ mid (+ 0) +ᶻ + bias) (patch r₀ a w) ∷ [] else [])
 
   -- the faces of a layer: its cells, and the walls the cut leaves
   layerFaces : Layer → List Face
@@ -320,7 +242,7 @@ module Parts (T : Theme) (V : View) where
       lo : ℕ
       lo = (hi + n * w) % 1024
       wallAt : ℕ → Face
-      wallAt a = face fill rim 30 (depth ((r₀ + r₁) / 2) a (+ 0)) (wall r₀ r₁ a)
+      wallAt a = face fill rim 30 (dp ((r₀ + r₁) / 2) a (+ 0)) (wall r₀ r₁ a)
       walls = if 1024 <ᵇ n * w + 1 then [] else wallAt lo ∷ wallAt hi ∷ []
 
   -- the faces of the lit cells of a layer, whole volumes: the cell's faces and its two walls.  A
@@ -332,7 +254,7 @@ module Parts (T : Theme) (V : View) where
       volume : Lit → List Face
       volume (a , l) = cellFaces litC litC (glow l * 38 / 100) 1 r₀ r₁ a w
         ++ map wallAt (a ∷ a + w ∷ [])
-        where wallAt = λ b → face litC litC (glow l * 38 / 100) (depth ((r₀ + r₁) / 2) b (+ 0) +ᶻ + 1) (wall r₀ r₁ b)
+        where wallAt = λ b → face litC litC (glow l * 38 / 100) (dp ((r₀ + r₁) / 2) b (+ 0) +ᶻ + 1) (wall r₀ r₁ b)
 
   -- insertion sort by depth, the farthest first
   insert : Face → List Face → List Face
