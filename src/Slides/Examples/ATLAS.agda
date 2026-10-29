@@ -402,13 +402,13 @@ module Parts (T : Theme) (V : View) where
   label size t st = impure (Text 0 (size * 3 / 2) size t (anchored "start" st) , λ ())
 
   swatch : String → Dia ℕ
-  swatch c = disc 6 (paint c c 1 100)
+  swatch c = disc 9 (paint c c 1 100)
 
   entry : String → String → Dia ℕ
-  entry c l = hcat 12 (swatch c ∷ label 17 l (filled ink defaultStyle) ∷ [])
+  entry c l = hcat 16 (swatch c ∷ label 26 l (filled ink defaultStyle) ∷ [])
 
   legend heading : Dia ℕ
-  legend = put 790 210 (vcatA left 16
+  legend = put 780 200 (vcatA left 20
     ( entry silicon "Inner tracker"
     ∷ entry coil "Solenoid"
     ∷ entry ecalLit "EM calorimeter"
