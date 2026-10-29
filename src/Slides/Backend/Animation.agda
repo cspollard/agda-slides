@@ -28,16 +28,17 @@ module Slides.Backend.Animation where
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Char.Base using (Char)
 open import Data.Fin using (zero; suc)
-open import Data.List.Base using (List; []; _∷_; _++_; map; reverse; concatMap)
+import Data.List.Base as L
+open import Data.List.Base using (List; []; _∷_; _++_; map; reverse; concatMap; zipWith)
 open import Function.Base using (_∘_)
-open import Data.Maybe.Base using (Maybe; just; nothing)
+open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
 open import Data.Nat.Base using (ℕ; _+_; _*_; _/_; _%_; _≡ᵇ_; _<ᵇ_) renaming (suc to sucℕ)
 open import Data.Nat.Show using (show)
-open import Data.Product.Base using (_×_; _,_)
+open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational using (ℚ) renaming (_*_ to _*ℚ_)
 import Data.Rational as ℚ
-open import Data.Sum.Base using (inj₁; inj₂)
-open import Data.String.Base using (String; fromList; toList; intersperse) renaming (_++_ to _++ˢ_)
+open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
+open import Data.String.Base using (String; fromList; toList; intersperse; concat) renaming (_++_ to _++ˢ_)
 open import Data.Container.FreeMonad using (pure; impure)
 import Data.Integer.Base as ℤ
 import Data.Sign.Base as Sign
@@ -59,6 +60,7 @@ open import Slides.Diagram.Print using (Print; renderSVG)
 open import Slides.Scene.Syntax using (_⨾_)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 open Mv using (Anim; Leaf; Sc; Drv; Event; onset; span; driver; leaf)
+open import Slides.Backend.Share using (Tree; tree; ship; shareTop)
 open import Slides.Backend.HTML using (hElement; hText; Attrs)
 
 ------------------------------------------------------------------------
@@ -91,25 +93,41 @@ easingⱼ (Bezier a b c d) = arr (natⱼ a ∷ natⱼ b ∷ natⱼ c ∷ natⱼ 
 ------------------------------------------------------------------------
 -- Terms (operation numbers: see `assets/animation.js`)
 
+-- An item of a printed array: text, or a subtree that is shared (the page finds it by its position
+-- in the table, written as a string).  Constants and the parameter stay in the text.
+Item : Set
+Item = String ⊎ Tree
+
+txt : JSON → Item
+txt = inj₁ ∘ renderJSON
+
+-- an array of items
+arrT : List Item → Tree
+arrT xs = tree (inj₁ "[" ∷ L.intersperse (inj₁ ",") xs ++ inj₁ "]" ∷ [])
+
+-- an operation applied to items
+opT : ℕ → List Item → Item
+opT n xs = inj₂ (arrT (txt (natⱼ n) ∷ xs))
+
 -- a scalar: the Space and Time operations over the parameter and constants
-scⱼ : Sc → JSON
-scⱼ (pure nothing)                   = nullⱼ
-scⱼ (pure (just q))                  = constⱼ q
-scⱼ (impure (inj₁ Zero , k))         = natⱼ 0
-scⱼ (impure (inj₁ Plus , k))         = arr (natⱼ 2 ∷ scⱼ (k zero) ∷ scⱼ (k (suc zero)) ∷ [])
-scⱼ (impure (inj₁ Max , k))          = arr (natⱼ 3 ∷ scⱼ (k zero) ∷ scⱼ (k (suc zero)) ∷ [])
-scⱼ (impure (inj₁ Minus , k))        = arr (natⱼ 4 ∷ scⱼ (k zero) ∷ scⱼ (k (suc zero)) ∷ [])
-scⱼ (impure (inj₁ Lt , k))           = arr (natⱼ 5 ∷ scⱼ (k zero) ∷ scⱼ (k (suc zero)) ∷ scⱼ (k (suc (suc zero))) ∷ scⱼ (k (suc (suc (suc zero)))) ∷ [])
-scⱼ (impure (inj₁ (Pct p) , k))      = arr (natⱼ 6 ∷ natⱼ p ∷ scⱼ (k _) ∷ [])
-scⱼ (impure (inj₂ Hold , k))         = arr (natⱼ 7 ∷ scⱼ (k _) ∷ [])
+scI : Sc → Item
+scI (pure nothing)                   = txt nullⱼ
+scI (pure (just q))                  = txt (constⱼ q)
+scI (impure (inj₁ Zero , k))         = txt (natⱼ 0)
+scI (impure (inj₁ Plus , k))         = opT 2 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
+scI (impure (inj₁ Max , k))          = opT 3 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
+scI (impure (inj₁ Minus , k))        = opT 4 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
+scI (impure (inj₁ Lt , k))           = opT 5 (scI (k zero) ∷ scI (k (suc zero)) ∷ scI (k (suc (suc zero))) ∷ scI (k (suc (suc (suc zero)))) ∷ [])
+scI (impure (inj₁ (Pct p) , k))      = opT 6 (txt (natⱼ p) ∷ scI (k _) ∷ [])
+scI (impure (inj₂ Hold , k))         = opT 7 (scI (k _) ∷ [])
 
 -- a driver: a Coupling term over the local time and constants
-drvⱼ : Drv → JSON
-drvⱼ (pure nothing)                  = nullⱼ
-drvⱼ (pure (just q))                 = constⱼ q
-drvⱼ (impure (Ratio , k))            = arr (natⱼ 8 ∷ drvⱼ (k zero) ∷ drvⱼ (k (suc zero)) ∷ [])
-drvⱼ (impure (Lerp , k))             = arr (natⱼ 9 ∷ drvⱼ (k zero) ∷ drvⱼ (k (suc zero)) ∷ drvⱼ (k (suc (suc zero))) ∷ [])
-drvⱼ (impure (Ease e , k))           = arr (natⱼ 10 ∷ easingⱼ e ∷ drvⱼ (k _) ∷ [])
+drvI : Drv → Item
+drvI (pure nothing)                  = txt nullⱼ
+drvI (pure (just q))                 = txt (constⱼ q)
+drvI (impure (Ratio , k))            = opT 8 (drvI (k zero) ∷ drvI (k (suc zero)) ∷ [])
+drvI (impure (Lerp , k))             = opT 9 (drvI (k zero) ∷ drvI (k (suc zero)) ∷ drvI (k (suc (suc zero))) ∷ [])
+drvI (impure (Ease e , k))           = opT 10 (txt (easingⱼ e) ∷ drvI (k _) ∷ [])
 
 ------------------------------------------------------------------------
 -- Leaves
@@ -122,9 +140,6 @@ private
   optN : String → Maybe ℕ → List (String × JSON)
   optN k nothing  = []
   optN k (just v) = (k , natⱼ v) ∷ []
-
-  op : String → List JSON → JSON
-  op c xs = arr (stringⱼ c ∷ xs)
 
   valignⱼ : VAlign → JSON
   valignⱼ top    = natⱼ 0
@@ -158,31 +173,38 @@ styleⱼ s = objectFromList
   ++ optN "sw" (Style.strokeWidth s) ++ optN "rx" (Style.rx s) ++ optN "op" (Style.opacity s) )
 
 -- a diagram over terms: one letter per constructor, children last
-diaⱼ : Dia Sc → JSON
-diaⱼ (impure (Rectangle w h s , k))   = op "R" (scⱼ w ∷ scⱼ h ∷ styleⱼ s ∷ [])
-diaⱼ (impure (Segment w h s , k))     = op "S" (scⱼ w ∷ scⱼ h ∷ styleⱼ s ∷ [])
-diaⱼ (impure (Disc r s , k))          = op "D" (scⱼ r ∷ styleⱼ s ∷ [])
-diaⱼ (impure (Text w h n t s , k))    = op "T" (scⱼ w ∷ scⱼ h ∷ natⱼ n ∷ stringⱼ t ∷ styleⱼ s ∷ [])
-diaⱼ (impure (Path w h d s , k))      = op "P" (scⱼ w ∷ scⱼ h ∷ stringⱼ d ∷ styleⱼ s ∷ [])
-diaⱼ (impure (Spacer w h , k))        = op "_" (scⱼ w ∷ scⱼ h ∷ [])
-diaⱼ (impure (Beside al , k))         = op "b" (valignⱼ al ∷ diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (Above al , k))          = op "a" (alignⱼ al ∷ diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (Atop , k))              = op "@" (diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (LabelAbove , k))        = op "l" (diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (LabelBelow , k))        = op "L" (diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (Place w h x y , k))     = op "p" (scⱼ w ∷ scⱼ h ∷ scⱼ x ∷ scⱼ y ∷ diaⱼ (k _) ∷ [])
-diaⱼ (impure (Overlay w h , k))       = op "o" (scⱼ w ∷ scⱼ h ∷ diaⱼ (k zero) ∷ diaⱼ (k (suc zero)) ∷ [])
-diaⱼ (impure (Named n , k))           = op "n" (stringⱼ n ∷ diaⱼ (k _) ∷ [])
-diaⱼ (impure (Connect a pa b pb s , k)) = op "c" (stringⱼ a ∷ portⱼ pa ∷ stringⱼ b ∷ portⱼ pb ∷ styleⱼ s ∷ diaⱼ (k _) ∷ [])
+op : String → List Item → Item
+op c xs = inj₂ (arrT (txt (stringⱼ c) ∷ xs))
 
--- an event
-eventⱼ : Event Leaf → JSON
-eventⱼ e = objectFromList
-  ( ("o" , qⱼ (onset e)) ∷ ("s" , maybeⱼ qⱼ (span e)) ∷ ("d" , maybeⱼ drvⱼ (driver e))
-  ∷ ("l" , diaⱼ (leaf e)) ∷ [] )
+diaT : Dia Sc → Item
+diaT (impure (Rectangle w h s , k))   = op "R" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Segment w h s , k))     = op "S" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Disc r s , k))          = op "D" (scI r ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Text w h n t s , k))    = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ t) ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Path w h d s , k))      = op "P" (scI w ∷ scI h ∷ txt (stringⱼ d) ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Spacer w h , k))        = op "_" (scI w ∷ scI h ∷ [])
+diaT (impure (Beside al , k))         = op "b" (txt (valignⱼ al) ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (Above al , k))          = op "a" (txt (alignⱼ al) ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (Atop , k))              = op "@" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (LabelAbove , k))        = op "l" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (LabelBelow , k))        = op "L" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (Place w h x y , k))     = op "p" (scI w ∷ scI h ∷ scI x ∷ scI y ∷ diaT (k _) ∷ [])
+diaT (impure (Overlay w h , k))       = op "o" (scI w ∷ scI h ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
+diaT (impure (Named n , k))           = op "n" (txt (stringⱼ n) ∷ diaT (k _) ∷ [])
+diaT (impure (Connect a pa b pb s , k)) = op "c" (txt (stringⱼ a) ∷ txt (portⱼ pa) ∷ txt (stringⱼ b) ∷ txt (portⱼ pb) ∷ txt (styleⱼ s) ∷ diaT (k _) ∷ [])
 
-eventsⱼ : Anim → JSON
-eventsⱼ a = arr (map eventⱼ (Mv.events a))
+-- an event: its driver and leaf are shared
+eventT : Event Leaf → Tree
+eventT e = tree
+  ( inj₁ ("{\"o\":" ++ˢ renderJSON (qⱼ (onset e)) ++ˢ ",\"s\":" ++ˢ renderJSON (maybeⱼ qⱼ (span e)) ++ˢ ",\"d\":")
+  ∷ maybe′ drvI (inj₁ "null") (driver e) ∷ inj₁ ",\"l\":" ∷ diaT (leaf e) ∷ inj₁ "}" ∷ [] )
+
+-- the events with their diagrams and terms shared: {"n": table of nodes, "e": events}.  A node
+-- is an array (a term or a diagram), a reference to a node the string of its position in the table
+eventsJSON : Anim → String
+eventsJSON a with shareTop (map eventT (Mv.events a)) []
+... | es , d with ship es d
+...   | tbl , evs = "{\"n\":[" ++ˢ intersperse "," tbl ++ˢ "],\"e\":[" ++ˢ intersperse "," evs ++ˢ "]}"
 
 ------------------------------------------------------------------------
 -- The first frame, printed here
@@ -250,7 +272,7 @@ animationEl name pct ms play a rs =
     ( hElement "div" (("class" , "frame") ∷ [])
         ( hElement "div" (("class" , "diagram") ∷ ("id" , name) ∷ [])
             (renderSVG qPrint name pct (firstFrame a) ∷ []) ∷ [] )
-    ∷ hText "script" (("type" , "application/json") ∷ ("class" , "events") ∷ []) (htmlSafe (renderJSON (eventsⱼ a)))
+    ∷ hText "script" (("type" , "application/json") ∷ ("class" , "events") ∷ []) (htmlSafe (eventsJSON a))
     ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs )
   where
     restsAttr : List ℚ → List (String × String)

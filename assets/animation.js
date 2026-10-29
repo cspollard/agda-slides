@@ -5,8 +5,10 @@
 //   var player = SlidesAnimation(function (a) { return <is animation element `a`'s slide shown> });
 //
 // An animation (`.animation`, see `Slides.Backend.Animation`) ships the *event list* of its scene
-// as JSON in its `script.events` child: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
-// are expression trees over one variable.  The page evaluates it at a real time `t` (in ticks):
+// as JSON in its `script.events` child: {n: table of nodes, e: events}.  An event has an onset, a
+// span, a driver and a leaf, the leaf a diagram whose scalars are expression trees over one variable;
+// equal subtrees (of diagrams and terms) are one node of the table, referred to by the string of its
+// position.  The page evaluates it at a real time `t` (in ticks):
 // the events active at `t` are laid out at their parameter (the value of the driver at the event's
 // local time, 0 without one), overlaid in the join of their frames, and drawn as SVG.  This is
 // `Slides.Scene.Animation.frame`, once more, in JavaScript: the operations below are the Space,
@@ -35,7 +37,10 @@ function SlidesAnimation(shown) {
     for (i = 0; i < 16; i++) { if (cubic(e[0] / 100, e[2] / 100, (lo + hi) / 2) <= r) lo = (lo + hi) / 2; else hi = (lo + hi) / 2; }
     return cubic(e[1] / 100, e[3] / 100, (lo + hi) / 2);
   }
+  // a term or diagram that is shared is the string of its position in the table `TAB` (of the animation drawn)
+  var TAB;
   function ev(e, v) {
+    if (typeof e === 'string') e = TAB[e];
     if (e === null) return v;
     if (typeof e === 'number') return e;
     var o = e[0];
@@ -81,6 +86,7 @@ function SlidesAnimation(shown) {
   }
   function find(as, n) { for (var i = 0; i < as.length; i++) if (as[i][0] === n) return as[i][1]; return null; }
   function lay(n, p) {
+    if (typeof n === 'string') n = TAB[n];
     var o = n[0], x, y, A, B, w, h;
     switch (o) {
       case 'R': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'rect', x: 0, y: 0, w: w, h: h, s: n[3] }]);
@@ -193,8 +199,11 @@ function SlidesAnimation(shown) {
     L.ds.forEach(function (d) { svg.appendChild(draw(d, name)); });
   }
   // ---- the player
-  function events(a) { return a._e || (a._e = JSON.parse(a.querySelector(':scope > script.events').textContent)); }
-  function frame(a, t) { paint(a, frameAt(events(a), t)); }
+  function events(a) {
+    if (!a._e) { var j = JSON.parse(a.querySelector(':scope > script.events').textContent); a._t = j.n; a._e = j.e; }
+    return a._e;
+  }
+  function frame(a, t) { var E = events(a); TAB = a._t; paint(a, frameAt(E, t)); }
   function target(a) {
     var n = a.querySelectorAll('.anim-step.visible').length;
     if (n === 0) return 0;
@@ -224,11 +233,13 @@ function SlidesAnimation(shown) {
       if (cur !== t) a._raf = requestAnimationFrame(go);
     });
   }
-  // a loop runs while its slide is shown: the phase is the real time in ticks modulo its duration
+  // a loop runs while its slide is shown: the phase is the real time in ticks modulo its duration;
+  // it stands still while printing (see below)
+  var printing = false;
   function spin(a) {
     var d = +(a.dataset.phases || a.dataset.duration), ms = Math.max(+a.dataset.ms, 1), t0 = null;
     requestAnimationFrame(function go(now) {
-      if (shown(a)) {
+      if (!printing && shown(a)) {
         if (t0 === null) t0 = now;
         a.dataset.phase = String(d > 0 ? ((now - t0) / ms) % d : 0);
         draw1(a);
@@ -239,9 +250,12 @@ function SlidesAnimation(shown) {
   // for tests: show time `t` directly
   document.querySelectorAll('.animation').forEach(function (a) { a._show = function (t) { frame(a, t); }; });
   document.querySelectorAll('.animation[data-loop]').forEach(spin);
-  // printing shows every fragment, so show every animation at its last step
+  // printing shows every fragment, so show every animation at its last step, and stop the clocks
+  // (a loop's timer and a step in flight would draw over it) until `afterprint`
   window.addEventListener('beforeprint', function () {
+    printing = true;
     document.querySelectorAll('.animation').forEach(function (a) {
+      cancelAnimationFrame(a._raf);
       a._printed = [a.dataset.cur, a.dataset.phase];
       var r = a.dataset.rests;
       a.dataset.cur = r ? String(rat(JSON.parse(r).pop()) - 1e-6) : '0';
@@ -250,11 +264,11 @@ function SlidesAnimation(shown) {
     });
   });
   window.addEventListener('afterprint', function () {
+    printing = false;
     document.querySelectorAll('.animation').forEach(function (a) {
       if (!a._printed) return;
-      a.dataset.cur = a._printed[0] || '0';
       if (a._printed[1] !== undefined) a.dataset.phase = a._printed[1];
-      draw1(a);
+      sync(a, true);   // a step that was in flight is finished
     });
   });
   return {
@@ -263,7 +277,6 @@ function SlidesAnimation(shown) {
     // `syncAll(slide, jump)`: the same for every animation of a slide
     syncAll: function (slide, jump) {
       if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, jump); });
-    },
-    frameAt: function (E, t) { return frameAt(E, t); }
+    }
   };
 }
