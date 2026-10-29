@@ -5,6 +5,7 @@
 -- The meaning of an animation (`Slides.Scene.Events`) is a duration and a sparse list of events
 -- (onset, span, driver, leaf).  The page gets exactly that, as JSON in a `script` element of its animation:
 --
+--   {"n": table, "e": events}
 --   event      {"o": onset, "s": span or null, "d": driver term or null, "l": leaf}
 --   leaf       a diagram `["R", w, h, style]`, `["b", align, a, b]`, ...: the constructors of
 --              `Slides.Diagram.Syntax`, one letter each, its scalars *terms*
@@ -13,10 +14,11 @@
 --
 -- and the page evaluates the terms, lays the leaves out (`Slides.Diagram.Place`) and draws them
 -- (`Slides.Diagram.Print`) at each time: `assets/animation.js` is `Slides.Scene.Animation.frame`
--- in JavaScript.  Nothing is shared between formulas (no phases, no subformula tables): the
--- size of the page is the size of the scene.  The first frame is printed here, so a page without
--- JavaScript shows it.  The JavaScript is hand-written (a table of the signatures' operations
--- would be as long as the evaluator) and tested against Agda's frames (`make test-anim-ref`).
+-- in JavaScript.  Diagrams and terms are trees, and equal subtrees are shipped once
+-- (`Slides.Backend.Share`): anywhere a diagram or a term may stand, a string is the position of a
+-- node of the table `"n"`.  The first frame is printed here, so a page without JavaScript shows
+-- it.  The JavaScript is hand-written (a table of the signatures' operations would be as long as
+-- the evaluator) and tested against Agda's frames (`make test-anim-ref`).
 --
 -- Reveal steps: an animation of acts `a₁ … aₙ` is the scene `a₁ ⨾ … ⨾ aₙ`; its *rests* are the
 -- cumulative durations, the page plays from one rest to the next when a fragment appears
