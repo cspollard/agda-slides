@@ -44,6 +44,7 @@
 
 module Slides.Examples.ATLAS where
 
+open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; -_ to negᶻ; ∣_∣ to absᶻ)
 open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; _++_)
@@ -52,7 +53,7 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 
 open import Slides.Diagram.Convenience
-open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed)
+open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; anchored)
 open import Slides.Examples.LHC using (sinTable; nth)
 
 ------------------------------------------------------------------------
@@ -66,7 +67,7 @@ CY = 350
 
 -- half the length of the barrel, in units
 half : ℕ
-half = 120
+half = 180
 
 put : ℕ → ℕ → Dia ℕ → Dia ℕ
 put = place W H
@@ -209,8 +210,8 @@ siliconR = 24 ∷ 40 ∷ 58 ∷ 78 ∷ 94 ∷ []
 stationR = 250 ∷ 286 ∷ 322 ∷ []
 
 -- a layer: cells between the radii r₀ and r₁, `n` of them of width `w` from angle `hi` on (all
--- the way round, or up to the cut), with their colour and the colour of their seams, and the lit
--- ones.  A lit cell is (start angle , level 1 … 3 , the slope of the cluster along the beam in
+-- the way round, or up to the cut), with their colour and the colour of their outlines (`none`:
+-- no outline), and the lit ones.  A lit cell is (start angle , level 1 … 3 , the slope of the cluster along the beam in
 -- percent of the radius, so its z is the slope times its radius).
 Lit : Set
 Lit = ℕ × ℕ × ℤ
@@ -219,7 +220,7 @@ record Layer : Set where
   constructor layer
   field
     r₀ r₁ hi w n : ℕ
-    fill seam litC : String
+    fill rim litC : String
     lits : List Lit
 
 ------------------------------------------------------------------------
@@ -265,13 +266,13 @@ module Parts (T : Theme) (V : View) where
 
   layers′ : List Layer
   layers′ =
-      layer 0   100 0   64 16 trackerFill trackerFill silicon []
-    ∷ layer 100 106 0   64 16 coil        coil        coil    []
-    ∷ layer 112 148 960 16 56 ecalBase gap ecalLit ecalLits
-    ∷ layer 152 222 992 32 26 hcalBase gap hcalLit hcalLits
-    ∷ layer 244 256 0   32 24 muBase   gap muLit   muLits
-    ∷ layer 280 292 0   32 24 muBase   gap muLit   muLits
-    ∷ layer 316 328 0   32 24 muBase   gap muLit   muLits
+      layer 0   100 0   64 16 trackerFill "none" silicon []
+    ∷ layer 100 106 0   64 16 coil        "none" coil    []
+    ∷ layer 112 148 960 16 56 ecalBase ecalLit ecalLit ecalLits
+    ∷ layer 152 222 992 32 26 hcalBase hcalLit hcalLit hcalLits
+    ∷ layer 244 256 0   32 24 muBase   muLit   muLit   muLits
+    ∷ layer 280 292 0   32 24 muBase   muLit   muLit   muLits
+    ∷ layer 316 328 0   32 24 muBase   muLit   muLit   muLits
     ∷ []
     where
       -- the lit cells, with the slope of their cluster: the jet, the electron, the photon and
@@ -294,16 +295,18 @@ module Parts (T : Theme) (V : View) where
   starts : Layer → List ℕ
   starts (layer _ _ hi w n _ _ _ _) = applyUpTo (λ j → hi + w * j) n
 
-  -- a cell's shading: the same shape over it in the colour of the page, so that what recedes
-  -- fades into it
-  shaded : ℕ → List (ℕ × ℕ) → Layer → List (Dia ℕ)
-  shaded o ps L = put 0 0 (polygon ps (paint (Layer.fill L) (Layer.seam L) 1 100))
-                ∷ put 0 0 (polygon ps (paint bg bg 0 o))
-                ∷ []
+  -- a face: a translucent fill with an opaque outline over it.  Faces are drawn from the back
+  -- to the front, so what lies behind shows through the fill of what is in front of it, and
+  -- the outlines behind are dimmed by that fill.
+  face : Layer → List (ℕ × ℕ) → List (Dia ℕ)
+  face L ps = put 0 0 (polygon ps (paint fill fill 0 80))
+            ∷ put 0 0 (polygon ps (line rim 1))
+            ∷ []
+    where open Layer L
 
   -- the end faces nearest the viewer, as in the flat view
   front : Layer → List (Dia ℕ)
-  front L = map (λ a → put 0 0 (polygon (cell r₀ r₁ a w end) (paint fill seam 1 100))) (starts L)
+  front L = concat (map (λ a → face L (cell r₀ r₁ a w end)) (starts L))
     where open Layer L
 
   -- the rest of the layer: the surfaces facing the viewer and the walls of the cut
@@ -312,7 +315,7 @@ module Parts (T : Theme) (V : View) where
     where
       open Layer L
       surface : ℕ → List (Dia ℕ)
-      surface a = if seen (proj₁ (sc (a + w / 2))) then shaded 35 (patch r₁ a w) L else []
+      surface a = if seen (proj₁ (sc (a + w / 2))) then face L (patch r₁ a w) else []
 
       -- the cut runs from the end of the last cell round to the start of the first
       lo : ℕ
@@ -320,8 +323,8 @@ module Parts (T : Theme) (V : View) where
 
       walls : List (Dia ℕ)
       walls = if 1024 <ᵇ n * w + 1 then []
-              else (if seen (negᶻ (proj₂ (sc lo))) then shaded 20 (wall r₀ r₁ lo) L else [])
-                ++ (if seen (proj₂ (sc hi)) then shaded 20 (wall r₀ r₁ hi) L else [])
+              else (if seen (negᶻ (proj₂ (sc lo))) then face L (wall r₀ r₁ lo) else [])
+                ++ (if seen (proj₂ (sc hi)) then face L (wall r₀ r₁ hi) else [])
 
   -- the lit cells of a layer, floating in the plane of their cluster over the rest (seen
   -- through the detector)
@@ -331,11 +334,11 @@ module Parts (T : Theme) (V : View) where
       open Layer L
       one : Lit → Dia ℕ
       one (a , l , s) =
-        put 0 0 (polygon (cell r₀ r₁ a w (s *ᶻ + ((r₀ + r₁) / 2))) (paint litC seam 1 (glow l)))
+        put 0 0 (polygon (cell r₀ r₁ a w (s *ᶻ + ((r₀ + r₁) / 2))) (paint litC litC 1 (glow l)))
 
   -- the silicon layers: rings round the end face of the tracker
   silicons : List (Dia ℕ)
-  silicons = map (λ r → put 0 0 (polygon (arcPts r 0 1024 end) (faded 70 (thick 1 (stroked silicon defaultStyle))))) siliconR
+  silicons = map (λ r → put 0 0 (polygon (arcPts r 0 1024 end) (faded 70 (thick 1 (stroked silicon defaultStyle))))) (siliconR ++ 100 ∷ [])
 
   -- the detector: the silicon layers over the layers, the outermost behind
   detector : List (Dia ℕ)
@@ -383,11 +386,16 @@ module Parts (T : Theme) (V : View) where
   ----------------------------------------------------------------------
   -- The legend and the title, at the right
 
+  -- a line of text that starts at its frame's left edge: the frame has no width, so the text does
+  -- not depend on the width the page's font gives it
+  label : ℕ → String → Style → Dia ℕ
+  label size t st = impure (Text 0 (size * 3 / 2) size t (anchored "start" st) , λ ())
+
   swatch : String → Dia ℕ
   swatch c = disc 6 (paint c c 1 100)
 
   entry : String → String → Dia ℕ
-  entry c l = hcat 12 (swatch c ∷ text 17 l (filled ink defaultStyle) ∷ [])
+  entry c l = hcat 12 (swatch c ∷ label 17 l (filled ink defaultStyle) ∷ [])
 
   legend heading : Dia ℕ
   legend = put 790 210 (vcatA left 16
@@ -400,8 +408,8 @@ module Parts (T : Theme) (V : View) where
     ∷ entry muonColour "Muon"
     ∷ []))
   heading = put 790 90 (vcatA left 4
-    ( bold 34 "ATLAS" (filled ink defaultStyle)
-    ∷ text 15 "simplified" (filled subtle defaultStyle)
+    ( label 34 "ATLAS" (filled ink defaultStyle)
+    ∷ label 15 "simplified" (filled subtle defaultStyle)
     ∷ []))
 
   -- layers laid over the background, the topmost first
