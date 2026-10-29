@@ -110,3 +110,13 @@ is in `../agda-slides-legacy/docs/Time.md`.
   margins, text, boxes, layers); each is a one-line definition over the core constructors.  Its laws are in
   `Slides.Diagram.Convenience.Properties` (cutting a row or a column anywhere, from `Diagram.Assoc`).
 - While printing, loops and steps in flight stand still (`beforeprint` stops them, `afterprint` finishes the step).
+
+**[decided, Step 10]**
+- Primitives are scalar-parametric: `Ellipse rx ry` (frame 2rx by 2ry) and `Polyline closed pts` (points in the diagram's
+  scalar from the frame's top-left; frame is the extent of the points from the origin, `foldr ⊔ 0`, so the empty list is
+  the empty frame; closed prints as a fillable `<polygon>`).  They move with scalars (`mapOp`), with animation terms (ships as
+  scalar trees, codes `E` and `Y`) and are natural, valid and name-free like the others.  `Disc r` stays a primitive of the
+  same size as `Ellipse r r` (`size-disc-ellipse`) because it prints as `<circle>`, which the goldens and tests select.
+- `Path` (opaque SVG path data, in the frame's units) is kept for curves and shapes whose data is not a list of
+  points (rectilinear outlines and error bars are shorter as path commands); it is not scalar-parametric and cannot
+  move with the animation time.

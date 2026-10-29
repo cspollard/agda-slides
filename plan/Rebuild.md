@@ -36,6 +36,11 @@ diagram and term trees, entries used once written in place; read-back proved in 
 became paths; `Slides.Diagram.Convenience` (with `Notation` folded in) holds the combinators the decks repeated; the
 white theme uses highlight style `monokai`, tests assert no failed loads; printing stops the loop timers.
 
+Step 10 (2026-10-29, branch `rebuild-step10`): `Ellipse` and `Polyline` (open or closed) primitives over the scalar, with the
+Draw forms `ellipse` and `poly`, printing, naturality, functoriality, validity, names, digitisation, shipping (`E`, `Y`) and the
+page evaluator; `AnimRef` tests an ellipse and a polygon and polyline moving with `now` against Agda.  The LHC pipe and the
+Collider likelihood curve are polylines (Collider page 114977 to 113726 B); the template and error bars stay `Path`.
+
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
    out read-only; stale branches and worktrees removed; this branch holds only `Container.*`,

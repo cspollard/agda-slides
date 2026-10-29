@@ -110,18 +110,9 @@ put = place W H
 canvas : List (Dia ℕ) → Dia ℕ
 canvas = layers W H
 
--- the pipe: one closed path through 128 points of the ellipse (the 129th is the first)
-pipePath : String
-pipePath = go (applyUpTo (λ k → k) 129) true
-  where
-    point : ℕ → String
-    point k = show (proj₁ (ellipseAt (2 * k))) ++ˢ " " ++ˢ show (proj₂ (ellipseAt (2 * k)))
-    go : List ℕ → Bool → String
-    go []       _     = ""
-    go (k ∷ ks) first = (if first then "M " else " L ") ++ˢ point k ++ˢ go ks false
-
+-- the pipe: one polygon through 128 points of the ellipse
 pipe : Dia ℕ
-pipe = canvas (path W H pipePath (cls "pipe") ∷ [])
+pipe = canvas (polygon (map (λ k → ellipseAt (2 * k)) (applyUpTo (λ k → k) 128)) (cls "pipe") ∷ [])
 
 -- a bunch at (x , y): a soft halo and a core
 bunch : ℕ → ℕ → List (Dia ℕ)
