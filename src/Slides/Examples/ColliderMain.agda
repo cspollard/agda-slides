@@ -33,7 +33,7 @@ config = record Reveal.defaultConfig
   }
 
 build : List String → IO ⊤
-build ("local" ∷ _) = writeRevealDeck "out/collider-local" (Reveal.withSource (Reveal.local "reveal/") config) collider
+build ("local" ∷ _) = writeRevealDeck "out/collider-local" (Reveal.withSource (Reveal.local "reveal/") (record config { katex = just "katex" })) collider
 build _             = writeRevealDeck "out/collider"       (Reveal.withSource (Reveal.cdn "6.0.2") config) collider
 
 main : Main
