@@ -3,7 +3,7 @@
 -- Clocks: reading a scene along an order embedding of time (`ι : ℕ → ℚ`).
 --
 -- A scene over the durations of one clock maps to a scene over another by `h` on its durations
--- (`mapScene`, a container morphism, so `translate`).  If `h` is an order embedding
+-- (`mapScene h g`, `Slides.Scene.Syntax`, a container morphism, so `translate`).  If `h` is an order embedding
 -- (`IsOrdMonHom`, which preserves `⊔`, comparisons and exact differences), drivers are carried
 -- (`g-val`) and overlay is (`IsOverlayHom`), then reading the mapped scene at `h t` is reading the
 -- original at `t` (`tick-hom`): durations map by `h`, and the frames by `F`, given that leaves
@@ -50,31 +50,6 @@ private
   module Sb₂′ = Sub Sb₂
 open IsOrdMonHom H
 open IsOverlayHom HF
-
-------------------------------------------------------------------------
--- The scene map
-
-mapOp : Op T₁ D₁ → Op T₂ D₂
-mapOp Seq        = Seq
-mapOp Par        = Par
-mapOp (Hold d)   = Hold (h d)
-mapOp (Delay d)  = Delay (h d)
-mapOp (Repeat n) = Repeat n
-mapOp (Drive c)  = Drive (g c)
-
-mapSC : SceneC T₁ D₁ ⇒ SceneC T₂ D₂
-mapSC = record { shape = mapOp ; position = pos }
-  where
-    pos : ∀ {o} → arity (mapOp o) → arity o
-    pos {Seq}      p = p
-    pos {Par}      p = p
-    pos {Hold _}   p = p
-    pos {Delay _}  p = p
-    pos {Repeat _} p = p
-    pos {Drive _}  p = p
-
-mapScene : ∀ {A : Set} → Scene T₁ D₁ A → Scene T₂ D₂ A
-mapScene = translate mapSC
 
 ------------------------------------------------------------------------
 -- Windows, shifts and overlay commute with `h`
@@ -162,7 +137,7 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
              (sym (map-select (O₁._≤?_ O₁.0# t) _ nothing)))
 
   rel-hom : ∀ o {k : arity o → S₁.Timed} {k′ : arity o → S₂.Timed} → (∀ p → R (k p) (k′ p)) →
-            R (S₁.dirH o k) (S₂.dirH (mapOp o) (λ q → k′ (position mapSC q)))
+            R (S₁.dirH o k) (S₂.dirH (mapOp h g o) (λ q → k′ (position (mapSC h g) q)))
   rel-hom Seq        {k} {k′} e = rel-seq {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
   rel-hom Par        {k} {k′} e = rel-par {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
   rel-hom (Hold d)   {k} {k′} e = rel-hold d {k tt} {k′ tt} (e tt)
@@ -171,7 +146,7 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
   rel-hom (Drive c)  {k} {k′} e = rel-drive c {k tt} {k′ tt} (e tt)
 
   -- Reading the mapped scene at `h t` is reading the scene at `t`.
-  tick-hom : ∀ s → proj₁ (S₂.sample ℓ₂ (mapScene s)) ≡ h (proj₁ (S₁.sample ℓ₁ s)) ×
-                   (∀ t q → proj₂ (S₂.sample ℓ₂ (mapScene s)) (h t) (Maybe.map g q)
+  tick-hom : ∀ s → proj₁ (S₂.sample ℓ₂ (mapScene h g s)) ≡ h (proj₁ (S₁.sample ℓ₁ s)) ×
+                   (∀ t q → proj₂ (S₂.sample ℓ₂ (mapScene h g s)) (h t) (Maybe.map g q)
                             ≡ Maybe.map F (proj₂ (S₁.sample ℓ₁ s) t q))
-  tick-hom = pfold-rel-translate mapSC R (λ o k k′ e → rel-hom o {k} {k′} e) rel-leaf
+  tick-hom = pfold-rel-translate (mapSC h g) R (λ o k k′ e → rel-hom o {k} {k′} e) rel-leaf

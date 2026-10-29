@@ -25,7 +25,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; con
 open import Slides.Scalar.Model.Nat using (natMon; natSub)
 open import Slides.Scalar.Model.Rat using (ratMon; ratSub; ι)
 open import Slides.Scalar.Hom using (ι-hom)
-open import Slides.Scene.Syntax using (Scene)
+open import Slides.Scene.Syntax using (Scene; mapScene)
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Read using (ℓ; visible)
@@ -36,7 +36,7 @@ import Slides.Scene.Sample {ℚ} {⊥} {Flow} ratMon ratSub (λ ()) listOverlay 
 
 open import Slides.Scene.Tick {ℕ} {ℚ} {⊥} {⊥} {Flow} {Flow} natMon natSub ratMon ratSub ι ι-hom
   (λ ()) (λ ()) (λ x → x) (λ ()) listOverlay listOverlay (λ x → x) (record { F-⊙ = λ _ _ → refl })
-  using (mapScene; tick-hom)
+  using (tick-hom)
 
 -- leaves are read as themselves on the ℚ clock too
 ℓQ : Flow → ℚ → Flow
@@ -51,9 +51,9 @@ private
   map-id nothing  = refl
   map-id (just _) = refl
 
-deck-digital : ∀ (s : Scene ℕ ⊥ Flow) n → visibleQ (mapScene s) n ≡ visible s n
+deck-digital : ∀ (s : Scene ℕ ⊥ Flow) n → visibleQ (mapScene ι (λ ()) s) n ≡ visible s n
 deck-digital s n = trans (proj₂ (tick-hom ℓ ℓQ (λ a p → refl) s) n nothing) (map-id _)
 
 deck-digital-duration : ∀ (s : Scene ℕ ⊥ Flow) →
-  proj₁ (SQ.sample ℓQ (mapScene s)) ≡ ι (proj₁ (SN.sample ℓ s))
+  proj₁ (SQ.sample ℓQ (mapScene ι (λ ()) s)) ≡ ι (proj₁ (SN.sample ℓ s))
 deck-digital-duration s = proj₁ (tick-hom ℓ ℓQ (λ a p → refl) s)

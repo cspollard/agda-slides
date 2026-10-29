@@ -52,7 +52,7 @@ import Slides.Diagram.Layout natSpace as LN
 import Slides.Diagram.Layout ratSpace as LQ
 import Slides.Diagram.Place ratSpace as PQ
 import Slides.Diagram.Natural natSpace ratSpace ι ι-hom as N
-open import Slides.Scene.Syntax using (Scene)
+open import Slides.Scene.Syntax using (Scene; mapScene)
 
 ------------------------------------------------------------------------
 -- The two clocks: drivers and leaves are scalar terms in one variable
@@ -196,7 +196,7 @@ import Slides.Scene.Animation ratSpace ratTime valQ as AQ
 open import Slides.Scene.Tick {ℕ} {ℚ} {Dn} {Dn} {Layout ℕ} {Layout ℚ}
   (Space.ord natSpace) (Space.sub natSpace) (Space.ord ratSpace) (Space.sub ratSpace)
   ι ι-hom valN valQ lowerD g-val AN.layoutOverlay AQ.layoutOverlay (mapLayout ι) N.overlay-hom
-  using (mapScene; tick-hom)
+  using (tick-hom)
 
 import Slides.Scene.Sample {D = Dn} {Layout ℕ} (Space.ord natSpace) (Space.sub natSpace) valN AN.layoutOverlay as SN
 import Slides.Scene.Sample {D = Dn} {Layout ℚ} (Space.ord ratSpace) (Space.sub ratSpace) valQ AQ.layoutOverlay as SQ
@@ -210,9 +210,9 @@ frameQ : Scene ℚ Dn SLeaf → ℕ → Maybe (Layout ℚ)
 frameQ s n = proj₂ (SQ.sample ℓQ s) (ι n) nothing
 
 -- The tick clock reading: the ℚ frame of the mapped scene at `ι n`, up to `ι`, is the ℕ frame.
-digital : ∀ s n → frameQ (mapScene s) n ≡ Maybe.map (mapLayout ι) (frameN s n)
+digital : ∀ s n → frameQ (mapScene ι lowerD s) n ≡ Maybe.map (mapLayout ι) (frameN s n)
 digital s n = proj₂ (tick-hom ℓN ℓQ ℓ-ok s) n nothing
 
 -- and the durations map by `ι`
-digital-duration : ∀ s → proj₁ (SQ.sample ℓQ (mapScene s)) ≡ ι (proj₁ (SN.sample ℓN s))
+digital-duration : ∀ s → proj₁ (SQ.sample ℓQ (mapScene ι lowerD s)) ≡ ι (proj₁ (SN.sample ℓN s))
 digital-duration s = proj₁ (tick-hom ℓN ℓQ ℓ-ok s)

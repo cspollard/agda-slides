@@ -123,6 +123,19 @@ module _ {C D : Container s p} (m : C ⇒ D) {a b r} {A : Set a} {B : Set b} (R 
   pfold-rel-translate e (impure (c , k)) =
     hom c (λ q → pfold C hA _ (k q)) (λ q → pfold D hB _ (translate m (k q))) (λ q → pfold-rel-translate e (k q))
 
+-- Fusion of a fold with a translation: folding the translation along `m` is folding the original with
+-- the handler pulled back along `m`.  (Digitising, renaming and a change of scalar are instances.)
+
+pull : ∀ {C D : Container s p} {a} {A : Set a} → C ⇒ D → Handler D A → Handler C A
+pull m h c k = h (shape m c) (λ q → k (position m q))
+
+module _ {C D : Container s p} (m : C ⇒ D) {a ℓ} (A : Setoid a ℓ) {h : Handler D (Setoid.Carrier A)}
+         (c : Congruent D A h) {X : Set x} {f : X → Setoid.Carrier A} where
+
+  pfold-translate : ∀ t → Setoid._≈_ A (pfold D h f (translate m t)) (pfold C (pull m h) f t)
+  pfold-translate (pure v)         = Setoid.refl A
+  pfold-translate (impure (a , k)) = c (shape m a) (λ q → pfold-translate (k (position m q)))
+
 -- A congruent handler is an algebra of the polynomial functor, and `pfold` is its fold.
 
 module _ (C : Container s p) (A : Setoid (s ⊔ p) (s ⊔ p)) where
