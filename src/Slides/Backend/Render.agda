@@ -105,6 +105,11 @@ hTag n = "h" ++ˢ show (clamp n)
     clamp (suc (suc (suc (suc (suc zero))))) = 5
     clamp _ = 6
 
+-- the attribute that sets an image's width, a percent of its container (the height follows)
+widthAttr : Maybe ℕ → List (String × String)
+widthAttr nothing  = []
+widthAttr (just w) = ("style" , "width: " ++ˢ show w ++ˢ "%; height: auto") ∷ []
+
 fragmentClass : Maybe String → String
 fragmentClass nothing  = "fragment"
 fragmentClass (just s) = "fragment " ++ˢ s
@@ -132,9 +137,9 @@ mutual
   renderBlock (code lang src)  =
     hElement "pre" [] (hText "code" (("class" , "language-" ++ˢ lang) ∷ ("data-trim" , "") ∷ []) src ∷ []) ∷ []
   renderBlock (displayMath m)  = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ toLaTeX m ++ˢ " \\]") ∷ []
-  renderBlock (figure src cap) =
+  renderBlock (figure src w cap) =
     hElement "figure" []
-      ( hElement "img" (("src" , src) ∷ ("alt" , plainT cap) ∷ []) []
+      ( hElement "img" (("src" , src) ∷ ("alt" , plainT cap) ∷ widthAttr w) []
       ∷ rich "figcaption" [] cap ∷ [] )
     ∷ []
   renderBlock (notes t)        = rich "aside" (("class" , "notes") ∷ []) t ∷ []

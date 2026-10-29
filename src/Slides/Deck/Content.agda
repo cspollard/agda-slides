@@ -51,7 +51,9 @@ data Block : Set where
   bullets     : (incremental : Bool) → List Text → Block
   code        : (language source : String) → Block
   displayMath : Math → Block
-  figure      : (src : String) (caption : Text) → Block
+  -- an image file with a caption; the width is a percent of the slide's content width (none: the
+  -- image's own size, as the stylesheet leaves it), as for `diagram` and `animation`
+  figure      : (src : String) (width : Maybe ℕ) (caption : Text) → Block
   notes       : Text → Block
   table       : (header : List Text) (rows : List (List Text)) → Block
   references  : List (String × Text) → Block
@@ -102,7 +104,7 @@ mutual
   plainB (bullets _ ts)  = map (λ t → "- " ++ˢ plainT t) ts
   plainB (code _ s)      = s ∷ []
   plainB (displayMath m) = toLaTeX m ∷ []
-  plainB (figure _ c)    = plainT c ∷ []
+  plainB (figure _ _ c)  = plainT c ∷ []
   plainB (notes _)       = []
   plainB (table h rows)  = row h ∷ map row rows
     where row = λ cs → intersperse " | " (map plainT cs)
