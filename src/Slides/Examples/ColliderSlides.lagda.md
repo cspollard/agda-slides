@@ -16,7 +16,7 @@ open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Examples.Collider using
   ( higgsDia; topDia; fiveSigma; grow; histogram; nllFormula; resources; scan
-  ; scanSteps; significance; simDia; webDia; stages; tilesDia; lhcAnim; triggerAnim )
+  ; scanSteps; significance; simDia; gridDia; webDia; stages; tilesDia; lhcAnim; triggerAnim )
 open import Slides.Examples.ATLAS using (atlasTurned)
 
 open Checked resources
@@ -38,7 +38,7 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
   slide $ do
     heading 1 "how collider physics is"
     heading 1 "accelerating data science"
-    classed "subtitle" (p■ "how the biggest machine ever built is a data-science lab")
+    classed "subtitle" (p■ "the biggest machine ever built is a data-science lab")
     classed "authors" (p■ "Chris Pollard · Warwick")
 
   slide $ do
@@ -75,11 +75,6 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       Content.figureUnchecked "ATLASMS.jpg" ""
 ```
 
-TODO:
-- approximate rates (40MHz -> 100kHz -> 10kHz)
-- hardware triggers (ML on FPGAs)
-- software triggers (fast ML on GPUs and conventional CPUs)
-
 ```agda
   slide $ do
     heading 2 "a data firehose"
@@ -96,7 +91,16 @@ TODO:
       ∷ c■ "callout" (p■ "→ 100TB/s of data per experiment (!)")
       ∷ []
       )
+
+  slide $
+    classed "cover" $ do
+      Content.placed 0 0 100 100 $
+        Content.figureUnchecked "LHC-FCC.jpg" ""
+      c■ "cover-text" $ Content.placed 0 0 100 100 $
+        f■ $ p■ "the largest machine(s) ever constructed"
 ```
+
+TODO: LHC image here
 
 ```agda
   slide $ do
@@ -120,6 +124,10 @@ TODO:
 ```agda
   slide $ do
     heading 2 "the computing grid"
+    diagram "d-grid" 100 gridDia
+    fragment (c■ "callout" (p■ "the data are too big to move: send the code to the data"))
+    fragment (c■ "callout" (p■ "each site runs your analysis on its own slice"))
+    fragment (c■ "callout" (p■ "only small summaries come back to your laptop"))
 ```
 
 ```agda

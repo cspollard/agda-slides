@@ -265,7 +265,7 @@ pipelineRow =
   hcat 0
     ( ("tc" ⦂ spacer slotS H2)
     ∷ gap "40 MHz"
-    ∷ stage₂ "t1" ("FPGAs" ∷ "custom hardware" ∷ [])
+    ∷ stage₂ "t1" ("FPGAs and" ∷ "custom hardware" ∷ [])
     ∷ gap "1 kHz"
     ∷ stage₂ "t2" ("100,000 CPUs" ∷ [])
     ∷ gap "5 kHz"
