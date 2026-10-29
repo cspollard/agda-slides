@@ -4,10 +4,9 @@
 -- length of a cylinder) and about the line of sight (`roll`, which tilts the picture); `project` is
 -- the point on the page, in orthographic projection, about a given centre.
 --
--- A turn is the pair (cos , sin) of its angle.  It comes from an angle in turns (`viewA`, by the
--- polynomials of `Slides.Trig`), or from a rational tangent of the half angle (`viewT`): t gives
--- (1 − t² , 2t) / (1 + t²), exactly a unit vector, so these turns need no trig and compose
--- without error.
+-- A turn is the pair (cos , sin) of its angle.  `viewT` takes the rational tangent of the half angle:
+-- t gives (1 − t² , 2t) / (1 + t²), exactly a unit vector, so these turns need no trig and compose
+-- without error.  (An angle in turns gives its turn by `cis` of `Slides.Trig`; `view` takes it.)
 
 module Slides.Three.View where
 
@@ -34,10 +33,7 @@ record View : Set where
   field
     yaw roll : ℚᵘ × ℚᵘ
 
--- two angles in turns (polynomials of order n), and two tangents of half angles
-viewA : ℕ → ℚᵘ → ℚᵘ → View
-viewA n a b = view (cis n a) (cis n b)
-
+-- two tangents of half angles
 viewT : ℚᵘ → ℚᵘ → View
 viewT t u = view (tangent t) (tangent u)
 

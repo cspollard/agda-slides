@@ -17,7 +17,7 @@ dropped legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, 
 - [ ] Rewrite this file as work lands (this item).
 
 ## Phase 2: 3D
-- [ ] `Slides.Trig` and a 3D front end compiling to `Dia`, extracted from `Examples/ATLAS.agda` (plan in `plan/3D.md`).
+- [x] `Slides.Trig` and `Slides.Three.*` (view, solids, render) compiling to `Dia`, extracted from `Examples/ATLAS.agda` (plan in `plan/3D.md`, steps 1-4).
 
 ## Phase 3: features
 - [ ] Line breaks, native text colours and styles, nested bullets (through the shared drawing vocabulary; design note first).
@@ -29,6 +29,8 @@ dropped legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, 
 ## Theory
 - [ ] Setoid equality throughout the scalar theories (unnormalised ℚ as a model); see `plan/Rebuild.md`.
 - [ ] `docs/Dropped.md` gaps 5–12: `Repeat` periodicity, scene-level `Par` commutativity over layouts, example-level agreement, coupling exactness at ticks, key-table soundness.
+- [ ] 3D: orthogonality of `tangent` (c² + s² = 1) and invariance of `cis` under full turns; both need ℚ lemmas stdlib lacks (a floor lemma for `(a + d) / d`).
+- [ ] 3D step 5: `pitch`, `box`, `cylinder`, and a non-detector example (a cube for a tensor slide); optional perspective and an `Anim` hook (`plan/3D.md`).
 - [ ] Discharge `PctDigital`; Bézier easing; `Min` and `ModBy` nodes.
 - [ ] Non-isotropic scaling as a connective with smeared text (on hold).
 - [ ] Generated JS evaluator, so that `assets/animation.js` is one table rather than tested by hand.
