@@ -201,6 +201,32 @@ _ : dangling simDia ≡ []
 _ = refl
 ```
 
+## The computing grid
+
+An analysis is written once on a laptop; the grid runs it where the data are, and only the small
+outputs come back.  Jobs go out in blue, results come back in red.
+
+```agda
+gridDia : Dia ℕ
+gridDia =
+  margin 10 10 10 10
+    ((hcat 120
+        ( box "gl" 260 110 (lines 22 ("your laptop" ∷ "one analysis" ∷ []) defaultStyle)
+        ∷ vcat 20
+            ( box "g1" 300 70 (lines 20 ("CERN" ∷ []) defaultStyle)
+            ∷ box "g2" 300 70 (lines 20 ("a university cluster" ∷ []) defaultStyle)
+            ∷ box "g3" 300 70 (lines 20 ("a national lab" ∷ []) defaultStyle)
+            ∷ [] )
+        ∷ box "gr" 260 110 (lines 22 ("your laptop" ∷ "merged results" ∷ []) defaultStyle)
+        ∷ [] )
+      ▹[ cls "flow cy" ] ("gl" ⟶ "g1" ∷ "gl" ⟶ "g2" ∷ "gl" ⟶ "g3" ∷ [])
+      ▹[ cls "flow am" ] ("g1" ⟶ "gr" ∷ "g2" ⟶ "gr" ∷ "g3" ⟶ "gr" ∷ []))
+     ═ ↕ 14 ═ dim 20 "the code travels to the data; only summaries travel back.")
+
+_ : dangling gridDia ≡ []
+_ = refl
+```
+
 ## The web
 
 Where it came from and where it went: collaborators who needed to share, the web built for them,

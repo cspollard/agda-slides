@@ -107,7 +107,7 @@ test-pairs:
 # (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
 # loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=...` links a
 # local copy (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
-COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg
+COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
 
 .PHONY: collider collider-local test-collider
 collider:

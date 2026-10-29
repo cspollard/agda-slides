@@ -538,3 +538,19 @@
   stroke-dasharray: none;
   opacity: 1;
 }
+
+/* white text laid over a full-bleed photograph, centred */
+.reveal .cover-text .placed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reveal .cover-text p {
+  margin: 0 auto;
+  max-width: 80%;
+  text-align: center;
+  font-size: 2.4em;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
+}
