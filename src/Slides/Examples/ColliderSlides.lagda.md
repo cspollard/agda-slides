@@ -56,7 +56,7 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       -- TODO: impact on cosmology
       ∷ []
       )
-    animateLoop "d-lhc" 100 16 lhcAnim
+    animateLoop "d-lhc" 75 16 lhcAnim
 ```
 
 ```agda
