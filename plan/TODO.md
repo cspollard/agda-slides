@@ -20,7 +20,8 @@ dropped legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, 
 - [x] `Slides.Trig` and `Slides.Three.*` (view, solids, render) compiling to `Dia`, extracted from `Examples/ATLAS.agda` (plan in `plan/3D.md`, steps 1-4).
 
 ## Phase 3: features
-- [ ] Line breaks, native text colours and styles, nested bullets (design note in `plan/Text.md`, awaiting review).
+- [x] One shared text tree (`Slides.Text`), `br`, `styled`, `sub`/`sup` in prose, nested bullets (`plan/Text.md`).  Cost: about +240 lines in `src/`, over budget.
+- [ ] Text follow-ups: measure a styled run's size and weight; fix the `dy` of a label line after a sub/superscript (changes existing label bytes); ship the text tree as JSON instead of the markup string, deleting `markup` and the string syntax; `styled` and `br` in animated labels (now plain text and a space); prove `plain` of a parsed label is the label minus markup.
 - [ ] Background image; PNG and PDF primitives (how to ship: copy into `out/`; what Plain does).
 - [ ] Slide number for the Plain backend (Reveal has it); decide per-slide command versus deck option, and stacks.
 - [ ] README and module-level documentation with geometric intuition, written as each module is touched.
