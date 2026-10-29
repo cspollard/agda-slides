@@ -8,134 +8,461 @@
 :root {
   /* neutrals */
   --mono: 'Fira Code', 'Fira Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
-  --bg: #fff; --ink: #262626; --muted: #707070; --rule: #d6d6d6; --faint: #f5f5f5;
+  --bg: #fff;
+  --ink: #262626;
+  --muted: #707070;
+  --rule: #d6d6d6;
+  --faint: #f5f5f5;
   /* accents: muted, darker than screen-bright so they hold up on a projector;
      no yellows or greens */
-  --blue: #2c5a8a;     /* primary: emphasis, links, the "on" state */
-  --crimson: #a02a3c;  /* secondary: signal, warnings, key numbers */
+  --blue: #2c5a8a;
+  /* primary: emphasis, links, the "on" state */
+  --crimson: #a02a3c;
+  /* secondary: signal, warnings, key numbers */
   --plum: #6b3d70;
   --rust: #a5532e;
   /* tints of the accents (fills) */
-  --blue-t: rgba(44, 90, 138, .09); --crimson-t: rgba(160, 42, 60, .08);
-  --plum-t: rgba(107, 61, 112, .08); --rust-t: rgba(165, 83, 46, .08);
+  --blue-t: rgba(44, 90, 138, .09);
+  --crimson-t: rgba(160, 42, 60, .08);
+  --plum-t: rgba(107, 61, 112, .08);
+  --rust-t: rgba(165, 83, 46, .08);
 }
 
-.reveal-viewport { background: var(--bg) !important; }
-.reveal { color: var(--ink); font-size: 26px; font-family: var(--mono); }
-.reveal .slides section { text-align: left; }
-.reveal .slides section > * { position: relative; }
+.reveal-viewport {
+  background: var(--bg) !important;
+}
 
-.reveal h1, .reveal h2, .reveal h3 { font-family: var(--mono); text-transform: none; color: var(--ink); letter-spacing: -.01em; font-weight: 600; }
-.reveal h1 { font-size: 2.1em; line-height: 1.05; margin: 0 0 .15em; }
+.reveal {
+  color: var(--ink);
+  font-size: 26px;
+  font-family: var(--mono);
+}
+
+.reveal .slides section {
+  text-align: left;
+}
+
+.reveal .slides section>* {
+  position: relative;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+  font-family: var(--mono);
+  text-transform: none;
+  color: var(--ink);
+  letter-spacing: -.01em;
+  font-weight: 600;
+}
+
+.reveal h1 {
+  font-size: 2.1em;
+  line-height: 1.05;
+  margin: 0 0 .15em;
+}
+
 .reveal h2 {
-  font-size: 1.55em; margin: 0 0 .55em; padding-bottom: .12em; display: block; width: fit-content;
+  font-size: 1.55em;
+  margin: 0 0 .55em;
+  padding-bottom: .12em;
+  display: block;
+  width: fit-content;
   border-bottom: 3px solid var(--blue);
 }
-.reveal h3 { font-size: 1.05em; margin: .1em 0 .3em; color: var(--ink); }
-.reveal p, .reveal li { line-height: 1.35; }
-.reveal ul { margin-left: .9em; }
-.reveal li::marker { color: var(--muted); }
-.reveal a { color: var(--blue); }
-.reveal em { color: var(--crimson); font-style: normal; }
-.reveal strong { color: var(--ink); font-weight: 700; }
+
+.reveal h3 {
+  font-size: 1.05em;
+  margin: .1em 0 .3em;
+  color: var(--ink);
+}
+
+.reveal p,
+.reveal li {
+  line-height: 1.35;
+}
+
+.reveal ul {
+  margin-left: .9em;
+}
+
+.reveal li::marker {
+  color: var(--muted);
+}
+
+.reveal a {
+  color: var(--blue);
+}
+
+.reveal em {
+  color: var(--crimson);
+  font-style: normal;
+}
+
+.reveal strong {
+  color: var(--ink);
+  font-weight: 700;
+}
 
 /* Title block */
-.reveal .subtitle { font-size: 1.25em; color: var(--muted); margin: 0 0 1.1em; }
+.reveal .subtitle {
+  font-size: 1.25em;
+  color: var(--muted);
+  margin: 0 0 1.1em;
+}
+
 .reveal .tag {
-  display: inline-block; font-size: .5em; letter-spacing: .16em; text-transform: none;
-  color: var(--blue); margin: .2em 0; }
-.reveal .authors { font-size: .8em; margin: .2em 0 .1em; }
+  display: inline-block;
+  font-size: .5em;
+  letter-spacing: .16em;
+  text-transform: none;
+  color: var(--blue);
+  margin: .2em 0;
+}
+
+.reveal .authors {
+  font-size: .8em;
+  margin: .2em 0 .1em;
+}
 
 /* Cards and callouts */
+.reveal .center {
+  text-align: center;
+}
+
 .reveal .card {
-  display: inline-block; width: 46.5%; margin: .8% 1.2%; vertical-align: top; box-sizing: border-box;
-  background: var(--bg); border: 1px solid var(--rule); border-top: 3px solid var(--muted); border-radius: 3px;
-  padding: .7em 1.1em .8em; min-height: 6.2em; box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  display: inline-block;
+  width: 46.5%;
+  margin: .8% 1.2%;
+  vertical-align: top;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--muted);
+  border-radius: 3px;
+  padding: .7em 1.1em .8em;
+  min-height: 6.2em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
 }
-.reveal .card p, .reveal .card li { font-size: .9em; margin: .35em 0; }
-.reveal .card h3 { font-size: 1.15em; }
-.reveal .card.wide { width: 96%; }
-.reveal .card.blue { border-top-color: var(--blue); }
-.reveal .card.blue h3 { color: var(--blue); }
-.reveal .card.crimson { border-top-color: var(--crimson); }
-.reveal .card.crimson h3 { color: var(--crimson); }
-.reveal .card.plum { border-top-color: var(--plum); }
-.reveal .card.plum h3 { color: var(--plum); }
-.reveal .card.rust { border-top-color: var(--rust); }
-.reveal .card.rust h3 { color: var(--rust); }
+
+.reveal .card p,
+.reveal .card li {
+  font-size: .9em;
+  margin: .35em 0;
+}
+
+.reveal .card h3 {
+  font-size: 1.15em;
+}
+
+.reveal .card.wide {
+  width: 96%;
+}
+
+.reveal .card.blue {
+  border-top-color: var(--blue);
+}
+
+.reveal .card.blue h3 {
+  color: var(--blue);
+}
+
+.reveal .card.crimson {
+  border-top-color: var(--crimson);
+}
+
+.reveal .card.crimson h3 {
+  color: var(--crimson);
+}
+
+.reveal .card.plum {
+  border-top-color: var(--plum);
+}
+
+.reveal .card.plum h3 {
+  color: var(--plum);
+}
+
+.reveal .card.rust {
+  border-top-color: var(--rust);
+}
+
+.reveal .card.rust h3 {
+  color: var(--rust);
+}
+
 .reveal .callout {
-  border-left: 4px solid var(--crimson); background: var(--faint);
-  padding: .35em .9em; margin: .7em 0 0; border-radius: 0 3px 3px 0; font-size: .9em;
+  border-left: 4px solid var(--crimson);
+  background: var(--faint);
+  padding: .35em .9em;
+  margin: .7em 0 0;
+  border-radius: 0 3px 3px 0;
+  font-size: .9em;
 }
-.reveal .callout.blue { border-color: var(--blue); }
-.reveal .good { color: var(--blue); }
-.reveal .bad { color: var(--crimson); }
-.reveal .math { font-size: .85em; }
-.reveal .small { font-size: .62em; color: var(--muted); }
+
+.reveal .callout.blue {
+  border-color: var(--blue);
+}
+
+.reveal .good {
+  color: var(--blue);
+}
+
+.reveal .bad {
+  color: var(--crimson);
+}
+
+.reveal .math {
+  font-size: .85em;
+}
+
+.reveal .small {
+  font-size: .62em;
+  color: var(--muted);
+}
 
 /* Diagrams */
-.reveal .diagram svg { overflow: visible; }
-.reveal .diagram text { font-family: inherit; fill: var(--ink); }
-.reveal svg .node { fill: var(--faint); stroke: var(--muted); stroke-width: 2; transition: fill .5s, stroke .5s; }
-.reveal svg .node.on { fill: var(--blue-t); stroke: var(--blue); stroke-width: 3; }
-.reveal svg .node.blue { stroke: var(--blue); }
-.reveal svg .node.crimson { stroke: var(--crimson); fill: var(--crimson-t); }
-.reveal svg .node.plum { stroke: var(--plum); fill: var(--plum-t); }
-.reveal svg .dim { fill: var(--muted); }
-.reveal svg .big { font-weight: 700; }
-.reveal svg .cy { stroke: var(--blue); }
-.reveal svg .am { stroke: var(--crimson); }
-.reveal svg .flow { stroke-width: 2; stroke-dasharray: 5 6; opacity: .75; }
+.reveal .diagram svg {
+  overflow: visible;
+}
+
+.reveal .diagram text {
+  font-family: inherit;
+  fill: var(--ink);
+}
+
+.reveal svg .node {
+  fill: var(--faint);
+  stroke: var(--muted);
+  stroke-width: 2;
+  transition: fill .5s, stroke .5s;
+}
+
+.reveal svg .node.on {
+  fill: var(--blue-t);
+  stroke: var(--blue);
+  stroke-width: 3;
+}
+
+.reveal svg .node.blue {
+  stroke: var(--blue);
+}
+
+.reveal svg .node.crimson {
+  stroke: var(--crimson);
+  fill: var(--crimson-t);
+}
+
+.reveal svg .node.plum {
+  stroke: var(--plum);
+  fill: var(--plum-t);
+}
+
+.reveal svg .dim {
+  fill: var(--muted);
+}
+
+.reveal svg .big {
+  font-weight: 700;
+}
+
+.reveal svg .cy {
+  stroke: var(--blue);
+}
+
+.reveal svg .am {
+  stroke: var(--crimson);
+}
+
+.reveal svg .flow {
+  stroke-width: 2;
+  stroke-dasharray: 5 6;
+  opacity: .75;
+}
+
 /* the dashes of a flowing arrow march forward: phase k of 8 is k/8 of the 11px dash period */
-.reveal svg .flow.ph0 { stroke-dashoffset: 0; }
-.reveal svg .flow.ph1 { stroke-dashoffset: -1.375; }
-.reveal svg .flow.ph2 { stroke-dashoffset: -2.75; }
-.reveal svg .flow.ph3 { stroke-dashoffset: -4.125; }
-.reveal svg .flow.ph4 { stroke-dashoffset: -5.5; }
-.reveal svg .flow.ph5 { stroke-dashoffset: -6.875; }
-.reveal svg .flow.ph6 { stroke-dashoffset: -8.25; }
-.reveal svg .flow.ph7 { stroke-dashoffset: -9.625; }
-.reveal svg .axis { stroke: var(--muted); stroke-width: 2; }
-.reveal svg .b1 { fill: #b9b9b9; }
-.reveal svg .b2 { fill: var(--blue); }
-.reveal svg .b3 { fill: #8a8a8a; }
-.reveal svg .tile { fill: var(--faint); stroke: var(--rule); stroke-width: 2; }
-.reveal svg .stat { font-weight: 700; fill: var(--ink); }
-.reveal svg .stat.blue { fill: var(--blue); }
-.reveal svg .stat.crimson { fill: var(--crimson); }
-.reveal svg .stat.plum { fill: var(--plum); }
-.reveal svg .stat.rust { fill: var(--rust); }
+.reveal svg .flow.ph0 {
+  stroke-dashoffset: 0;
+}
+
+.reveal svg .flow.ph1 {
+  stroke-dashoffset: -1.375;
+}
+
+.reveal svg .flow.ph2 {
+  stroke-dashoffset: -2.75;
+}
+
+.reveal svg .flow.ph3 {
+  stroke-dashoffset: -4.125;
+}
+
+.reveal svg .flow.ph4 {
+  stroke-dashoffset: -5.5;
+}
+
+.reveal svg .flow.ph5 {
+  stroke-dashoffset: -6.875;
+}
+
+.reveal svg .flow.ph6 {
+  stroke-dashoffset: -8.25;
+}
+
+.reveal svg .flow.ph7 {
+  stroke-dashoffset: -9.625;
+}
+
+.reveal svg .axis {
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.reveal svg .b1 {
+  fill: #b9b9b9;
+}
+
+.reveal svg .b2 {
+  fill: var(--blue);
+}
+
+.reveal svg .b3 {
+  fill: #8a8a8a;
+}
+
+.reveal svg .tile {
+  fill: var(--faint);
+  stroke: var(--rule);
+  stroke-width: 2;
+}
+
+.reveal svg .stat {
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.reveal svg .stat.blue {
+  fill: var(--blue);
+}
+
+.reveal svg .stat.crimson {
+  fill: var(--crimson);
+}
+
+.reveal svg .stat.plum {
+  fill: var(--plum);
+}
+
+.reveal svg .stat.rust {
+  fill: var(--rust);
+}
 
 /* The histogram of the bump-hunt slide */
-.reveal svg .hist-bkg { fill: #a8a8a8; opacity: .9; }
-.reveal svg .hist-sig { fill: var(--crimson); opacity: .95; }
+.reveal svg .hist-bkg {
+  fill: #a8a8a8;
+  opacity: .9;
+}
+
+.reveal svg .hist-sig {
+  fill: var(--crimson);
+  opacity: .95;
+}
 
 /* Closing slide */
-.reveal .closing ul li { font-size: 1.1em; margin: .45em 0; }
+.reveal .closing ul li {
+  font-size: 1.1em;
+  margin: .45em 0;
+}
+
 .reveal .closing p {
-  font-size: 2.1em; font-weight: 700; margin: .5em 0 .2em; letter-spacing: -.01em;
+  font-size: 2.1em;
+  font-weight: 700;
+  margin: .5em 0 .2em;
+  letter-spacing: -.01em;
   color: var(--crimson);
 }
 
 /* reveal.js chrome */
-.reveal .controls { color: var(--blue); }
-.reveal .progress { color: var(--blue); }
+.reveal .controls {
+  color: var(--blue);
+}
+
+.reveal .progress {
+  color: var(--blue);
+}
 
 /* The likelihood scan */
-.reveal svg .tmpl { fill: var(--crimson); opacity: .3; stroke: none; }
-.reveal svg .pt { fill: var(--ink); stroke: none; }
-.reveal svg .eb { stroke: var(--ink); stroke-width: 2; }
-.reveal svg .cur { fill: var(--blue); stroke: none; }
-.reveal svg .curve { fill: none; stroke: var(--blue); stroke-width: 3; stroke-linejoin: round; }
-.reveal svg .now { fill: var(--crimson); stroke: none; }
-.reveal svg .mu { stroke: var(--crimson); stroke-width: 2; stroke-dasharray: 6 5; }
+.reveal svg .tmpl {
+  fill: var(--crimson);
+  opacity: .3;
+  stroke: none;
+}
+
+.reveal svg .pt {
+  fill: var(--ink);
+  stroke: none;
+}
+
+.reveal svg .eb {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.reveal svg .cur {
+  fill: var(--blue);
+  stroke: none;
+}
+
+.reveal svg .curve {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.reveal svg .now {
+  fill: var(--crimson);
+  stroke: none;
+}
+
+.reveal svg .mu {
+  stroke: var(--crimson);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+}
 
 /* a title set in two headings: close the gap between the lines */
-.reveal h1 + h1 { margin-top: -.05em; }
+.reveal h1+h1 {
+  margin-top: -.05em;
+}
 
 /* The LHC animation (src/Slides/Examples/LHC.agda) */
-.reveal svg .pipe { fill: none; stroke: var(--muted); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
-.reveal svg .bunch { fill: var(--rust); stroke: none; }
-.reveal svg .halo { fill: var(--rust); opacity: .25; stroke: none; }
-.reveal svg .burst { fill: var(--crimson); opacity: .5; stroke: none; }
-.reveal svg .spark { fill: var(--crimson); stroke: none; }
+.reveal svg .pipe {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.reveal svg .bunch {
+  fill: var(--rust);
+  stroke: none;
+}
+
+.reveal svg .halo {
+  fill: var(--rust);
+  opacity: .25;
+  stroke: none;
+}
+
+.reveal svg .burst {
+  fill: var(--crimson);
+  opacity: .5;
+  stroke: none;
+}
+
+.reveal svg .spark {
+  fill: var(--crimson);
+  stroke: none;
+}

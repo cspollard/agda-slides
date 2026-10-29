@@ -20,12 +20,8 @@ open import Slides.Examples.Collider using
 open import Slides.Examples.ATLAS using (atlasTurned)
 
 open Checked resources
-open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■; diagram to d■; fragment to f■)
-```
+open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■; diagram to d■; fragment to f■; classed to c■)
 
-## The deck
-
-```agda
 collider : Talk
 collider = do
 ```
@@ -44,41 +40,25 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
     heading 1 "accelerating data science"
     classed "subtitle" (p■ "how the biggest machine ever built is a data-science lab")
     classed "authors" (p■ "Chris Pollard · Warwick")
-```
 
-```agda
   slide $ do
     heading 2 "curiosity-driven particle physics"
     columns
-      ( f■ (d■ "d-higgs" 90 higgsDia)
-      ∷ f■ (d■ "d-top" 90 topDia)
+      ( f■ (d■ "d-higgs" 50 higgsDia)
+      ∷ f■ (d■ "d-top" 50 topDia)
       ∷ [] )
-    fragment (p■ "large cosmological implications")
-```
-
-```agda
-  slide $ do
-    heading 2 "the Large Hadron Collider"
-    bullets
-      $ "the Large Hadron Collider (LHC) produces 1 billion $pp$ collisions every second at $m_{pp} = 13.6$ TeV"
-      ∷ "why?"
-      ∷ "rare processes: 1B collisions to get a Higgs boson, on average"
-      ∷ "clean decay channel branching fractions are ~0.2%"
-      ∷ ("in 2012 it revealed the " ∷ emph "Higgs boson" ∷ " " ∷ cite "ATLAS12" ∷ " " ∷ cite "CMS12" ∷ [])
-      ∷ []
-    animateLoop "d-lhc2" 100 16 lhcAnim
+    fragment (c■ "center" (p■ "large cosmological implications"))
 ```
 
 ```agda
   slide $ do
     heading 2 "the ATLAS detector"
-    diagram "d-atlas" 50 atlasTurned
-    classed "card blue" $ do
-      h■ 3 "readout channels"
-      p■ "~100 million electronic channels"
-    classed "card crimson" $ do
-      h■ 3 "size on disk"
-      p■ "~1.5–2 MB per bunch crossing"
+    diagram "d-atlas" 60 atlasTurned
+    columns
+      ( f■ (c■ "callout" $ p■ "~100 million readout channels")
+      ∷ f■ (c■ "callout" $ p■ "1.5-2 MB per bunch crossing")
+      ∷ []
+      )
 ```
 
 ```agda
