@@ -85,3 +85,16 @@ Hyland, Plotkin, Power, sums of effects; Plotkin and Power, algebraic operations
 Setzer, interaction structures; Rutten, coalgebra (Moore machines); Henzinger, Manna, Pnueli,
 *What good are digital clocks?*; Alur and Dill, timed automata.  Bibliographic checking status
 is in `../agda-slides-legacy/docs/Time.md`.
+
+**[decided, Step 7]**
+- Easing: a cubic Bézier is a constructor of the Coupling easing (`Bezier x₁ y₁ x₂ y₂`, hundredths), evaluated in
+  ℚ by sixteen bisection steps and clamped at the ends, so `ease-0` and `ease-1` hold for it like for the others;
+  the page evaluator has the same function (tested against Agda's frames, `make test-anim-ref`).
+- Steps over a loop (`animateBoth`) is one scene: `n` phases, each the acts in sequence, end to end; the loop
+  picks the phase (real time modulo `n` ticks), the steps play within it.  Phases of unequal length are rejected
+  where the animation is written (`uniform?`, an unsolved-meta check like `figure`).
+- A raw frame list is a scene of one-tick frames (`frames`, `flipTween`); there is no frame-list content block.
+- Lowerings of the deck vocabulary are Kleisli maps `Block → Flow` lifted to flows and talks (`Slides.Deck.Lower`):
+  `lowerFlow` is a monoid homomorphism, lowerings compose before they are lifted, a pause survives its content.
+- Shipping: the event list is JSON in a `script type="application/json"` child of the animation (not an
+  attribute: entity-escaped quotes tripled the size), with `< > &` written as `\uXXXX`.

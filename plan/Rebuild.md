@@ -25,6 +25,11 @@ Step 6 backends 1918 Agda + `assets/animation.js` 256 (2500).  Talk and Plain by
 Intro, Showcase, Labels, Keys, AnimRef work; browser tests and `anim-ref` pass.  Next: Step 7 (Pairs,
 PairsHero, Collider, remaining tests and lowerings).
 
+Step 7A (2026-10-29, branch `rebuild-step7a`): vocabulary gaps closed (Bézier easing, `animateBoth`, frame lists and
+flip books as scenes, the lowering family as flow homomorphisms, `showHash`), Pairs and PairsHero ported, negative
+tests restored (5 rejections with controls), browser tests adapted; page size of Pairs 344 KB against the legacy
+194 KB (events 291 KB; a prototype of subtree sharing gives 101 KB, not built).  Collider is Step 7B.
+
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
    out read-only; stale branches and worktrees removed; this branch holds only `Container.*`,

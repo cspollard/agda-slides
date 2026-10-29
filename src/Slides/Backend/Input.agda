@@ -28,7 +28,8 @@ open import Data.Nat.Base using (ℕ; zero; suc)
 open import Data.Nat.Properties using (_≟_)
 open import Data.Product.Base using (_×_; _,_; Σ-syntax; proj₂)
 open import Data.Product.Properties using (≡-dec)
-open import Data.String.Base using (String)
+open import Data.String.Base using (String) renaming (_++_ to _++ˢ_)
+open import Data.Nat.Show using () renaming (show to showℕ)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Sum.Properties using () renaming (≡-dec to ⊎-dec)
 open import Data.Empty using (⊥)
@@ -83,6 +84,12 @@ data Hash : Set where
   flat  : ℕ → Hash
   grid  : ℕ → ℕ → Hash
   named : String → Hash
+
+-- the URL fragment of a hash (how the page names it): `#n`, `#/h/v`, `#/id`
+showHash : Hash → String
+showHash (flat n)   = "#" ++ˢ showℕ n
+showHash (grid h v) = "#/" ++ˢ showℕ h ++ˢ "/" ++ˢ showℕ v
+showHash (named l)  = "#/" ++ˢ l
 
 ------------------------------------------------------------------------
 -- Bindings

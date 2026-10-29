@@ -73,3 +73,13 @@ reveal-total n = nav n , refl
 
 plain-total : ∀ n → Σ[ s ∈ Nav ] Supports.inj plainSupports n ≡ just s
 plain-total n = n , refl
+
+------------------------------------------------------------------------
+-- Hashes are written as the page reads them (`revealHash`, `plainHash`)
+
+_ : showHash (flat 3) ≡ "#3"
+_ = refl
+_ : showHash (grid 8 1) ≡ "#/8/1"
+_ = refl
+_ : showHash (named "intro") ≡ "#/intro"
+_ = refl
