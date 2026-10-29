@@ -120,3 +120,21 @@
 /* reveal.js chrome */
 .reveal .controls { color: var(--blue); }
 .reveal .progress { color: var(--blue); }
+
+/* The likelihood scan */
+.reveal svg .tmpl { fill: var(--crimson); opacity: .3; stroke: none; }
+.reveal svg .pt { fill: var(--ink); stroke: none; }
+.reveal svg .eb { stroke: var(--ink); stroke-width: 2; }
+.reveal svg .cur { fill: var(--blue); stroke: none; }
+.reveal svg .now { fill: var(--crimson); stroke: none; }
+.reveal svg .mu { stroke: var(--crimson); stroke-width: 2; stroke-dasharray: 6 5; }
+
+/* a title set in two headings: close the gap between the lines */
+.reveal h1 + h1 { margin-top: -.05em; }
+
+/* The LHC animation (src/Slides/Examples/LHC.agda) */
+.reveal svg .pipe { fill: none; stroke: var(--muted); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+.reveal svg .bunch { fill: var(--rust); stroke: none; }
+.reveal svg .halo { fill: var(--rust); opacity: .25; stroke: none; }
+.reveal svg .burst { fill: var(--crimson); opacity: .5; stroke: none; }
+.reveal svg .spark { fill: var(--crimson); stroke: none; }
