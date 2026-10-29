@@ -10,7 +10,7 @@ open import Data.String using (String)
 
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
-open import Slides.Deck.Math using (_≡_; _*_; _^_; _+_)
+open import Slides.Math using (_≡_; _*_; _^_; _+_)
 open import Slides.Deck.Anim using (Anim; Leaf; lit; now; frame′; txt; tween; Linear; _⨾_; _∥_; ι; defaultStyle; filled)
 open import Slides.Diagram.Syntax using (rectangle; spacer; beside; named)
 

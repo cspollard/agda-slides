@@ -46,7 +46,7 @@ open import Data.XML.AST using (XMLDoc)
 open import Slides.Scalar.Model.Nat using (natSpace)
 open import Slides.Diagram.Print using (natPrint; renderSVG)
 import Slides.Diagram.Layout natSpace as DL
-open import Slides.Deck.Math using (toLaTeX)
+open import Slides.Math using (toLaTeX)
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk

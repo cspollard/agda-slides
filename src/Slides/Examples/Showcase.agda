@@ -11,7 +11,7 @@ open import Data.String using (String)
 
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
-import Slides.Deck.Math as M
+import Slides.Math as M
 open import Slides.Diagram.Style using (defaultStyle; filled; stroked)
 open import Slides.Diagram.Syntax using (Dia; beside; framed; named; connect; disc; spacer)
 import Slides.Diagram.Syntax as D

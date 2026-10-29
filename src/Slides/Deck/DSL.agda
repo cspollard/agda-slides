@@ -33,7 +33,7 @@ open import Data.String using (String; _==_)
 open import Data.Unit.Base using (⊤)
 
 open import Slides.Deck.Literals public
-open import Slides.Deck.Math using (Math)
+open import Slides.Math using (Math)
 open import Slides.Deck.Content hiding (cite; plain; heading; paragraph; bullets; code; displayMath; figure; notes; table;
                                        references; diagram; script; mount; columns; box; fragment; classed; placed)
 open import Slides.Deck.Content using (Inline; Text; Flow; Block; text; codeSpan; emph; strong; inlineMath; link) public

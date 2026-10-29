@@ -11,7 +11,7 @@ module Slides.Examples.ColliderSlides where
 open import Data.List using (_∷_; [])
 open import Function using (_$_)
 
-import Slides.Deck.Math as M
+import Slides.Math as M
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Examples.Collider using

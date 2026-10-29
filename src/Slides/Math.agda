@@ -10,7 +10,7 @@
 -- AST lacks.  With `Slides.Deck.Literals` in scope, numbers and string literals are
 -- overloaded: `2` is `num 2` and `"x"` is the identifier `x`.
 
-module Slides.Deck.Math where
+module Slides.Math where
 
 open import Data.List using (List; []; _∷_; map; concat)
 open import Data.Nat using (ℕ)

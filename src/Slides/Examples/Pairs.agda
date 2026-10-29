@@ -25,7 +25,7 @@ open import Slides.Diagram.Convenience
 open import Slides.Diagram.Names using (dangling)
 open import Slides.Examples.PairsHero using (heroLoop)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
-import Slides.Deck.Math as M
+import Slides.Math as M
 
 open Content using () renaming (paragraph to p■; heading to h■)
 

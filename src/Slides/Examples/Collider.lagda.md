@@ -26,7 +26,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Slides.Deck.Literals
 open import Slides.Deck.DSL using (Resources; figures; references)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
-import Slides.Deck.Math as M
+import Slides.Math as M
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.Style using (filled; stroked; thick)
 open import Slides.Diagram.Names using (dangling)

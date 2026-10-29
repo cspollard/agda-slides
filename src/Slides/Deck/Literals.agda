@@ -19,7 +19,7 @@ import Data.Nat.Literals
 open import Data.Nat.Base using (ℕ)
 
 open import Slides.Deck.Content using (Inline; Text; text)
-open import Slides.Deck.Math using (Math; var; num)
+open import Slides.Math using (Math; var; num)
 
 instance
   isStringString : IsString String

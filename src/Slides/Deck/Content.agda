@@ -28,7 +28,7 @@ open import Data.String.Base using (String; intersperse; concat) renaming (_++_ 
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
 import Data.List.Properties as ListP
 
-open import Slides.Deck.Math using (Math; toLaTeX)
+open import Slides.Math using (Math; toLaTeX)
 open import Slides.Text public
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Syntax using (Dia)

@@ -22,7 +22,7 @@ open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
-open import Slides.Deck.Math using (Math; toLaTeX)
+open import Slides.Math using (Math; toLaTeX)
 
 data Inline : Set where
   text codeSpan : String → Inline
