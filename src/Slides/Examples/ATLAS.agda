@@ -211,10 +211,10 @@ stationR = 250 ∷ 286 ∷ 322 ∷ []
 
 -- a layer: cells between the radii r₀ and r₁, `n` of them of width `w` from angle `hi` on (all
 -- the way round, or up to the cut), with their colour and the colour of their outlines (`none`:
--- no outline), and the lit ones.  A lit cell is (start angle , level 1 … 3 , the slope of the cluster along the beam in
--- percent of the radius, so its z is the slope times its radius).
+-- no outline), and the lit ones.  A lit cell is (start angle , level 1 … 3); the whole volume of
+-- the cell lights up.
 Lit : Set
-Lit = ℕ × ℕ × ℤ
+Lit = ℕ × ℕ
 
 record Layer : Set where
   constructor layer
@@ -275,21 +275,15 @@ module Parts (T : Theme) (V : View) where
     ∷ layer 316 328 0   32 24 muBase   muLit   muLit   muLits
     ∷ []
     where
-      -- the lit cells, with the slope of their cluster: the jet, the electron, the photon and
-      -- the muon (which also leaves a trace in the hadronic calorimeter and the stations)
-      jetS elecS photS muS : ℤ
-      jetS  = + 22
-      elecS = negᶻ (+ 30)
-      photS = + 10
-      muS   = + 25
+      -- the lit cells: the jet, the electron, the photon, and the muon (which also leaves a trace
+      -- in the hadronic calorimeter and the stations)
       ecalLits hcalLits muLits : List Lit
-      ecalLits = (624 , 1 , jetS) ∷ (640 , 3 , jetS) ∷ (656 , 3 , jetS) ∷ (672 , 2 , jetS)
-               ∷ (688 , 2 , jetS) ∷ (704 , 1 , jetS)
-               ∷ (320 , 1 , elecS) ∷ (336 , 3 , elecS) ∷ (352 , 2 , elecS)
-               ∷ (128 , 1 , photS) ∷ (144 , 3 , photS) ∷ (160 , 2 , photS)
-               ∷ (16 , 1 , muS) ∷ []
-      hcalLits = (608 , 1 , jetS) ∷ (640 , 3 , jetS) ∷ (672 , 2 , jetS) ∷ (0 , 1 , muS) ∷ []
-      muLits   = (0 , 3 , muS) ∷ []
+      ecalLits = (624 , 1) ∷ (640 , 3) ∷ (656 , 3) ∷ (672 , 2) ∷ (688 , 2) ∷ (704 , 1)   -- jet
+               ∷ (320 , 1) ∷ (336 , 3) ∷ (352 , 2)                                         -- electron
+               ∷ (128 , 1) ∷ (144 , 3) ∷ (160 , 2)                                         -- photon
+               ∷ (16 , 1) ∷ []                                                             -- muon
+      hcalLits = (608 , 1) ∷ (640 , 3) ∷ (672 , 2) ∷ (0 , 1) ∷ []
+      muLits   = (0 , 3) ∷ []
 
   -- the start angles of the cells of a layer
   starts : Layer → List ℕ
@@ -326,15 +320,20 @@ module Parts (T : Theme) (V : View) where
               else (if seen (negᶻ (proj₂ (sc lo))) then face L (wall r₀ r₁ lo) else [])
                 ++ (if seen (proj₂ (sc hi)) then face L (wall r₀ r₁ hi) else [])
 
-  -- the lit cells of a layer, floating in the plane of their cluster over the rest (seen
-  -- through the detector)
+  -- the lit cells of a layer: each a whole volume, its six faces translucent with an outline, over
+  -- the rest (seen through the detector)
   lit : Layer → List (Dia ℕ)
-  lit L = map one lits
+  lit L = concat (map volume lits)
     where
       open Layer L
-      one : Lit → Dia ℕ
-      one (a , l , s) =
-        put 0 0 (polygon (cell r₀ r₁ a w (s *ᶻ + ((r₀ + r₁) / 2))) (paint litC litC 1 (glow l)))
+      volume : Lit → List (Dia ℕ)
+      volume (a , l) = concat (map solid
+        ( cell r₀ r₁ a w end ∷ patch r₁ a w ∷ wall r₀ r₁ a ∷ wall r₀ r₁ (a + w) ∷ patch r₀ a w
+        ∷ cell r₀ r₁ a w (negᶻ end) ∷ []))
+        where
+          solid : List (ℕ × ℕ) → List (Dia ℕ)
+          solid ps = put 0 0 (polygon ps (paint litC litC 0 (glow l * 38 / 100)))
+                   ∷ put 0 0 (polygon ps (line litC 1)) ∷ []
 
   -- the silicon layers: rings round the end face of the tracker
   silicons : List (Dia ℕ)
