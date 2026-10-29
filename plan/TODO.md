@@ -1,26 +1,34 @@
-- [x] Complete proofs about the Dia type (the remaining laws are in `plan/Plan.md`, item 3)
-- [x] Clean up completed items from plans, move information to docs (`docs/Design.md`)
-- [x] Add proofs for the base DSL (`Slides.Diagram.Place.Properties.Laws`, `NamesSound`)
-- [x] Add DSL for animations, similar to Dia, together with Reveal backend
-  (`Slides.Anim.*`, `plan/Animations.md`).
-- [ ] auto generate CSS?
-- [ ] do we have Content.figure(checked)?
-- [ ] duplication of e.g. fragment and Content.fragment
-- [ ] slides should support the same primitives as diagrams.
-- [ ] reduce compilation time
-- [ ] allow line breaks
-- [ ] allow native text colors and styles
-- [ ] reinstate README documentation
-- [ ] allow nested bullet points
-- [ ] generalize 3D views and projections (started in Slides.Examples.ATLAS)
-- [ ] Add background functionality (e.g. as an SVG or other image)
-- [ ] Better inline documentation of commands -- some geometric intuition should be included when one peruses the html docs for each agda file.
-- [ ] allow inclusion of pngs and pdfs as primitives -- need to be careful about how to ship these -- copy? symbolic link? Maybe not all backends can handle this.
-- [ ] Add a slide number command (show the current slide number, and optionally
-  the total, on a slide or in a footer). Reveal.js already has a deck-wide
-  `slideNumber` option (`RevealConfig.slideNumber`, off by default), so the
-  reveal backend should be nearly trivial; the plain backend needs its own
-  counter. Decide whether it is a per-slide command, a deck option, or both, and
-  how it interacts with labels and stacks (reveal counts stacks as one slide by
-  default).
-- [ ] A general 3D module (`Slides.Trig`, views, solids, projection to `Dia`), extracted from `Examples/ATLAS.agda`, with ℚ and polynomial trig of a user-chosen order. Plan in `plan/3D.md`.
+# TODO
+
+Living list for the rebuilt library (design in `docs/Objects.md`, history in `plan/Rebuild.md`,
+dropped legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, then features.
+
+## Done
+- [x] Rebuild (steps 0–10): scalar theories, `Diagram`, `Scene`, `Program`, `Deck`, backends, all decks, goldens and browser tests.
+- [x] Polyline and ellipse primitives; `.Convenience` geometric operators.
+- [x] Reveal slide number: `RevealConfig.slideNumber`.
+- [x] `figure` against declared resources: `Checked R` in `Deck/DSL.agda`.
+- [x] Repository clutter: step branches and worktrees removed (archive tags remain).
+
+## Phase 1: simplification and consolidation
+- [ ] Deck DSL: state each primitive once (`fragment`, `fragmentWith`, `figure*` are declared at the flow level and lifted again at body level).  Branch `simplify-dsl`.
+- [ ] Share the LHC tables between `LHC.agda` and the Collider deck (about 21 KB shipped twice).  Branch `simplify-lhc`.
+- [ ] Stylesheets: drop dead and duplicated rules, generate what an Agda record already determines, light highlight theme on white slides.  Branch `simplify-css`.
+- [ ] Rewrite this file as work lands (this item).
+
+## Phase 2: 3D
+- [ ] `Slides.Trig` and a 3D front end compiling to `Dia`, extracted from `Examples/ATLAS.agda` (plan in `plan/3D.md`).
+
+## Phase 3: features
+- [ ] Line breaks, native text colours and styles, nested bullets (through the shared drawing vocabulary; design note first).
+- [ ] Background image; PNG and PDF primitives (how to ship: copy into `out/`; what Plain does).
+- [ ] Slide number for the Plain backend (Reveal has it); decide per-slide command versus deck option, and stacks.
+- [ ] README and module-level documentation with geometric intuition, written as each module is touched.
+- [ ] Compilation time: measure first (`n / 1` made `Hom` exponential); pairs with setoid equality.
+
+## Theory
+- [ ] Setoid equality throughout the scalar theories (unnormalised ℚ as a model); see `plan/Rebuild.md`.
+- [ ] `docs/Dropped.md` gaps 5–12: `Repeat` periodicity, scene-level `Par` commutativity over layouts, example-level agreement, coupling exactness at ticks, key-table soundness.
+- [ ] Discharge `PctDigital`; Bézier easing; `Min` and `ModBy` nodes.
+- [ ] Non-isotropic scaling as a connective with smeared text (on hold).
+- [ ] Generated JS evaluator, so that `assets/animation.js` is one table rather than tested by hand.
