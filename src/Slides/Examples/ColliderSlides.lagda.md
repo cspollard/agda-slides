@@ -15,12 +15,12 @@ import Slides.Deck.Math as M
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Examples.Collider using
-  ( fiveSigma; grow; histogram; nllFormula; resources; scan
+  ( higgsDia; topDia; fiveSigma; grow; histogram; nllFormula; resources; scan
   ; scanSteps; significance; simDia; stages; tilesDia; lhcAnim )
 open import Slides.Examples.ATLAS using (atlasTurned)
 
 open Checked resources
-open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■)
+open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■; diagram to d■; fragment to f■)
 ```
 
 ## The deck
@@ -48,15 +48,12 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
 
 ```agda
   slide $ do
-    heading 2 "scientific impact of curiosity-driven particle physics"
-    bullets
-      $ "Standard Model (SM): mass is granted to particles via their interactions with the Higgs boson."
-      ∷ "first demonstrated in the 1960s → took ~50 to experimentally verify!"
-      ∷ "finally, an explanation for why radiactive decay is not instant"
-      ∷ "top quark has the mass of a gold atom"
-      -- TODO: impact on cosmology
-      ∷ []
-    animateLoop "d-lhc" 75 16 lhcAnim
+    heading 2 "curiosity-driven particle physics"
+    columns
+      ( f■ (d■ "d-higgs" 90 higgsDia)
+      ∷ f■ (d■ "d-top" 90 topDia)
+      ∷ [] )
+    fragment (p■ "large cosmological implications")
 ```
 
 ```agda

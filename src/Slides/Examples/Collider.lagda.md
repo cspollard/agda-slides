@@ -92,6 +92,28 @@ tilesDia =
       ∷ []))
 ```
 
+## Two particles
+
+A particle is a big symbol and its name in a rounded square, with what makes it matter written
+underneath, one fact to a line.  (A diagram has no TeX: `𝒪(1)` is the unicode letter.)
+
+```agda
+particleDia : String → String → String → List String → Dia ℕ
+particleDia c sym name facts =
+  margin 10 10 10 10
+    (vcat 22
+      ( framed 240 240 (rounded 24 (cls "tile"))
+          (vcat 8 (bold 120 sym (cls c) ∷ text 26 name defaultStyle ∷ []))
+      ∷ vcat 8 (map (λ f → text 22 f defaultStyle) facts)
+      ∷ []))
+
+higgsDia topDia : Dia ℕ
+higgsDia = particleDia "stat" "H" "Higgs boson"
+  ("radioactive decay" ∷ "mass of fundamental particles" ∷ "self interaction" ∷ [])
+topDia = particleDia "stat crimson" "t" "top quark"
+  ("heaviest known particle" ∷ "coupling to Higgs 𝒪(1)" ∷ [])
+```
+
 ## From collision to discovery
 
 A pipeline in five stages.  `pipelineDia lit` highlights the stages that satisfy `lit`, and the
