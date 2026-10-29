@@ -5,7 +5,7 @@
 //   var player = SlidesAnimation(function (a) { return <is animation element `a`'s slide shown> });
 //
 // An animation (`.animation`, see `Slides.Backend.Animation`) ships the *event list* of its scene
-// in `data-events`: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
+// as JSON in its `script.events` child: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
 // are expression trees over one variable.  The page evaluates it at a real time `t` (in ticks):
 // the events active at `t` are laid out at their parameter (the value of the driver at the event's
 // local time, 0 without one), overlaid in the join of their frames, and drawn as SVG.  This is
@@ -193,7 +193,7 @@ function SlidesAnimation(shown) {
     L.ds.forEach(function (d) { svg.appendChild(draw(d, name)); });
   }
   // ---- the player
-  function events(a) { return a._e || (a._e = JSON.parse(a.dataset.events)); }
+  function events(a) { return a._e || (a._e = JSON.parse(a.querySelector(':scope > script.events').textContent)); }
   function frame(a, t) { paint(a, frameAt(events(a), t)); }
   function target(a) {
     var n = a.querySelectorAll('.anim-step.visible').length;

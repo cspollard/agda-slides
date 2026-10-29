@@ -36,7 +36,7 @@ open import Slides.Scalar.Space using (Plus; Minus; Max; Lt; Pct)
 open import Slides.Scalar.Coupling using (Easing; Linear; Step; StepStart; Bezier) public
 open import Slides.Scene.Moving ratSpace ratTime ratCoupling public
 open import Slides.Scene.Syntax using (hold; delay; _⨾_; _∥_; drive; repeat) public
-open import Slides.Diagram.Style using (Style; defaultStyle; stroked; filled; withId) public
+open import Slides.Diagram.Style using (Style; defaultStyle; stroked; filled; withId; withClass; rounded) public
 import Slides.Diagram.Syntax as D
 
 lit : ℕ → Sc

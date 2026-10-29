@@ -79,6 +79,30 @@ showcase:
 	cp $(PLAIN_FILES) out/showcase-still/
 	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
 
+# The "It Just Takes Two" deck.  `make pairs` loads reveal.js and KaTeX from a CDN (out/pairs/,
+# needs network in the browser); `make pairs-local REVEAL=...` links a local copy of reveal.js
+# (out/pairs-local/).
+PAIRS_FILES = assets/slides.css assets/animation.js assets/pairs/pairs.css
+
+.PHONY: pairs pairs-local test-pairs
+pairs:
+	mkdir -p out/pairs $(BUILD_DIR)
+	cp $(PAIRS_FILES) out/pairs/
+	$(call run-main,src/Slides/Examples/PairsMain.agda,cdn)
+
+pairs-local:
+	mkdir -p out/pairs-local $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/pairs-local/reveal
+	cp $(PAIRS_FILES) out/pairs-local/
+	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
+
+# Drive the deck (needs `make pairs` first; also drives the local-copy build if `make pairs-local`
+# has been run).
+test-pairs:
+	cd tests/browser && npm install --silent
+	node tests/browser/pairs.mjs out pairs
+	@if [ -d out/pairs-local ]; then node tests/browser/pairs.mjs out pairs-local; fi
+
 # A deck with a non-default key binding (not a golden), and a deck with named slides.
 .PHONY: keys labels test-keys test-labels
 keys:

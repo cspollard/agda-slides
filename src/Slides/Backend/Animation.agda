@@ -3,7 +3,7 @@
 -- Shipping an animation to the page: the event list with parametric leaves.
 --
 -- The meaning of an animation (`Slides.Scene.Events`) is a duration and a sparse list of events
--- (onset, span, driver, leaf).  The page gets exactly that, as JSON in `data-events`:
+-- (onset, span, driver, leaf).  The page gets exactly that, as JSON in a `script` element of its animation:
 --
 --   event      {"o": onset, "s": span or null, "d": driver term or null, "l": leaf}
 --   leaf       a diagram `["R", w, h, style]`, `["b", align, a, b]`, ...: the constructors of
@@ -28,7 +28,8 @@ module Slides.Backend.Animation where
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Char.Base using (Char)
 open import Data.Fin using (zero; suc)
-open import Data.List.Base using (List; []; _∷_; _++_; map; reverse)
+open import Data.List.Base using (List; []; _∷_; _++_; map; reverse; concatMap)
+open import Function.Base using (_∘_)
 open import Data.Maybe.Base using (Maybe; just; nothing)
 open import Data.Nat.Base using (ℕ; _+_; _*_; _/_; _%_; _≡ᵇ_; _<ᵇ_) renaming (suc to sucℕ)
 open import Data.Nat.Show using (show)
@@ -58,7 +59,7 @@ open import Slides.Diagram.Print using (Print; renderSVG)
 open import Slides.Scene.Syntax using (_⨾_)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 open Mv using (Anim; Leaf; Sc; Drv; Event; onset; span; driver; leaf)
-open import Slides.Backend.HTML using (hElement; Attrs)
+open import Slides.Backend.HTML using (hElement; hText; Attrs)
 
 ------------------------------------------------------------------------
 -- JSON values
@@ -222,6 +223,17 @@ firstFrame a with Mv.frame a 0
 stillEl : String → ℕ → Layout ℚ → XMLDoc
 stillEl n pct l = hElement "div" (("class" , "diagram") ∷ ("id" , n) ∷ []) (renderSVG qPrint n pct l ∷ [])
 
+-- JSON in a `script` element is raw text to the browser, which must not see `<`, `&` or `>`:
+-- inside JSON they occur only in strings, where `\uXXXX` is the same character
+htmlSafe : String → String
+htmlSafe = fromList ∘ concatMap esc ∘ toList
+  where
+    esc : Char → List Char
+    esc '<' = toList "\\u003c"
+    esc '>' = toList "\\u003e"
+    esc '&' = toList "\\u0026"
+    esc c   = c ∷ []
+
 -- how the clock runs: only at the steps, in a loop while the slide is shown, or the steps within
 -- a loop of `n` phases (a phase is a copy of the acts; the page shows phase `⌊t⌋ mod n`)
 data Play : Set where
@@ -233,11 +245,12 @@ animationEl : (name : String) (percent ms : ℕ) (play : Play) → Anim → List
 animationEl name pct ms play a rs =
   hElement "div"
     ( ("class" , "animation") ∷ ("id" , name ++ˢ "-frames") ∷ ("data-ms" , show ms)
-    ∷ ("data-events" , renderJSON (eventsⱼ a)) ∷ ("data-duration" , renderJSON (qⱼ (Mv.duration a)))
+    ∷ ("data-duration" , renderJSON (qⱼ (Mv.duration a)))
     ∷ restsAttr rs ++ playAttr play )
     ( hElement "div" (("class" , "frame") ∷ [])
         ( hElement "div" (("class" , "diagram") ∷ ("id" , name) ∷ [])
             (renderSVG qPrint name pct (firstFrame a) ∷ []) ∷ [] )
+    ∷ hText "script" (("type" , "application/json") ∷ ("class" , "events") ∷ []) (htmlSafe (renderJSON (eventsⱼ a)))
     ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs )
   where
     restsAttr : List ℚ → List (String × String)
