@@ -15,220 +15,178 @@ import Slides.Deck.Math as M
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Examples.Collider using
-  ( fiveSigma; grow; histogram; nllFormula; resources; scan
-  ; scanSteps; significance; simDia; stages; tilesDia; lhcAnim )
+  ( higgsDia; topDia; fiveSigma; grow; histogram; nllFormula; resources; scan
+  ; scanSteps; significance; simDia; gridDia; pairsDia; socksDia; webDia; stages; tilesDia; lhcAnim; triggerAnim )
+open import Slides.Examples.TitleAnim using (titleAnim)
+open import Slides.Examples.ATLAS using (atlasTurned; atlasBare)
 
 open Checked resources
-open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■)
-```
+open Slides.Deck.DSL.Content using () renaming (heading to h■; paragraph to p■; diagram to d■; fragment to f■; classed to c■)
 
-## The deck
-
-```agda
 collider : Talk
 collider = do
 ```
 
 **1. Title.**  `Inline` has no line break, so the title is two headings stacked (`h1 + h1` in the css).
 
-TODO: add a nice animation of protons colliding at the LHC, particles coalescing
-into a set of 8 cubical blocks, representing a data tensor.
-The data tensors combine into a single static tensor of the same size that
-represnts the full dataset (PAIRS style).
-As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
 
 ```agda
   slide $ do
     heading 1 "how collider physics is"
     heading 1 "accelerating data science"
-    classed "subtitle" (p■ "how the biggest machine ever built is a data-science lab")
+    classed "subtitle" (p■ "the biggest machine ever built as a data-science lab")
     classed "authors" (p■ "Chris Pollard · Warwick")
-```
+    animateLoop "d-title" 85 200 titleAnim
 
-```agda
   slide $ do
-    heading 2 "scientific impact of curiosity-driven particle physics"
-    bullets
-      ( "Standard Model (SM): mass is granted to particles via their interactions with the Higgs boson."
-      ∷ "first demonstrated in the 1960s → took ~50 to experimentally verify!"
-      ∷ "finally, an explanation for why radiactive decay is not instant"
-      ∷ "top quark has the mass of a gold atom"
-      -- TODO: impact on cosmology
+    heading 2 "curiosity-driven particle physics"
+    columns
+      ( f■ (d■ "d-higgs" 50 higgsDia)
+      ∷ f■ (d■ "d-top" 50 topDia)
+      ∷ [] )
+    fragment (c■ "center" (p■ "huge (cosmological-scale) implications"))
+    fragment (c■ "center" (p■ "only the LHC can produce these particles"))
+
+  slide $
+    classed "cover" $ do
+      Content.placed 0 0 100 100 $
+        Content.figureUnchecked "LHC-FCC.jpg" ""
+      c■ "cover-text" $ Content.placed 0 0 100 100 $
+        f■ $ p■ "the largest machine(s) ever constructed"
+
+  slide $ do
+    heading 2 "the ATLAS detector"
+    diagram "d-atlas" 60 atlasTurned
+    columns
+      ( f■ (c■ "callout" $ p■ "~100 million readout channels")
+      ∷ f■ (c■ "callout" $ p■ "1.5-2 MB per bunch crossing")
       ∷ []
       )
-    animateLoop "d-lhc" 75 16 lhcAnim
-```
 
-```agda
+  slide $
+    classed "cover" $ Content.placed 0 0 100 100 $
+      Content.figureUnchecked "CMSID.jpg" ""
+
+  slide $
+    classed "cover" $ Content.placed 0 0 100 100 $
+      Content.figureUnchecked "ATLASMS.jpg" ""
+
   slide $ do
-    heading 2 "the Large Hadron Collider"
-    bullets
-      ( "the Large Hadron Collider (LHC) produces 1 billion $pp$ collisions every second at $m_{pp} = 13.6$ TeV"
-      ∷ "why?"
-      ∷ "rare processes: 1B collisions to get a Higgs boson, on average"
-      ∷ ("in 2012 it revealed the " ∷ emph "Higgs boson" ∷ " " ∷ cite "ATLAS12" ∷ " " ∷ cite "CMS12" ∷ [])
-      ∷ []
-      )
-    animateLoop "d-lhc2" 100 16 lhcAnim
-```
+    heading 2 "collaboration → the world wide web"
+    diagram "d-web" 100 webDia
+    fragment (c■ "callout" (p■ "thousands of physicists, one detector and dataset"))
+    fragment (c■ "callout" (p■ ("needed a way to share: the web " ∷ cite "TBL89" ∷ [])))
+    fragment (c■ "callout" (p■ "it outgrew its purpose!"))
 
-```agda
-  slide $ do
-    heading 2 "an early spin-off"
-    -- TODO
-    -- A nice figure
-    bullets
-      ( "the LHC collaborations are enormous: ATLAS is ~5000 physicists"
-      ∷ "need to coordinate work on detector design, data processing, analysis, etc"
-      ∷ "collaborative tools and information-sharing are critical"
-      ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
-      ∷ "clearly they have grown beyond their initial purpose!"
-      ∷ []
-      )
-```
-
-**3. The trigger.**
-
-TODO:
-- approximate rates (40MHz -> 100kHz -> 10kHz)
-- hardware triggers (ML on FPGAs)
-- software triggers (fast ML on GPUs and conventional CPUs)
-- hls4ml: https://fastmachinelearning.org/hls4ml/
-
-```agda
   slide $ do
     heading 2 "a data firehose"
-    diagram "d-tiles" 100 tilesDia
-    classed "callout"
-      (p■ "we cannot keep everything, and we cannot look at everything by eye.")
-```
-
-**4. computing grid.**
-
-```agda
-  slide $ do
-    heading 2 "the computing grid"
-```
-
-```agda
-  slide $ do
-    heading 2 "statistical inference"
+    animateLoop "d-lhc" 50 60 lhcAnim
+    pause
     columns
-      ( (do Content.bullets
-              ( "each event is a few thousand numbers: where and when the detector fired"
-              ∷ [])
-              )
-      ∷ (do Content.diagram "d-hist" 100 histogram
-            p■ "a signal (red) is a small bump on a smooth background")
+      ( c■ "callout" (p■ "LHC bunches cross 40 million times per second")
+      ∷ c■ "callout" (p■ "about 65 $pp$ collisions per bunch crossing (→ 200 after upgrade)")
       ∷ []
       )
-```
-
-```agda
-  slide $ do
-    heading 2 "when is a bump a discovery?"
-    paragraph "a bump this size could come from chance. we ask how often noise alone would fake it."
-    displayMath significance
     pause
-    paragraph ("particle physics asks for " ∷ inlineMath fiveSigma ∷ ": a fluke about once in 3.5 million tries." ∷ [])
-    pause
-    classed "callout blue"
-      (p■ "the same logic checks a medical trial or an A/B test.")
-```
+    columns
+      ( c■ "callout" (p■ "~1 billion collisions per second (!)")
+      ∷ c■ "callout" (p■ "→ 100TB/s of data per experiment (!)")
+      ∷ []
+      )
 
-TODO: socks example
-
-- you want to estimate the fraction of black socks in your drawer
-- you pull out one sock: it is black
-- you pull out another sock: it is blue.
-- what is your estimate of the fraction of black socks?
-- what numbers did you keep in your head to make that calculation possible?
-
-```agda
   slide $ do
-    heading 2 "an example with socks"
-```
+    heading 2 "a data firehose"
+    columns
+      ( c■ "callout" (p■ "ATLAS can store about 5000 bunch crossings per second")
+      ∷ c■ "callout" (p■ "computers are not fast enough → custom hardware solutions")
+      ∷ []
+      )
+    pause
+    columns
+      ( c■ "callout" (p■ ("now running sophisticated ML algorithms on FPGAs: very fast ("
+          ∷ link "https://fastmachinelearning.org/hls4ml/" ("hls4ml" ∷ [])
+          ∷ ", "
+          ∷ link "https://fastmachinelearning.org" ("FastML" ∷ [])
+          ∷ ")" ∷ []))
+      ∷ c■ "callout" (p■ "industry adoption is following")
+      ∷ []
+      )
+    pause
+    animateLoop "d-trigger" 100 60 triggerAnim
 
-```agda
+  slide $ do
+    heading 2 "the computing grid"
+    diagram "d-grid" 75 gridDia
+    fragment (c■ "callout" (p■ "the data are too big to move! send the code to the data..."))
+    fragment (c■ "callout" (p■ "170+ computing sites in 40+ countries"))
+    fragment (c■ "callout" (p■ "with this much data, one must think carefully about how to summarize events"))
+
+  slide $ do
+    heading 2 "statistics with socks"
+    diagram "d-socks" 40 socksDia
+    incremental
+      $ "what fraction of the 🧦 in your drawer are black $f_\\blacksquare$?"
+      ∷ "you pull out one sock: black"
+      ∷ "you pull out another: blue"
+      ∷ "what is your best guess of $f_\\blacksquare$?"
+      ∷ "what did you \"store\" in your head to get a number?"
+      ∷ "what would you \"store\" in your head if you had a $\\textcolor{#d62839}{\\text{billion}}$ socks?"
+      ∷ []
+
   slide $ do
     heading 2 "estimating a parameter: slide the template"
-    animate "d-scan" 75 120 (scan scanSteps 0 ∷ [])
-    displayMath nllFormula
-    classed "callout blue"
-      (p■ "the best-fit mean is where -2 ln L is smallest. near the minimum the curve is a parabola, and its width is the uncertainty.")
-```
+    animate "d-scan" 90 120 (scan scanSteps 0 ∷ [])
+    fragment $ c■ "callout" (p■ "the best choice of $\\mu$ is the one that describes the data best")
+    fragment $ c■ "callout" (p■ "how well each $\\mu$ describes the data compared to best determines the uncertainty on $\\mu$")
 
-```agda
   slide $ do
     heading 2 "more data, a tighter likelihood"
     animate "d-grow" 75 150 (grow 0 stages ∷ [])
-    classed "callout blue"
-      (p■ "each batch of events makes the minimum sharper: the width of the curve is the uncertainty, and it shrinks with the data.")
-```
+    pause
+    classed "callout"
+      (p■ "each additional event makes the minimum sharper.")
+    pause
+    classed "callout"
+      (p■ "the width of the curve is the uncertainty: more observations → more certainty")
 
-```agda
   slide $ do
-    heading 2 "simulation-based inference"
-    diagram "d-sbi" 100 simDia
-    classed "card crimson"
-      (do h■ 3 "the physics problem"
-          p■ ("we can simulate collisions, but not write down " ∷ inlineMath (M.call "p" (M.rel M.mid "x" (M.greek M.theta) ∷ [])) ∷ []))
-    classed "card blue"
-      (do h■ 3 "the data-science payoff"
-          p■ ("a neural network learns the posterior from simulations alone " ∷ cite "CBL20" ∷ []))
-```
+    heading 2 "waaaay beyond socks"
+    columns
+      ( d■ "d-atlas-bare" 100 atlasBare
+      ∷ (do f■ (c■ "callout" (p■ "here we are far from counting 🧦"))
+            f■ (c■ "callout" (p■ "our detector \"images\" are ~100 million numbers"))
+            f■ (c■ "callout" (p■ "how do we find a good event summary that works for billions of events?"))
+            f■ (c■ "callout" (p■ "want summaries to simply \"add up\"")))
+      ∷ []
+      )
 
-**12. From one event to millions.**
-
-```agda
   slide $ do
-    heading 2 "one parameter, millions of events"
-    paragraph ("a real analysis conditions on a whole " ∷ emph "set" ∷ " of events that share the same θ. training a network on sets that large is too expensive.")
-    classed "card plum"
-      (do h■ 3 "PAIRS: train on two"
-          p■ ("train on sets of at most two events, then finetune on cached summaries. it works for thousands " ∷ cite "WKHP26" ∷ []))
-    classed "card rust"
-      (do h■ 3 "beyond physics"
-          p■ "the same trick applies to images, 3D scenes and molecules: any set of observations that share a hidden cause")
-```
+    heading 2 "billions of enormous events"
+    diagram "d-pairs" 60 pairsDia
+    pause
+    paragraph ("this is a widespread problem: inference over many observations of complex data...")
+    columns
+      ( (f■ $ c■ "callout" (p■ "large-scale medical research"))
+      ∷ (f■ $ c■ "callout" (p■ "electoral polling data"))
+      ∷ (f■ $ c■ "callout" (p■ "accumulating smart-watch information"))
+      ∷ []
+      )
+    pause
+    paragraph ("together with Apple, we derived neural summaries of complex image data that accumulates cleanly up to billions of datapoints " ∷ cite "WKHP26" ∷ [])
 
-**13. Computing.**
-
-```agda
-  slide $ resultsTable "built for the LHC, used by everyone"
-          ("tool" ∷ "born for" ∷ "now used for" ∷ [])
-          (("World Wide Web" ∷ "sharing results between labs" ∷ "everything" ∷ [])
-          ∷ ("grid computing" ∷ "analysing LHC data worldwide" ∷ "genomics, climate, astronomy" ∷ [])
-          ∷ ("columnar analysis" ∷ "billions of events" ∷ "any large table" ∷ [])
-          ∷ ("open data" ∷ "reuse of LHC data" ∷ "reproducible research" ∷ [])
-          ∷ [])
-```
-
-**14. Try it.**
-
-```agda
   slide $ do
-    heading 2 "try it yourself"
-    paragraph ("real collision data is public: " ∷ link "https://opendata.cern.ch" "opendata.cern.ch" ∷ [])
-    code "python" "import uproot, awkward as ak\n\nevents = uproot.open(\"events.root\")[\"Events\"]\npt = events[\"Muon_pt\"].array()\nprint(ak.num(pt).mean(), \"muons per event\")"
-```
+    classed "closing" (p■ "bigger questions → better tools")
+    classed "closing" $ Content.incremental
+      $ "collider physics poses unique challenges: fast, hard-hitting data"
+      ∷ "overcoming these with clever data engineering enables top-notch science..."
+      ∷ "...and it's loads of fun"
+      ∷ "many of these problems are not unique to collider physics"
+      ∷ "percolation to non-scientific activities ongoing"
+      ∷ "happy to take questions!"
+      ∷ []
+    -- TODO
+    -- include nice animation from the title slide.
 
-**15. Closing.**
-
-```agda
-  slide $ do
-    classed "closing" (p■ "big questions make better tools.")
-    classed "closing"
-      (Content.bullets
-        ( "collider physics gave us the web, the grid and much of modern data practice"
-        ∷ "its newest ideas are machine learning and open data"
-        ∷ ("questions? " ∷ strong "come and ask." ∷ [])
-        ∷ []))
-```
-
-**16. References.**
-
-```agda
   slide $ do
     heading 2 "references"
     bibliography

@@ -5,8 +5,8 @@
 --
 -- A scene of three layers, one lap of `period` ticks:
 --
---   pipe     one leaf, the ring as a `Path` through 128 points of the ellipse (the 129th is the
---            first), held for the whole lap and drawn round-capped by the CSS class `pipe`;
+--   pipe     one leaf, an `ellipse` of radii `RX` `RY` (exact, drawn as an SVG `<ellipse>`), held for
+--            the whole lap and styled by the CSS class `pipe`;
 --   bunches  one frame per tick: the two bunches, at the angle `64 + 4 k` and its mirror image;
 --   flash    the first 16 ticks only: a burst that grows for 8 ticks and shrinks for 8, and eight
 --            sparks flying out.
@@ -22,13 +22,15 @@
 module Slides.Examples.LHC where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; map; foldr; applyUpTo; [_]) renaming (_++_ to _++ˡ_)
+open import Data.List using (List; []; _∷_; map; foldr; applyUpTo; length; [_]) renaming (_++_ to _++ˡ_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.Char using (Char)
+open import Data.String using (String; toList; fromList) renaming (_++_ to _++ˢ_)
 
 open import Slides.Diagram.Convenience
+open import Slides.Diagram.TextMetrics using (textWidth)
 open import Data.Container.FreeMonad using (pure)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 
@@ -36,13 +38,13 @@ open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) re
 -- Dimensions and period
 
 -- every length is in units of 1/K of the original size: whole numbers then round to a quarter of
--- what they did, and the pipe is smooth (the page scales the drawing to its width)
+-- what they did, so the bunches sit close to the pipe (the page scales the drawing to its width)
 K : ℕ
 K = 4
 
 W H : ℕ
 W = 480 * K
-H = 230 * K
+H = 260 * K
 
 -- ticks in one lap of a bunch
 period : ℕ
@@ -51,7 +53,7 @@ period = 64
 -- the ellipse: centre and radii
 CX CY RX RY : ℕ
 CX = 240 * K
-CY = 100 * K
+CY = 125 * K
 RX = 220 * K
 RY = 85 * K
 
@@ -110,9 +112,64 @@ put = place W H
 canvas : List (Dia ℕ) → Dia ℕ
 canvas = layers W H
 
--- the pipe: one polygon through 128 points of the ellipse
+-- Captions: the diameter above the ring, the depth under its right side
+caption : ℕ → ℕ → String → Dia ℕ
+caption x y t = put (x ∸ textWidth fontC t / 2) y (text fontC t (cls "dim"))
+  where fontC = 18 * K
+
+captions : Dia ℕ
+captions = canvas (caption CX (4 * K) "diameter: 27km" ∷ caption (370 * K) (H ∸ 36 * K) "100m underground" ∷ [])
+
+-- The border through the ring (under it): a dashed curve, a smile of depth `bow`, lowest in the middle.
+-- Its height at `x`, and its slope at `x` in degrees (small-angle: slope ≈ 2 bow d / RX², one
+-- radian ≈ 57°), tilting the other way on the other side of the middle.
+bow lineBase : ℕ
+bow      = 45 * K
+lineBase = 150 * K
+
+dist : ℕ → ℕ
+dist x = if x <ᵇ CX then CX ∸ x else x ∸ CX
+
+lineY : ℕ → ℕ
+lineY x = lineBase ∸ bow * (dist x * dist x) / (RX * RX)
+
+tiltOf : ℕ → ℕ
+tiltOf x = 57 * 2 * bow * dist x / (RX * RX)
+
+border : Dia ℕ
+border = put 0 0 (polyline (map pt (applyUpTo (λ i → i) 25)) (cls "border"))
+  where pt : ℕ → ℕ × ℕ
+        pt i = let x = 20 * i * K in x , lineY x
+
+-- A word set along the curve: each letter is its own text, turned by the slope of the curve
+-- under it (the CSS classes `tilt-l-n`, `tilt-r-n` rotate by 2n degrees), and sits a little
+-- below the line.
+advance letterSize : ℕ
+advance    = 12 * K
+letterSize = 20 * K
+
+letter : Bool → ℕ → Char → Dia ℕ
+letter below xc c =
+  put (xc ∸ textWidth letterSize (fromList (c ∷ [])) / 2) ((if below then lineY xc + 26 * K else lineY xc ∸ 26 * K) ∸ letterSize * 3 / 4)
+      (text letterSize (fromList (c ∷ [])) (cls ("dim tilt-" ++ˢ (if xc <ᵇ CX then "l-" else "r-") ++ˢ show (tiltOf xc / 2))))
+
+word : Bool → ℕ → List Char → List (Dia ℕ)
+word _     x []       = []
+word below x (c ∷ cs) = letter below (x + advance / 2) c ∷ word below (x + advance) cs
+
+-- France below the line on the left, Switzerland above it on the right, centred on a point of the curve
+countries : Dia ℕ
+countries = canvas (word true (centredAt 130 "Switzerland") (toList "Switzerland") ++ˡ word false (centredAt 350 "France") (toList "France"))
+  where lenˢ : String → ℕ
+        lenˢ t = length (toList t)
+        centredAt : ℕ → String → ℕ
+        centredAt c t = c * K ∸ (advance * lenˢ t) / 2
+
+-- the pipe: an ellipse about (CX , CY), placed by the corner of its frame
 pipe : Dia ℕ
-pipe = canvas (polygon (map (λ k → ellipseAt (2 * k)) (applyUpTo (λ k → k) 128)) (cls "pipe") ∷ [])
+pipe = canvas
+  ( put (CX ∸ RX) (CY ∸ RY) (ellipse RX RY (cls "pipe"))
+  ∷ border ∷ countries ∷ captions ∷ [] )
 
 -- a bunch at (x , y): a soft halo and a core
 bunch : ℕ → ℕ → List (Dia ℕ)
@@ -174,3 +231,82 @@ lhcFrameAt k = canvas (pipe ∷ bunches k ∷ (if k <ᵇ 16 then [ flash k ] els
 -- one lap: the pipe all along, the bunches every tick, the flash in the first 16
 lhcAnim : Anim
 lhcAnim = whole pipe ∥ₛ seqFrames bunches 0 63 ∥ₛ seqFrames flash 0 15
+
+------------------------------------------------------------------------
+-- The trigger pipeline: a collision seen along the beam, then three stages joined by arrows
+--
+-- One scene like the ring's: the static row (the empty slot the collision is drawn in, the
+-- boxes, the arrows and their rates) held for the lap, and the collision over it, eight
+-- tracks flying out of the vertex (twice in a lap, so the loop is seamless).
+
+W2 H2 slotS gapW boxW boxH : ℕ
+W2    = 1010 * K
+H2    = 110 * K
+slotS = 110 * K
+gapW  = 100 * K
+boxW  = 200 * K
+boxH  = 80 * K
+
+put2 : ℕ → ℕ → Dia ℕ → Dia ℕ
+put2 = place W2 H2
+
+canvas2 : List (Dia ℕ) → Dia ℕ
+canvas2 = layers W2 H2
+
+-- the gap between two stages: an arrow is drawn through it, and its rate sits underneath
+gap : String → Dia ℕ
+gap t = layers gapW H2 (place gapW H2 ((gapW ∸ textWidth (16 * K) t) / 2) (H2 / 2 + 8 * K) (text (16 * K) t (cls "dim")) ∷ [])
+
+stage₂ : String → List String → Dia ℕ
+stage₂ i ls = card i "node" 18 boxW boxH (lines (18 * K) ls defaultStyle)
+
+pipelineRow : Dia ℕ
+pipelineRow =
+  hcat 0
+    ( ("tc" ⦂ spacer slotS H2)
+    ∷ gap "40 MHz"
+    ∷ stage₂ "t1" ("FPGAs and" ∷ "custom hardware" ∷ [])
+    ∷ gap "1 kHz"
+    ∷ stage₂ "t2" ("100,000 CPUs" ∷ [])
+    ∷ gap "5 kHz"
+    ∷ stage₂ "t3" ("hard disks" ∷ "and tape" ∷ [])
+    ∷ [] )
+  ▹[ cls "flow cy heavy" ] ("tc" ⟶ "t1" ∷ "t1" ⟶ "t2" ∷ "t2" ⟶ "t3" ∷ [])
+
+-- the detector: a thin circle round the collision, in the slot
+detector : Dia ℕ
+detector = put2 (5 * K) (5 * K) (ellipse (50 * K) (50 * K) (cls "detector"))
+
+staticPipeline : Dia ℕ
+staticPipeline = canvas2 (put2 0 0 pipelineRow ∷ detector ∷ [])
+
+-- the vertex at the middle of the slot
+VX VY : ℕ
+VX = slotS / 2
+VY = H2 / 2
+
+-- a point `d` from the vertex along a direction (cos , sin)
+along : (ℕ × Bool) × (ℕ × Bool) → ℕ → ℕ × ℕ
+along ((cm , cn) , (sm , sn)) d =
+  let dx = cm * d / 10000
+      dy = sm * d / 10000
+  in (if cn then VX ∸ dx else VX + dx) , (if sn then VY ∸ dy else VY + dy)
+
+-- eight tracks, 45° apart but not quite regularly
+trackDirs : List ((ℕ × Bool) × (ℕ × Bool))
+trackDirs = map (λ j → trig (32 * j + 8 + 5 * (j % 3))) (applyUpTo (λ j → j) 8)
+
+-- a track after `u` ticks: a line from the vertex and a dot at its tip
+track : ℕ → (ℕ × Bool) × (ℕ × Bool) → Dia ℕ
+track u dir =
+  let p = along dir (6 * K + (44 * K * u) / 31)
+  in canvas2
+       ( put2 (proj₁ p ∸ 3 * K) (proj₂ p ∸ 3 * K) (disc (3 * K) (cls "spark"))
+       ∷ put2 0 0 (polyline ((VX , VY) ∷ p ∷ []) (cls "track"))
+       ∷ [] )
+
+collision : ℕ → Dia ℕ
+collision k = canvas2 (put2 (VX ∸ 4 * K) (VY ∸ 4 * K) (disc (4 * K) (cls "burst")) ∷ map (track (k % 32)) trackDirs)
+
+triggerAnim : Anim
+triggerAnim = whole staticPipeline ∥ₛ seqFrames collision 0 63

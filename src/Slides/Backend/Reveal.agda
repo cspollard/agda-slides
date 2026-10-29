@@ -73,13 +73,14 @@ record RevealConfig : Set where
     width height : Maybe ℕ      -- the size reveal.js lays slides out in (it scales to the window)
     scripts     : List String   -- JavaScript appended to `init.js`, after `Reveal.initialize`
     scriptFiles : List String   -- extra JavaScript files, loaded before `init.js`
+    katex       : Maybe String  -- a local KaTeX distribution (the directory holding `dist/`), else the CDN's
     binding     : Mode → Key → Maybe RCmd   -- how keys are read (`revealKeys` is reveal's own)
 
 defaultConfig : RevealConfig
 defaultConfig = record
   { title = "Slides" ; base = "reveal/" ; theme = blackTheme ; transition = "slide"
   ; slideNumber = false ; controls = true ; progress = true ; width = nothing ; height = nothing
-  ; scripts = [] ; scriptFiles = [] ; binding = revealKeys }
+  ; scripts = [] ; scriptFiles = [] ; katex = nothing ; binding = revealKeys }
 
 withSource : Source → RevealConfig → RevealConfig
 withSource s cfg = record cfg { base = sourceBase s }
@@ -154,12 +155,16 @@ options m cfg = objectFromList
   ∷ ("slideNumber" , boolⱼ (RevealConfig.slideNumber cfg))
   ∷ ("controls" , boolⱼ (RevealConfig.controls cfg))
   ∷ ("progress" , boolⱼ (RevealConfig.progress cfg))
-  ∷ optNat "width" (RevealConfig.width cfg)
+  ∷ optKatex (RevealConfig.katex cfg)
+  ++ optNat "width" (RevealConfig.width cfg)
   ++ optNat "height" (RevealConfig.height cfg)
   ++ optKeyboard (keyboard m (RevealConfig.binding cfg m)) )
   where
     natⱼ : ℕ → JSON
     natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
+    optKatex : Maybe String → List (String × JSON)
+    optKatex nothing  = []
+    optKatex (just p) = ("katex" , objectFromList (("local" , stringⱼ p) ∷ [])) ∷ []
     optNat : String → Maybe ℕ → List (String × JSON)
     optNat k nothing  = []
     optNat k (just n) = (k , natⱼ n) ∷ []

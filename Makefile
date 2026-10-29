@@ -45,6 +45,8 @@ clean:
 
 # REVEAL points at an unpacked reveal.js distribution (`npm install reveal.js`).
 REVEAL ?= $(CURDIR)/node_modules/reveal.js
+KATEX  ?= $(CURDIR)/node_modules/katex
+FIRA   ?= $(CURDIR)/node_modules/@fontsource/fira-code
 
 # Render the example deck to out/intro/.
 .PHONY: example talk plain
@@ -105,9 +107,9 @@ test-pairs:
 
 # The outreach deck "How collider physics is accelerating data science", a literate Agda file
 # (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
-# loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=...` links a
-# local copy (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
-COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css
+# loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=... KATEX=...` links a
+# local copy of both (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
+COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
 
 .PHONY: collider collider-local test-collider
 collider:
@@ -118,7 +120,12 @@ collider:
 collider-local:
 	mkdir -p out/collider-local $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/collider-local/reveal
+	ln -sfn $(KATEX) out/collider-local/katex
 	cp $(COLLIDER_FILES) out/collider-local/
+	mkdir -p out/collider-local/fonts
+	for w in 400 600 700; do cp $(FIRA)/files/fira-code-latin-$$w-normal.woff2 out/collider-local/fonts/; \
+	  echo "@font-face{font-family:'Fira Code';font-weight:$$w;font-display:swap;src:url(fonts/fira-code-latin-$$w-normal.woff2) format('woff2');}"; done > out/collider-local/fira.css
+	sed "1s#.*#@import url('fira.css');#" assets/collider/collider.css > out/collider-local/collider.css
 	$(call run-main,src/Slides/Examples/ColliderMain.agda,local)
 
 test-collider: collider-local

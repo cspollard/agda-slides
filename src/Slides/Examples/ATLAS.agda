@@ -402,13 +402,13 @@ module Parts (T : Theme) (V : View) where
   label size t st = impure (Text 0 (size * 3 / 2) size t (anchored "start" st) , λ ())
 
   swatch : String → Dia ℕ
-  swatch c = disc 6 (paint c c 1 100)
+  swatch c = disc 9 (paint c c 1 100)
 
   entry : String → String → Dia ℕ
-  entry c l = hcat 12 (swatch c ∷ label 17 l (filled ink defaultStyle) ∷ [])
+  entry c l = hcat 16 (swatch c ∷ label 26 l (filled ink defaultStyle) ∷ [])
 
   legend heading : Dia ℕ
-  legend = put 790 210 (vcatA left 16
+  legend = put 780 200 (vcatA left 20
     ( entry silicon "Inner tracker"
     ∷ entry coil "Solenoid"
     ∷ entry ecalLit "EM calorimeter"
@@ -426,6 +426,12 @@ module Parts (T : Theme) (V : View) where
   scene : List (Dia ℕ) → Dia ℕ
   scene ls = canvas (ls ++ background ∷ [])
 
+  -- the detector and the event alone: no title, no legend, no background, and a frame only as
+  -- wide as the detector (the legend sits to its right)
+  bare : Dia ℕ
+  bare = layers 760 H
+    ( vertex ∷ muon ++ electron ++ jet ++ photon ++ clusters )
+
   -- everything
   atlas : Dia ℕ
   atlas = scene
@@ -436,10 +442,14 @@ module Parts (T : Theme) (V : View) where
 atlasIn : View → Theme → Dia ℕ
 atlasIn V T = Parts.atlas T V
 
+atlasBareIn : View → Theme → Dia ℕ
+atlasBareIn V T = Parts.bare T V
+
 atlasOn : Theme → Dia ℕ
 atlasOn = atlasIn flat
 
 -- the defaults: the dark theme, looking down the beam and a little turned
-atlas atlasTurned : Dia ℕ
-atlas       = atlasOn dark
-atlasTurned = atlasIn turned dark
+atlas atlasTurned atlasBare : Dia ℕ
+atlas       = atlasOn light
+atlasTurned = atlasIn turned light
+atlasBare   = atlasBareIn turned light

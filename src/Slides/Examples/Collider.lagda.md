@@ -28,7 +28,9 @@ open import Slides.Deck.DSL using (Resources; figures; references)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 import Slides.Deck.Math as M
 open import Slides.Diagram.Convenience
+open import Slides.Diagram.Style using (filled; stroked; thick)
 open import Slides.Diagram.Names using (dangling)
+open import Slides.Diagram.TextMetrics using (textWidth)
 ```
 
 ## Resources
@@ -38,7 +40,7 @@ Everything the deck may cite.  A citation key that is not listed here is a type 
 ```agda
 resources : Resources
 resources = record
-  { figures    = []
+  { figures    = "CMSID.jpg" ∷ "ATLASMS.jpg" ∷ []
   ; references =
       ("ATLAS12" , "ATLAS Collaboration. Observation of a new particle in the search for the Standard Model Higgs boson with the ATLAS detector at the LHC. Phys. Lett. B 716 (2012) 1.")
     ∷ ("CMS12"   , "CMS Collaboration. Observation of a new boson at a mass of 125 GeV with the CMS experiment at the LHC. Phys. Lett. B 716 (2012) 30.")
@@ -90,6 +92,28 @@ tilesDia =
       ∷ tile "stat crimson" "≈ 1 000"    ("events kept" ∷ "every second" ∷ [])
       ∷ tile "stat plum"    "1 in 10⁹"   ("collisions makes" ∷ "a Higgs boson" ∷ [])
       ∷ []))
+```
+
+## Two particles
+
+A particle is a big symbol and its name in a rounded square, with what makes it matter written
+underneath, one fact to a line.  (A diagram has no TeX: `𝒪(1)` is the unicode letter.)
+
+```agda
+particleDia : String → String → String → List String → Dia ℕ
+particleDia c sym name facts =
+  margin 10 10 10 10
+    (vcat 22
+      ( framed 240 240 (rounded 24 (cls "tile"))
+          (vcat 8 (bold 120 sym (cls c) ∷ text 26 name defaultStyle ∷ []))
+      ∷ vcat 8 (map (λ f → text 22 f defaultStyle) facts)
+      ∷ []))
+
+higgsDia topDia : Dia ℕ
+higgsDia = particleDia "stat" "H" "Higgs boson"
+  ("radioactive decay" ∷ "mass of fundamental particles" ∷ "self interaction" ∷ [])
+topDia = particleDia "stat crimson" "t" "top quark"
+  ("heaviest known particle" ∷ "coupling to Higgs 𝒪(1)" ∷ [])
 ```
 
 ## From collision to discovery
@@ -176,6 +200,179 @@ simDia =
      ═ ↕ 14 ═ dim 20 "inference runs the arrow backwards: given x, which θ?")
 
 _ : dangling simDia ≡ []
+_ = refl
+```
+
+## The computing grid
+
+An analysis is written once on a laptop; the grid runs it where the data are, and only the small
+outputs come back.  Jobs go out in blue, results come back in red.
+
+```agda
+gridDia : Dia ℕ
+gridDia =
+  margin 10 10 10 10
+    ((hcat 120
+        ( box "gl" 260 110 (lines 22 ("your laptop" ∷ "one analysis" ∷ []) defaultStyle)
+        ∷ vcat 20
+            ( box "g1" 300 70 (lines 20 ("CERN" ∷ []) defaultStyle)
+            ∷ box "g2" 300 70 (lines 20 ("a university cluster" ∷ []) defaultStyle)
+            ∷ box "g3" 300 70 (lines 20 ("a national lab" ∷ []) defaultStyle)
+            ∷ [] )
+        ∷ box "gr" 260 110 (lines 22 ("your laptop" ∷ "merged results" ∷ []) defaultStyle)
+        ∷ [] )
+      ▹[ cls "flow cy" ] ("gl" ⟶ "g1" ∷ "gl" ⟶ "g2" ∷ "gl" ⟶ "g3" ∷ [])
+      ▹[ cls "flow am" ] ("g1" ⟶ "gr" ∷ "g2" ⟶ "gr" ∷ "g3" ⟶ "gr" ∷ []))
+     ═ ↕ 14 ═ dim 20 "the code travels to the data; only summaries travel back.")
+
+_ : dangling gridDia ≡ []
+_ = refl
+```
+
+## Many big events
+
+Eight images stacked like a deck of cards: each is an 8 × 8 grid of noisy cells (a stand-in for
+one enormous event), the front one whole and the others showing their top and right edges.  The
+colours are pseudo-random, but fixed: a hash of the image and the cell, in whole numbers.
+
+```agda
+noiseHue : ℕ → ℕ
+noiseHue n = ((n * 7919 + 104729) * (n * 31 + 17) / 7) % 360
+
+-- the colour of cell `c` of image `k`
+noiseColour : ℕ → ℕ → String
+noiseColour k c = "hsl(" ++ˢ show (noiseHue (k * 64 + c)) ++ˢ ",70%," ++ˢ show (45 + noiseHue (c * 3 + k) % 25) ++ˢ "%)"
+
+cellSide imgSide : ℕ
+cellSide = 20
+imgSide  = 8 * cellSide
+
+noiseImage : ℕ → Dia ℕ
+noiseImage k =
+  rectangle imgSide imgSide (stroked "#262626" (thick 2 defaultStyle)) ⊙ grid
+  where
+    cell : ℕ → Dia ℕ
+    cell c = rectangle cellSide cellSide (filled (noiseColour k c) defaultStyle)
+    row : ℕ → Dia ℕ
+    row r = hcat 0 (map (λ i → cell (r * 8 + i)) (applyUpTo (λ i → i) 8))
+    grid : Dia ℕ
+    grid = vcat 0 (map row (applyUpTo (λ r → r) 8))
+
+-- image 0 in front at the bottom left, each one further back a step up and to the right
+stackStep stackDepth stackSide : ℕ
+stackStep  = 14
+stackDepth = 7
+stackSide  = imgSide + stackDepth * stackStep
+
+stackDia : Dia ℕ
+stackDia = layers stackSide stackSide (map layer (applyUpTo (λ k → k) 8))
+  where layer : ℕ → Dia ℕ
+        layer k = place stackSide stackSide (k * stackStep) ((stackDepth ∸ k) * stackStep) (noiseImage k)
+```
+
+## Socks
+
+A sock seen from the side: a leg that bends into an angled foot with a rounded toe, a cuff with
+two stripes, and a leaf-shaped heel patch beside the ankle.  The outline and the white heel and toe
+patches are curves (`path`, in a 210 × 318 frame); one function draws a sock of any colour.
+
+```agda
+sockW sockH : ℕ
+sockW = 210
+sockH = 318
+
+-- the outline, the white heel and toe patches, and the two cuff stripes (the curves were traced
+-- from the sock icon at https://www.svgrepo.com/show/83256/women-socks.svg and smoothed)
+sockOutline sockToe sockHeel sockStripes : String
+sockOutline = "M176,198 C179,196 188,192 192,188 C197,184 201,179 203,173 C205,168 206,161 206,154 C206,148 204,142 202,136 C200,130 197,124 196,118 C194,112 195,106 194,99 C194,93 194,87 194,80 C194,74 194,68 194,61 C194,55 194,49 194,42 C194,36 194,30 194,24 C194,17 194,8 194,5 L187,0 L102,0 L97,6 C97,9 97,19 97,25 C97,31 97,38 97,44 C97,50 97,57 97,63 C97,69 97,76 97,82 C97,88 97,95 96,101 C96,107 95,114 93,120 C91,126 89,132 86,137 C83,143 79,148 76,153 C72,158 68,163 64,168 C61,173 57,179 53,184 C50,189 46,194 42,199 C38,204 35,209 31,214 C27,219 23,224 20,229 C16,235 12,239 8,245 C6,250 3,256 2,262 C0,268 1,275 2,281 C4,287 7,293 11,298 C15,303 20,307 26,310 C31,312 38,314 44,314 C50,314 57,313 62,310 C68,308 73,304 78,300 C83,296 86,291 91,286 C95,281 99,277 103,272 C108,267 112,262 116,258 C120,253 124,248 128,244 C133,239 137,234 141,229 C145,225 149,220 154,215 C158,211 164,205 168,202 C171,200 175,199 176,198 Z"
+sockHeel    = "M185,125 C185,125 187,126 188,127 C189,128 190,131 191,133 C192,135 192,138 193,140 C194,142 194,144 194,146 C195,149 195,151 196,153 C196,155 196,158 196,160 C196,162 195,165 195,167 C194,169 193,171 192,173 C191,175 190,177 188,178 C187,180 185,182 183,183 C181,184 179,185 177,186 C175,187 173,188 171,189 C169,190 166,192 165,192 C164,191 163,188 163,186 C162,184 162,181 162,179 C161,177 161,175 161,172 C161,170 161,168 161,166 C162,163 162,161 162,159 C163,157 164,154 164,152 C165,150 166,148 167,146 C168,144 170,142 171,140 C172,138 173,137 175,135 C176,133 178,131 180,130 C181,128 184,126 185,125 Z"
+sockToe     = "M68,296 C67,297 64,299 61,301 C59,302 56,303 53,303 C51,304 48,304 45,304 C42,304 39,304 36,303 C34,302 31,301 29,300 C26,299 24,297 22,295 C20,293 18,291 16,288 C15,286 14,283 13,281 C12,278 11,275 11,272 C11,270 11,267 11,264 C12,261 13,258 14,256 C15,254 18,252 19,251 C20,252 24,253 27,254 C29,256 32,257 34,258 C37,260 39,261 42,263 C44,265 46,266 48,268 C50,270 52,272 54,274 C56,276 58,279 60,281 C61,283 63,286 64,288 C66,290 67,294 68,296 Z"
+sockStripes = "M107,10 H184 V23 H107 Z M107,33 H184 V44 H107 Z"
+
+sock : String → Dia ℕ
+sock colour =
+  layers sockW sockH
+    ( path sockW sockH sockStripes (filled "#fff" defaultStyle)
+    ∷ path sockW sockH sockHeel (filled "#fff" (stroked "#262626" (thick 4 defaultStyle)))
+    ∷ path sockW sockH sockToe (filled "#fff" (stroked "#262626" (thick 4 defaultStyle)))
+    ∷ path sockW sockH sockOutline (filled colour (stroked "#262626" (thick 4 defaultStyle)))
+    ∷ [] )
+
+socksDia : Dia ℕ
+socksDia = margin 10 10 10 10 (hcat 30 (sock "#262626" ∷ sock "#2c5a8a" ∷ sock "#a02a3c" ∷ []))
+```
+
+## The PAIRS pipeline
+
+The same stack read as a pipeline: each image is mapped to a one-row image (a summary of one
+event), and the summaries are averaged into the one-row summary of the whole dataset.  The
+summaries' colours are pseudo-random too; the average of a column is the mean of its eight hues.
+
+```agda
+summaryHue : ℕ → ℕ → ℕ
+summaryHue k i = noiseHue (1000 + k * 8 + i)
+
+hsl55 : ℕ → String
+hsl55 h = "hsl(" ++ˢ show h ++ˢ ",70%,55%)"
+
+-- a one-row image of eight cells
+strip : (ℕ → String) → Dia ℕ
+strip colour =
+  rectangle imgSide cellSide (stroked "#262626" (thick 2 defaultStyle))
+    ⊙ hcat 0 (map (λ i → rectangle cellSide cellSide (filled (colour i) defaultStyle)) (applyUpTo (λ i → i) 8))
+
+-- the summary of event `k`, and the mean of the eight summaries
+meanStrip : Dia ℕ
+meanStrip  = strip (λ i → hsl55 (sumHues i / 8))
+  where sumHues : ℕ → ℕ
+        sumHues i = foldr _+_ 0 (map (λ k → summaryHue k i) (applyUpTo (λ k → k) 8))
+
+eventStripAt : ℕ → Dia ℕ
+eventStripAt k = strip (λ i → hsl55 (summaryHue k i))
+
+-- the eight summaries, one above the other, as tall as the stack
+strips : Dia ℕ
+strips = vcat ((stackSide ∸ 8 * cellSide) / 7) (map eventStripAt (applyUpTo (λ k → k) 8))
+
+-- a gap with an arrow drawn through it and a caption under the arrow
+pairsGap : String → Dia ℕ
+pairsGap t = layers 160 stackSide (place 160 stackSide ((160 ∸ textWidth 32 t) / 2) (stackSide / 2 + 14) (dim 32 t) ∷ [])
+
+-- a stage with a caption under it
+pairsStage : String → Dia ℕ → String → Dia ℕ
+pairsStage i d t = named i d ═ ↕ 12 ═ dim 32 t
+
+pairsDia : Dia ℕ
+pairsDia =
+  margin 10 10 10 10
+    ( hcat 0
+        ( pairsStage "pe" stackDia "events"
+        ∷ pairsGap "encode"
+        ∷ pairsStage "ps" strips "summaries"
+        ∷ pairsGap "average"
+        ∷ pairsStage "pm" meanStrip "dataset"
+        ∷ [] )
+    ▹[ cls "flow cy solid" ] ("pe" ⟶ "ps" ∷ "ps" ⟶ "pm" ∷ []) )
+```
+
+## The web
+
+Where it came from and where it went: collaborators who needed to share, the web built for them,
+and everyone.
+
+```agda
+webDia : Dia ℕ
+webDia =
+  margin 10 10 10 10
+    ((hcat 60
+        ( box "wp" 300 110 (lines 22 ("collaborators" ∷ "(~5000 on ATLAS)" ∷ []) defaultStyle)
+        ∷ box "ww" 300 110 (lines 22 ("the web" ∷ "links + HTTP, 1989" ∷ []) defaultStyle)
+        ∷ box "we" 300 110 (lines 22 ("now used everywhere" ∷ []) defaultStyle)
+        ∷ [] )
+      ▹[ cls "flow cy" ] ("wp" ⟶ "ww" ∷ "ww" ⟶ "we" ∷ []))
+     ═ ↕ 14 ═ dim 20 "built to share scientific documentation, now used for everything")
+
+_ : dangling webDia ≡ []
 _ = refl
 ```
 
@@ -404,5 +601,5 @@ grow s bs = steady (3 * 12) (canvas axes) ∥ₛ batches s bs
 The LHC animation is in `Slides.Examples.LHC`.
 
 ```agda
-open import Slides.Examples.LHC public using (lhcAnim)
+open import Slides.Examples.LHC public using (lhcAnim; triggerAnim)
 ```
