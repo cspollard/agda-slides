@@ -33,6 +33,7 @@ open import Data.String using (String; _≟_)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 
 open import Slides.Diagram.Style using (Style)
+open import Slides.Text using (Inline)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open Space Sp
@@ -116,7 +117,7 @@ segment : S → S → Style → Layout S
 segment w h s = mkLayout w h (line 0# 0# (dbl w) (dbl h) s ∷ []) []
 
 -- the label's centre is the frame's centre (`w` half units is half the width)
-text : S → S → ℕ → String → Style → Layout S
+text : S → S → ℕ → List Inline → Style → Layout S
 text w h n t s = mkLayout w h (label w h n t s ∷ []) []
 
 pathL : S → S → String → Style → Layout S

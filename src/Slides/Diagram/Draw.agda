@@ -24,6 +24,7 @@ open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 
 open import Slides.Diagram.Style using (Style)
+open import Slides.Text using (Inline)
 
 record Box (S : Set) : Set where
   constructor box
@@ -36,7 +37,7 @@ data Draw (S : Set) : Set where
   poly   : (closed : Bool) → List (S × S) → Style → Draw S   -- absolute points; closed is a polygon
   line   : (x₁ y₁ x₂ y₂ : S) → Style → Draw S
   arrow  : (x₁ y₁ x₂ y₂ : S) → Style → Draw S          -- the head is at the second point
-  label  : (x y : S) (size : ℕ) → String → Style → Draw S   -- centred at a point
+  label  : (x y : S) (size : ℕ) → List Inline → Style → Draw S   -- centred at a point
   path   : (x y : S) → String → Style → Draw S         -- `d` as in SVG, drawn from (x, y)
   group  : (x y : S) → List (Draw S) → Draw S          -- members drawn relative to (x, y)
 

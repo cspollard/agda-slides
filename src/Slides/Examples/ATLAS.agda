@@ -50,6 +50,7 @@ open import Data.String using (String)
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; anchored)
+open import Slides.Text using (parse)
 open import Slides.Trig using (fromℕ)
 open import Slides.Three.Point
 open import Slides.Three.View
@@ -286,7 +287,7 @@ module Parts (T : Theme) (V : View) where
   -- a line of text that starts at its frame's left edge: the frame has no width, so the text does
   -- not depend on the width the page's font gives it
   label : ℕ → String → Style → Dia ℕ
-  label size t st = impure (Text 0 (size * 3 / 2) size t (anchored "start" st) , λ ())
+  label size t st = impure (Text 0 (size * 3 / 2) size (parse t) (anchored "start" st) , λ ())
 
   swatch : String → Dia ℕ
   swatch c = disc 9 (paint c c 1 100)

@@ -59,7 +59,8 @@ open import Container.Pick using (pick2)
 open import Container.Lowering using (translate)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Draw using (mapPt)
-open import Slides.Diagram.TextMetrics using (textWidth)
+open import Slides.Diagram.TextMetrics using (inlineWidth)
+open import Slides.Text using (Inline; parse)
 open import Slides.Diagram.Geometry public
 
 data Op (S : Set) : Set where
@@ -67,7 +68,7 @@ data Op (S : Set) : Set where
   Disc              : (r : S) → Style → Op S
   Ellipse           : (rx ry : S) → Style → Op S
   Polyline          : (closed : Bool) → List (S × S) → Style → Op S   -- points from the frame's top-left
-  Text              : (w h : S) (size : ℕ) → String → Style → Op S   -- frame as measured
+  Text              : (w h : S) (size : ℕ) → List Inline → Style → Op S   -- frame as measured
   Path              : (w h : S) → String → Style → Op S              -- opaque `d` in the frame's units: not scalar-parametric
   Spacer            : (w h : S) → Op S
   Beside            : VAlign → Op S
@@ -178,7 +179,8 @@ path w h d s = impure (Path w h d s , λ ())
 -- font is wider), `size * 3/2` high; `fromℕ` reads a number of units as a length
 text : ∀ {S} → (ℕ → S) → (pct size : ℕ) → String → Style → Dia S
 text fromℕ pct size t s =
-  impure (Text (fromℕ ((textWidth size t * pct) / 100)) (fromℕ ((size * 3) / 2)) size t s , λ ())
+  impure (Text (fromℕ ((inlineWidth size is * pct) / 100)) (fromℕ ((size * 3) / 2)) size is s , λ ())
+  where is = parse t
 
 besideA : ∀ {S} → VAlign → Dia S → Dia S → Dia S
 besideA al a b = impure (Beside al , pick2 a b)

@@ -29,7 +29,7 @@ import Data.SVG as SVG
 
 open import Slides.Diagram.Style using (Style; defaultStyle)
 open import Slides.Diagram.Draw
-open import Slides.Diagram.Markup using (Seg; flat; sub; sup; parse)
+open import Slides.Text using (Inline; text; sub; sup; plainT)
 
 -- how a scalar is written: a size, and a position given in half units
 record Print (S : Set) : Set where
@@ -72,18 +72,19 @@ private
   translate x y = ("transform" , "translate(" ++ˢ x ++ˢ " " ++ˢ y ++ˢ ")") ∷ []
 
   -- `pending` is the vertical shift to undo at the next segment
-  tspans : ℕ → String → List Seg → List (XMLM A)
-  tspans sz pending []            = []
-  tspans sz pending (flat t ∷ ss) = textElement "tspan" (opt "dy" (undo pending)) (padText t) ∷ tspans sz "" ss
+  -- a construct other than a script is written as its plain text
+  tspans : ℕ → String → List Inline → List (XMLM A)
+  tspans sz pending []           = []
+  tspans sz pending (sub t ∷ ss) =
+    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []) (padText (plainT t))
+      ∷ tspans sz ("-" ++ˢ show (sz / 4)) ss
+  tspans sz pending (sup t ∷ ss) =
+    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []) (padText (plainT t))
+      ∷ tspans sz (show (sz / 3)) ss
+  tspans sz pending (i ∷ ss)     = textElement "tspan" (opt "dy" (undo pending)) (padText (plainT (i ∷ []))) ∷ tspans sz "" ss
     where undo : String → Maybe String
           undo "" = nothing
           undo d  = just d
-  tspans sz pending (sub t ∷ ss)  =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []) (padText t)
-      ∷ tspans sz ("-" ++ˢ show (sz / 4)) ss
-  tspans sz pending (sup t ∷ ss)  =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []) (padText t)
-      ∷ tspans sz (show (sz / 3)) ss
 
 module _ {S : Set} (P : Print S) where
   open Print P
@@ -109,14 +110,14 @@ module _ {S : Set} (P : Print S) where
     renderDraw n (line a b c d s)  = lineEl a b c d (shapeAttrs s)
     renderDraw n (arrow a b c d s) =
       lineEl a b c d (shapeAttrs s ++ (("marker-end" , "url(#" ++ˢ markerId n ++ˢ ")") ∷ []))
-    renderDraw n (label x y sz t s) = body (parse t)
+    renderDraw n (label x y sz t s) = body t
       where
         attrs : Attrs
         attrs = ("x" , pos x) ∷ ("y" , pos y) ∷ ("font-size" , show sz)
               ∷ ("text-anchor" , fromMaybe "middle" (Style.anchor s)) ∷ ("dominant-baseline" , "central")
               ∷ ("fill" , fromMaybe "currentColor" (Style.fill s)) ∷ commonAttrs s
-        body : List Seg → XMLM A
-        body (flat u ∷ []) = textElement "text" attrs (padText u)
+        body : List Inline → XMLM A
+        body (text u ∷ []) = textElement "text" attrs (padText u)
         body []            = textElement "text" attrs " "
         body ss            = element "text" attrs (tspans sz "" ss)
     renderDraw n (path x y d s)    = SVG.path d (translate (pos x) (pos y) ++ shapeAttrs s)

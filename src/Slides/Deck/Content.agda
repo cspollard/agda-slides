@@ -29,21 +29,12 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; tran
 import Data.List.Properties as ListP
 
 open import Slides.Deck.Math using (Math; toLaTeX)
+open import Slides.Text public
 open import Data.Rational using (ℚ)
 open import Slides.Diagram.Syntax using (Dia)
 open import Slides.Diagram.Draw using (Layout)
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
-
-data Inline : Set where
-  text codeSpan : String → Inline
-  emph strong : List Inline → Inline
-  inlineMath : Math → Inline
-  link       : (url : String) → List Inline → Inline
-  cite       : (key : String) → Inline          -- a bibliography key (checked by `Slides.Deck.DSL`)
-
-Text : Set
-Text = List Inline
 
 data Block : Set where
   heading     : ℕ → Text → Block
@@ -82,20 +73,6 @@ Flow = List Block
 
 ------------------------------------------------------------------------
 -- Plain text
-
-mutual
-  plainI : Inline → String
-  plainI (text s)       = s
-  plainI (codeSpan s)   = s
-  plainI (emph is)      = plainT is
-  plainI (strong is)    = plainT is
-  plainI (inlineMath m) = toLaTeX m
-  plainI (link _ is)    = plainT is
-  plainI (cite k)       = "[" ++ˢ k ++ˢ "]"
-
-  plainT : Text → String
-  plainT []       = ""
-  plainT (i ∷ is) = plainI i ++ˢ plainT is
 
 mutual
   plainB : Block → List String

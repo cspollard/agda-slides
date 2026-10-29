@@ -13,7 +13,7 @@ open import Data.Char using (Char; toℕ)
 open import Data.List using (List; []; _∷_; foldr)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _/_; _∸_)
 open import Data.String using (String; toList)
-open import Slides.Diagram.Markup
+open import Slides.Text using (Inline; text; sub; sup; plainT; parse)
 
 private
   table : List ℕ   -- ' ' … '~' (codes 32 … 126)
@@ -39,15 +39,20 @@ private
   run : String → ℕ
   run t = foldr (λ c n → charWidth c + n) 0 (toList t)
 
-  go : List Seg → ℕ
+  -- a construct other than a script is measured by its plain text
+  go : List Inline → ℕ
   go []            = 0
-  go (flat u ∷ ss) = run u + go ss
-  go (sub u ∷ ss)  = (run u * 7) / 10 + go ss
-  go (sup u ∷ ss)  = (run u * 7) / 10 + go ss
+  go (sub u ∷ ss)  = (run (plainT u) * 7) / 10 + go ss
+  go (sup u ∷ ss)  = (run (plainT u) * 7) / 10 + go ss
+  go (i ∷ ss)      = run (plainT (i ∷ [])) + go ss
 
--- width of a label (markup included) at a font size, in the diagram's units
+-- width of a label at a font size, in the diagram's units
+inlineWidth : ℕ → List Inline → ℕ
+inlineWidth size is = (go is * size) / 1000
+
+-- the same for a label written with markup
 textWidth : ℕ → String → ℕ
-textWidth size t = (go (parse t) * size) / 1000
+textWidth size t = inlineWidth size (parse t)
 
 -- the width of a space at a font size
 spaceWidth : ℕ → ℕ

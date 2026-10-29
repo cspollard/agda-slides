@@ -60,6 +60,7 @@ open import Slides.Diagram.Syntax
 open import Slides.Diagram.Draw using (Layout; mkLayout)
 open import Slides.Diagram.Print using (Print; renderSVG)
 open import Slides.Scene.Syntax using (_⨾_)
+open import Slides.Text using (markup)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 open Mv using (Anim; Leaf; Sc; Drv; Event; onset; span; driver; leaf)
 open import Slides.Backend.Share using (Tree; tree; ship; shareTop)
@@ -189,7 +190,7 @@ diaT (impure (Segment w h s , k))     = op "S" (scI w ∷ scI h ∷ txt (style�
 diaT (impure (Disc r s , k))          = op "D" (scI r ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Ellipse a b s , k))     = op "E" (scI a ∷ scI b ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Polyline c ps s , k))   = op "Y" (txt (natⱼ (if c then 1 else 0)) ∷ txt (styleⱼ s) ∷ pointsT ps)
-diaT (impure (Text w h n t s , k))    = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ t) ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Text w h n t s , k))    = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ (markup t)) ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Path w h d s , k))      = op "P" (scI w ∷ scI h ∷ txt (stringⱼ d) ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Spacer w h , k))        = op "_" (scI w ∷ scI h ∷ [])
 diaT (impure (Beside al , k))         = op "b" (txt (valignⱼ al) ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])

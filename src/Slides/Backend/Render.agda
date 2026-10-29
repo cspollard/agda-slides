@@ -82,6 +82,8 @@ mutual
   piece (inlineMath m) = inj₁ ("\\(" ++ˢ toLaTeX m ++ˢ "\\)") ∷ []
   piece (emph is)      = inj₂ (rich "em" [] is) ∷ []
   piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
+  piece (sub is)       = inj₂ (rich "sub" [] is) ∷ []
+  piece (sup is)       = inj₂ (rich "sup" [] is) ∷ []
   piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
   piece (link u is)    = inj₂ (rich "a" (("href" , u) ∷ []) is) ∷ []
   piece (cite k)       = inj₂ (hText "span" (("class" , "cite") ∷ []) ("[" ++ˢ k ++ˢ "]")) ∷ []
