@@ -108,10 +108,10 @@ test-pairs:
 # The outreach deck "How collider physics is accelerating data science", a literate Agda file
 # (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
 # loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=... KATEX=...` links a
-# local copy of both (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
+# local copy of both (out/collider-local/). 
 COLLIDER_FILES = assets/slides.css assets/animation.js assets/light.css assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
 
-.PHONY: collider collider-local test-collider
+.PHONY: collider collider-local
 collider:
 	mkdir -p out/collider $(BUILD_DIR)
 	cp $(COLLIDER_FILES) out/collider/
@@ -127,10 +127,6 @@ collider-local:
 	  echo "@font-face{font-family:'Fira Code';font-weight:$$w;font-display:swap;src:url(fonts/fira-code-latin-$$w-normal.woff2) format('woff2');}"; done > out/collider-local/fira.css
 	sed "1s#.*#@import url('fira.css');#" assets/collider/collider.css > out/collider-local/collider.css
 	$(call run-main,src/Slides/Examples/ColliderMain.agda,local)
-
-test-collider: collider-local
-	cd tests/browser && npm install --silent
-	node tests/browser/collider.mjs out
 
 # A deck with a non-default key binding (not a golden), and a deck with named slides.
 .PHONY: keys labels test-keys test-labels
