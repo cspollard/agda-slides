@@ -5,8 +5,8 @@
 --
 -- A scene of three layers, one lap of `period` ticks:
 --
---   pipe     one leaf, the ring as a `Path` through 128 points of the ellipse (the 129th is the
---            first), held for the whole lap and drawn round-capped by the CSS class `pipe`;
+--   pipe     one leaf, an `ellipse` of radii `RX` `RY` (exact, drawn as an SVG `<ellipse>`), held for
+--            the whole lap and styled by the CSS class `pipe`;
 --   bunches  one frame per tick: the two bunches, at the angle `64 + 4 k` and its mirror image;
 --   flash    the first 16 ticks only: a burst that grows for 8 ticks and shrinks for 8, and eight
 --            sparks flying out.
@@ -36,7 +36,7 @@ open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) re
 -- Dimensions and period
 
 -- every length is in units of 1/K of the original size: whole numbers then round to a quarter of
--- what they did, and the pipe is smooth (the page scales the drawing to its width)
+-- what they did, so the bunches sit close to the pipe (the page scales the drawing to its width)
 K : ℕ
 K = 4
 
@@ -110,9 +110,9 @@ put = place W H
 canvas : List (Dia ℕ) → Dia ℕ
 canvas = layers W H
 
--- the pipe: one polygon through 128 points of the ellipse
+-- the pipe: an ellipse about (CX , CY), placed by the corner of its frame
 pipe : Dia ℕ
-pipe = canvas (polygon (map (λ k → ellipseAt (2 * k)) (applyUpTo (λ k → k) 128)) (cls "pipe") ∷ [])
+pipe = canvas (put (CX ∸ RX) (CY ∸ RY) (ellipse RX RY (cls "pipe")) ∷ [])
 
 -- a bunch at (x , y): a soft halo and a core
 bunch : ℕ → ℕ → List (Dia ℕ)

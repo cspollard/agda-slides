@@ -93,11 +93,34 @@ TODO:
 - approximate rates (40MHz -> 100kHz -> 10kHz)
 - hardware triggers (ML on FPGAs)
 - software triggers (fast ML on GPUs and conventional CPUs)
-- hls4ml: https://fastmachinelearning.org/hls4ml/
 
 ```agda
   slide $ do
     heading 2 "a data firehose"
+    bullets
+      ( "LHC proton bunches cross 40 million times per second"
+      ∷ "each bunch crossing: ~65 $pp$ collisions (will grow to ~200 in the coming years)"
+      ∷ "~1 billion collisions per second!"
+      ∷ "detectors have many millions of readout channels → 100TB/s of data per experiment"
+      ∷ "about the data rate of the global internet"
+      ∷ []
+      )
+    classed "callout"
+      (p■ "we cannot keep everything, and we cannot look at everything by eye.")
+```
+
+```agda
+  slide $ do
+    heading 2 "a data firehose"
+    bullets
+      ( "to contend with this, ATLAS have custom hardware for the first-level trigger"
+      ∷ "rate must go from ~40MHz to ~100kHz purely based on specialized hardware algorithms"
+      ∷ "huge effort to port ML models to FPGAs (programmable hardware) is paying off"
+      ∷ "hls4ml: https://fastmachinelearning.org/hls4ml/ and fastML challenges"
+      ∷ "being taken up now by private industry"
+      ∷ []
+      )
+    -- TODO this diagram is not good.
     diagram "d-tiles" 100 tilesDia
     classed "callout"
       (p■ "we cannot keep everything, and we cannot look at everything by eye.")
