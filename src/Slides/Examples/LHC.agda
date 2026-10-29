@@ -31,6 +31,7 @@ open import Data.String using (String; toList; fromList) renaming (_++_ to _++ˢ
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.TextMetrics using (textWidth)
+import Slides.Trig as T
 open import Data.Container.FreeMonad using (pure)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 
@@ -58,36 +59,10 @@ RX = 220 * K
 RY = 85 * K
 
 ------------------------------------------------------------------------
--- Trigonometry in whole numbers
---
--- An angle is a number of 1/256 turns.  `trig a` is (cos , sin) of it, each as a magnitude
--- in tenthousandths and a flag that it is negative.
-
--- sin of 0, 5.625°, … 90°, then 90° again so that interpolation at the end has a neighbour
-sinTable : List ℕ
-sinTable = 0 ∷ 980 ∷ 1951 ∷ 2903 ∷ 3827 ∷ 4714 ∷ 5556 ∷ 6344 ∷ 7071
-         ∷ 7730 ∷ 8315 ∷ 8819 ∷ 9239 ∷ 9569 ∷ 9808 ∷ 9952 ∷ 10000 ∷ 10000 ∷ []
-
-nth : ℕ → List ℕ → ℕ
-nth _       []       = 0
-nth zero    (x ∷ _)  = x
-nth (suc k) (_ ∷ xs) = nth k xs
-
--- sin of a first-quadrant angle (a ≤ 64), interpolated between table entries
-qsin : ℕ → ℕ
-qsin a = lo + ((hi ∸ lo) * (a % 4)) / 4
-  where lo = nth (a / 4) sinTable
-        hi = nth (suc (a / 4)) sinTable
-
--- (cos , sin) in quadrant q at r units into it
-quad : ℕ → ℕ → (ℕ × Bool) × (ℕ × Bool)
-quad 0 r = (qsin (64 ∸ r) , false) , (qsin r , false)
-quad 1 r = (qsin r , true)         , (qsin (64 ∸ r) , false)
-quad 2 r = (qsin (64 ∸ r) , true)  , (qsin r , true)
-quad _ r = (qsin r , false)        , (qsin (64 ∸ r) , true)
+-- Trigonometry in whole numbers: an angle is a number of 1/256 turns
 
 trig : ℕ → (ℕ × Bool) × (ℕ × Bool)
-trig a = quad ((a / 64) % 4) (a % 64)
+trig a = T.trig (4 * a)
 
 -- a signed value moved up by 10000, so that it is never negative: 0 … 20000
 lifted : ℕ × Bool → ℕ

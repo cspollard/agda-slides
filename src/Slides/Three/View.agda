@@ -7,39 +7,12 @@
 
 module Slides.Three.View where
 
-open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; -_ to negᶻ; ∣_∣ to absᶻ)
-open import Data.Nat using (ℕ; suc; _+_; _*_; _∸_; _/_; _%_)
+open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; ∣_∣ to absᶻ)
+open import Data.Nat using (ℕ; _+_; _*_; _∸_; _/_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 
-open import Slides.Examples.LHC using (sinTable; nth)
+open import Slides.Trig using (sc)
 open import Slides.Three.Point
-
-------------------------------------------------------------------------
--- Trigonometry: angles in 1/1024 turns
-
--- sin of a first-quadrant angle (a ≤ 256), interpolated between the 17 table entries
-sinQ : ℕ → ℕ
-sinQ a = lo + ((hi ∸ lo) * (a % 16)) / 16
-  where lo = nth (a / 16) sinTable
-        hi = nth (suc (a / 16)) sinTable
-
--- (cos , sin) as a magnitude in tenthousandths and a flag that it is negative
-trig : ℕ → (ℕ × Bool) × (ℕ × Bool)
-trig a = quad ((a / 256) % 4) (a % 256)
-  where
-    quad : ℕ → ℕ → (ℕ × Bool) × (ℕ × Bool)
-    quad 0 r = (sinQ (256 ∸ r) , false) , (sinQ r , false)
-    quad 1 r = (sinQ r , true)          , (sinQ (256 ∸ r) , false)
-    quad 2 r = (sinQ (256 ∸ r) , true)  , (sinQ r , true)
-    quad _ r = (sinQ r , false)         , (sinQ (256 ∸ r) , true)
-
--- (cos , sin) in tenthousandths
-sc : ℕ → ℤ × ℤ
-sc a = signed (proj₁ t) , signed (proj₂ t)
-  where t = trig a
-        signed : ℕ × Bool → ℤ
-        signed (m , neg) = if neg then negᶻ (+ m) else + m
 
 ------------------------------------------------------------------------
 -- Views
