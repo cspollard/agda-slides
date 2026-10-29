@@ -36,7 +36,7 @@ collider = do
     heading 1 "accelerating data science"
     classed "subtitle" (p■ "the biggest machine ever built as a data-science lab")
     classed "authors" (p■ "Chris Pollard · Warwick")
-    animateLoop "d-title" 85 1000 titleAnim
+    animateLoop "d-title" 85 200 titleAnim
 
   slide $ do
     heading 2 "curiosity-driven particle physics"
@@ -118,7 +118,7 @@ collider = do
     heading 2 "the computing grid"
     diagram "d-grid" 75 gridDia
     fragment (c■ "callout" (p■ "the data are too big to move! send the code to the data..."))
-    fragment (c■ "callout" (p■ "170+ compting sites in 40+ countries"))
+    fragment (c■ "callout" (p■ "170+ computing sites in 40+ countries"))
     fragment (c■ "callout" (p■ "with this much data, one must think carefully about how to summarize events"))
 
   slide $ do
