@@ -173,6 +173,7 @@ test-negative:
 .PHONY: test-numeric
 test-numeric:
 	$(AGDA) -i tests/numeric tests/numeric/TrigCheck.agda
+	$(AGDA) -i tests/numeric tests/numeric/ThreeCheck.agda
 
 # Golden-file tests (run `make example talk plain showcase` first), then the browser tests.
 .PHONY: test test-browser

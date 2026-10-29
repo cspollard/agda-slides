@@ -14,11 +14,11 @@
 -- the whole detector, leaving a minimum-ionising trace in both calorimeters and a hit in every
 -- station.
 --
--- Everything is a diagram over whole numbers.  A point of the detector is (r , a , z), a
--- `Slides.Three.Point`, seen in a `Slides.Three.View`.  The view `flat` looks down the beam: the
--- cylinder is a set of rings, the transverse plane.  Each layer is drawn as its end face (a ring of
--- cells), the outer surface of the cells that face the viewer, and the walls the cut leaves; the
--- event goes over all of these, as if the detector were transparent.
+-- Everything is a diagram over whole numbers, drawn by `Slides.Three`: a point of the detector is (r , a , z),
+-- seen in a `View`; the cells are annular sectors (`Solid`s), painted back to front by `render`.
+-- The view `flat` looks down the beam: the cylinder is a set of rings, the transverse plane.  Each
+-- layer is drawn as its end face (a ring of cells), the outer surface of its cells and the walls
+-- the cut leaves; the event goes over all of these, as if the detector were transparent.
 --
 -- The look is a `Theme` (the background and every colour): `dark` is the default, `light` a
 -- light page, and `withBackground c T` any other background.  `Parts T V` has the pieces of the
@@ -42,8 +42,8 @@ module Slides.Examples.ATLAS where
 open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Integer using (ℤ; +_) renaming (_*_ to _*ᶻ_; -_ to negᶻ)
-open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ; 0ℚᵘ; -_) renaming (_≤ᵇ_ to _≤ᵠᵇ_)
-open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; foldr; _++_)
+open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ; 0ℚᵘ; 1ℚᵘ; -_)
+open import Data.List using (List; []; _∷_; map; applyUpTo; concatMap; _++_)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
@@ -53,6 +53,8 @@ open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; a
 open import Slides.Trig using (fromℕ)
 open import Slides.Three.Point
 open import Slides.Three.View
+open import Slides.Three.Solid
+open import Slides.Three.Render
 
 ------------------------------------------------------------------------
 -- The frame and the centre of the detector
@@ -66,6 +68,10 @@ CY = 350
 -- half the length of the barrel, in units
 half : ℕ
 half = 180
+
+-- an angle in 1/1024 turns, as turns
+turns : ℕ → ℚᵘ
+turns a = mkℚᵘ (+ a) 1023
 
 -- the order of the polynomials that place the cells (5: within 3·10⁻⁴, a third of a pixel at this size)
 order : ℕ
@@ -160,33 +166,15 @@ record Layer : Set where
 module Parts (T : Theme) (V : View) where
   open Theme T
 
-  -- the point on the page, and the depth, of the point at radius r, angle a (in 1/1024 turns), and z
+  -- the point at radius r, angle a (in 1/1024 turns) and z, and where it is on the page
   spot : ℕ → ℕ → ℚᵘ → Point
-  spot r a z = cyl order (fromℕ r) (mkℚᵘ (+ a) 1023) z
+  spot r a z = cyl order (fromℕ r) (turns a) z
 
   pt : ℕ → ℕ → ℚᵘ → ℕ × ℕ
   pt r a z = project CX CY V (spot r a z)
 
-  dp : ℕ → ℕ → ℚᵘ → ℚᵘ
-  dp r a z = depth V (spot r a z)
-
   end : ℚᵘ
   end = fromℕ half
-
-  -- the points of the arc at radius r from angle a for w, at z, a point every 8
-  arcPts : ℕ → ℕ → ℕ → ℚᵘ → List (ℕ × ℕ)
-  arcPts r a w z = map (λ j → pt r (a + 8 * j) z) (applyUpTo (λ j → j) (suc (w / 8)))
-
-  -- the cell between the radii r₀ < r₁, from angle a for w, in the plane z
-  cell : ℕ → ℕ → ℕ → ℕ → ℚᵘ → List (ℕ × ℕ)
-  cell r₀ r₁ a w z = arcPts r₁ a w z ++ reverse (arcPts r₀ a w z)
-
-  -- the outer surface of a cell over the whole length of the barrel, and a wall at angle a
-  patch : ℕ → ℕ → ℕ → List (ℕ × ℕ)
-  patch r a w = arcPts r a w (- end) ++ reverse (arcPts r a w end)
-
-  wall : ℕ → ℕ → ℕ → List (ℕ × ℕ)
-  wall r₀ r₁ a = pt r₀ a (- end) ∷ pt r₁ a (- end) ∷ pt r₁ a end ∷ pt r₀ a end ∷ []
 
   -- the page, rounded
   background : Dia ℕ
@@ -220,69 +208,37 @@ module Parts (T : Theme) (V : View) where
   starts : Layer → List ℕ
   starts (layer _ _ hi w n _ _ _ _) = applyUpTo (λ j → hi + w * j) n
 
-  -- a face with the depth of a point in it (r , a , z): a translucent fill with an opaque
-  -- outline over it
-  Face : Set
-  Face = ℚᵘ × List (Dia ℕ)
-
-  face : String → String → ℕ → ℚᵘ → List (ℕ × ℕ) → Face
-  face fl rm o d ps = d , ( put 0 0 (polygon ps (paint fl fl 0 o))
-                          ∷ put 0 0 (polygon ps (line rm 1)) ∷ [] )
-
-  -- the faces of a cell of a layer, all of them: both end faces, and the surfaces at its two
-  -- radii.  The fill is faint enough to see the far side through the near one.
-  cellFaces : String → String → ℕ → ℕ → ℕ → ℕ → ℕ → List Face
-  cellFaces fl rm o r₀ r₁ a w = ends ++ surfaces
-    where
-      mid rmid : ℕ
-      mid  = a + w / 2
-      rmid = (r₀ + r₁) / 2
-      ends = face fl rm o (dp rmid mid end) (cell r₀ r₁ a w end)
-           ∷ face fl rm o (dp rmid mid (- end)) (cell r₀ r₁ a w (- end))
-           ∷ []
-      surfaces = face fl rm o (dp r₁ mid 0ℚᵘ) (patch r₁ a w)
-               ∷ (if 0 <ᵇ r₀ then face fl rm o (dp r₀ mid 0ℚᵘ) (patch r₀ a w) ∷ [] else [])
-
-  -- the faces of a layer: its cells, and the walls the cut leaves
-  layerFaces : Layer → List Face
-  layerFaces L = walls ++ concat (map (λ a → cellFaces fill rim 30 r₀ r₁ a w) (starts L))
+  -- the cells of a layer, and the walls the cut leaves.  Their fill is faint enough to see the far
+  -- side through the near one.
+  layerSolids : Layer → List Solid
+  layerSolids L = walls ++ map (λ a → xray (sector order (w / 8) r₀′ r₁′ (turns a) (turns w) (- end) end)) (starts L)
     where
       open Layer L
+      r₀′ = fromℕ r₀
+      r₁′ = fromℕ r₁
+      xray = solid (mat fill rim 30) false
       lo : ℕ
       lo = (hi + n * w) % 1024
-      wallAt : ℕ → Face
-      wallAt a = face fill rim 30 (dp ((r₀ + r₁) / 2) a 0ℚᵘ) (wall r₀ r₁ a)
+      wallAt : ℕ → Solid
+      wallAt a = xray (wall order r₀′ r₁′ (turns a) (- end) end ∷ [])
       walls = if 1024 <ᵇ n * w + 1 then [] else wallAt lo ∷ wallAt hi ∷ []
 
-  -- the faces of the lit cells of a layer, whole volumes: the cell's faces and its two walls.  A
-  -- lit face goes a little in front of the quiet one it overlaps.
-  litFaces : Layer → List Face
-  litFaces L = concat (map volume lits)
-    where
-      open Layer L
-      volume : Lit → List Face
-      volume (a , l) = cellFaces litC litC (glow l * 38 / 100) r₀ r₁ a w
-        ++ map wallAt (a ∷ a + w ∷ [])
-        where wallAt = λ b → face litC litC (glow l * 38 / 100) (dp ((r₀ + r₁) / 2) b 0ℚᵘ) (wall r₀ r₁ b)
-
-  -- insertion sort by depth, the farthest first
-  insert : Face → List Face → List Face
-  insert p []       = p ∷ []
-  insert p (q ∷ qs) = if proj₁ p ≤ᵠᵇ proj₁ q then p ∷ q ∷ qs else q ∷ insert p qs
-
-  sortFaces : List Face → List Face
-  sortFaces = foldr insert []
+  -- the lit cells of a layer, whole volumes
+  litSolids : Layer → List Solid
+  litSolids L = map (λ { (a , l) → solid (mat litC litC (glow l * 38 / 100)) false
+                           (annularSector order (w / 8) (fromℕ r₀) (fromℕ r₁) (turns a) (turns w) (- end) end) }) lits
+    where open Layer L
 
   -- the silicon layers: rings round the end face of the tracker
   silicons : List (Dia ℕ)
-  silicons = map (λ r → put 0 0 (polygon (arcPts r 0 1024 end) (faded 70 (thick 1 (stroked silicon defaultStyle))))) (siliconR ++ 100 ∷ [])
+  silicons = map (λ r → put 0 0 (polygon (map (project CX CY V) (arc order 128 (fromℕ r) 0ℚᵘ 1ℚᵘ end)) (faded 70 (thick 1 (stroked silicon defaultStyle))))) (siliconR ++ 100 ∷ [])
 
   -- the detector: the silicon layers over every face of every layer, the nearest on top.  With the
   -- lit cells, each goes in its place among them, so whatever lies in front of a lit cell (the
   -- tracker, the solenoid, the layers outside) shows over it.
   stack : Bool → List (Dia ℕ)
-  stack lit? = silicons ++ concat (map proj₂ (reverse (sortFaces
-    (concat (map layerFaces layers′) ++ (if lit? then concat (map litFaces layers′) else [])))))
+  stack lit? = silicons ++ render W H CX CY V
+    (concatMap layerSolids layers′ ++ (if lit? then concatMap litSolids layers′ else []))
 
   -- the quiet cells with their tracker, and the same with the lit cells (the clusters)
   detector clusters : List (Dia ℕ)

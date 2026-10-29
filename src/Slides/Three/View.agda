@@ -51,12 +51,10 @@ rotate (view yw rl) (point x y z) = point (proj₁ b) (proj₂ b) (proj₂ a)
   where a = act yw (x , z)
         b = act rl (proj₁ a , y)
 
--- the point on the page, about the centre (cx , cy).  The far end (z negative) moves to the right,
--- so the outer surface of a cylinder shows on the right.
-project : ℕ → ℕ → View → Point → ℕ × ℕ
-project cx cy V p = nearest (fromℕ cx + x) , nearest (fromℕ cy + y)
-  where open Point (rotate V p)
+-- the point of the page, about the centre (cx , cy), under a turned point; and under a view.  The
+-- far end (z negative) moves to the right, so the outer surface of a cylinder shows on the right.
+screen : ℕ → ℕ → Point → ℕ × ℕ
+screen cx cy p = nearest (fromℕ cx + Point.x p) , nearest (fromℕ cy + Point.y p)
 
--- how far towards the viewer a point is, to compare
-depth : View → Point → ℚᵘ
-depth V p = Point.z (rotate V p)
+project : ℕ → ℕ → View → Point → ℕ × ℕ
+project cx cy V p = screen cx cy (rotate V p)
