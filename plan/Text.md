@@ -1,92 +1,70 @@
-# Text: line breaks, colours and styles, nested bullets
+# Text: one tree for prose and labels; line breaks, styles, nested bullets
 
-Status: proposal, for review before any code.  Phase 3 of `plan/TODO.md`.
+Status: approved plan.  Phase 3 of `plan/TODO.md`.
 
-## What exists
+## The problem
 
-Two text languages, which is the source of the surprises.
+Two text languages: slide prose (`Deck.Content.Inline`: `text`, `codeSpan`, `emph`, `strong`,
+`inlineMath`, `link`, `cite`, rendered to HTML by `Render.piece`) and diagram labels (a `String`
+parsed by `Diagram.Markup` into `Seg`: `flat`, `sub`, `sup`, measured by `TextMetrics`, printed
+by the SVG printer).  Every text feature would be added twice.
 
-| Where | Type | Has |
-|---|---|---|
-| Slide prose (`Content`) | `Text = List Inline`; `Inline`: `text`, `codeSpan`, `emph`, `strong`, `inlineMath`, `link`, `cite` | a tree; HTML by `Render.piece`; plain text by `plainT` |
-| Diagram labels (`Diagram.Text`) | one `String`, parsed by `Markup` into `Seg`: `flat`, `sub`, `sup` | one line; width by `TextMetrics`; colour only through the primitive's `Style` |
+## The idea
 
-Blocks: `bullets : Bool → List Text → Block` is a flat list.
-
-The semantics we want to preserve: `plain` is a monoid homomorphism to lines (`plain-++`), and HTML
-rendering is the other one (`render-glue`).  Each new construct is added so that both stay
-homomorphisms and every backend gets a reading (the plain backend ignores what it cannot show).
-
-## Proposal
-
-### 1. Line breaks
-
-- **Prose.**  One new `Inline` constructor, `br`.  HTML `<br>`; plain text a newline.  Law:
-  `plainT` sends `br` to a line separator, so `plain` remains a homomorphism.  (Paragraph breaks
-  are already `paragraph`; `br` is only a break *inside* a paragraph, a bullet, a heading or a caption.)
-- **Diagram labels.**  No new primitive.  A multi-line label is a vertical stack of single-line
-  `Text`s through `above`, so its size is derived (the principle in `docs/Objects.md`) and the
-  layout laws apply unchanged.  `Convenience.lines : List String → Dia`, with the line height a
-  single parameter.  The existing `Markup` segments stay inside each line.  A `\n` in a label
-  string is sugar for `lines` at construction time, not a new constructor in the language.
-
-### 2. Native text colours and styles
-
-- **Prose.**  One `Inline` constructor, `styled : TextStyle → List Inline → Inline`, where
-  `TextStyle` is a record of optional fields: `colour : Maybe String`, `weight`, `size` as a
-  percentage of the surrounding size.  Fields are `Maybe` so that styles compose by overriding,
-  which is a monoid (`_<>_` takes the right field when present, `∅` the empty style); the law
-  `styled s (styled t is) ≡ styled (s <> t) is` is the one worth proving, as a rendering
-  equivalence (`plainT` ignores style).  `emph` and `strong` stay, as shorthand with a
-  semantic meaning (so a theme can restyle them), not as styles.
-  HTML: `<span style="…">`; colour strings are the same CSS strings `Style.fill` already takes
-  in diagrams, so one palette serves both.  A theme's named colours remain CSS classes through
-  `classed`; `styled` is for one-off use.
-- **Diagram labels.**  Colour already exists per primitive (`Style`).  Mixed colours in one
-  label would be `beside` of several `Text`s, which loses the baseline unless the pieces share a
-  height; that is fine because `TextMetrics` already gives every piece the same line height.
-  So no new label syntax; add `Convenience.coloured : List (String × String) → Dia`, pieces
-  with their colours, glued by `beside`.
-
-### 3. Nested bullets
-
-Replace the flat list by the rose tree it is:
+Both are a tree of styled runs over string atoms: the free monad of one small container.  Put it
+in one module below both users, `Slides.Text`:
 
 ```
-data Item : Set where  item : Text → List Item → Item
-bullets : (incremental : Bool) → List Item → Block
+data Inline : Set where
+  text codeSpan : String → Inline
+  emph strong   : List Inline → Inline
+  sub sup       : List Inline → Inline
+  styled        : TextStyle → List Inline → Inline
+  br            : Inline
+  inlineMath    : Math → Inline
+  link          : String → List Inline → Inline
+  cite          : String → Inline
 ```
 
-- A flat list is `item t []` for each entry; a smart constructor keeps today's
-  `bullets xs` source-compatible (examples need no change).
-- HTML: `<ul><li>t<ul>…</ul></li></ul>`.  Plain text: indentation by depth (a fold over the tree
-  with the depth as an argument; the flat case is the old output byte for byte, so the goldens
-  do not move).
-- `incremental` applies to the first level only by default; per-item reveal is a later extension.
-- Law: flattening (`items`) is a monoid homomorphism and is the identity on trees of depth one,
-  which is what the existing lowering and Navigation proofs (`lowerBlock-id`, `lowerBlock-fuse`)
-  need; they are `refl` on bullets today and should stay so.
+Every consumer is a fold: HTML (`Render.piece`), plain text (`plainT`, the existing monoid
+homomorphism to lines), SVG `<tspan>`s, and width (`TextMetrics`).  A construct a backend cannot
+show degrades through `plain`.  The label markup `"x_{T}"` becomes one parser from `String` to
+`List Inline`, applied once where a label is built; `Seg` disappears.
 
-## What changes where
+`TextStyle` is a record of optional fields (colour, weight, size in percent): styles compose by
+overriding, a monoid; the law `styled s (styled t is) ≡ styled (s <> t) is` holds up to rendering.
+`emph` and `strong` stay, as meanings a theme can restyle.  Colours are CSS strings, the ones
+`Style.fill` already takes.
 
-| Module | Change |
-|---|---|
-| `Deck.Content` | `br`, `styled`, `TextStyle`, `Item`; `plainT`/`plainB` cases |
-| `Backend.Render` | `piece`, `renderBlock` cases |
-| `Deck.Lower` | `refl` cases for the new constructors (Block unchanged for text; bullets changes shape) |
-| `Deck.DSL` | `br`, `styled`/`coloured`, `nest` helpers; `bullets` accepts items |
-| `Diagram.Convenience` | `lines`, `coloured` |
-| `assets/*.css` | nothing (inline `style` for one-offs) |
+Nested bullets are block structure, not text: `data Item = item Text (List Item)` and
+`bullets : Bool → List Item → Block`, with the flat call unchanged by a smart constructor.
 
-Estimated size: 60 to 90 lines, mostly cases, plus the two proofs; no change to `Diagram.*` proper,
-the Scene layer or the machine.
+## Steps
 
-## Decisions for review
+**1. Unify (pure refactor, nothing visible changes).**  Create `Slides.Text` with `Inline`, plain,
+and the parser from label markup; the diagram `Text` primitive carries `List Inline`; move
+`TextMetrics` and the SVG label printer to folds over it; `Deck.Content` re-exports `Inline`;
+delete `Seg`.  Gate: `make check`, and every golden and SVG byte-identical (parse then print must
+reproduce today's output exactly).  Proof: the parser agrees with the old `Markup` on its
+examples, and `plain` of a parsed label is the label text minus markup.
 
-1. `br` inside prose only, with labels getting `lines` in `Convenience` (rather than a break in
-   the `Markup` language).  Recommended.
-2. `styled` with a record of optional fields versus separate constructors (`coloured`, `big`, ...).
-   Recommended: the record, since styles then form a monoid and one HTML span carries them.
-3. Nested bullets by rose tree `Item`, `bullets` keeps its flat call shape.  Recommended.
-4. Colours as raw CSS strings (matching `Style`), not a closed palette type.  A palette type is
-   safer but would have to be shared with the theme records; defer until a theme record exists.
+**2. Add the features, once.**  `br` (HTML `<br>`, plain a line separator; in labels a stack of
+lines, line height from `TextMetrics`), `styled` (HTML `<span style>`, SVG `<tspan fill>`),
+`sub` and `sup` in prose; nested bullets (HTML nested `<ul>`, plain text indents by depth, flat
+lists byte for byte as before).  Laws: `plain` still a homomorphism, `styled` composition,
+flattening nested bullets is the identity on depth one (so `lowerBlock-id` and `lowerBlock-fuse`
+stay `refl`).  A new example slide exercising each, golden added.
+
+## Budget and rules
+
+Step 1 must not add lines net (two ASTs become one).  Step 2 about 60 lines.  The core
+(`Slides.Diagram.*` laws, Scene, Program) keeps its statements; only the `Text` primitive's
+payload type changes, in the modules that pattern-match on it.  `make check` clean, no
+postulates, `make test` green, `tests/check_closure.py` green.
+
+## Decisions taken
+
+1. `br` is a constructor of the shared tree (so labels get it too); no label-only helpers.
+2. `styled` takes a record of optional fields; colours are raw CSS strings (a closed palette type
+   waits for a theme record).
+3. Nested bullets by rose tree, flat call shape kept.
