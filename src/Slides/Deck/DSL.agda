@@ -64,110 +64,66 @@ Found true  _    _    = ⊤
 Found false kind name = Missing kind name
 
 ------------------------------------------------------------------------
--- Content: the commands of a flow (columns, boxes)
+-- Commands, stated once: as a `Flow` (`Content`, for columns and boxes) and as a `Body`
 
-module Content where
-  one : Block → Flow
-  one b = b ∷ []
+module Prims (X : Set) (one : Block → X) where
 
-  heading : ℕ → Text → Flow
+  heading : ℕ → Text → X
   heading n t = one (C.heading n t)
-  paragraph : Text → Flow
+  paragraph : Text → X
   paragraph t = one (C.paragraph t)
-  bullets incremental : List Text → Flow
+  bullets incremental : List Text → X
   bullets xs = one (C.bullets false xs)
   incremental xs = one (C.bullets true xs)
-  code : (language source : String) → Flow
+  code : (language source : String) → X
   code l s = one (C.code l s)
-  displayMath : Math → Flow
+  displayMath : Math → X
   displayMath m = one (C.displayMath m)
-  figureUnchecked : String → Text → Flow
+  figureUnchecked : String → Text → X
   figureUnchecked s c = one (C.figure s nothing c)
   -- … at a width, in percent of the slide's content width
-  figureWidthUnchecked : String → ℕ → Text → Flow
+  figureWidthUnchecked : String → ℕ → Text → X
   figureWidthUnchecked s w c = one (C.figure s (just w) c)
-  notes : Text → Flow
+  notes : Text → X
   notes t = one (C.notes t)
-  table : List Text → List (List Text) → Flow
+  table : List Text → List (List Text) → X
   table h r = one (C.table h r)
-  references : List (String × Text) → Flow
+  references : List (String × Text) → X
   references rs = one (C.references rs)
-  diagram : String → ℕ → Dia ℕ → Flow
+  diagram : String → ℕ → Dia ℕ → X
   diagram n p d = one (C.diagram n p d)
-  animate : String → ℕ → ℕ → List Anim → Flow
+  animate : String → ℕ → ℕ → List Anim → X
   animate n p ms as = one (C.animation n p ms as)
-  animateLoop : String → ℕ → ℕ → Anim → Flow
+  animateLoop : String → ℕ → ℕ → Anim → X
   animateLoop n p ms a = one (C.animationLoop n p ms a)
   -- `animateBoth name percent ms period acts`: the acts of `animate` (one per reveal step) over
   -- a loop of `period` phases; `acts φ` are the acts at phase φ, of equal lengths in every phase
   animateBoth : (n : String) (p ms period : ℕ) (acts : ℕ → List Anim) →
-                {ok : Found (uniform? period acts) "equal-length phases" n} → Flow
+                {ok : Found (uniform? period acts) "equal-length phases" n} → X
   animateBoth n p ms k as = one (C.animationBoth n p ms k (bothScene k as) (rests (as 0)))
-  script mount : String → Flow
+  script mount : String → X
   script js = one (C.script js)
   mount i = one (C.mount i)
-  columns : List Flow → Flow
+  columns : List Flow → X
   columns cs = one (C.columns cs)
-  box : Text → Flow → Flow
+  box : Text → Flow → X
   box t f = one (C.box t f)
-  fragment : Flow → Flow
+  fragment : Flow → X
   fragment f = one (C.fragment nothing f)
-  fragmentWith : String → Flow → Flow
+  fragmentWith : String → Flow → X
   fragmentWith s f = one (C.fragment (just s) f)
-  classed : String → Flow → Flow
+  classed : String → Flow → X
   classed c f = one (C.classed c f)
-  placed : ℕ → ℕ → ℕ → ℕ → Flow → Flow
+  placed : ℕ → ℕ → ℕ → ℕ → Flow → X
   placed x y w h f = one (C.placed x y w h f)
 
-------------------------------------------------------------------------
--- Body commands (the same, as slide bodies, and `pause`)
+module Content = Prims Flow (_∷ [])
 
+-- the same commands as slide bodies (`references` is a per-deck resource instead)
 liftContent : Flow → Body
 liftContent = map block
 
-heading : ℕ → Text → Body
-heading n t = liftContent (Content.heading n t)
-paragraph : Text → Body
-paragraph t = liftContent (Content.paragraph t)
-bullets incremental : List Text → Body
-bullets xs = liftContent (Content.bullets xs)
-incremental xs = liftContent (Content.incremental xs)
-code : (language source : String) → Body
-code l s = liftContent (Content.code l s)
-displayMath : Math → Body
-displayMath m = liftContent (Content.displayMath m)
-figureUnchecked : String → Text → Body
-figureUnchecked s c = liftContent (Content.figureUnchecked s c)
-figureWidthUnchecked : String → ℕ → Text → Body
-figureWidthUnchecked s w c = liftContent (Content.figureWidthUnchecked s w c)
-notes : Text → Body
-notes t = liftContent (Content.notes t)
-table : List Text → List (List Text) → Body
-table h r = liftContent (Content.table h r)
-diagram : String → ℕ → Dia ℕ → Body
-diagram n p d = liftContent (Content.diagram n p d)
-animate : String → ℕ → ℕ → List Anim → Body
-animate n p ms as = liftContent (Content.animate n p ms as)
-animateLoop : String → ℕ → ℕ → Anim → Body
-animateLoop n p ms a = liftContent (Content.animateLoop n p ms a)
-animateBoth : (n : String) (p ms period : ℕ) (acts : ℕ → List Anim) →
-              {ok : Found (uniform? period acts) "equal-length phases" n} → Body
-animateBoth n p ms k as {ok} = liftContent (Content.animateBoth n p ms k as {ok})
-script mount : String → Body
-script js = liftContent (Content.script js)
-mount i = liftContent (Content.mount i)
-columns : List Flow → Body
-columns cs = liftContent (Content.columns cs)
-box : Text → Flow → Body
-box t f = liftContent (Content.box t f)
-fragment : Flow → Body
-fragment f = liftContent (Content.fragment f)
-fragmentWith : String → Flow → Body
-fragmentWith s f = liftContent (Content.fragmentWith s f)
-classed : String → Flow → Body
-classed c f = liftContent (Content.classed c f)
-placed : ℕ → ℕ → ℕ → ℕ → Flow → Body
-placed x y w h f = liftContent (Content.placed x y w h f)
+open Prims Body (λ b → block b ∷ []) public hiding (references)
 
 -- everything from here on in the body appears step by step
 pause : Body
