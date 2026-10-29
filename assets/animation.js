@@ -202,9 +202,11 @@ function SlidesAnimation(shown) {
     // a step rests at the last instant of its act: at the rest itself the next act has begun
     return rat(r[Math.min(n, r.length) - 1]) - 1e-6;
   }
+  // a loop shows the time `phase`; steps over a loop of `data-phases` phases show the step time
+  // within the current phase (a phase is `duration / phases` ticks long)
   function draw1(a) {
-    var loop = a.getAttribute('data-loop') !== null;
-    frame(a, loop ? +(a.dataset.phase || 0) : +(a.dataset.cur || 0));
+    var loop = a.getAttribute('data-loop') !== null, n = +(a.dataset.phases || 0), cur = +(a.dataset.cur || 0);
+    frame(a, !loop ? cur : n ? Math.floor(+(a.dataset.phase || 0)) * (+a.dataset.duration / n) + cur : +(a.dataset.phase || 0));
   }
   function show(a, t) { a.dataset.cur = String(t); draw1(a); }
   // one tick every `data-ms` milliseconds, on every animation frame
@@ -224,7 +226,7 @@ function SlidesAnimation(shown) {
   }
   // a loop runs while its slide is shown: the phase is the real time in ticks modulo its duration
   function spin(a) {
-    var d = +a.dataset.duration, ms = Math.max(+a.dataset.ms, 1), t0 = null;
+    var d = +(a.dataset.phases || a.dataset.duration), ms = Math.max(+a.dataset.ms, 1), t0 = null;
     requestAnimationFrame(function go(now) {
       if (shown(a)) {
         if (t0 === null) t0 = now;

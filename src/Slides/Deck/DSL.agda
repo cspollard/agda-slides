@@ -44,7 +44,7 @@ open import Data.Unit using (tt) public
 import Slides.Deck.Syntax as S
 open import Slides.Deck.Talk
 open import Slides.Diagram.Syntax using (Dia)
-open import Slides.Deck.Anim using (Anim)
+open import Slides.Deck.Anim using (Anim; bothScene; uniform?; rests)
 
 ------------------------------------------------------------------------
 -- `do`-notation
@@ -55,6 +55,13 @@ _>>_ = _++_
 
 plain : String → Text
 plain s = text s ∷ []
+
+-- a check that is the unit type when it holds and an empty type naming the culprit when not
+data Missing (kind name : String) : Set where
+
+Found : Bool → String → String → Set
+Found true  _    _    = ⊤
+Found false kind name = Missing kind name
 
 ------------------------------------------------------------------------
 -- Content: the commands of a flow (columns, boxes)
@@ -88,6 +95,11 @@ module Content where
   animate n p ms as = one (C.animation n p ms as)
   animateLoop : String → ℕ → ℕ → Anim → Flow
   animateLoop n p ms a = one (C.animationLoop n p ms a)
+  -- `animateBoth name percent ms period acts`: the acts of `animate` (one per reveal step) over
+  -- a loop of `period` phases; `acts φ` are the acts at phase φ, of equal lengths in every phase
+  animateBoth : (n : String) (p ms period : ℕ) (acts : ℕ → List Anim) →
+                {ok : Found (uniform? period acts) "equal-length phases" n} → Flow
+  animateBoth n p ms k as = one (C.animationBoth n p ms k (bothScene k as) (rests (as 0)))
   script mount : String → Flow
   script js = one (C.script js)
   mount i = one (C.mount i)
@@ -133,6 +145,9 @@ animate : String → ℕ → ℕ → List Anim → Body
 animate n p ms as = liftContent (Content.animate n p ms as)
 animateLoop : String → ℕ → ℕ → Anim → Body
 animateLoop n p ms a = liftContent (Content.animateLoop n p ms a)
+animateBoth : (n : String) (p ms period : ℕ) (acts : ℕ → List Anim) →
+              {ok : Found (uniform? period acts) "equal-length phases" n} → Body
+animateBoth n p ms k as {ok} = liftContent (Content.animateBoth n p ms k as {ok})
 script mount : String → Body
 script js = liftContent (Content.script js)
 mount i = liftContent (Content.mount i)
@@ -216,12 +231,6 @@ record Resources : Set where
     references : List (String × Text)         -- bibliography: key and entry
 
 open Resources public
-
-data Missing (kind name : String) : Set where
-
-Found : Bool → String → String → Set
-Found true  _    _    = ⊤
-Found false kind name = Missing kind name
 
 module Checked (R : Resources) where
   private declared = λ (x : String) (xs : List String) → any (x ==_) xs

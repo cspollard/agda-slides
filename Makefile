@@ -66,13 +66,17 @@ plain:
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
-# The showcase deck with both backends: out/showcase/ (reveal.js) and out/showcase-plain/.
+# The showcase deck with both backends: out/showcase/ (reveal.js) and out/showcase-plain/, and
+# lowered (no notes, no diagrams) to out/showcase-lowered/, (no notes, animations as stills) to
+# out/showcase-still/.
 .PHONY: showcase
 showcase:
-	mkdir -p out/showcase out/showcase-plain $(BUILD_DIR)
+	mkdir -p out/showcase out/showcase-plain out/showcase-lowered out/showcase-still $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/showcase/reveal
 	cp assets/slides.css assets/animation.js assets/plot.svg out/showcase/
 	cp $(PLAIN_FILES) out/showcase-plain/
+	cp $(PLAIN_FILES) out/showcase-lowered/
+	cp $(PLAIN_FILES) out/showcase-still/
 	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
 
 # A deck with a non-default key binding (not a golden), and a deck with named slides.
@@ -109,6 +113,8 @@ test:
 	diff -u tests/golden/showcase.index.html out/showcase/index.html
 	diff -u tests/golden/showcase.init.js out/showcase/init.js
 	diff -u tests/golden/showcase-plain.index.html out/showcase-plain/index.html
+	diff -u tests/golden/showcase-lowered.index.html out/showcase-lowered/index.html
+	diff -u tests/golden/showcase-still.index.html out/showcase-still/index.html
 	diff -u tests/golden/animation.js out/plain/animation.js
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
@@ -119,6 +125,8 @@ test-browser:
 	python3 tests/check_plain.py out/plain/index.html
 	python3 tests/check_reveal.py out/showcase/index.html
 	python3 tests/check_plain.py out/showcase-plain/index.html
+	python3 tests/check_plain.py out/showcase-lowered/index.html
+	python3 tests/check_plain.py out/showcase-still/index.html
 	node tests/browser/anim.mjs out
 	node tests/browser/plain-anim.mjs out
 

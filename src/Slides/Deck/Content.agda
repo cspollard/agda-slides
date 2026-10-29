@@ -29,7 +29,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; tran
 import Data.List.Properties as ListP
 
 open import Slides.Deck.Math using (Math; toLaTeX)
+open import Data.Rational using (ℚ)
 open import Slides.Diagram.Syntax using (Dia)
+open import Slides.Diagram.Draw using (Layout)
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 
@@ -59,6 +61,12 @@ data Block : Set where
   animation   : String → ℕ → ℕ → List Mv.Anim → Block
   -- an animation that loops while its slide is shown
   animationLoop : String → ℕ → ℕ → Mv.Anim → Block
+  -- steps over a loop: `phases` copies of the acts one after the other, the loop cycling through
+  -- the phases (one per tick) while the steps play within the current one; the rests are those of
+  -- one phase (`Slides.Backend.Animation`, `animateBoth`)
+  animationBoth : (name : String) (percent ms phases : ℕ) → Mv.Anim → (rests : List ℚ) → Block
+  -- a laid-out drawing at rest (what an animation is lowered to by `Slides.Deck.Lower`)
+  still       : String → ℕ → Layout ℚ → Block
   script      : String → Block       -- JavaScript run once when its slide is shown (`slide`)
   mount       : String → Block       -- an empty element with this id, for scripts
   columns     : List (List Block) → Block
@@ -102,6 +110,8 @@ mutual
   plainB (diagram _ _ _) = []
   plainB (animation _ _ _ _) = []
   plainB (animationLoop _ _ _ _) = []
+  plainB (animationBoth _ _ _ _ _ _) = []
+  plainB (still _ _ _)   = []
   plainB (script _)      = []
   plainB (mount _)       = []
   plainB (columns cs)    = plains cs

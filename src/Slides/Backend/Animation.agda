@@ -19,7 +19,9 @@
 -- would be as long as the evaluator) and tested against Agda's frames (`make test-anim-ref`).
 --
 -- Reveal steps: an animation of acts `a₁ … aₙ` is the scene `a₁ ⨾ … ⨾ aₙ`; its *rests* are the
--- cumulative durations, the page plays from one rest to the next when a fragment appears.
+-- cumulative durations, the page plays from one rest to the next when a fragment appears
+-- (`Slides.Deck.Anim`: `sequence`, `rests`).  Steps over a loop: the scene is `n` phases end to
+-- end, a loop of period `n` ticks picks the phase and the steps play within it.
 
 module Slides.Backend.Animation where
 
@@ -216,24 +218,23 @@ firstFrame a with Mv.frame a 0
 ------------------------------------------------------------------------
 -- The element
 
--- the acts in sequence, and the cumulative durations: the rests of the reveal steps
-sequence : Anim → List Anim → Anim
-sequence a []       = a
-sequence a (b ∷ bs) = a ⨾ sequence b bs
+-- a laid-out drawing at rest, as a `diagram` element
+stillEl : String → ℕ → Layout ℚ → XMLDoc
+stillEl n pct l = hElement "div" (("class" , "diagram") ∷ ("id" , n) ∷ []) (renderSVG qPrint n pct l ∷ [])
 
-rests : Anim → List Anim → List ℚ
-rests a as = go (ι 0) (a ∷ as)
-  where go : ℚ → List Anim → List ℚ
-        go t []       = []
-        go t (x ∷ xs) = let t′ = t ℚ.+ Mv.duration x in t′ ∷ go t′ xs
+-- how the clock runs: only at the steps, in a loop while the slide is shown, or the steps within
+-- a loop of `n` phases (a phase is a copy of the acts; the page shows phase `⌊t⌋ mod n`)
+data Play : Set where
+  steps loop : Play
+  both       : ℕ → Play
 
--- the element: the first frame, the data, one fragment per step; `loop` runs while shown
-animationEl : (name : String) (percent ms : ℕ) (loop : Bool) → Anim → List ℚ → XMLDoc
-animationEl name pct ms loop a rs =
+-- the element: the first frame, the data, one fragment per step
+animationEl : (name : String) (percent ms : ℕ) (play : Play) → Anim → List ℚ → XMLDoc
+animationEl name pct ms play a rs =
   hElement "div"
     ( ("class" , "animation") ∷ ("id" , name ++ˢ "-frames") ∷ ("data-ms" , show ms)
     ∷ ("data-events" , renderJSON (eventsⱼ a)) ∷ ("data-duration" , renderJSON (qⱼ (Mv.duration a)))
-    ∷ restsAttr rs ++ loopAttr loop )
+    ∷ restsAttr rs ++ playAttr play )
     ( hElement "div" (("class" , "frame") ∷ [])
         ( hElement "div" (("class" , "diagram") ∷ ("id" , name) ∷ [])
             (renderSVG qPrint name pct (firstFrame a) ∷ []) ∷ [] )
@@ -242,6 +243,7 @@ animationEl name pct ms loop a rs =
     restsAttr : List ℚ → List (String × String)
     restsAttr []        = []
     restsAttr r@(_ ∷ _) = ("data-rests" , renderJSON (arr (map qⱼ r))) ∷ []
-    loopAttr : Bool → List (String × String)
-    loopAttr true  = ("data-loop" , "") ∷ []
-    loopAttr false = []
+    playAttr : Play → List (String × String)
+    playAttr steps    = []
+    playAttr loop     = ("data-loop" , "") ∷ []
+    playAttr (both n) = ("data-loop" , "") ∷ ("data-phases" , show n) ∷ []
