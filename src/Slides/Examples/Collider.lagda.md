@@ -38,7 +38,7 @@ Everything the deck may cite.  A citation key that is not listed here is a type 
 ```agda
 resources : Resources
 resources = record
-  { figures    = "CMSID.jpg" ∷ []
+  { figures    = "CMSID.jpg" ∷ "ATLASMS.jpg" ∷ []
   ; references =
       ("ATLAS12" , "ATLAS Collaboration. Observation of a new particle in the search for the Standard Model Higgs boson with the ATLAS detector at the LHC. Phys. Lett. B 716 (2012) 1.")
     ∷ ("CMS12"   , "CMS Collaboration. Observation of a new boson at a mass of 125 GeV with the CMS experiment at the LHC. Phys. Lett. B 716 (2012) 30.")
@@ -198,6 +198,27 @@ simDia =
      ═ ↕ 14 ═ dim 20 "inference runs the arrow backwards: given x, which θ?")
 
 _ : dangling simDia ≡ []
+_ = refl
+```
+
+## The web
+
+Where it came from and where it went: collaborators who needed to share, the web built for them,
+and everyone.
+
+```agda
+webDia : Dia ℕ
+webDia =
+  margin 10 10 10 10
+    ((hcat 60
+        ( box "wp" 300 110 (lines 22 ("collaborators" ∷ "~5000 on ATLAS" ∷ []) defaultStyle)
+        ∷ box "ww" 300 110 (lines 22 ("the web" ∷ "links + HTTP, 1989" ∷ []) defaultStyle)
+        ∷ box "we" 300 110 (lines 22 ("everyone" ∷ "billions of people" ∷ []) defaultStyle)
+        ∷ [] )
+      ▹[ cls "flow cy" ] ("wp" ⟶ "ww" ∷ "ww" ⟶ "we" ∷ []))
+     ═ ↕ 14 ═ dim 20 "built to share results, now used for everything")
+
+_ : dangling webDia ≡ []
 _ = refl
 ```
 
@@ -426,5 +447,5 @@ grow s bs = steady (3 * 12) (canvas axes) ∥ₛ batches s bs
 The LHC animation is in `Slides.Examples.LHC`.
 
 ```agda
-open import Slides.Examples.LHC public using (lhcAnim)
+open import Slides.Examples.LHC public using (lhcAnim; triggerAnim)
 ```

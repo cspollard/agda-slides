@@ -16,7 +16,7 @@ open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Examples.Collider using
   ( higgsDia; topDia; fiveSigma; grow; histogram; nllFormula; resources; scan
-  ; scanSteps; significance; simDia; stages; tilesDia; lhcAnim )
+  ; scanSteps; significance; simDia; webDia; stages; tilesDia; lhcAnim; triggerAnim )
 open import Slides.Examples.ATLAS using (atlasTurned)
 
 open Checked resources
@@ -47,19 +47,15 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       ( f■ (d■ "d-higgs" 50 higgsDia)
       ∷ f■ (d■ "d-top" 50 topDia)
       ∷ [] )
-    fragment (c■ "center" (p■ "large cosmological implications"))
+    fragment (c■ "center" (p■ "huge (cosmological-scale) implications"))
+    fragment (c■ "center" (p■ "only the LHC can produce these particles"))
 
   slide $ do
-    heading 2 "collaboration → world wide web"
-    -- TODO
-    -- A nice figure
-    bullets
-      $ "LHC collaborations are huge: ATLAS is ~5000 physicists"
-      ∷ "world wide web 
-      ∷ "collaborative tools and information-sharing are critical"
-      ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
-      ∷ "clearly they have grown beyond their initial purpose!"
-      ∷ []
+    heading 2 "collaboration → the world wide web"
+    diagram "d-web" 100 webDia
+    fragment (c■ "callout" (p■ "thousands of physicists, one dataset"))
+    fragment (c■ "callout" (p■ ("so CERN built a way to share: the web " ∷ cite "TBL89" ∷ [])))
+    fragment (c■ "callout" (p■ "it outgrew its purpose"))
 
   slide $ do
     heading 2 "the ATLAS detector"
@@ -73,6 +69,10 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
   slide $
     classed "cover" $ Content.placed 0 0 100 100 $
       Content.figureUnchecked "CMSID.jpg" ""
+
+  slide $
+    classed "cover" $ Content.placed 0 0 100 100 $
+      Content.figureUnchecked "ATLASMS.jpg" ""
 ```
 
 TODO:
@@ -83,39 +83,36 @@ TODO:
 ```agda
   slide $ do
     heading 2 "a data firehose"
-    bullets
-      $ "LHC bunches cross 40 million times per second"
-      ∷ "~65 $pp$ collisions per bunch crossing (~200 for LHC upgrade)"
-      ∷ "~1 billion collisions per second!"
-      ∷ []
-
+    animateLoop "d-lhc" 50 60 lhcAnim
     pause
-    bullets
-      $ "detectors have many millions of readout channels"
-      ∷ "→ 100TB/s of data per experiment"
-      ∷ "about the data rate of the global internet"
+    columns
+      ( c■ "callout" (p■ "LHC bunches cross 40 million times per second")
+      ∷ c■ "callout" (p■ "about 65 $pp$ collisions per bunch crossing (→ 200 after upgrade)")
       ∷ []
-
+      )
     pause
-    classed "callout" $ do
-      p■ "we cannot record every bunch crossing,"
-      p■ "and we cannot look at everything by eye."
+    columns
+      ( c■ "callout" (p■ "~1 billion collisions per second (!)")
+      ∷ c■ "callout" (p■ "→ 100TB/s of data per experiment (!)")
+      ∷ []
+      )
 ```
 
 ```agda
   slide $ do
     heading 2 "a data firehose"
-    bullets
-      $ "to contend with this, ATLAS have custom hardware for the \"first-level trigger\""
-      ∷ "rate must go from ~40MHz to ~100kHz purely based on specialized hardware algorithms"
-      ∷ "huge effort to port ML models to FPGAs (programmable hardware) is paying off"
-      ∷ "hls4ml: https://fastmachinelearning.org/hls4ml/ and fastML challenges"
-      ∷ "being taken up now by private industry"
+    columns
+      ( c■ "callout" (p■ "ATLAS can store about 5000 bunch crossings per second")
+      ∷ c■ "callout" (p■ "computers are not fast enough → custom hardware solutions")
       ∷ []
-    -- TODO this diagram is not good.
-    diagram "d-tiles" 100 tilesDia
-    classed "callout"
-      (p■ "we cannot keep everything, and we cannot look at everything by eye.")
+      )
+    pause
+    columns
+      ( c■ "callout" (p■ "now running sophisticated ML algorithsm on FPGAs: very fast")
+      ∷ c■ "callout" (p■ "industry adoption is following")
+      ∷ []
+      )
+    animateLoop "d-trigger" 100 60 triggerAnim
 ```
 
 **4. computing grid.**

@@ -466,7 +466,75 @@
   fill: var(--crimson);
   stroke: none;
 }
-/* a full-bleed photograph: the image is zoomed and cropped to cover its box */
-.reveal .cover .placed figure { margin: 0; width: 100%; height: 100%; }
-.reveal .cover .placed img { width: 100%; height: 100%; max-height: none; object-fit: cover; margin: 0; }
-.reveal .cover .placed figcaption { display: none; }
+/* a full-bleed photograph: the image is zoomed and cropped to cover the slide (1280x720, the
+   size reveal.js is initialised with); the box is taken out of flow, since the slide's children
+   are otherwise relatively positioned and a fixed box inside the scaled slides has no height */
+.reveal .slides section>.cover { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; }
+.reveal .cover .placed { position: absolute; }
+.reveal .cover figure { margin: 0; width: 100%; height: 100%; }
+.reveal .cover img { display: block; width: 100%; height: 100%; max-height: none; object-fit: cover; margin: 0; }
+.reveal .cover figcaption { display: none; }
+
+/* the border under the LHC ring, and the letters of the country names set along it, each turned
+   by 2n degrees (l: left of the middle, tilting down to the right; r: the mirror image) */
+.reveal svg .border {
+  fill: none;
+  stroke: #c4c4c4;
+  stroke-width: 8;
+  stroke-dasharray: 40 28;
+  stroke-linecap: round;
+}
+.reveal svg [class*="tilt-"] { transform-box: fill-box; transform-origin: center; }
+.reveal svg .tilt-l-0 { transform: rotate(0deg); }
+.reveal svg .tilt-r-0 { transform: rotate(-0deg); }
+.reveal svg .tilt-l-1 { transform: rotate(2deg); }
+.reveal svg .tilt-r-1 { transform: rotate(-2deg); }
+.reveal svg .tilt-l-2 { transform: rotate(4deg); }
+.reveal svg .tilt-r-2 { transform: rotate(-4deg); }
+.reveal svg .tilt-l-3 { transform: rotate(6deg); }
+.reveal svg .tilt-r-3 { transform: rotate(-6deg); }
+.reveal svg .tilt-l-4 { transform: rotate(8deg); }
+.reveal svg .tilt-r-4 { transform: rotate(-8deg); }
+.reveal svg .tilt-l-5 { transform: rotate(10deg); }
+.reveal svg .tilt-r-5 { transform: rotate(-10deg); }
+.reveal svg .tilt-l-6 { transform: rotate(12deg); }
+.reveal svg .tilt-r-6 { transform: rotate(-12deg); }
+.reveal svg .tilt-l-7 { transform: rotate(14deg); }
+.reveal svg .tilt-r-7 { transform: rotate(-14deg); }
+.reveal svg .tilt-l-8 { transform: rotate(16deg); }
+.reveal svg .tilt-r-8 { transform: rotate(-16deg); }
+.reveal svg .tilt-l-9 { transform: rotate(18deg); }
+.reveal svg .tilt-r-9 { transform: rotate(-18deg); }
+.reveal svg .tilt-l-10 { transform: rotate(20deg); }
+.reveal svg .tilt-r-10 { transform: rotate(-20deg); }
+.reveal svg .tilt-l-11 { transform: rotate(22deg); }
+.reveal svg .tilt-r-11 { transform: rotate(-22deg); }
+.reveal svg .tilt-l-12 { transform: rotate(24deg); }
+.reveal svg .tilt-r-12 { transform: rotate(-24deg); }
+.reveal svg .tilt-l-13 { transform: rotate(26deg); }
+.reveal svg .tilt-r-13 { transform: rotate(-26deg); }
+.reveal svg .tilt-l-14 { transform: rotate(28deg); }
+.reveal svg .tilt-r-14 { transform: rotate(-28deg); }
+.reveal svg .tilt-l-15 { transform: rotate(30deg); }
+.reveal svg .tilt-r-15 { transform: rotate(-30deg); }
+
+/* the collision in the trigger pipeline (src/Slides/Examples/LHC.agda) */
+.reveal svg .detector {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 3;
+}
+
+.reveal svg .track {
+  fill: none;
+  stroke: var(--rust);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* arrows drawn in the larger units of the LHC scenes */
+.reveal svg .flow.heavy {
+  stroke-width: 8;
+  stroke-dasharray: none;
+  opacity: 1;
+}
