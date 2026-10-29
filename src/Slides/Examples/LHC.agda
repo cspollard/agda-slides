@@ -11,7 +11,7 @@
 --   flash    the first 16 ticks only: a burst that grows for 8 ticks and shrinks for 8, and eight
 --            sparks flying out.
 --
--- The three are laid over each other with `∥` (`Slides.Scene.Syntax`), so the pipe is shipped
+-- The three are laid over each other with the scene's `∥` (`Slides.Scene.Syntax`, `∥ₛ` here), so the pipe is shipped
 -- once, not once per frame.  The legacy version evaluated tables of positions as formulas in the
 -- tick, because its scalars had a sine-less multiplication; here the scalars of a leaf are the
 -- Space and Time terms, which have no product of two variables, so each frame is a diagram over
@@ -28,10 +28,9 @@ open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
-open import Slides.Diagram.Style using (Style; defaultStyle; withClass)
-open import Slides.Diagram.Syntax using (Dia; disc; path; spacer; place; overlay; mapDia)
+open import Slides.Diagram.Convenience
 open import Data.Container.FreeMonad using (pure)
-open import Slides.Deck.Anim using (Anim; Leaf; lit; frame′; hold; ι; _⨾_; _∥_)
+open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 
 ------------------------------------------------------------------------
 -- Dimensions and period
@@ -55,9 +54,6 @@ CX = 240 * K
 CY = 100 * K
 RX = 220 * K
 RY = 85 * K
-
-cls : String → Style
-cls c = withClass c defaultStyle
 
 ------------------------------------------------------------------------
 -- Trigonometry in whole numbers
@@ -109,10 +105,10 @@ sparkDirs = map (λ j → trig (32 * j)) (applyUpTo (λ j → j) 8)
 -- The layers, as diagrams over whole numbers
 
 put : ℕ → ℕ → Dia ℕ → Dia ℕ
-put x y = place W H x y
+put = place W H
 
 canvas : List (Dia ℕ) → Dia ℕ
-canvas = foldr (λ d acc → overlay W H acc d) (spacer W H)
+canvas = layers W H
 
 -- the pipe: one closed path through 128 points of the ellipse (the 129th is the first)
 pipePath : String
@@ -171,17 +167,14 @@ flash u =
 ------------------------------------------------------------------------
 -- The scene
 
-lit′ : Dia ℕ → Leaf
-lit′ = mapDia lit
-
 -- `suc m` frames of `f` from tick `k`, one tick each
 seqFrames : (ℕ → Dia ℕ) → ℕ → ℕ → Anim
-seqFrames f k zero    = frame′ 1 (lit′ (f k))
-seqFrames f k (suc m) = frame′ 1 (lit′ (f k)) ⨾ seqFrames f (suc k) m
+seqFrames f k zero    = frame′ 1 (liftDia (f k))
+seqFrames f k (suc m) = frame′ 1 (liftDia (f k)) ⨾ seqFrames f (suc k) m
 
 -- a leaf present for the whole lap
 whole : Dia ℕ → Anim
-whole d = hold (ι period) (pure (lit′ d))
+whole d = hold (ι period) (pure (liftDia d))
 
 -- the static frame of a diagram at tick `k` (for tests and still images)
 lhcFrameAt : ℕ → Dia ℕ
@@ -189,4 +182,4 @@ lhcFrameAt k = canvas (pipe ∷ bunches k ∷ (if k <ᵇ 16 then [ flash k ] els
 
 -- one lap: the pipe all along, the bunches every tick, the flash in the first 16
 lhcAnim : Anim
-lhcAnim = whole pipe ∥ seqFrames bunches 0 63 ∥ seqFrames flash 0 15
+lhcAnim = whole pipe ∥ₛ seqFrames bunches 0 63 ∥ₛ seqFrames flash 0 15

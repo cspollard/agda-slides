@@ -65,7 +65,7 @@ carrier sharing the temporal and input structure, not the geometry.
 ## Shipping to the page  **[decided]**
 Ship the event list with parametric leaves and a small evaluator generated from the scalar
 signatures; do not port the legacy encoding stack.  Reintroduce shared subformulas only if a
-measurement of page size demands it.
+measurement of page size demands it (Step 8: it did, see below).
 
 ## Not supported
 One single-sorted signature for everything; value-dependent switching (full FRP); parallel
@@ -98,3 +98,15 @@ is in `../agda-slides-legacy/docs/Time.md`.
   `lowerFlow` is a monoid homomorphism, lowerings compose before they are lifted, a pause survives its content.
 - Shipping: the event list is JSON in a `script type="application/json"` child of the animation (not an
   attribute: entity-escaped quotes tripled the size), with `< > &` written as `\uXXXX`.
+
+**[decided, Step 8]**
+- Shipping shares subtrees: the diagrams and scalar terms of an animation's events are trees; the shipped form is
+  the finite DAG of them (a table of nodes whose children are earlier positions; equal subtrees are one entry,
+  an entry used once is written in place).  The table is a fold's worth of data, not a second language:
+  `unshare` reads it back, and `readBack (shareTop ts []) ≡ ts` is proved (`Slides.Backend.Share.Properties`).
+  The page resolves a reference when it is reached (`assets/animation.js`).  Page sizes: see `plan/Rebuild.md`.
+- Filled shapes that repeat (histogram columns, error bars, curves) are one `Path`, not a leaf per column.
+- `Slides.Diagram.Convenience` is the one home of the combinators decks repeat (operators, gaps, rows and columns,
+  margins, text, boxes, layers); each is a one-line definition over the core constructors.  Its laws are in
+  `Slides.Diagram.Convenience.Properties` (cutting a row or a column anywhere, from `Diagram.Assoc`).
+- While printing, loops and steps in flight stand still (`beforeprint` stops them, `afterprint` finishes the step).

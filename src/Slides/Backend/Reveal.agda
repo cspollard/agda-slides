@@ -43,7 +43,7 @@ shell = record
 -- The page
 
 -- The look of a deck: a reveal.js theme, a highlight.js style, and extra stylesheets (paths
--- relative to the page).  `slides.css` styles the layout vocabulary (columns, boxes).
+-- relative to the page; reveal.js 6 ships the highlight styles `monokai` and `zenburn`, both dark).  `slides.css` styles the layout vocabulary (columns, boxes).
 record Theme : Set where
   field
     revealTheme : String   -- a file in reveal.js's dist/theme/ (without .css)
@@ -52,7 +52,7 @@ record Theme : Set where
 
 blackTheme whiteTheme : Theme
 blackTheme = record { revealTheme = "black" ; highlight = "monokai" ; stylesheets = "slides.css" ∷ [] }
-whiteTheme = record { revealTheme = "white" ; highlight = "github"  ; stylesheets = "slides.css" ∷ [] }
+whiteTheme = record { revealTheme = "white" ; highlight = "monokai" ; stylesheets = "slides.css" ∷ [] }
 
 -- Where reveal.js comes from: a copy next to the page, or a pinned version on the jsDelivr CDN.
 data Source : Set where

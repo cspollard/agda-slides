@@ -30,6 +30,12 @@ flip books as scenes, the lowering family as flow homomorphisms, `showHash`), Pa
 tests restored (5 rejections with controls), browser tests adapted; page size of Pairs 344 KB against the legacy
 194 KB (events 291 KB; a prototype of subtree sharing gives 101 KB, not built).  Collider is Step 7B.
 
+Step 8 (2026-10-29, branch `rebuild-step8`): the shipped events share subtrees (`Slides.Backend.Share`: the DAG of the
+diagram and term trees, entries used once written in place; read-back proved in `Share.Properties`); Pairs 344004 to
+151325 B (against legacy 193640), Collider 346802 to 114977 B (legacy 437835) after the template, error bars and curve
+became paths; `Slides.Diagram.Convenience` (with `Notation` folded in) holds the combinators the decks repeated; the
+white theme uses highlight style `monokai`, tests assert no failed loads; printing stops the loop timers.
+
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
    out read-only; stale branches and worktrees removed; this branch holds only `Container.*`,

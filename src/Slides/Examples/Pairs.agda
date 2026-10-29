@@ -21,8 +21,7 @@ open import Slides.Scalar.Time using (Time)
 open import Slides.Deck.Anim using (Anim; frame′; frames; flipTween; liftDia; ι; ratTime; Bezier; _⨾_)
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL hiding (text)
-open import Slides.Diagram.Style using (defaultStyle; withClass; withId; rounded)
-open import Slides.Diagram.Notation
+open import Slides.Diagram.Convenience
 open import Slides.Diagram.Names using (dangling)
 open import Slides.Examples.PairsHero using (heroLoop)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
@@ -69,20 +68,6 @@ cauchy =
 
 ------------------------------------------------------------------------
 -- Diagram vocabulary: every look comes from a CSS class
-
-cls : String → Style
-cls c = withClass c defaultStyle
-
--- text in the slide colour; `dim` is a muted caption, `big` a heavier title
-txt dim big : ℕ → String → Dia ℕ
-txt  size t = text size t defaultStyle
-dim  size t = text size t (cls "dim")
-big  size t = bold size t (cls "big")
-
--- a rounded box of a CSS class with a diagram centred on it; the name is for
--- `connect`, and doubles as the element id that scripts light up
-card : String → String → ℕ → ℕ → ℕ → Dia ℕ → Dia ℕ
-card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 
 -- a flowing arrow: its dashes march along it (`am` crimson, `cy` blue)
 -- at phase `ph` of the march (see `marching`)

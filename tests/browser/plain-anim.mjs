@@ -57,11 +57,15 @@ for (let i = 0; i < 12; i++) { words.add((await page.evaluate(() => document.que
 eq('the loop shows both of its frames', [...words].sort(), ['tick', 'tock']);
 
 console.log('-- printing');
+// the loop's timer must not draw over the printed page: wait several loop ticks after `beforeprint`
 await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+await page.waitForTimeout(600);
 eq('printing shows the last step of the steps', (await shown('steps-frames')).index, 3);
-eq('and the first phase of the loop', (await shown('blink-frames')).phase, 0);
+eq('and the first phase of the loop, which stands still', (await shown('blink-frames')).phase, 0);
 await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
 eq('afterprint restores the step', (await shown('steps-frames')).index, 2);
+await page.waitForTimeout(300);
+check('and the loop runs again', (await shown('blink-frames')).phase !== 0);
 
 eq('no page errors', errors, []);
 await browser.close();
