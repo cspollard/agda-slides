@@ -20,6 +20,18 @@
 --     |       | h     | ( ) | 2r    | \           |  text  |   | d ... |
 --     +-------+       +-----+       +--*          +--------+   +-------+     +       +
 --
+--     Ellipse rx ry   Polyline closed pts
+--     +---------+     +-----------+   frame: the extent of the points from the origin
+--     |  ( _ )  | 2ry |  p2       |   (largest x by largest y, so none is negative; no
+--     +---------+     | p1  p3    |   points, the empty frame); drawn as an SVG polyline, or a
+--      2rx            +-----------+   fillable polygon when closed.  Scalar-parametric, unlike
+--                                     `Path`, whose `d` string is opaque and cannot move
+--                                     with scalars or the animation time.
+--
+--     `Disc r` has the frame and size of `Ellipse r r` (`size-disc-ellipse`); it stays a
+--     constructor so that it prints as `<circle>`.
+--
+--
 --     Beside al        Above al      Atop          LabelAbove       Place w h x y  Overlay w h
 --     +--+--+          +--+          +----------+  +-----+          +----------+   +-------+
 --     |a |b |          |a |          |  +----+  |  | lbl |          |  (x,y)+-+|   | a   b |
@@ -33,25 +45,30 @@ module Slides.Diagram.Syntax where
 
 open import Level using (0ℓ)
 open import Data.Empty using (⊥)
+open import Data.Bool using (Bool; true; false)
 open import Data.Fin using (Fin)
+open import Data.List using (List; map)
 open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.String using (String)
 open import Data.Unit using (⊤)
-open import Data.Product.Base using (_,_)
+open import Data.Product.Base using (_×_; _,_)
 open import Data.Container.Core using (Container; _▷_; _⇒_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 
 open import Container.Pick using (pick2)
 open import Container.Lowering using (translate)
 open import Slides.Diagram.Style using (Style)
+open import Slides.Diagram.Draw using (mapPt)
 open import Slides.Diagram.TextMetrics using (textWidth)
 open import Slides.Diagram.Geometry public
 
 data Op (S : Set) : Set where
   Rectangle Segment : (w h : S) → Style → Op S
   Disc              : (r : S) → Style → Op S
+  Ellipse           : (rx ry : S) → Style → Op S
+  Polyline          : (closed : Bool) → List (S × S) → Style → Op S   -- points from the frame's top-left
   Text              : (w h : S) (size : ℕ) → String → Style → Op S   -- frame as measured
-  Path              : (w h : S) → String → Style → Op S              -- `d` in the frame's units
+  Path              : (w h : S) → String → Style → Op S              -- opaque `d` in the frame's units: not scalar-parametric
   Spacer            : (w h : S) → Op S
   Beside            : VAlign → Op S
   Above             : Align → Op S
@@ -65,6 +82,8 @@ arity : ∀ {S} → Op S → Set
 arity (Rectangle _ _ _)   = ⊥
 arity (Segment _ _ _)     = ⊥
 arity (Disc _ _)          = ⊥
+arity (Ellipse _ _ _)     = ⊥
+arity (Polyline _ _ _)    = ⊥
 arity (Text _ _ _ _ _)    = ⊥
 arity (Path _ _ _ _)      = ⊥
 arity (Spacer _ _)        = ⊥
@@ -91,6 +110,8 @@ mapOp : ∀ {S T} → (S → T) → Op S → Op T
 mapOp f (Rectangle w h s)       = Rectangle (f w) (f h) s
 mapOp f (Segment w h s)         = Segment (f w) (f h) s
 mapOp f (Disc r s)              = Disc (f r) s
+mapOp f (Ellipse a b s)         = Ellipse (f a) (f b) s
+mapOp f (Polyline c ps s)       = Polyline c (map (mapPt f) ps) s
 mapOp f (Text w h n t s)        = Text (f w) (f h) n t s
 mapOp f (Path w h d s)          = Path (f w) (f h) d s
 mapOp f (Spacer w h)            = Spacer (f w) (f h)
@@ -111,6 +132,8 @@ mapC f = record { shape = mapOp f ; position = pos }
     pos {Rectangle _ _ _}   p = p
     pos {Segment _ _ _}     p = p
     pos {Disc _ _}          p = p
+    pos {Ellipse _ _ _}     p = p
+    pos {Polyline _ _ _}    p = p
     pos {Text _ _ _ _ _}    p = p
     pos {Path _ _ _ _}      p = p
     pos {Spacer _ _}        p = p
@@ -136,6 +159,14 @@ segment w h s   = impure (Segment w h s , λ ())
 
 disc : ∀ {S} → S → Style → Dia S
 disc r s = impure (Disc r s , λ ())
+
+ellipse : ∀ {S} → S → S → Style → Dia S
+ellipse a b s = impure (Ellipse a b s , λ ())
+
+-- through the points (from the top-left corner), open or closed
+polyline polygon : ∀ {S} → List (S × S) → Style → Dia S
+polyline ps s = impure (Polyline false ps s , λ ())
+polygon ps s  = impure (Polyline true ps s , λ ())
 
 spacer : ∀ {S} → S → S → Dia S
 spacer w h = impure (Spacer w h , λ ())

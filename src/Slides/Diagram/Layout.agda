@@ -33,6 +33,8 @@ layoutH : Handler (DiagramC S) (Layout S)
 layoutH (Rectangle w h s)     k = P.rectangle w h s
 layoutH (Segment w h s)       k = P.segment w h s
 layoutH (Disc r s)            k = P.disc r s
+layoutH (Ellipse a b s)       k = P.ellipseL a b s
+layoutH (Polyline c ps s)     k = P.polyline c ps s
 layoutH (Text w h n t s)      k = P.text w h n t s
 layoutH (Path w h d s)        k = P.pathL w h d s
 layoutH (Spacer w h)          k = P.spacer w h
@@ -53,6 +55,8 @@ layoutCong : Congruent (DiagramC S) (≡P.setoid (Layout S)) layoutH
 layoutCong (Rectangle _ _ _)   e = refl
 layoutCong (Segment _ _ _)     e = refl
 layoutCong (Disc _ _)          e = refl
+layoutCong (Ellipse _ _ _)     e = refl
+layoutCong (Polyline _ _ _)    e = refl
 layoutCong (Text _ _ _ _ _)    e = refl
 layoutCong (Path _ _ _ _)      e = refl
 layoutCong (Spacer _ _)        e = refl

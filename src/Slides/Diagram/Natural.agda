@@ -45,7 +45,7 @@ open import Container.Interpret.Plain using (Handler; Congruent; pfold-rel-trans
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Style using (Style)
-open import Slides.Diagram.Syntax
+open import Slides.Diagram.Syntax hiding (ellipse)
 import Slides.Diagram.Place Sp as PS
 import Slides.Diagram.Place Tp as PT
 import Slides.Diagram.Layout Sp as LS
@@ -78,9 +78,18 @@ align-nat right   p = trans (dbl-nat _) (cong PT.dbl (hsub p))
 ------------------------------------------------------------------------
 -- Shifting, framing, overlaying: only `+` is used
 
+-- `mapPt h` commutes with a pointwise change of the points
+pts-nat : ∀ (g : S × S → S × S) (g′ : T × T → T × T) → (∀ p → mapPt h (g p) ≡ g′ (mapPt h p)) →
+          ∀ ps → map (mapPt h) (map g ps) ≡ map g′ (map (mapPt h) ps)
+pts-nat g g′ e []       = refl
+pts-nat g g′ e (p ∷ ps) = cong₂ _∷_ (e p) (pts-nat g g′ e ps)
+
 shiftDraw-nat : ∀ dx dy d → mapDraw h (PS.shiftDraw dx dy d) ≡ PT.shiftDraw (h dx) (h dy) (mapDraw h d)
 shiftDraw-nat dx dy (rect x y w ht s)   rewrite h-+ x dx | h-+ y dy = refl
 shiftDraw-nat dx dy (circle x y r s)    rewrite h-+ x dx | h-+ y dy = refl
+shiftDraw-nat dx dy (ellipse x y a b s) rewrite h-+ x dx | h-+ y dy = refl
+shiftDraw-nat dx dy (poly c ps s)       =
+  cong (λ qs → poly c qs s) (pts-nat (PS.shiftPt dx dy) (PT.shiftPt (h dx) (h dy)) (λ p → cong₂ _,_ (h-+ _ dx) (h-+ _ dy)) ps)
 shiftDraw-nat dx dy (line a b c d s)    rewrite h-+ a dx | h-+ b dy | h-+ c dx | h-+ d dy = refl
 shiftDraw-nat dx dy (arrow a b c d s)   rewrite h-+ a dx | h-+ b dy | h-+ c dx | h-+ d dy = refl
 shiftDraw-nat dx dy (label x y n t s)   rewrite h-+ x dx | h-+ y dy = refl
@@ -138,6 +147,20 @@ place-nat w ht x y l = trans (inFrame-nat w ht _ _ l) (cong₂ (λ u v → PT.in
 
 disc-nat : ∀ r s → mapLayout h (PS.disc r s) ≡ PT.disc (h r) s
 disc-nat r s rewrite dbl-nat r = refl
+
+ellipse-nat : ∀ a b s → mapLayout h (PS.ellipseL a b s) ≡ PT.ellipseL (h a) (h b) s
+ellipse-nat a b s rewrite dbl-nat a | dbl-nat b = refl
+
+-- the extent of the points is carried: `h` preserves `0` and the join
+extent-nat : ∀ (g : S × S → S) (g′ : T × T → T) → (∀ p → h (g p) ≡ g′ (mapPt h p)) →
+             ∀ ps → h (PS.extent (map g ps)) ≡ PT.extent (map g′ (map (mapPt h) ps))
+extent-nat g g′ e []       = h-0
+extent-nat g g′ e (p ∷ ps) = trans (h-⊔ (g p) _) (cong₂ B._⊔_ (e p) (extent-nat g g′ e ps))
+
+polyline-nat : ∀ c ps s → mapLayout h (PS.polyline c ps s) ≡ PT.polyline c (map (mapPt h) ps) s
+polyline-nat c ps s
+  rewrite extent-nat proj₁ proj₁ (λ _ → refl) ps | extent-nat proj₂ proj₂ (λ _ → refl) ps
+        | pts-nat PS.dblPt PT.dblPt (λ p → cong₂ _,_ (dbl-nat _) (dbl-nat _)) ps = refl
 
 segment-nat : ∀ w ht s → mapLayout h (PS.segment w ht s) ≡ PT.segment (h w) (h ht) s
 segment-nat w ht s rewrite h-0 | dbl-nat w | dbl-nat ht = refl
@@ -261,6 +284,8 @@ layoutH-nat (Rectangle w ht s) k _ = rectangle-nat w ht s
 layoutH-nat (Segment w ht s)   k _ = segment-nat w ht s
 layoutH-nat (Disc r s)         k _ = disc-nat r s
 layoutH-nat (Text w ht n t s)  k _ rewrite h-0 = refl
+layoutH-nat (Ellipse a b s)      k _ = ellipse-nat a b s
+layoutH-nat (Polyline c ps s)  k _ = polyline-nat c ps s
 layoutH-nat (Path w ht d s)    k _ = pathL-nat w ht d s
 layoutH-nat (Spacer w ht)      k _ = refl
 layoutH-nat (Beside al)        k _ = besideA-nat al (k zero) (k (suc zero))
@@ -299,6 +324,8 @@ module _ (pn : PctNat) where
     okOp (Segment _ _ _)     = tt
     okOp (Disc _ _)          = tt
     okOp (Text _ _ _ _ _)    = tt
+    okOp (Ellipse _ _ _)     = tt
+    okOp (Polyline _ _ _)    = tt
     okOp (Path _ _ _ _)      = tt
     okOp (Spacer _ _)        = tt
     okOp (Beside _)          = tt

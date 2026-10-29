@@ -178,10 +178,17 @@ styleⱼ s = objectFromList
 op : String → List Item → Item
 op c xs = inj₂ (arrT (txt (stringⱼ c) ∷ xs))
 
+-- the points of a polyline, x then y of each, are terms like any other scalar
+pointsT : List (Sc × Sc) → List Item
+pointsT []             = []
+pointsT ((x , y) ∷ ps) = scI x ∷ scI y ∷ pointsT ps
+
 diaT : Dia Sc → Item
 diaT (impure (Rectangle w h s , k))   = op "R" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Segment w h s , k))     = op "S" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Disc r s , k))          = op "D" (scI r ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Ellipse a b s , k))     = op "E" (scI a ∷ scI b ∷ txt (styleⱼ s) ∷ [])
+diaT (impure (Polyline c ps s , k))   = op "Y" (txt (natⱼ (if c then 1 else 0)) ∷ txt (styleⱼ s) ∷ pointsT ps)
 diaT (impure (Text w h n t s , k))    = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ t) ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Path w h d s , k))      = op "P" (scI w ∷ scI h ∷ txt (stringⱼ d) ∷ txt (styleⱼ s) ∷ [])
 diaT (impure (Spacer w h , k))        = op "_" (scI w ∷ scI h ∷ [])

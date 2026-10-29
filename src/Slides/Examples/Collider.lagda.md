@@ -377,11 +377,10 @@ curveMin : ℕ → List ℕ → ℕ
 curveMin amp cs = foldr _⊓_ (nllWith amp cs scanLo) (applyUpTo (λ k → nllWith amp cs (scanLo + k)) (suc scanSteps))
 
 curve : ℕ → List ℕ → Dia ℕ
-curve amp cs = path W H (go "M" (applyUpTo (λ k → k) (suc scanSteps))) (cls "curve")
+curve amp cs = polyline (map pt (applyUpTo (λ k → k) (suc scanSteps))) (cls "curve")
   where
-    go : String → List ℕ → String
-    go _   []       = ""
-    go cmd (k ∷ ks) = cmd ++ˢ show (427 + 12 * k) ++ˢ " " ++ˢ show (237 ∸ (nllWith amp cs (scanLo + k) ∸ curveMin amp cs) / 175) ++ˢ go "L" ks
+    pt : ℕ → ℕ × ℕ
+    pt k = 427 + 12 * k , 237 ∸ (nllWith amp cs (scanLo + k) ∸ curveMin amp cs) / 175
 
 -- the picture after batch s (counting from 0), the data over the template, 175 units of -2 ln L (times 100) per pixel
 growFrame : ℕ → List ℕ → Dia ℕ

@@ -43,6 +43,14 @@ _═◂_ = aboveA left
 _═▸_ = aboveA right
 
 ------------------------------------------------------------------------
+-- Shapes: `ellipse rx ry`, `polyline pts` (open) and `polygon pts` (closed, fillable) come from
+-- `Slides.Diagram.Syntax`; the points are lengths from the top-left corner, so they move with
+-- scalars and with the animation time, unlike the opaque `path`.
+
+circle : ∀ {S} → S → Style → Dia S
+circle = disc
+
+------------------------------------------------------------------------
 -- Names and edges
 
 infixr 4 _⦂_

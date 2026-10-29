@@ -25,6 +25,7 @@ open import Data.Fin using (zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.Maybe using (Maybe; just; nothing; maybe)
 import Data.Maybe as Maybe
+import Data.List.Properties as ListP
 open import Data.Nat using (ℕ)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂; Σ-syntax)
 open import Data.Rational using (ℚ)
@@ -44,7 +45,7 @@ open import Slides.Scalar.Hom using (ScC; scNat; scRat; lowerS; ι-hom; ι-⊔; 
 open import Slides.Scalar.Model.Nat
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ι)
 open import Slides.Scalar.Space using (Space; spaceCong)
-open import Slides.Diagram.Draw using (Layout; mkLayout; mapLayout)
+open import Slides.Diagram.Draw using (Layout; mkLayout; mapLayout; mapPt)
 import Data.Nat as ℕ
 open import Slides.Diagram.Geometry using (Port; side; at)
 open import Slides.Diagram.Syntax
@@ -117,6 +118,8 @@ private
   okOp f (Rectangle _ _ _) _ = tt
   okOp f (Segment _ _ _)   _ = tt
   okOp f (Disc _ _)        _ = tt
+  okOp f (Ellipse _ _ _)   _ = tt
+  okOp f (Polyline _ _ _)  _ = tt
   okOp f (Text _ _ _ _ _)  _ = tt
   okOp f (Path _ _ _ _)    _ = tt
   okOp f (Spacer _ _)      _ = tt
@@ -141,6 +144,10 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
   digit (Rectangle w h s) kk rewrite e w | e h = refl
   digit (Segment w h s)   kk = cong₂ (λ a b → PQ.segment a b s) (e w) (e h)
   digit (Disc r s)        kk = cong (λ a → PQ.disc a s) (e r)
+  digit (Ellipse a b s)   kk = cong₂ (λ x y → PQ.ellipseL x y s) (e a) (e b)
+  digit (Polyline c ps s) kk =
+    cong (λ qs → PQ.polyline c qs s)
+         (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (e (proj₁ p)) (e (proj₂ p))) ps))
   digit (Text w h n t s)  kk rewrite e w | e h = refl
   digit (Path w h d s)    kk rewrite e w | e h = refl
   digit (Spacer w h)      kk rewrite e w | e h = refl
