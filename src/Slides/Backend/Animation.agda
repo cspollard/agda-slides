@@ -47,7 +47,7 @@ open import Data.JSON.Print using (renderJSON)
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling; ι)
 open import Slides.Scalar.Space using (Zero; Plus; Max; Minus; Lt; Pct)
 open import Slides.Scalar.Time using (Hold)
-open import Slides.Scalar.Coupling using (Ratio; Lerp; Ease; Easing; Linear; Step; StepStart)
+open import Slides.Scalar.Coupling using (Ratio; Lerp; Ease; Easing; Linear; Step; StepStart; Bezier)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Syntax
@@ -83,6 +83,7 @@ easingⱼ : Easing → JSON
 easingⱼ Linear    = natⱼ 0
 easingⱼ Step      = natⱼ 1
 easingⱼ StepStart = natⱼ 2
+easingⱼ (Bezier a b c d) = arr (natⱼ a ∷ natⱼ b ∷ natⱼ c ∷ natⱼ d ∷ [])
 
 ------------------------------------------------------------------------
 -- Terms (operation numbers: see `assets/animation.js`)

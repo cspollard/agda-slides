@@ -15,7 +15,7 @@ import Data.Nat.Coprimality as ℕC
 import Data.Nat.Divisibility as ℕDv
 open import Data.Bool using (T)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
-open import Data.Rational as ℚ using (ℚ; mkℚ; _/_; _+_; _*_; _-_; _⊔_; _≤_; 0ℚ; 1ℚ)
+open import Data.Rational as ℚ using (ℚ; mkℚ; _/_; _+_; _*_; _-_; _⊔_; _≤_; 0ℚ; 1ℚ; ½)
 import Data.Rational.Properties as ℚP
 open import Data.Rational.Unnormalised as ℚᵘ using (*≡*)
 import Data.Rational.Unnormalised.Properties as ℚᵘP
@@ -137,8 +137,28 @@ ratRatio t d with d ℚP.≟ 0ℚ
 ... | yes _   = 0ℚ
 ... | no d≢0  = ℚ._÷_ t d {{ℚ.≢-nonZero d≢0}}
 
+-- the cubic Bézier curve with control values `c₁ c₂` (end values 0 and 1) at parameter `s`
+cubic : ℚ → ℚ → ℚ → ℚ
+cubic c₁ c₂ s = 3ℚ * u * u * s * c₁ + 3ℚ * u * s * s * c₂ + s * s * s
+  where u = 1ℚ - s
+        3ℚ = + 3 / 1
+
+-- the parameter `s` with x(s) = r, by `n` bisection steps from [lo, hi]
+bisect : ℕ → ℚ → ℚ → ℚ → ℚ → ℚ → ℚ
+bisect ℕ.zero    x₁ x₂ lo hi r = ½ * (lo + hi)
+bisect (ℕ.suc n) x₁ x₂ lo hi r =
+  if cubic x₁ x₂ (½ * (lo + hi)) ℚ.≤ᵇ r then bisect n x₁ x₂ (½ * (lo + hi)) hi r
+  else bisect n x₁ x₂ lo (½ * (lo + hi)) r
+
+hundredths : ℕ → ℚ
+hundredths n = + n / 100
+
+-- the easing of a ratio; a Bézier is approximate (sixteen bisection steps) and clamped at the ends
 ratEase : Easing → ℚ → ℚ
 ratEase Linear    r = r
+ratEase (Bezier a b c d) r =
+  if r ℚ.≤ᵇ 0ℚ then 0ℚ else if 1ℚ ℚ.≤ᵇ r then 1ℚ
+  else cubic (hundredths b) (hundredths d) (bisect 16 (hundredths a) (hundredths c) 0ℚ 1ℚ r)
 ratEase Step      r = if 1ℚ ℚ.≤ᵇ r then 1ℚ else 0ℚ
 ratEase StepStart r = if r ℚ.≤ᵇ 0ℚ then 0ℚ else 1ℚ
 
@@ -146,8 +166,8 @@ ratCoupling : Coupling ratTime ratSub ratScale
 ratCoupling = record
   { ratio = ratRatio ; ease = ratEase
   ; ratio-scale = λ r d d≢0 → scale-ratio r d d≢0
-  ; ease-0 = λ { Linear → refl ; Step → refl ; StepStart → refl }
-  ; ease-1 = λ { Linear → refl ; Step → refl ; StepStart → refl }}
+  ; ease-0 = λ { Linear → refl ; Step → refl ; StepStart → refl ; (Bezier _ _ _ _) → refl }
+  ; ease-1 = λ { Linear → refl ; Step → refl ; StepStart → refl ; (Bezier _ _ _ _) → refl }}
   where
     scale-ratio : ∀ r d → ¬ (d ≡ 0ℚ) → ratRatio (r * d) d ≡ r
     scale-ratio r d d≢0 with d ℚP.≟ 0ℚ

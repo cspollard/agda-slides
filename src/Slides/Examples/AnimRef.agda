@@ -35,6 +35,11 @@ slider : Anim
 slider = tween Linear (ι 0) (ι 120) (ι 6)
   (D.beside (D.spacer now (lit 0)) (D.named "s" (D.rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle))))
 
+-- the same with a cubic Bézier ease-out
+eased : Anim
+eased = tween (Bezier 20 90 20 100) (ι 0) (ι 120) (ι 6)
+  (D.beside (D.spacer now (lit 0)) (D.named "s" (D.rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle))))
+
 stepper : Anim
 stepper = tween Step (ι 0) (ι 50) (ι 4)
   (D.beside (D.spacer now (lit 0)) (D.framed (lit 40) (lit 30) defaultStyle (txt 16 "x_i^2" defaultStyle)))
@@ -46,12 +51,13 @@ linked = frame′ 2 (D.connect "a" east "b" west defaultStyle
 
 named-anims : List (String × Anim)
 named-anims =
-    ("mover" , mover ∥ counter) ∷ ("slider" , slider) ∷ ("stepper" , stepper) ∷ ("linked" , linked) ∷ []
+    ("mover" , mover ∥ counter) ∷ ("slider" , slider) ∷ ("eased" , eased) ∷ ("stepper" , stepper) ∷ ("linked" , linked) ∷ []
 
 animations : Talk
 animations = do
   slide (do heading 2 "mover";   animate "mover" 60 100 ((mover ∥ counter) ∷ []))
   slide (do heading 2 "slider";  animate "slider" 60 100 (slider ∷ []))
+  slide (do heading 2 "eased";   animate "eased" 60 100 (eased ∷ []))
   slide (do heading 2 "stepper"; animate "stepper" 60 100 (stepper ∷ []))
   slide (do heading 2 "linked";  animate "linked" 60 100 (linked ∷ []))
 

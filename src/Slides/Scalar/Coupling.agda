@@ -4,7 +4,7 @@
 --
 -- Over a Time with exact subtraction and an ordered module of ratios on the same carrier,
 -- `Coupling` adds the `ratio` of two durations and the easing `ease` of a ratio (curves fixing
--- 0 and 1; Bézier deferred); derived are `lerp r a b = a + r·(b - a)` and `progress`.  A tick
+-- 0 and 1, among them cubic Béziers); derived are `lerp r a b = a + r·(b - a)` and `progress`.  A tick
 -- is read as a length by `tick` (Time).  ℕ has no model (no ratios), so this is the layer ℚ adds.
 --
 -- Signature: `CouplingC` (ratio, ease, lerp); its handler needs the ratios to be the scalar.
@@ -25,8 +25,11 @@ open import Slides.Scalar.Core
 open import Slides.Scalar.Space using (Scale)
 open import Slides.Scalar.Time
 
+-- `Bezier a b c d` is the CSS curve `cubic-bezier(a/100, b/100, c/100, d/100)`: control points
+-- in hundredths, the end points fixed (`ease-0`, `ease-1` hold for it like for the others)
 data Easing : Set where
   Linear Step StepStart : Easing
+  Bezier : (x₁ y₁ x₂ y₂ : ℕ) → Easing
 
 record Coupling {K R} (Tm : Time K) (Sb : Sub (Time.ord Tm)) (Sc : Scale (Time.ord Tm) R) : Set₁ where
   open Time Tm
