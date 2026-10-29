@@ -82,7 +82,10 @@ module Content where
   displayMath : Math → Flow
   displayMath m = one (C.displayMath m)
   figureUnchecked : String → Text → Flow
-  figureUnchecked s c = one (C.figure s c)
+  figureUnchecked s c = one (C.figure s nothing c)
+  -- … at a width, in percent of the slide's content width
+  figureWidthUnchecked : String → ℕ → Text → Flow
+  figureWidthUnchecked s w c = one (C.figure s (just w) c)
   notes : Text → Flow
   notes t = one (C.notes t)
   table : List Text → List (List Text) → Flow
@@ -135,6 +138,8 @@ displayMath : Math → Body
 displayMath m = liftContent (Content.displayMath m)
 figureUnchecked : String → Text → Body
 figureUnchecked s c = liftContent (Content.figureUnchecked s c)
+figureWidthUnchecked : String → ℕ → Text → Body
+figureWidthUnchecked s w c = liftContent (Content.figureWidthUnchecked s w c)
 notes : Text → Body
 notes t = liftContent (Content.notes t)
 table : List Text → List (List Text) → Body
@@ -237,6 +242,10 @@ module Checked (R : Resources) where
 
   figure : (src : String) {ok : Found (declared src (figures R)) "figure" src} → Text → Body
   figure src c = figureUnchecked src c
+
+  -- … at a width, in percent of the slide's content width: `figureWidth "plot.png" 60 "caption"`
+  figureWidth : (src : String) {ok : Found (declared src (figures R)) "figure" src} → ℕ → Text → Body
+  figureWidth src w c = figureWidthUnchecked src w c
 
   bibliography : Body
   bibliography = liftContent (Content.references (references R))

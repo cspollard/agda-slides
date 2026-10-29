@@ -84,7 +84,7 @@ mutual
   lowerBlock-id (bullets _ _)      = refl
   lowerBlock-id (code _ _)         = refl
   lowerBlock-id (displayMath _)    = refl
-  lowerBlock-id (figure _ _)       = refl
+  lowerBlock-id (figure _ _ _)     = refl
   lowerBlock-id (notes _)          = refl
   lowerBlock-id (table _ _)        = refl
   lowerBlock-id (references _)     = refl
@@ -122,7 +122,7 @@ mutual
   lowerBlock-fuse l₁ l₂ (bullets _ _) = refl
   lowerBlock-fuse l₁ l₂ (code _ _) = refl
   lowerBlock-fuse l₁ l₂ (displayMath _) = refl
-  lowerBlock-fuse l₁ l₂ (figure _ _) = refl
+  lowerBlock-fuse l₁ l₂ (figure _ _ _) = refl
   lowerBlock-fuse l₁ l₂ (notes _) = refl
   lowerBlock-fuse l₁ l₂ (table _ _) = refl
   lowerBlock-fuse l₁ l₂ (references _) = refl

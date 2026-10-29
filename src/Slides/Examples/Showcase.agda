@@ -78,6 +78,7 @@ showcase = do
 
   slide (do heading 2 "Checked resources"
             figure "plot.svg" "A declared figure"
+            figureWidth "plot.svg" 40 "The same figure at 40% of the width"
             paragraph ("Citations: " ∷ cite "Moggi91" ∷ " and " ∷ cite "Knuth84" ∷ []))
 
   slide (resultsTable "A table" ("feature" ∷ "status" ∷ [])
