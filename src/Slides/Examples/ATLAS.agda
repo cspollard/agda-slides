@@ -430,5 +430,5 @@ atlasOn = atlasIn flat
 
 -- the defaults: the dark theme, looking down the beam and a little turned
 atlas atlasTurned : Dia ℕ
-atlas       = atlasOn dark
-atlasTurned = atlasIn turned dark
+atlas       = atlasOn light
+atlasTurned = atlasIn turned light

@@ -33,11 +33,11 @@ await page.waitForTimeout(800);
 
 // ---- slides and steps
 const titles = ['how collider physics is', 'scientific impact of curiosity-driven particle physics', 'the Large Hadron Collider',
-  'an early spin-off', 'a data firehose', 'the computing grid', 'statistical inference', 'when is a bump a discovery?',
+  'the ATLAS detector', 'an early spin-off', 'a data firehose', 'a data firehose', 'the computing grid', 'statistical inference', 'when is a bump a discovery?',
   'an example with socks', 'estimating a parameter: slide the template', 'more data, a tighter likelihood',
   'simulation-based inference', 'one parameter, millions of events', 'built for the LHC, used by everyone',
   'try it yourself', '', 'references'];
-const steps = [0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 1, 0, 0, 0, 0, 0, 0];
+const steps = [0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 1, 1, 0, 0, 0, 0, 0, 0];
 eq('slide count', await page.evaluate(() => Reveal.getTotalSlides()), titles.length);
 const got = [];
 for (let i = 0; i < titles.length; i++) {

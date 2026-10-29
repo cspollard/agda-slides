@@ -6,6 +6,7 @@
 - [ ] allow text colors and styles
 - [ ] reinstate README documentation
 - [ ] allow nested bullet points
+- [ ] generalize 3D views and projections (started in Slides.Examples.ATLAS)
 - [ ] Add background functionality (e.g. as an SVG or other image)
 - [ ] Better inline documentation of commands -- some geometric intuition should be included when one peruses the html docs for each agda file.
 - [ ] allow inclusion of pngs and pdfs as primitives -- need to be careful about how to ship these -- copy? symbolic link? Maybe not all backends can handle this.
