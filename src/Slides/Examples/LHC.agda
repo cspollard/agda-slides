@@ -22,7 +22,7 @@
 module Slides.Examples.LHC where
 
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.List using (List; []; _∷_; map; foldr; applyUpTo; length; [_]) renaming (_++_ to _++ˡ_)
+open import Data.List using (List; []; _∷_; map; concatMap; foldr; applyUpTo; length; [_]) renaming (_++_ to _++ˡ_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -297,16 +297,16 @@ trackDirs : List ((ℕ × Bool) × (ℕ × Bool))
 trackDirs = map (λ j → trig (32 * j + 8 + 5 * (j % 3))) (applyUpTo (λ j → j) 8)
 
 -- a track after `u` ticks: a line from the vertex and a dot at its tip
-track : ℕ → (ℕ × Bool) × (ℕ × Bool) → Dia ℕ
+track : ℕ → (ℕ × Bool) × (ℕ × Bool) → List (Dia ℕ)
 track u dir =
   let p = along dir (6 * K + (44 * K * u) / 31)
-  in canvas2
-       ( put2 (proj₁ p ∸ 3 * K) (proj₂ p ∸ 3 * K) (disc (3 * K) (cls "spark"))
-       ∷ put2 0 0 (polyline ((VX , VY) ∷ p ∷ []) (cls "track"))
-       ∷ [] )
+  in put2 (proj₁ p ∸ 3 * K) (proj₂ p ∸ 3 * K) (disc (3 * K) (cls "spark"))
+   ∷ put2 0 0 (polyline ((VX , VY) ∷ p ∷ []) (cls "track"))
+   ∷ []
 
+-- one canvas holds the layers of every track: a canvas per track repeats its size in the page
 collision : ℕ → Dia ℕ
-collision k = canvas2 (put2 (VX ∸ 4 * K) (VY ∸ 4 * K) (disc (4 * K) (cls "burst")) ∷ map (track (k % 32)) trackDirs)
+collision k = canvas2 (put2 (VX ∸ 4 * K) (VY ∸ 4 * K) (disc (4 * K) (cls "burst")) ∷ concatMap (track (k % 32)) trackDirs)
 
 triggerAnim : Anim
 triggerAnim = whole staticPipeline ∥ₛ seqFrames collision 0 63
