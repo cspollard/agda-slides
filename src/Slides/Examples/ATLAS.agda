@@ -426,6 +426,12 @@ module Parts (T : Theme) (V : View) where
   scene : List (Dia ℕ) → Dia ℕ
   scene ls = canvas (ls ++ background ∷ [])
 
+  -- the detector and the event alone: no title, no legend, no background, and a frame only as
+  -- wide as the detector (the legend sits to its right)
+  bare : Dia ℕ
+  bare = layers 760 H
+    ( vertex ∷ muon ++ electron ++ jet ++ photon ++ clusters )
+
   -- everything
   atlas : Dia ℕ
   atlas = scene
@@ -436,10 +442,14 @@ module Parts (T : Theme) (V : View) where
 atlasIn : View → Theme → Dia ℕ
 atlasIn V T = Parts.atlas T V
 
+atlasBareIn : View → Theme → Dia ℕ
+atlasBareIn V T = Parts.bare T V
+
 atlasOn : Theme → Dia ℕ
 atlasOn = atlasIn flat
 
 -- the defaults: the dark theme, looking down the beam and a little turned
-atlas atlasTurned : Dia ℕ
+atlas atlasTurned atlasBare : Dia ℕ
 atlas       = atlasOn light
 atlasTurned = atlasIn turned light
+atlasBare   = atlasBareIn turned light

@@ -28,7 +28,9 @@ open import Slides.Deck.DSL using (Resources; figures; references)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 import Slides.Deck.Math as M
 open import Slides.Diagram.Convenience
+open import Slides.Diagram.Style using (filled; stroked; thick)
 open import Slides.Diagram.Names using (dangling)
+open import Slides.Diagram.TextMetrics using (textWidth)
 ```
 
 ## Resources
@@ -227,6 +229,130 @@ _ : dangling gridDia ≡ []
 _ = refl
 ```
 
+## Many big events
+
+Eight images stacked like a deck of cards: each is an 8 × 8 grid of noisy cells (a stand-in for
+one enormous event), the front one whole and the others showing their top and right edges.  The
+colours are pseudo-random, but fixed: a hash of the image and the cell, in whole numbers.
+
+```agda
+noiseHue : ℕ → ℕ
+noiseHue n = ((n * 7919 + 104729) * (n * 31 + 17) / 7) % 360
+
+-- the colour of cell `c` of image `k`
+noiseColour : ℕ → ℕ → String
+noiseColour k c = "hsl(" ++ˢ show (noiseHue (k * 64 + c)) ++ˢ ",70%," ++ˢ show (45 + noiseHue (c * 3 + k) % 25) ++ˢ "%)"
+
+cellSide imgSide : ℕ
+cellSide = 20
+imgSide  = 8 * cellSide
+
+noiseImage : ℕ → Dia ℕ
+noiseImage k =
+  rectangle imgSide imgSide (stroked "#262626" (thick 2 defaultStyle)) ⊙ grid
+  where
+    cell : ℕ → Dia ℕ
+    cell c = rectangle cellSide cellSide (filled (noiseColour k c) defaultStyle)
+    row : ℕ → Dia ℕ
+    row r = hcat 0 (map (λ i → cell (r * 8 + i)) (applyUpTo (λ i → i) 8))
+    grid : Dia ℕ
+    grid = vcat 0 (map row (applyUpTo (λ r → r) 8))
+
+-- image 0 in front at the bottom left, each one further back a step up and to the right
+stackStep stackDepth stackSide : ℕ
+stackStep  = 14
+stackDepth = 7
+stackSide  = imgSide + stackDepth * stackStep
+
+stackDia : Dia ℕ
+stackDia = layers stackSide stackSide (map layer (applyUpTo (λ k → k) 8))
+  where layer : ℕ → Dia ℕ
+        layer k = place stackSide stackSide (k * stackStep) ((stackDepth ∸ k) * stackStep) (noiseImage k)
+```
+
+## Socks
+
+A sock seen from the side: a leg that bends into an angled foot with a rounded toe, a cuff with
+two stripes, and a leaf-shaped heel patch beside the ankle.  The outline and the white heel and toe
+patches are curves (`path`, in a 200 × 290 frame); one function draws a sock of any colour.
+
+```agda
+sockW sockH : ℕ
+sockW = 200
+sockH = 290
+
+sockOutline sockToe sockHeel sockStripes : String
+sockOutline = "M70,0 L70,95 C70,125 58,142 44,162 L14,206 C2,224 6,250 24,262 C42,274 64,270 76,254 L150,168 C164,152 170,134 170,112 L170,0 Z"
+sockToe     = "M14,206 C2,224 6,250 24,262 C42,274 64,270 76,254 C58,244 30,228 14,206 Z"
+sockHeel    = "M156,118 C182,130 192,160 174,184 C160,200 134,208 104,210 C122,186 146,160 156,118 Z"
+sockStripes = "M70,18 L170,18 M70,38 L170,38"
+
+sock : String → Dia ℕ
+sock colour =
+  layers sockW sockH
+    ( path sockW sockH sockStripes (stroked "#fff" (thick 6 defaultStyle))
+    ∷ path sockW sockH sockHeel (filled "#fff" (stroked "#262626" (thick 4 defaultStyle)))
+    ∷ path sockW sockH sockToe (filled "#fff" defaultStyle)
+    ∷ path sockW sockH sockOutline (filled colour (stroked "#262626" (thick 4 defaultStyle)))
+    ∷ [] )
+
+socksDia : Dia ℕ
+socksDia = margin 10 10 10 10 (hcat 30 (sock "#262626" ∷ sock "#2c5a8a" ∷ sock "#a02a3c" ∷ []))
+```
+
+## The PAIRS pipeline
+
+The same stack read as a pipeline: each image is mapped to a one-row image (a summary of one
+event), and the summaries are averaged into the one-row summary of the whole dataset.  The
+summaries' colours are pseudo-random too; the average of a column is the mean of its eight hues.
+
+```agda
+summaryHue : ℕ → ℕ → ℕ
+summaryHue k i = noiseHue (1000 + k * 8 + i)
+
+hsl55 : ℕ → String
+hsl55 h = "hsl(" ++ˢ show h ++ˢ ",70%,55%)"
+
+-- a one-row image of eight cells
+strip : (ℕ → String) → Dia ℕ
+strip colour =
+  rectangle imgSide cellSide (stroked "#262626" (thick 2 defaultStyle))
+    ⊙ hcat 0 (map (λ i → rectangle cellSide cellSide (filled (colour i) defaultStyle)) (applyUpTo (λ i → i) 8))
+
+-- the summary of event `k`, and the mean of the eight summaries
+meanStrip : Dia ℕ
+meanStrip  = strip (λ i → hsl55 (sumHues i / 8))
+  where sumHues : ℕ → ℕ
+        sumHues i = foldr _+_ 0 (map (λ k → summaryHue k i) (applyUpTo (λ k → k) 8))
+
+eventStripAt : ℕ → Dia ℕ
+eventStripAt k = strip (λ i → hsl55 (summaryHue k i))
+
+-- the eight summaries, one above the other, as tall as the stack
+strips : Dia ℕ
+strips = vcat ((stackSide ∸ 8 * cellSide) / 7) (map eventStripAt (applyUpTo (λ k → k) 8))
+
+-- a gap with an arrow drawn through it and a caption under the arrow
+pairsGap : String → Dia ℕ
+pairsGap t = layers 160 stackSide (place 160 stackSide ((160 ∸ textWidth 32 t) / 2) (stackSide / 2 + 14) (dim 32 t) ∷ [])
+
+-- a stage with a caption under it
+pairsStage : String → Dia ℕ → String → Dia ℕ
+pairsStage i d t = named i d ═ ↕ 12 ═ dim 32 t
+
+pairsDia : Dia ℕ
+pairsDia =
+  margin 10 10 10 10
+    ( hcat 0
+        ( pairsStage "pe" stackDia "events"
+        ∷ pairsGap "encode"
+        ∷ pairsStage "ps" strips "summaries"
+        ∷ pairsGap "average"
+        ∷ pairsStage "pm" meanStrip "dataset"
+        ∷ [] )
+    ▹[ cls "flow cy solid" ] ("pe" ⟶ "ps" ∷ "ps" ⟶ "pm" ∷ []) )
+```
+
 ## The web
 
 Where it came from and where it went: collaborators who needed to share, the web built for them,
@@ -237,12 +363,12 @@ webDia : Dia ℕ
 webDia =
   margin 10 10 10 10
     ((hcat 60
-        ( box "wp" 300 110 (lines 22 ("collaborators" ∷ "~5000 on ATLAS" ∷ []) defaultStyle)
+        ( box "wp" 300 110 (lines 22 ("collaborators" ∷ "(~5000 on ATLAS)" ∷ []) defaultStyle)
         ∷ box "ww" 300 110 (lines 22 ("the web" ∷ "links + HTTP, 1989" ∷ []) defaultStyle)
-        ∷ box "we" 300 110 (lines 22 ("everyone" ∷ "billions of people" ∷ []) defaultStyle)
+        ∷ box "we" 300 110 (lines 22 ("now used everywhere" ∷ []) defaultStyle)
         ∷ [] )
       ▹[ cls "flow cy" ] ("wp" ⟶ "ww" ∷ "ww" ⟶ "we" ∷ []))
-     ═ ↕ 14 ═ dim 20 "built to share results, now used for everything")
+     ═ ↕ 14 ═ dim 20 "built to share scientific documentation, now used for everything")
 
 _ : dangling webDia ≡ []
 _ = refl

@@ -674,7 +674,7 @@
 
 .reveal .cover-text p {
   position: absolute;
-  top: 20%;
+  top: 5%;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
@@ -685,4 +685,10 @@
   font-weight: 700;
   color: #fff;
   text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
+}
+/* a plain solid arrow, for diagrams drawn at the ordinary scale */
+.reveal svg .flow.solid {
+  stroke-width: 3;
+  stroke-dasharray: none;
+  opacity: 1;
 }

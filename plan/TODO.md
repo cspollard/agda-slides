@@ -3,9 +3,13 @@
 - [x] Add proofs for the base DSL (`Slides.Diagram.Place.Properties.Laws`, `NamesSound`)
 - [x] Add DSL for animations, similar to Dia, together with Reveal backend
   (`Slides.Anim.*`, `plan/Animations.md`).
+- [ ] auto generate CSS?
 - [ ] do we have Content.figure(checked)?
+- [ ] duplication of e.g. fragment and Content.fragment
+- [ ] slides should support the same primitives as diagrams.
+- [ ] reduce compilation time
 - [ ] allow line breaks
-- [ ] allow text colors and styles
+- [ ] allow native text colors and styles
 - [ ] reinstate README documentation
 - [ ] allow nested bullet points
 - [ ] generalize 3D views and projections (started in Slides.Examples.ATLAS)
