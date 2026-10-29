@@ -19,7 +19,7 @@ open import Slides.Driver
 open import Slides.Examples.ColliderSlides using (collider)
 
 theme : Reveal.Theme
-theme = record Reveal.whiteTheme { stylesheets = "slides.css" ∷ "collider.css" ∷ [] }
+theme = record Reveal.whiteTheme { stylesheets = "slides.css" ∷ "light.css" ∷ "collider.css" ∷ [] }
 
 config : Reveal.RevealConfig
 config = record Reveal.defaultConfig

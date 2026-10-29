@@ -84,7 +84,7 @@ showcase:
 # The "It Just Takes Two" deck.  `make pairs` loads reveal.js and KaTeX from a CDN (out/pairs/,
 # needs network in the browser); `make pairs-local REVEAL=...` links a local copy of reveal.js
 # (out/pairs-local/).
-PAIRS_FILES = assets/slides.css assets/animation.js assets/pairs/pairs.css
+PAIRS_FILES = assets/slides.css assets/animation.js assets/light.css assets/pairs/pairs.css
 
 .PHONY: pairs pairs-local test-pairs
 pairs:
@@ -109,7 +109,7 @@ test-pairs:
 # (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
 # loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=... KATEX=...` links a
 # local copy of both (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
-COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
+COLLIDER_FILES = assets/slides.css assets/animation.js assets/light.css assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
 
 .PHONY: collider collider-local test-collider
 collider:
@@ -193,6 +193,7 @@ test:
 	diff -u tests/golden/pairs.index.html out/pairs/index.html
 	diff -u tests/golden/pairs.init.js out/pairs/init.js
 	diff -u tests/golden/pairs.css out/pairs/pairs.css
+	diff -u tests/golden/light.css out/pairs/light.css
 
 test-browser:
 	python3 tests/check_reveal.py out/intro/index.html
