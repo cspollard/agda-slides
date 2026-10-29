@@ -48,9 +48,19 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       ∷ f■ (d■ "d-top" 50 topDia)
       ∷ [] )
     fragment (c■ "center" (p■ "large cosmological implications"))
-```
 
-```agda
+  slide $ do
+    heading 2 "collaboration → world wide web"
+    -- TODO
+    -- A nice figure
+    bullets
+      $ "LHC collaborations are huge: ATLAS is ~5000 physicists"
+      ∷ "world wide web 
+      ∷ "collaborative tools and information-sharing are critical"
+      ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
+      ∷ "clearly they have grown beyond their initial purpose!"
+      ∷ []
+
   slide $ do
     heading 2 "the ATLAS detector"
     diagram "d-atlas" 60 atlasTurned
@@ -59,23 +69,11 @@ As time goes on, the likelihood curve gets sharper (uncertainty shrinks).
       ∷ f■ (c■ "callout" $ p■ "1.5-2 MB per bunch crossing")
       ∷ []
       )
-```
 
-```agda
-  slide $ do
-    heading 2 "an early spin-off"
-    -- TODO
-    -- A nice figure
-    bullets
-      $ "the LHC collaborations are enormous: ATLAS is ~5000 physicists"
-      ∷ "need to coordinate work on detector design, data processing, analysis, etc"
-      ∷ "collaborative tools and information-sharing are critical"
-      ∷ "the world-wide web (built on the HTTP protocol) was created exactly for this purpose"
-      ∷ "clearly they have grown beyond their initial purpose!"
-      ∷ []
+  slide $
+    classed "cover" $ Content.placed 0 0 100 100 $
+      Content.figureUnchecked "CMSID.jpg" ""
 ```
-
-**3. The trigger.**
 
 TODO:
 - approximate rates (40MHz -> 100kHz -> 10kHz)
@@ -86,9 +84,9 @@ TODO:
   slide $ do
     heading 2 "a data firehose"
     bullets
-      $ "LHC proton bunches cross 40 million times per second"
+      $ "LHC bunches cross 40 million times per second"
       ∷ "~65 $pp$ collisions per bunch crossing (~200 for LHC upgrade)"
-      ∷ "~1 billion per second!"
+      ∷ "~1 billion collisions per second!"
       ∷ []
 
     pause

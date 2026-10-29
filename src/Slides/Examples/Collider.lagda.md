@@ -38,7 +38,7 @@ Everything the deck may cite.  A citation key that is not listed here is a type 
 ```agda
 resources : Resources
 resources = record
-  { figures    = []
+  { figures    = "CMSID.jpg" ∷ []
   ; references =
       ("ATLAS12" , "ATLAS Collaboration. Observation of a new particle in the search for the Standard Model Higgs boson with the ATLAS detector at the LHC. Phys. Lett. B 716 (2012) 1.")
     ∷ ("CMS12"   , "CMS Collaboration. Observation of a new boson at a mass of 125 GeV with the CMS experiment at the LHC. Phys. Lett. B 716 (2012) 30.")
