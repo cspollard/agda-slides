@@ -44,6 +44,7 @@ open import Data.Unit using (tt) public
 import Slides.Deck.Syntax as S
 open import Slides.Deck.Talk
 open import Slides.Diagram.Syntax using (Dia)
+open import Slides.Deck.Anim using (Anim)
 
 ------------------------------------------------------------------------
 -- `do`-notation
@@ -83,6 +84,10 @@ module Content where
   references rs = one (C.references rs)
   diagram : String → ℕ → Dia ℕ → Flow
   diagram n p d = one (C.diagram n p d)
+  animate : String → ℕ → ℕ → List Anim → Flow
+  animate n p ms as = one (C.animation n p ms as)
+  animateLoop : String → ℕ → ℕ → Anim → Flow
+  animateLoop n p ms a = one (C.animationLoop n p ms a)
   script mount : String → Flow
   script js = one (C.script js)
   mount i = one (C.mount i)
@@ -124,6 +129,10 @@ table : List Text → List (List Text) → Body
 table h r = liftContent (Content.table h r)
 diagram : String → ℕ → Dia ℕ → Body
 diagram n p d = liftContent (Content.diagram n p d)
+animate : String → ℕ → ℕ → List Anim → Body
+animate n p ms as = liftContent (Content.animate n p ms as)
+animateLoop : String → ℕ → ℕ → Anim → Body
+animateLoop n p ms a = liftContent (Content.animateLoop n p ms a)
 script mount : String → Body
 script js = liftContent (Content.script js)
 mount i = liftContent (Content.mount i)

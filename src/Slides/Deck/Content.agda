@@ -14,8 +14,8 @@
 -- (`Slides.Backend.Render`); both need nothing else from this module.
 --
 -- The vocabulary is what the examples use (legacy `Slides.Core`): the legacy `Play`,
--- `paramAnimation` and pre-rendered frame lists are not here (animations are scenes,
--- `Slides.Backend.Animation`).
+-- `paramAnimation` and pre-rendered frame lists are not here (an animation is a scene of
+-- diagrams, `Slides.Deck.Anim`, shipped by `Slides.Backend.Animation`).
 
 module Slides.Deck.Content where
 
@@ -30,6 +30,8 @@ import Data.List.Properties as ListP
 
 open import Slides.Deck.Math using (Math; toLaTeX)
 open import Slides.Diagram.Syntax using (Dia)
+open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling)
+import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 
 data Inline : Set where
   text codeSpan : String → Inline
@@ -52,6 +54,11 @@ data Block : Set where
   table       : (header : List Text) (rows : List (List Text)) → Block
   references  : List (String × Text) → Block
   diagram     : (name : String) (percent : ℕ) → Dia ℕ → Block
+  -- an animation: a name (unique in the deck), the displayed percent, milliseconds per tick, and
+  -- its acts, one reveal step each: a step plays the next act (`Slides.Backend.Animation`)
+  animation   : String → ℕ → ℕ → List Mv.Anim → Block
+  -- an animation that loops while its slide is shown
+  animationLoop : String → ℕ → ℕ → Mv.Anim → Block
   script      : String → Block       -- JavaScript run once when its slide is shown (`slide`)
   mount       : String → Block       -- an empty element with this id, for scripts
   columns     : List (List Block) → Block
@@ -93,6 +100,8 @@ mutual
     where row = λ cs → intersperse " | " (map plainT cs)
   plainB (references rs) = map (λ r → plainT (proj₂ r)) rs
   plainB (diagram _ _ _) = []
+  plainB (animation _ _ _ _) = []
+  plainB (animationLoop _ _ _ _) = []
   plainB (script _)      = []
   plainB (mount _)       = []
   plainB (columns cs)    = plains cs

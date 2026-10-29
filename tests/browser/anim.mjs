@@ -24,60 +24,59 @@ const slide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s
 check('a slide holds the animation', slide >= 0);
 await page.evaluate(i => Reveal.slide(i), slide);
 const shown = () => page.evaluate(() => {
-  return [document.getElementById('mover-0-frames')._at];
+  return [Math.round(+document.getElementById('mover-frames').dataset.cur)];
 });
-const text = () => page.evaluate(() => [...document.querySelectorAll('#mover-0-frames > .frame text')].map(t => t.textContent));
+const text = () => page.evaluate(() => [...document.querySelectorAll('#mover-frames > .frame text')].map(t => t.textContent));
 const same = (n, got, want) => check(n, JSON.stringify(got) === JSON.stringify(want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
 
 const waitMs = ms => page.waitForTimeout(ms);
-same('three frames', await page.evaluate(() => JSON.parse(document.getElementById('mover-0-frames').dataset.deltas).length + 1), 3);
-same('one step', await page.evaluate(() => document.querySelectorAll('#mover-0-frames .anim-step').length), 1);
+same('duration three ticks', await page.evaluate(() => document.getElementById('mover-frames').dataset.duration), '3');
+same('one step', await page.evaluate(() => document.querySelectorAll('#mover-frames .anim-step').length), 1);
 same('frame 0 first', await shown(), [0]);
 same('caption one', await text(), ['one']);
 await page.evaluate(() => Reveal.nextFragment());
 await waitMs(150);
 check('still near the start shortly after the step', (await shown())[0] <= 1, JSON.stringify(await shown()));
 await waitMs(1500);
-same('plays to the last frame', await shown(), [2]);
+same('plays to the end', await shown(), [3]);
 same('caption three', await text(), ['three']);
 await page.evaluate(() => Reveal.prevFragment());
 await waitMs(1500);
-same('plays back to frame 0', await shown(), [0]);
+same('plays back to the start', await shown(), [0]);
 await page.evaluate(i => { Reveal.slide(0); Reveal.slide(i); }, slide);
 same('frame 0 on re-entering', await shown(), [0]);
 
-// two acts: five frames, resting on 2 and 4
-const actsSlide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s => s.querySelector('#acts-0-frames')));
+// two acts of three and two ticks, resting on 3 and 5
+const actsSlide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s => s.querySelector('#acts-frames')));
 await page.evaluate(i => Reveal.slide(i), actsSlide);
-const actShown = () => page.evaluate(() => [document.getElementById('acts-0-frames')._at]);
-same('two steps', await page.evaluate(() => document.querySelectorAll('#acts-0-frames .anim-step').length), 2);
-same('rests recorded', await page.evaluate(() => document.querySelector('#acts-0-frames').dataset.rests), '2,4');
+const actShown = () => page.evaluate(() => [Math.round(+document.getElementById('acts-frames').dataset.cur)]);
+same('two steps', await page.evaluate(() => document.querySelectorAll('#acts-frames .anim-step').length), 2);
+same('rests recorded', await page.evaluate(() => document.querySelector('#acts-frames').dataset.rests), '[3,5]');
 same('acts start on frame 0', await actShown(), [0]);
 await page.evaluate(() => Reveal.nextFragment());
 await waitMs(600);
-same('first act rests on frame 2', await actShown(), [2]);
+same('first act rests at tick 3', await actShown(), [3]);
 await page.evaluate(() => Reveal.nextFragment());
 await waitMs(600);
-same('second act rests on frame 4', await actShown(), [4]);
+same('second act rests at tick 5', await actShown(), [5]);
 await page.evaluate(() => Reveal.prevFragment());
 await waitMs(600);
-same('back to the first act\'s rest', await actShown(), [2]);
+same('back to the first act\'s rest', await actShown(), [3]);
 
-// the eased slider: six frames, the box moves right, slowly then quickly then slowly
-const sliderSlide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s => s.querySelector('#slider-0-frames')));
+// the slider: the box moves right, linearly (a Coupling driver)
+const sliderSlide = await page.evaluate(() => Reveal.getHorizontalSlides().findIndex(s => s.querySelector('#slider-frames')));
 await page.evaluate(i => Reveal.slide(i), sliderSlide);
 // the box's x at each frame, as the player draws it
 const xs = await page.evaluate(() => {
-  const a = document.getElementById('slider-0-frames');
-  const n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas).length + 1;   // a template slider ships formulas (`data-param`)
-  const out = [];
+  const a = document.getElementById('slider-frames');
+  const n = 6, out = [];
   for (let k = 0; k < n; k++) { a._show(k); out.push(+a.querySelector(':scope > .frame rect').getAttribute('x')); }
   return out;
 });
 same('six slider frames', xs.length, 6);
 check('slider moves right monotonically', xs.every((x, i) => i === 0 || x > xs[i - 1]), JSON.stringify(xs));
 const gaps = xs.slice(1).map((x, i) => x - xs[i]);
-check('ease-in-out: slow, fast, slow', gaps[0] < gaps[2] && gaps[4] < gaps[2], JSON.stringify(gaps));
+check('linear: equal gaps', gaps.every(g => Math.abs(g - gaps[0]) < 1e-6), JSON.stringify(gaps));
 same('no page errors', errors, []);
 await browser.close();
 process.exit(failures ? 1 : 0);

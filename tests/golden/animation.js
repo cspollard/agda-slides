@@ -1,193 +1,239 @@
-// The animation player, shared by the reveal.js and the standalone backends (a deck
-// loads it before its own script, which supplies how to tell that an animation's slide is
-// shown and calls `sync`/`syncAll` when a fragment appears or the slide changes).
+// The animation player, shared by the reveal.js and the standalone backends (a deck loads it before
+// its own script, which supplies how to tell that an animation's slide is shown and calls
+// `sync`/`syncAll` when a fragment appears or the slide changes).
 //
 //   var player = SlidesAnimation(function (a) { return <is animation element `a`'s slide shown> });
 //
-// An animation (`.animation`, see `renderAnimation` in `Slides.Backend.Diagram`) shows the
-// first frame and rebuilds the others from the edits in `data-deltas`, or, with
-// `data-param`, evaluates its tracks and formulas at a real time.
+// An animation (`.animation`, see `Slides.Backend.Animation`) ships the *event list* of its scene
+// in `data-events`: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
+// are expression trees over one variable.  The page evaluates it at a real time `t` (in ticks):
+// the events active at `t` are laid out at their parameter (the value of the driver at the event's
+// local time, 0 without one), overlaid in the join of their frames, and drawn as SVG.  This is
+// `Slides.Scene.Animation.frame`, once more, in JavaScript: the operations below are the Space,
+// Time and Coupling signatures, and `lay` is `Slides.Diagram.Place`.  Tested against the frames
+// Agda computes (`make test-anim-ref`).
+//
+//   scalar/driver term   null (the variable), a number, or [op, args...]:
+//     [0,n,d] the fraction n/d  2 plus  3 max  4 minus  5 [5,a,b,x,y] x if a<=b else y
+//     6 [6,p,a] p percent of a  7 hold (floor)  8 ratio  9 [9,r,a,b] a+r(b-a)  10 [10,e,a] easing
+//     e of a (0 linear, 1 step, 2 step start)
+//   diagram              [op, ...] with op one of R S D T P _ b a @ l L p o n c (see `lay`)
+//   style                {stroke, fill, cls, id, dash, anchor, sw, rx, op}
 function SlidesAnimation(shown) {
-  function target(a) {
-    var n = a.querySelectorAll('.anim-step.visible').length;
-    if (n === 0) return 0;
-    var r = a.dataset.rests.split(',');
-    return +r[Math.min(n, r.length) - 1];
-  }
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var NUMS = { rect: ['x', 'y', 'width', 'height'], circle: ['cx', 'cy', 'r'], line: ['x1', 'y1', 'x2', 'y2'], text: ['x', 'y'] };
-  function parse(s) {
-    return document.importNode(new DOMParser().parseFromString(s, 'image/svg+xml').documentElement.firstChild, true);
-  }
-  // apply a list of edits to the children of `parent` (skipping `offset` of them)
-  function patch(parent, items, offset) {
-    var kids = parent.children, n = 0, rest = [];
-    items.forEach(function (it) {
-      if (it !== null && typeof it === 'object' && !Array.isArray(it) && 'r' in it) { rest = it.r; return; }
-      if (typeof it === 'number' && it < 0) { n -= it; return; }
-      var el = kids[offset + n]; n++;
-      if (it === 0) return;
-      if (Array.isArray(it)) { it.forEach(function (v, j) { var k = NUMS[el.localName][j]; el.setAttribute(k, +el.getAttribute(k) + v); }); return; }
-      if (typeof it === 'string') { parent.replaceChild(parse(it), el); return; }
-      patch(el, it.g, 0);
-    });
-    while (kids.length > offset + n) parent.removeChild(kids[offset + n]);
-    rest.forEach(function (s) { parent.appendChild(parse(s)); });
-  }
-  // A parametric animation (`data-param`, see `renderParamAnimation`) is a small simulator: the
-  // tracks of its segments and symbolic layouts, evaluated at the real time `t` (in ticks) and
-  // drawn without rounding.  An easing `e` is 0 (linear), 1 (step), 2 (step start) or a cubic
-  // Bezier [x1, y1, x2, y2] in hundredths, as in `Slides.Anim.Track.progress`: the curve
-  // parameter with x(s) = p is found by 16 bisection steps.
-  function cubic(c1, c2, s) { var u = 1 - s; return 3 * u * u * s * c1 + 3 * u * s * s * c2 + s * s * s; }
-  function ease(e, p) {
-    if (e === 0) return p;
-    if (e === 1) return p >= 1 ? 1 : 0;
-    if (e === 2) return p <= 0 ? 0 : 1;
-    if (p <= 0) return 0;
-    if (p >= 1) return 1;
-    var lo = 0, hi = 1, i;
-    for (i = 0; i < 16; i++) { if (cubic(e[0] / 100, e[2] / 100, (lo + hi) / 2) <= p) lo = (lo + hi) / 2; else hi = (lo + hi) / 2; }
-    return cubic(e[1] / 100, e[3] / 100, (lo + hi) / 2);
-  }
+  function fl(x) { return Math.floor(x + 1e-9); }
   function rat(x) { return typeof x === 'number' ? x : x[0] / x[1]; }
-  // a segment's parameter `u` ticks after its start: its pieces [ticks, from, to, easing] in
-  // order, the last holding its end value
-  function track(ps, u) {
-    for (var i = 0; i < ps.length; i++) {
-      var d = ps[i][0];
-      if (u < d || i === ps.length - 1) {
-        var a = rat(ps[i][1]), b = rat(ps[i][2]);
-        return a + ease(ps[i][3], u < d ? u / d : 1) * (b - a);
-      }
-      u -= d;
+  function ease(e, r) { return e === 0 ? r : e === 1 ? (r >= 1 ? 1 : 0) : (r <= 0 ? 0 : 1); }
+  function ev(e, v) {
+    if (e === null) return v;
+    if (typeof e === 'number') return e;
+    var o = e[0];
+    if (o === 0) return e[1] / e[2];
+    var a = ev(e[1], v);
+    if (o === 7) return fl(a);
+    if (o === 6) return ev(e[2], v) * e[1] / 100;
+    if (o === 10) return ease(e[1], ev(e[2], v));
+    var b = ev(e[2], v);
+    switch (o) {
+      case 2: return a + b;
+      case 3: return Math.max(a, b);
+      case 4: return a - b;
+      case 5: return a <= b ? ev(e[3], v) : ev(e[4], v);
+      case 8: return b === 0 ? 0 : a / b;
+      case 9: return b + a * (ev(e[3], v) - b);
     }
     return 0;
   }
-  // a formula: a number, a string (the parameter of that segment, from `r`) or `[op, a, b]`;
-  // a negative number `-1 - i` is the definition `i` of the phase's program (`V`, see `pframe`:
-  // the shared subformulas, evaluated once per time step, oldest first).  The operations are
-  // numbers: 0 plus, 1 minus, 2 maximum, 3 `[3, p, a]` p percent of `a`, 4 `[4, a]` half of `a`
-  // (positions being in half units), 5 floor division `[5, n, a]`, 6 remainder `[6, n, a]` (the
-  // real one, `a - n*floor(a/n)`), 7 a literal factor `[7, n, a]`, 8 `[8, a, b, x, y]`, which is
-  // `x` if `a < b` else `y`, 9 minimum, 10 `[10, e, a]` an easing (`e` as in a piece) of `a`.  The
-  // floor adds an epsilon: a parameter that is a whole number in exact arithmetic (a track's value
-  // at a tick) can come out a hair below it in floating point
-  function fl(x) { return Math.floor(x + 1e-9); }
-  function ev(e, r, V) {
-    if (typeof e === 'number') return e < 0 ? V[-1 - e] : e;
-    if (typeof e === 'string') return r[+e];
-    var o = e[0];
-    if (o === 10) return ease(e[1], ev(e[2], r, V));
-    var x = ev(e[1], r, V);
-    if (o === 4) return x / 2;
-    if (o === 8) return x < ev(e[2], r, V) ? ev(e[3], r, V) : ev(e[4], r, V);
-    var y = ev(e[2], r, V);
-    return o === 0 ? x + y : o === 1 ? x - y : o === 2 ? Math.max(x, y) : o === 9 ? Math.min(x, y)
-         : o === 5 ? fl(y / x) : o === 6 ? y - x * fl(y / x) : o === 7 ? x * y : x * y / 100;
+  // ---- layout: Slides.Diagram.Place (sizes in units, positions in half units)
+  function sh(d, dx, dy) {
+    var r = Object.assign({}, d);
+    if (d.k === 'line' || d.k === 'arrow') { r.a += dx; r.b += dy; r.c += dx; r.d += dy; } else { r.x += dx; r.y += dy; }
+    return r;
   }
-  // show time `t`: swap in the elements of the phase of tick `floor(t)`, then set every number
-  // that depends on a parameter, each being its track's value at `t`
-  function pframe(a, t) {
-    var P = a._p || (a._p = JSON.parse(a.dataset.param)), i = 0;
-    var k = Math.max(0, Math.min(Math.floor(t), +a.dataset.n - 1));
-    while (i + 1 < P.p.length && P.p[i + 1].s <= k) i++;
-    var svg = a.querySelector(':scope > .frame svg');
-    if (a._ph !== i) {
-      while (svg.children.length > 1) svg.removeChild(svg.lastChild);
-      // the base elements: a string, or the number of an earlier string (shipped once)
-      var seen = [];
-      P.p[i].b.forEach(function (s) { if (typeof s === 'number') s = seen[s]; else seen.push(s); svg.appendChild(parse(s)); });
-      a._ph = i;
+  function inFrame(w, h, dx, dy, L) {
+    return { w: w, h: h, ds: L.ds.map(function (d) { return sh(d, dx, dy); }),
+             as: L.as.map(function (a) { return [a[0], { l: a[1].l + dx, t: a[1].t + dy, w: a[1].w, h: a[1].h }]; }) };
+  }
+  function overlay(w, h, A, B) { return { w: w, h: h, ds: A.ds.concat(B.ds), as: A.as.concat(B.as) }; }
+  function combine(w, h, p, A, q, B) { return overlay(w, h, inFrame(w, h, p[0], p[1], A), inFrame(w, h, q[0], q[1], B)); }
+  function prim(w, h, ds) { return { w: w, h: h, ds: ds, as: [] }; }
+  function vOff(al, outer, inner) { return al === 0 ? 0 : al === 1 ? outer - inner : 2 * (outer - inner); }
+  function ovl(A, B) { return overlay(Math.max(A.w, B.w), Math.max(A.h, B.h), A, B); }
+  function point(port, b) {
+    var s = typeof port === 'number' ? port : port[0], p = typeof port === 'number' ? 0 : port[1];
+    var m = typeof port === 'number' || s === 4;
+    // sides: 0 north 1 south 2 east 3 west 4 middle
+    if (m) return s === 0 ? [b.l + b.w, b.t] : s === 1 ? [b.l + b.w, b.t + 2 * b.h] : s === 2 ? [b.l + 2 * b.w, b.t + b.h]
+                : s === 3 ? [b.l, b.t + b.h] : [b.l + b.w, b.t + b.h];
+    return s === 0 ? [b.l + p * 2 * b.w / 100, b.t] : s === 1 ? [b.l + p * 2 * b.w / 100, b.t + 2 * b.h]
+         : s === 2 ? [b.l + 2 * b.w, b.t + p * 2 * b.h / 100] : [b.l, b.t + p * 2 * b.h / 100];
+  }
+  function find(as, n) { for (var i = 0; i < as.length; i++) if (as[i][0] === n) return as[i][1]; return null; }
+  function lay(n, p) {
+    var o = n[0], x, y, A, B, w, h;
+    switch (o) {
+      case 'R': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'rect', x: 0, y: 0, w: w, h: h, s: n[3] }]);
+      case 'S': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'line', a: 0, b: 0, c: 2 * w, d: 2 * h, s: n[3] }]);
+      case 'D': x = ev(n[1], p); return prim(2 * x, 2 * x, [{ k: 'circle', x: 2 * x, y: 2 * x, r: x, s: n[2] }]);
+      case 'T': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'label', x: w, y: h, n: n[3], t: n[4], s: n[5] }]);
+      case 'P': w = ev(n[1], p); h = ev(n[2], p); return prim(w, h, [{ k: 'path', x: 0, y: 0, d: n[3], s: n[4] }]);
+      case '_': return prim(ev(n[1], p), ev(n[2], p), []);
+      case 'b': A = lay(n[2], p); B = lay(n[3], p); h = Math.max(A.h, B.h);
+        return combine(A.w + B.w, h, [0, vOff(n[1], h, A.h)], A, [2 * A.w, vOff(n[1], h, B.h)], B);
+      case 'a': A = lay(n[2], p); B = lay(n[3], p); w = Math.max(A.w, B.w);
+        return combine(w, A.h + B.h, [vOff(n[1], w, A.w), 0], A, [vOff(n[1], w, B.w), 2 * A.h], B);
+      case '@': A = lay(n[1], p); B = lay(n[2], p); w = Math.max(A.w, B.w); h = Math.max(A.h, B.h);
+        return combine(w, h, [w - A.w, h - A.h], A, [w - B.w, h - B.h], B);
+      case 'l': A = lay(n[1], p); B = lay(n[2], p); w = Math.max(A.w, B.w);
+        return combine(w, A.h + (B.h + A.h), [w - A.w, 0], A, [w - B.w, 2 * A.h], B);
+      case 'L': A = lay(n[1], p); B = lay(n[2], p); w = Math.max(A.w, B.w);
+        return combine(w, A.h + (B.h + A.h), [w - B.w, 2 * A.h], B, [w - A.w, 2 * (A.h + B.h)], A);
+      case 'p': return inFrame(ev(n[1], p), ev(n[2], p), 2 * ev(n[3], p), 2 * ev(n[4], p), lay(n[5], p));
+      case 'o': return overlay(ev(n[1], p), ev(n[2], p), lay(n[3], p), lay(n[4], p));
+      case 'n': A = lay(n[2], p); return { w: A.w, h: A.h, ds: A.ds, as: [[n[1], { l: 0, t: 0, w: A.w, h: A.h }]].concat(A.as) };
+      case 'c': A = lay(n[6], p);
+        var ba = find(A.as, n[1]), bb = find(A.as, n[3]);
+        if (!ba || !bb) return A;
+        var pa = point(n[2], ba), pb = point(n[4], bb);
+        return { w: A.w, h: A.h, ds: A.ds.concat([{ k: 'arrow', a: pa[0], b: pa[1], c: pb[0], d: pb[1], s: n[5] }]), as: A.as };
     }
-    var r = P.v.map(function (v) { return track(v[1], t - v[0]); });
-    // the phase's program (`f`): the shared subformulas, each over the parameters and the earlier
-    // ones, evaluated once; then the numbers of the elements
-    var V = [];
-    (P.p[i].f || []).forEach(function (d) { V.push(ev(d, r, V)); });
-    P.p[i].c.forEach(function (cs, j) {
-      if (cs === null) return;
-      var el = svg.children[1 + j];
-      cs.forEach(function (c, m) { if (c !== null) el.setAttribute(NUMS[el.localName][m], ev(c, r, V)); });
+    return prim(0, 0, []);
+  }
+  // ---- the frame at time t: events active at t, overlaid in order
+  function frameAt(E, t) {
+    var L = null;
+    E.forEach(function (e) {
+      var o = rat(e.o), s = e.s === null ? null : rat(e.s);
+      if (o > t + 1e-9 || (s !== null && t >= o + s - 1e-9)) return;
+      var p = e.d === null ? 0 : ev(e.d, t - o), F = lay(e.l, p);
+      L = L === null ? F : ovl(L, F);
     });
+    return L;
   }
-  // show frame `k` (a real time for a parametric animation): rebuild from the first frame when
-  // going back, else apply the next edits
-  function frame(a, k) {
-    if (a.dataset.param) { pframe(a, k); return; }
-    var d = a._d || (a._d = JSON.parse(a.dataset.deltas || '[]'));
-    var svg = a.querySelector(':scope > .frame svg');
-    if (!a._base) { a._base = svg.cloneNode(true); a._at = 0; }
-    if (k < a._at) { var fresh = a._base.cloneNode(true); svg.parentNode.replaceChild(fresh, svg); svg = fresh; a._at = 0; }
-    for (; a._at < k; a._at++) patch(svg, d[a._at], 1);
+  // ---- drawing: Slides.Diagram.Print
+  function r3(x) { return String(Math.round(x * 1000) / 1000); }
+  function el(tag, attrs, kids) {
+    var e = document.createElementNS(SVGNS, tag);
+    Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    (kids || []).forEach(function (c) { e.appendChild(c); });
+    return e;
   }
-  function geom(a) {
-    var n = a.dataset.n ? +a.dataset.n : JSON.parse(a.dataset.deltas || '[]').length + 1, v = a.getAttribute('data-loop');
-    var p = v === null ? 1 : (v === '' ? n : +v);
-    return { n: n, p: p, steps: n / p };
+  function common(s, a) {
+    if (s.cls) a['class'] = s.cls;
+    if (s.id) a.id = s.id;
+    if (s.dash) a['stroke-dasharray'] = s.dash;
+    if (s.op !== undefined) a.opacity = s.op + '%';
+    return a;
   }
-  function draw(a) {
-    var g = geom(a);
-    frame(a, (+(a.dataset.phase || 0)) * g.steps + (+(a.dataset.cur || 0)));
+  function shape(s, a) {
+    a.stroke = s.stroke || 'currentColor'; a.fill = s.fill || 'none';
+    if (s.sw !== undefined) a['stroke-width'] = s.sw;
+    return common(s, a);
   }
-  function show(a, i) { a.dataset.cur = String(i); draw(a); }
+  function segs(t) {
+    var out = [], acc = '', i = 0;
+    function flush() { if (acc) out.push(['f', acc]); acc = ''; }
+    function scripted(k) {
+      i++; var u = '';
+      if (t[i] === '{') { i++; while (i < t.length && t[i] !== '}') u += t[i++]; i++; } else if (i < t.length) u = t[i++];
+      out.push([k, u]);
+    }
+    while (i < t.length) {
+      var c = t[i];
+      if (c === '\\' && i + 1 < t.length) { acc += t[i + 1]; i += 2; }
+      else if (c === '_') { flush(); scripted('s'); }
+      else if (c === '^') { flush(); scripted('u'); }
+      else { acc += c; i++; }
+    }
+    flush();
+    return out;
+  }
+  function draw(d, name) {
+    var s = d.s || {}, a;
+    switch (d.k) {
+      case 'rect': a = { x: r3(d.x / 2), y: r3(d.y / 2), width: r3(d.w), height: r3(d.h) }; if (s.rx !== undefined) a.rx = s.rx;
+        return el('rect', shape(s, a));
+      case 'circle': return el('circle', shape(s, { cx: r3(d.x / 2), cy: r3(d.y / 2), r: r3(d.r) }));
+      case 'line': return el('line', shape(s, { x1: r3(d.a / 2), y1: r3(d.b / 2), x2: r3(d.c / 2), y2: r3(d.d / 2) }));
+      case 'arrow': a = shape(s, { x1: r3(d.a / 2), y1: r3(d.b / 2), x2: r3(d.c / 2), y2: r3(d.d / 2) });
+        a['marker-end'] = 'url(#' + name + '-arrow)'; return el('line', a);
+      case 'label':
+        a = common(s, { x: r3(d.x / 2), y: r3(d.y / 2), 'font-size': d.n, 'text-anchor': s.anchor || 'middle',
+                        'dominant-baseline': 'central', fill: s.fill || 'currentColor' });
+        var sg = segs(d.t), e = el('text', a), pend = '';
+        sg.forEach(function (g) {
+          var t = document.createElementNS(SVGNS, 'tspan');
+          if (g[0] === 'f') { if (pend) t.setAttribute('dy', pend); pend = ''; }
+          else if (g[0] === 's') { t.setAttribute('font-size', Math.floor(d.n * 7 / 10)); t.setAttribute('dy', Math.floor(d.n / 4)); pend = '-' + Math.floor(d.n / 4); }
+          else { t.setAttribute('font-size', Math.floor(d.n * 7 / 10)); t.setAttribute('dy', '-' + Math.floor(d.n / 3)); pend = String(Math.floor(d.n / 3)); }
+          t.textContent = g[1] || ' ';
+          if (sg.length > 1 || g[0] !== 'f') e.appendChild(t); else e.textContent = g[1] || ' ';
+        });
+        return e;
+      case 'path': a = shape(s, { transform: 'translate(' + r3(d.x / 2) + ' ' + r3(d.y / 2) + ')' }); a.d = d.d; return el('path', a);
+    }
+    return el('g', {});
+  }
+  function paint(a, L) {
+    var svg = a.querySelector(':scope > .frame svg'), name = a.id.replace(/-frames$/, '');
+    while (svg.children.length > 1) svg.removeChild(svg.lastChild);
+    if (L === null) { svg.setAttribute('viewBox', '0 0 0 0'); return; }
+    svg.setAttribute('viewBox', '0 0 ' + r3(L.w) + ' ' + r3(L.h));
+    L.ds.forEach(function (d) { svg.appendChild(draw(d, name)); });
+  }
+  // ---- the player
+  function events(a) { return a._e || (a._e = JSON.parse(a.dataset.events)); }
+  function frame(a, t) { paint(a, frameAt(events(a), t)); }
+  function target(a) {
+    var n = a.querySelectorAll('.anim-step.visible').length;
+    if (n === 0) return 0;
+    var r = JSON.parse(a.dataset.rests);
+    // a step rests at the last instant of its act: at the rest itself the next act has begun
+    return rat(r[Math.min(n, r.length) - 1]) - 1e-6;
+  }
+  function draw1(a) {
+    var loop = a.getAttribute('data-loop') !== null;
+    frame(a, loop ? +(a.dataset.phase || 0) : +(a.dataset.cur || 0));
+  }
+  function show(a, t) { a.dataset.cur = String(t); draw1(a); }
+  // one tick every `data-ms` milliseconds, on every animation frame
   function sync(a, jump) {
     if (!a) return;
-    clearInterval(a._timer);
     cancelAnimationFrame(a._raf);
     var t = target(a), ms = +a.dataset.ms, cur = +(a.dataset.cur || 0);
     if (jump || ms === 0 || t === cur) { show(a, t); return; }
-    if (a.dataset.param) {
-      // continuous time: one tick every `ms` milliseconds, on every animation frame
-      var t0 = null, c0 = cur;
-      a._raf = requestAnimationFrame(function go(now) {
-        if (t0 === null) t0 = now;
-        cur = c0 + (t > c0 ? 1 : -1) * (now - t0) / ms;
-        if (t > c0 ? cur >= t : cur <= t) cur = t;
-        show(a, cur);
-        if (cur !== t) a._raf = requestAnimationFrame(go);
-      });
-      return;
-    }
-    a._timer = setInterval(function () {
-      cur += (t > cur ? 1 : -1);
+    var t0 = null, c0 = cur;
+    a._raf = requestAnimationFrame(function go(now) {
+      if (t0 === null) t0 = now;
+      cur = c0 + (t > c0 ? 1 : -1) * (now - t0) / ms;
+      if (t > c0 ? cur >= t : cur <= t) cur = t;
       show(a, cur);
-      if (cur === t) clearInterval(a._timer);
-    }, ms);
+      if (cur !== t) a._raf = requestAnimationFrame(go);
+    });
   }
+  // a loop runs while its slide is shown: the phase is the real time in ticks modulo its duration
   function spin(a) {
-    var p = geom(a).p, ms = Math.max(+a.dataset.ms, 16);
-    if (a.dataset.param) {
-      // continuous time: the phase is the real time in ticks, modulo the length of the loop
-      var t0 = null;
-      requestAnimationFrame(function go(now) {
-        if (p > 1 && shown(a)) {
-          if (t0 === null) t0 = now;
-          a.dataset.phase = String(((now - t0) / Math.max(+a.dataset.ms, 1)) % p);
-          draw(a);
-        } else t0 = null;
-        requestAnimationFrame(go);
-      });
-      return;
-    }
-    setInterval(function () {
-      if (p > 1 && shown(a)) {
-        a.dataset.phase = String(((+(a.dataset.phase || 0)) + 1) % p);
-        draw(a);
-      }
-    }, ms);
+    var d = +a.dataset.duration, ms = Math.max(+a.dataset.ms, 1), t0 = null;
+    requestAnimationFrame(function go(now) {
+      if (shown(a)) {
+        if (t0 === null) t0 = now;
+        a.dataset.phase = String(d > 0 ? ((now - t0) / ms) % d : 0);
+        draw1(a);
+      } else t0 = null;
+      requestAnimationFrame(go);
+    });
   }
-  // for tests: show frame `k` directly
-  document.querySelectorAll('.animation').forEach(function (a) { a._show = function (k) { frame(a, k); }; });
+  // for tests: show time `t` directly
+  document.querySelectorAll('.animation').forEach(function (a) { a._show = function (t) { frame(a, t); }; });
   document.querySelectorAll('.animation[data-loop]').forEach(spin);
   // printing shows every fragment, so show every animation at its last step
   window.addEventListener('beforeprint', function () {
     document.querySelectorAll('.animation').forEach(function (a) {
       a._printed = [a.dataset.cur, a.dataset.phase];
       var r = a.dataset.rests;
-      a.dataset.cur = r ? r.split(',').pop() : '0';
+      a.dataset.cur = r ? String(rat(JSON.parse(r).pop()) - 1e-6) : '0';
       a.dataset.phase = '0';
-      draw(a);
+      draw1(a);
     });
   });
   window.addEventListener('afterprint', function () {
@@ -195,7 +241,7 @@ function SlidesAnimation(shown) {
       if (!a._printed) return;
       a.dataset.cur = a._printed[0] || '0';
       if (a._printed[1] !== undefined) a.dataset.phase = a._printed[1];
-      draw(a);
+      draw1(a);
     });
   });
   return {
@@ -204,6 +250,7 @@ function SlidesAnimation(shown) {
     // `syncAll(slide, jump)`: the same for every animation of a slide
     syncAll: function (slide, jump) {
       if (slide) slide.querySelectorAll('.animation').forEach(function (a) { sync(a, jump); });
-    }
+    },
+    frameAt: function (E, t) { return frameAt(E, t); }
   };
 }

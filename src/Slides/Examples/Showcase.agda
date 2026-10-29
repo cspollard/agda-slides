@@ -15,6 +15,7 @@ import Slides.Deck.Math as M
 open import Slides.Diagram.Style using (defaultStyle; filled; stroked)
 open import Slides.Diagram.Syntax using (Dia; beside; framed; named; connect; disc; spacer)
 import Slides.Diagram.Syntax as D
+open import Slides.Deck.Anim using (Anim; frame′; txt; _⨾_)
 open import Slides.Diagram.Geometry using (east; west)
 
 resources : Resources
@@ -45,6 +46,10 @@ pipeline = connect "parse" east "render" west defaultStyle
 
 twoCircles : Dia ℕ
 twoCircles = beside (disc 20 (stroked "#e55" defaultStyle)) (disc 20 (stroked "#5e5" defaultStyle))
+
+-- a word that changes, one act per step
+word : String → Anim
+word w = frame′ 1 (txt 40 w defaultStyle)
 
 showcase : Talk
 showcase = do
@@ -97,6 +102,10 @@ showcase = do
             diagram "pipeline" 70 pipeline
             pause
             diagram "result" 40 twoCircles)
+
+  slide (do heading 2 "Animations"
+            animate "steps" 40 100 ((word "one" ⨾ word "two") ∷ word "three" ∷ [])
+            animateLoop "blink" 20 200 (word "tick" ⨾ word "tock"))
 
   slide (do heading 2 "Scripting"
             paragraph "The next line is written by JavaScript."

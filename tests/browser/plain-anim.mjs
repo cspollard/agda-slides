@@ -37,31 +37,31 @@ await page.waitForTimeout(300);
 const shown = id => page.evaluate(id => {
   const a = document.getElementById(id);
   const fs = Array.from(a.querySelectorAll(':scope > .frame'));
-  return { index: a._at, visible: fs.filter(f => !f.hidden).length, text: fs[0].textContent };
+  return { index: Math.round(+(a.dataset.cur || 0)), phase: +(a.dataset.phase || 0), visible: fs.length, text: fs[0].textContent };
 }, id);
 const key = async k => { await page.keyboard.press(k); await page.waitForTimeout(500); };
 
 console.log('-- steps');
-eq('step 0 shows the first frame', (await shown('steps-0-frames')).index, 0);
+eq('step 0 shows the first frame', (await shown('steps-frames')).index, 0);
 await key('ArrowRight');
-eq('step 1 rests on the last frame of act 1', (await shown('steps-0-frames')).index, 1);
+eq('step 1 rests at the end of act 1', (await shown('steps-frame'+'s')).index, 2);
 await key('ArrowRight');
-eq('step 2 rests on the last frame of act 2', (await shown('steps-0-frames')).index, 2);
+eq('step 2 rests at the end of act 2', (await shown('steps-frames')).index, 3);
 await key('ArrowLeft');
-eq('stepping back plays back', (await shown('steps-0-frames')).index, 1);
-eq('one frame at a time', (await shown('steps-0-frames')).visible, 1);
+eq('stepping back plays back', (await shown('steps-frames')).index, 2);
+eq('one frame at a time', (await shown('steps-frames')).visible, 1);
 
 console.log('-- loop');
-const phases = new Set();
-for (let i = 0; i < 12; i++) { phases.add((await shown('blink-0-frames')).index); await page.waitForTimeout(100); }
-eq('the loop visits both of its frames', [...phases].sort(), [0, 1]);
+const words = new Set();
+for (let i = 0; i < 12; i++) { words.add((await page.evaluate(() => document.querySelector('#blink-frames > .frame text').textContent))); await page.waitForTimeout(100); }
+eq('the loop shows both of its frames', [...words].sort(), ['tick', 'tock']);
 
 console.log('-- printing');
 await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
-eq('printing shows the last step of the steps', (await shown('steps-0-frames')).index, 2);
-eq('and the first phase of the loop', (await shown('blink-0-frames')).index, 0);
+eq('printing shows the last step of the steps', (await shown('steps-frames')).index, 3);
+eq('and the first phase of the loop', (await shown('blink-frames')).phase, 0);
 await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
-eq('afterprint restores the step', (await shown('steps-0-frames')).index, 1);
+eq('afterprint restores the step', (await shown('steps-frames')).index, 2);
 
 eq('no page errors', errors, []);
 await browser.close();

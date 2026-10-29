@@ -51,6 +51,7 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Backend.HTML
+open import Slides.Backend.Animation using (animationEl; sequence; rests)
 
 Forest : Set
 Forest = List XMLDoc
@@ -147,6 +148,9 @@ mutual
     ∷ []
   renderBlock (diagram n p d)  =
     hElement "div" (("class" , "diagram") ∷ ("id" , n) ∷ []) (renderSVG natPrint n p (DL.layout d) ∷ []) ∷ []
+  renderBlock (animation n p ms [])       = []
+  renderBlock (animation n p ms (a ∷ as)) = animationEl n p ms false (sequence a as) (rests a as) ∷ []
+  renderBlock (animationLoop n p ms a)    = animationEl n p ms true a [] ∷ []
   renderBlock (script js)      =
     hElement "div" (("class" , "js") ∷ ("hidden" , "") ∷ ("data-js" , js) ∷ []) [] ∷ []
   renderBlock (mount i)        = hElement "div" (("id" , i) ∷ ("class" , "mount") ∷ []) [] ∷ []

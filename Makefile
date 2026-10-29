@@ -101,11 +101,15 @@ test-labels: labels
 .PHONY: test test-browser
 test:
 	python3 tests/check_closure.py
+	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
 	diff -u tests/golden/talk.index.html out/talk/index.html
 	diff -u tests/golden/plain.index.html out/plain/index.html
+	diff -u tests/golden/showcase.index.html out/showcase/index.html
 	diff -u tests/golden/showcase.init.js out/showcase/init.js
+	diff -u tests/golden/showcase-plain.index.html out/showcase-plain/index.html
+	diff -u tests/golden/animation.js out/plain/animation.js
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 
@@ -115,3 +119,17 @@ test-browser:
 	python3 tests/check_plain.py out/plain/index.html
 	python3 tests/check_reveal.py out/showcase/index.html
 	python3 tests/check_plain.py out/showcase-plain/index.html
+	node tests/browser/anim.mjs out
+	node tests/browser/plain-anim.mjs out
+
+# The page evaluator against the frames Agda computes (`animref` writes a standalone deck of
+# animations and `refs.json` to out/animref/).
+.PHONY: animref test-anim-ref
+animref:
+	mkdir -p out/animref $(BUILD_DIR)
+	cp assets/plain.css assets/plain.js assets/animation.js assets/slides.css out/animref/
+	$(call run-main,src/Slides/Examples/AnimRefMain.agda)
+
+test-anim-ref: animref
+	cd tests/browser && npm install --silent
+	node tests/browser/anim-ref.mjs out
