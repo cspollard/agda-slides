@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Operators for writing diagrams: a notation over the smart constructors of
--- `Slides.Diagram.Syntax` (it builds the same terms, so every interpretation applies unchanged).
+-- Writing diagrams: operators and one-line combinators over the constructors of
+-- `Slides.Diagram.Syntax` (they build the same terms, so every interpretation applies unchanged).
 --
 -- The algebra.  `Dia` has three associative operations with the unit `empty`:
 --
@@ -11,17 +11,18 @@
 --
 -- A gap is an ordinary diagram (`↔ n` is n units of width, `↕ n` of height), so
 -- `a ∥ ↔ 40 ∥ b` needs no gap parameter.  Margins, minimum widths and captions are built the
--- same way, from spacers.  What needs a zero or a literal is in `NotationWith 0# fromℕ` for a
+-- same way, from spacers.  What needs a zero or a literal is in `ConvenienceWith 0# fromℕ` for a
 -- scalar `S`; decks get it at ℕ.  Edges are data, `"a" ⟶ "b"`, and `d ▹[ style ] edges` draws a
--- list of them, in order, over `d`.
+-- list of them, in order, over `d`.  Every look comes from a CSS class (`cls`), so diagrams
+-- restyle with the deck.  Laws: `Slides.Diagram.Convenience.Properties`.
 
-module Slides.Diagram.Notation where
+module Slides.Diagram.Convenience where
 
-open import Data.List using (List; []; _∷_; foldl; map)
+open import Data.List using (List; []; _∷_; foldl; foldr; map)
 open import Data.Nat using (ℕ)
 open import Data.String using (String)
 
-open import Slides.Diagram.Style using (Style) public
+open import Slides.Diagram.Style using (Style; defaultStyle; withClass; withId; rounded) public
 open import Slides.Diagram.Syntax hiding (text) public
 
 infixr 8 _⊙_
@@ -82,9 +83,24 @@ _▹_∶_ : ∀ {S} → Dia S → Edge → Style → Dia S
 d ▹ e ∶ s = d ▹[ s ] (e ∷ [])
 
 ------------------------------------------------------------------------
+-- Looks, boxes and layers
+
+cls : String → Style
+cls c = withClass c defaultStyle
+
+-- a rounded box of a CSS class (radius `r`) with a diagram centred on it; the name is for
+-- `connect`, and doubles as the element id that scripts light up
+card : ∀ {S} → String → String → ℕ → S → S → Dia S → Dia S
+card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
+
+-- diagrams of one size laid over each other (the first of the list on top), from an empty one
+layers : ∀ {S} → S → S → List (Dia S) → Dia S
+layers w h = foldr (λ d acc → overlay w h acc d) (spacer w h)
+
+------------------------------------------------------------------------
 -- What needs a zero or a literal
 
-module NotationWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
+module ConvenienceWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
   -- empty space, the unit of `∥`, `═` and `⊙`; `↔ n` is n wide and 0 high, `↕ n` 0 wide and n high
   empty : Dia S
   empty = spacer 0# 0#
@@ -138,9 +154,15 @@ module NotationWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
   text = Slides.Diagram.Syntax.text fromℕ 100
   bold = Slides.Diagram.Syntax.text fromℕ 108
 
+  -- text in the slide colour; `dim` a muted caption, `big` a heavier title
+  txt dim big : ℕ → String → Dia S
+  txt  size t = text size t defaultStyle
+  dim  size t = text size t (cls "dim")
+  big  size t = bold size t (cls "big")
+
   -- lines of text, one under the other, centred
   lines : ℕ → List String → Style → Dia S
   lines size ts s = vcat 0# (map (λ t → text size t s) ts)
 
 -- decks compute in ℕ
-open NotationWith 0 (λ n → n) public
+open ConvenienceWith 0 (λ n → n) public

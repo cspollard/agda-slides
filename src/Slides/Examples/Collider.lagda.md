@@ -15,7 +15,7 @@ speaker line on the title slide.
 module Slides.Examples.Collider where
 
 open import Data.Bool using (Bool; false; if_then_else_)
-open import Data.List using (List; _∷_; []; zipWith; zip; map; foldr; foldl; concat; applyUpTo) renaming (_++_ to _++ˡ_)
+open import Data.List using (List; _∷_; []; zipWith; zip; map; foldr; concat; applyUpTo) renaming (_++_ to _++ˡ_)
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_; _/_; _%_; _⊓_; _≡ᵇ_; _≤ᵇ_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -25,12 +25,9 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 open import Slides.Deck.Literals
 open import Slides.Deck.DSL using (Resources; figures; references)
-open import Slides.Deck.Anim using (Anim; Leaf; lit; frame′; hold; ι; _⨾_; _∥_)
+open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 import Slides.Deck.Math as M
-open import Slides.Diagram.Style using (Style; defaultStyle; withClass; withId; rounded)
-open import Slides.Diagram.Geometry using (Side; east; west; Port; side; VAlign; bottom; Align; centred)
-import Slides.Diagram.Syntax as D
-open import Slides.Diagram.Syntax using (Dia; rectangle; disc; segment; spacer; framed; named; besideA; aboveA; connectP; place; overlay; mapDia)
+open import Slides.Diagram.Convenience
 open import Slides.Diagram.Names using (dangling)
 ```
 
@@ -57,73 +54,16 @@ literals of `Slides.Deck.Literals` are imported above.)
 
 ## Diagram vocabulary
 
-The new diagram language has no operators; the deck needs only a few, so they are here (all at ℕ,
-the scalar of a static figure): `a ‖ b` puts `b` beside `a`, `a ═ b` puts it below, a gap is a
-spacer (`↔ n`, `↕ n`), `hcat` and `vcat` join a list with a gap, `margin` pads, `lines` stacks
-lines of text and `d ▹[ style ] edges` draws arrows between named boxes.  Every look comes from a CSS
-class, so the diagrams restyle with the deck.
+The deck writes its figures with `Slides.Diagram.Convenience`, all at ℕ, the scalar of a static
+figure: `a ∥ b` puts `b` beside `a`, `a ═ b` below, a gap is a spacer (`↔ n`, `↕ n`), `hcat` and
+`vcat` join a list with a gap, `margin` pads, `lines` stacks lines of text and `d ▹[ style ] edges`
+draws arrows between named boxes.  Every look comes from a CSS class, so the diagrams restyle with
+the deck.  (The scene's overlay `∥` is `∥ₛ` here.)
 
 ```agda
-infixr 7 _‖_
-infixr 6 _═_
-
-_‖_ _═_ : Dia ℕ → Dia ℕ → Dia ℕ
-_‖_ = besideA D.middle
-_═_ = aboveA centred
-
-↔ ↕ : ℕ → Dia ℕ
-↔ n = spacer n 0
-↕ n = spacer 0 n
-
-empty : Dia ℕ
-empty = spacer 0 0
-
-hcatA : VAlign → ℕ → List (Dia ℕ) → Dia ℕ
-hcatA al g []       = empty
-hcatA al g (d ∷ []) = d
-hcatA al g (d ∷ ds) = besideA al d (besideA al (↔ g) (hcatA al g ds))
-
-hcat vcat : ℕ → List (Dia ℕ) → Dia ℕ
-hcat = hcatA D.middle
-vcat g []       = empty
-vcat g (d ∷ []) = d
-vcat g (d ∷ ds) = d ═ ↕ g ═ vcat g ds
-
--- extra space left, top, right, bottom around a diagram
-margin : ℕ → ℕ → ℕ → ℕ → Dia ℕ → Dia ℕ
-margin l t r b d = ↔ l ‖ ((↕ t ═ d ═ ↕ b) ‖ ↔ r)
-
--- a line of text at a font size, plain or bold (a bold font is wider)
-text bold : ℕ → String → Style → Dia ℕ
-text size t = D.text (λ n → n) 100 size t
-bold size t = D.text (λ n → n) 108 size t
-
--- lines of text, one under the other, centred
-lines : ℕ → List String → Style → Dia ℕ
-lines size ts s = vcat 0 (map (λ t → text size t s) ts)
-
--- an arrow from the east edge of one named box to the west edge of another
-record Edge : Set where
-  constructor _⟶_
-  field from to : String
-
-infix 7 _⟶_
-infixl 3 _▹[_]_
-
--- draw the edges in a style over `d`, the first one first
-_▹[_]_ : Dia ℕ → Style → List Edge → Dia ℕ
-d ▹[ s ] es = foldl (λ acc e → connectP (Edge.from e) (side east) (Edge.to e) (side west) s acc) d es
-
-cls : String → Style
-cls c = withClass c defaultStyle
-
-dim big : ℕ → String → Dia ℕ
-dim  size t = text size t (cls "dim")
-big  size t = bold size t (cls "big")
-
--- a rounded box of a CSS class with a diagram centred on it; the name is for the arrows
-card : String → ℕ → ℕ → Dia ℕ → Dia ℕ
-card i w h d = named i (framed w h (rounded 18 (withId i (cls "node"))) d)
+-- the rounded box of this deck, named for the arrows
+box : String → ℕ → ℕ → Dia ℕ → Dia ℕ
+box i = card i "node" 18
 
 -- the same box, lit when `on`
 stage : Bool → String → ℕ → ℕ → String → List String → Dia ℕ
@@ -170,17 +110,14 @@ pipelineDia lit =
        ∷ [] )
      ▹[ cls "flow am" ] ("s1" ⟶ "s2" ∷ "s2" ⟶ "s3" ∷ "s3" ⟶ "s4" ∷ "s4" ⟶ "s5" ∷ []))
 
--- a still diagram as an animation leaf: every length a constant
-still : Dia ℕ → Leaf
-still = mapDia lit
 
 -- one reveal step lights one more stage; earlier ones stay lit
 pipelineActs : List Anim
-pipelineActs = (frame′ 1 (still (pipelineDia (λ _ → false))) ⨾ frame′ 1 (still (pipelineDia (_≤ᵇ 1))))
-             ∷ frame′ 1 (still (pipelineDia (_≤ᵇ 2)))
-             ∷ frame′ 1 (still (pipelineDia (_≤ᵇ 3)))
-             ∷ frame′ 1 (still (pipelineDia (_≤ᵇ 4)))
-             ∷ frame′ 1 (still (pipelineDia (_≤ᵇ 5)))
+pipelineActs = (frame′ 1 (liftDia (pipelineDia (λ _ → false))) ⨾ frame′ 1 (liftDia (pipelineDia (_≤ᵇ 1))))
+             ∷ frame′ 1 (liftDia (pipelineDia (_≤ᵇ 2)))
+             ∷ frame′ 1 (liftDia (pipelineDia (_≤ᵇ 3)))
+             ∷ frame′ 1 (liftDia (pipelineDia (_≤ᵇ 4)))
+             ∷ frame′ 1 (liftDia (pipelineDia (_≤ᵇ 5)))
              ∷ []
 
 -- every `connect` names a declared box; a misspelling stops the deck from typechecking
@@ -200,7 +137,7 @@ signalBins     =  0 ∷  0 ∷  0 ∷  0 ∷  0 ∷  8 ∷ 20 ∷ 11 ∷  0 ∷ 
 
 histBar : ℕ → ℕ → Dia ℕ
 histBar b s =
-  ↔ 3 ‖ (rectangle 26 (4 * s) (cls "hist-sig") ═ rectangle 26 (4 * b) (cls "hist-bkg"))
+  ↔ 3 ∥ (rectangle 26 (4 * s) (cls "hist-sig") ═ rectangle 26 (4 * b) (cls "hist-bkg"))
 
 histogram : Dia ℕ
 histogram =
@@ -231,9 +168,9 @@ simDia : Dia ℕ
 simDia =
   margin 10 10 10 10
     ((hcat 60
-        ( card "sp" 300 110 (lines 22 ("parameters θ" ∷ "what we want" ∷ []) defaultStyle)
-        ∷ card "ss" 300 110 (lines 22 ("simulator" ∷ "collisions + detector" ∷ []) defaultStyle)
-        ∷ card "sx" 300 110 (lines 22 ("data x" ∷ "what we observe" ∷ []) defaultStyle)
+        ( box "sp" 300 110 (lines 22 ("parameters θ" ∷ "what we want" ∷ []) defaultStyle)
+        ∷ box "ss" 300 110 (lines 22 ("simulator" ∷ "collisions + detector" ∷ []) defaultStyle)
+        ∷ box "sx" 300 110 (lines 22 ("data x" ∷ "what we observe" ∷ []) defaultStyle)
         ∷ [] )
       ▹[ cls "flow cy" ] ("sp" ⟶ "ss" ∷ "ss" ⟶ "sx" ∷ []))
      ═ ↕ 14 ═ dim 20 "inference runs the arrow backwards: given x, which θ?")
@@ -301,10 +238,10 @@ W = 800
 H = 280
 
 put : ℕ → ℕ → Dia ℕ → Dia ℕ
-put x y = place W H x y
+put = place W H
 
 canvas : List (Dia ℕ) → Dia ℕ
-canvas = foldr (λ d acc → overlay W H acc d) (spacer W H)
+canvas = layers W H
 
 -- a data point with its error bar and caps
 point : ℕ → ℕ × ℕ → List (Dia ℕ)
@@ -365,16 +302,16 @@ foreground = canvas dataPoints
 
 -- a leaf present from the start for `d` ticks (a scene with a window)
 steady : ℕ → Dia ℕ → Anim
-steady d b = hold (ι d) (pure (still b))
+steady d b = hold (ι d) (pure (liftDia b))
 
 -- one frame per step, played one after the other: `suc k` frames from step `s`
 steps : ℕ → ℕ → Anim
-steps zero    s = frame′ 1 (still (frame s))
-steps (suc k) s = frame′ 1 (still (frame s)) ⨾ steps k (suc s)
+steps zero    s = frame′ 1 (liftDia (frame s))
+steps (suc k) s = frame′ 1 (liftDia (frame s)) ⨾ steps k (suc s)
 
 -- the axes all along, the steps over them, the data over the steps
 scan : ℕ → ℕ → Anim
-scan k s = steady (suc k) background ∥ steps k s ∥ steady (suc k) foreground
+scan k s = steady (suc k) background ∥ₛ steps k s ∥ₛ steady (suc k) foreground
 
 nllFormula : M.Math
 nllFormula = M.raw "-2\\ln L(\\mu) = \\sum_i \\frac{(n_i - \\nu_i(\\mu))^2}{\\sigma_i^2} + \\mathrm{const}"
@@ -458,12 +395,12 @@ growFrame s cs = canvas
 
 -- each batch is shown for three ticks, over the axes
 batches : ℕ → List (List ℕ) → Anim
-batches s []             = frame′ 1 (still (spacer W H))
-batches s (cs ∷ [])      = frame′ 3 (still (growFrame s cs))
-batches s (cs ∷ rest)    = frame′ 3 (still (growFrame s cs)) ⨾ batches (suc s) rest
+batches s []             = frame′ 1 (liftDia (spacer W H))
+batches s (cs ∷ [])      = frame′ 3 (liftDia (growFrame s cs))
+batches s (cs ∷ rest)    = frame′ 3 (liftDia (growFrame s cs)) ⨾ batches (suc s) rest
 
 grow : ℕ → List (List ℕ) → Anim
-grow s bs = steady (3 * 12) (canvas axes) ∥ batches s bs
+grow s bs = steady (3 * 12) (canvas axes) ∥ₛ batches s bs
 ```
 
 The LHC animation is in `Slides.Examples.LHC`.
