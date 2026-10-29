@@ -24,10 +24,9 @@ const browser = await chromium.launch({ executablePath: chrome, headless: true }
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
-// the white theme names a highlight.js style that reveal.js 5 and 6 do not ship: not the deck's error
-const known = u => /plugin\/highlight\/github\.css/.test(u);
-page.on('requestfailed', r => { if (!known(r.url())) errors.push('request failed: ' + r.url()); });
-page.on('console', m => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|404/.test(m.text())) errors.push(m.text()); });
+page.on('requestfailed', r => errors.push('request failed: ' + r.url()));
+page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 await page.goto(pathToFileURL(path.join(out, 'collider-local', 'index.html')).href);
 await page.waitForFunction(() => window.Reveal && Reveal.isReady && Reveal.isReady());
 await page.waitForTimeout(800);
@@ -132,6 +131,6 @@ for (const [t, events] of [[0, 20], [2.9, 20], [3, 36], [35, 240]]) {
 
 await page.evaluate(() => Reveal.slide(0));
 await browser.close();
-eq('no console errors', errors, []);
+eq('no console errors or failed loads', errors, []);
 if (failures) { console.log(`${failures} failure(s)`); process.exit(1); }
 console.log('all collider checks passed');

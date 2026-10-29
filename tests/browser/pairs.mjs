@@ -25,12 +25,8 @@ const browser = await chromium.launch({ executablePath: chrome, headless: true }
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
-// `whiteTheme` names the highlight.js stylesheet `github`, which reveal.js 6.0.2 does not ship (404 on
-// the CDN, a missing file locally): that one failed load is a known fault of the theme, not of the deck
-let knownMissing = 0;
-const isKnown = u => u.endsWith('/plugin/highlight/github.css');
-page.on('requestfailed', r => { if (isKnown(r.url())) knownMissing++; });
-page.on('response', r => { if (r.status() === 404 && isKnown(r.url())) knownMissing++; });
+page.on('requestfailed', r => errors.push('request failed: ' + r.url()));
+page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 const deck = process.argv[3] ?? 'pairs';
 console.log(`deck: ${deck}`);
@@ -140,7 +136,7 @@ console.log('-- closing slide');
 await go(10); await wait(300);
 check('slide 11: link', await ev(() => !!Reveal.getCurrentSlide().querySelector('a[href="https://arxiv.org/abs/2605.07972"]')));
 
-check('no page errors (besides the known missing highlight stylesheet)', errors.length <= knownMissing, errors.join('; '));
+eq('no page errors or failed loads', errors, []);
 await browser.close();
 console.log(failures === 0 ? 'all deck tests passed' : `${failures} failure(s)`);
 process.exit(failures === 0 ? 0 : 1);
