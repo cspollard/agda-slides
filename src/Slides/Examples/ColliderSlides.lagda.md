@@ -98,22 +98,29 @@ TODO:
   slide $ do
     heading 2 "a data firehose"
     bullets
-      ( "LHC proton bunches cross 40 million times per second"
-      ∷ "each bunch crossing: ~65 $pp$ collisions (will grow to ~200 in the coming years)"
-      ∷ "~1 billion collisions per second!"
-      ∷ "detectors have many millions of readout channels → 100TB/s of data per experiment"
+      $ "LHC proton bunches cross 40 million times per second"
+      ∷ "~65 $pp$ collisions per bunch crossing (~200 for LHC upgrade)"
+      ∷ "~1 billion per second!"
+      ∷ []
+
+    pause
+    bullets
+      $ "detectors have many millions of readout channels"
+      ∷ "→ 100TB/s of data per experiment"
       ∷ "about the data rate of the global internet"
       ∷ []
-      )
-    classed "callout"
-      (p■ "we cannot keep everything, and we cannot look at everything by eye.")
+
+    pause
+    classed "callout" $ do
+      p■ "we cannot record every bunch crossing,"
+      p■ "and we cannot look at everything by eye."
 ```
 
 ```agda
   slide $ do
     heading 2 "a data firehose"
     bullets
-      ( "to contend with this, ATLAS have custom hardware for the first-level trigger"
+      ( "to contend with this, ATLAS have custom hardware for the \"first-level trigger\""
       ∷ "rate must go from ~40MHz to ~100kHz purely based on specialized hardware algorithms"
       ∷ "huge effort to port ML models to FPGAs (programmable hardware) is paying off"
       ∷ "hls4ml: https://fastmachinelearning.org/hls4ml/ and fastML challenges"
