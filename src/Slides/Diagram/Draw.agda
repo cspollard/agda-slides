@@ -17,9 +17,10 @@
 
 module Slides.Diagram.Draw where
 
+open import Data.Bool using (Bool)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Nat using (ℕ)
-open import Data.Product.Base using (_×_; _,_)
+open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 
 open import Slides.Diagram.Style using (Style)
@@ -31,6 +32,8 @@ record Box (S : Set) : Set where
 data Draw (S : Set) : Set where
   rect   : (x y w h : S) → Style → Draw S
   circle : (cx cy r : S) → Style → Draw S              -- by its centre
+  ellipse : (cx cy rx ry : S) → Style → Draw S         -- by its centre
+  poly   : (closed : Bool) → List (S × S) → Style → Draw S   -- absolute points; closed is a polygon
   line   : (x₁ y₁ x₂ y₂ : S) → Style → Draw S
   arrow  : (x₁ y₁ x₂ y₂ : S) → Style → Draw S          -- the head is at the second point
   label  : (x y : S) (size : ℕ) → String → Style → Draw S   -- centred at a point
@@ -50,10 +53,16 @@ record Layout (S : Set) : Set where
 mapBox : ∀ {S T} → (S → T) → Box S → Box T
 mapBox f (box l t w h) = box (f l) (f t) (f w) (f h)
 
+-- a map of scalars acts on both coordinates of a point
+mapPt : ∀ {S T : Set} → (S → T) → S × S → T × T
+mapPt f p = f (proj₁ p) , f (proj₂ p)
+
 mutual
   mapDraw : ∀ {S T} → (S → T) → Draw S → Draw T
   mapDraw f (rect x y w h s)   = rect (f x) (f y) (f w) (f h) s
   mapDraw f (circle x y r s)   = circle (f x) (f y) (f r) s
+  mapDraw f (ellipse x y a b s) = ellipse (f x) (f y) (f a) (f b) s
+  mapDraw f (poly c ps s)      = poly c (map (mapPt f) ps) s
   mapDraw f (line a b c d s)   = line (f a) (f b) (f c) (f d) s
   mapDraw f (arrow a b c d s)  = arrow (f a) (f b) (f c) (f d) s
   mapDraw f (label x y n t s)  = label (f x) (f y) n t s

@@ -24,7 +24,8 @@ open import Slides.Scalar.Space using (Space)
 module Slides.Diagram.Place {S : Set} (Sp : Space S) where
 
 open import Data.Bool using (if_then_else_)
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.Bool using (Bool)
+open import Data.List using (List; []; _∷_; map; _++_; foldr)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
@@ -42,9 +43,14 @@ dbl x = x + x
 ------------------------------------------------------------------------
 -- Shifting and framing
 
+shiftPt : S → S → S × S → S × S
+shiftPt dx dy p = proj₁ p + dx , proj₂ p + dy
+
 shiftDraw : S → S → Draw S → Draw S
 shiftDraw dx dy (rect x y w h s)   = rect (x + dx) (y + dy) w h s
 shiftDraw dx dy (circle x y r s)   = circle (x + dx) (y + dy) r s
+shiftDraw dx dy (ellipse x y a b s) = ellipse (x + dx) (y + dy) a b s
+shiftDraw dx dy (poly c ps s)     = poly c (map (shiftPt dx dy) ps) s
 shiftDraw dx dy (line a b c d s)   = line (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (arrow a b c d s)  = arrow (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (label x y n t s)  = label (x + dx) (y + dy) n t s
@@ -89,6 +95,21 @@ rectangle w h s = mkLayout w h (rect 0# 0# w h s ∷ []) []
 
 disc : S → Style → Layout S
 disc r s = mkLayout (dbl r) (dbl r) (circle (dbl r) (dbl r) r s ∷ []) []
+
+ellipseL : S → S → Style → Layout S
+ellipseL a b s = mkLayout (dbl a) (dbl b) (ellipse (dbl a) (dbl b) a b s ∷ []) []
+
+-- the extent of a list of coordinates from the origin: the empty list reaches nothing
+extent : List S → S
+extent = foldr _⊔_ 0#
+
+dblPt : S × S → S × S
+dblPt p = dbl (proj₁ p) , dbl (proj₂ p)
+
+-- through the points (units, from the top-left), in the frame that reaches the largest x and y
+polyline : Bool → List (S × S) → Style → Layout S
+polyline c ps s =
+  mkLayout (extent (map proj₁ ps)) (extent (map proj₂ ps)) (poly c (map dblPt ps) s ∷ []) []
 
 -- from the top-left to the bottom-right corner
 segment : S → S → Style → Layout S

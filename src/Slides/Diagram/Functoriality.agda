@@ -37,6 +37,8 @@ mapDia-id (pure ())
 mapDia-id (impure (Rectangle _ _ _ , k))   = refl , λ q → mapDia-id (k q)
 mapDia-id (impure (Segment _ _ _ , k))     = refl , λ q → mapDia-id (k q)
 mapDia-id (impure (Disc _ _ , k))          = refl , λ q → mapDia-id (k q)
+mapDia-id (impure (Ellipse _ _ _ , k))     = refl , λ q → mapDia-id (k q)
+mapDia-id (impure (Polyline c ps s , k))   = cong (λ qs → Polyline c qs s) (ListP.map-id ps) , λ q → mapDia-id (k q)
 mapDia-id (impure (Text _ _ _ _ _ , k))    = refl , λ q → mapDia-id (k q)
 mapDia-id (impure (Path _ _ _ _ , k))      = refl , λ q → mapDia-id (k q)
 mapDia-id (impure (Spacer _ _ , k))        = refl , λ q → mapDia-id (k q)
@@ -55,6 +57,8 @@ mapDia-∘ g f (pure ())
 mapDia-∘ g f (impure (Rectangle _ _ _ , k))   = refl , λ q → mapDia-∘ g f (k q)
 mapDia-∘ g f (impure (Segment _ _ _ , k))     = refl , λ q → mapDia-∘ g f (k q)
 mapDia-∘ g f (impure (Disc _ _ , k))          = refl , λ q → mapDia-∘ g f (k q)
+mapDia-∘ g f (impure (Ellipse _ _ _ , k))     = refl , λ q → mapDia-∘ g f (k q)
+mapDia-∘ g f (impure (Polyline c ps s , k))   = cong (λ qs → Polyline c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps)) , λ q → mapDia-∘ g f (k q)
 mapDia-∘ g f (impure (Text _ _ _ _ _ , k))    = refl , λ q → mapDia-∘ g f (k q)
 mapDia-∘ g f (impure (Path _ _ _ _ , k))      = refl , λ q → mapDia-∘ g f (k q)
 mapDia-∘ g f (impure (Spacer _ _ , k))        = refl , λ q → mapDia-∘ g f (k q)
@@ -81,6 +85,8 @@ mutual
   mapDraw-id : ∀ {S} (d : Draw S) → mapDraw id d ≡ d
   mapDraw-id (rect _ _ _ _ _)  = refl
   mapDraw-id (circle _ _ _ _)  = refl
+  mapDraw-id (ellipse _ _ _ _ _) = refl
+  mapDraw-id (poly c ps s)     = cong (λ qs → poly c qs s) (ListP.map-id ps)
   mapDraw-id (line _ _ _ _ _)  = refl
   mapDraw-id (arrow _ _ _ _ _) = refl
   mapDraw-id (label _ _ _ _ _) = refl
@@ -99,6 +105,8 @@ mutual
   mapDraw-∘ : ∀ {S T U} (g : T → U) (f : S → T) (d : Draw S) → mapDraw g (mapDraw f d) ≡ mapDraw (g ∘ f) d
   mapDraw-∘ g f (rect _ _ _ _ _)  = refl
   mapDraw-∘ g f (circle _ _ _ _)  = refl
+  mapDraw-∘ g f (ellipse _ _ _ _ _) = refl
+  mapDraw-∘ g f (poly c ps s)     = cong (λ qs → poly c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps))
   mapDraw-∘ g f (line _ _ _ _ _)  = refl
   mapDraw-∘ g f (arrow _ _ _ _ _) = refl
   mapDraw-∘ g f (label _ _ _ _ _) = refl

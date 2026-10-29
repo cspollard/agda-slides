@@ -92,11 +92,20 @@ module _ {S : Set} (P : Print S) where
   lineEl x₁ y₁ x₂ y₂ extra =
     element "line" (("x1" , pos x₁) ∷ ("y1" , pos y₁) ∷ ("x2" , pos x₂) ∷ ("y2" , pos y₂) ∷ extra) []
 
+  -- "x,y x,y ..." as SVG wants the points of a polyline
+  points : List (S × S) → String
+  points []             = ""
+  points ((x , y) ∷ []) = pos x ++ˢ "," ++ˢ pos y
+  points ((x , y) ∷ ps) = pos x ++ˢ "," ++ˢ pos y ++ˢ " " ++ˢ points ps
+
   mutual
     renderDraw : String → Draw S → XMLM A
     renderDraw n (rect x y w h s)  =
       SVG.rect (pos x) (pos y) (unit w) (unit h) (opt "rx" (Maybe.map show (Style.rx s)) ++ shapeAttrs s)
     renderDraw n (circle x y r s)  = SVG.circle (pos x) (pos y) (unit r) (shapeAttrs s)
+    renderDraw n (ellipse x y a b s) =
+      element "ellipse" (("cx" , pos x) ∷ ("cy" , pos y) ∷ ("rx" , unit a) ∷ ("ry" , unit b) ∷ shapeAttrs s) []
+    renderDraw n (poly c ps s)     = (if c then SVG.polygon else SVG.polyline) (points ps) (shapeAttrs s)
     renderDraw n (line a b c d s)  = lineEl a b c d (shapeAttrs s)
     renderDraw n (arrow a b c d s) =
       lineEl a b c d (shapeAttrs s ++ (("marker-end" , "url(#" ++ˢ markerId n ++ˢ ")") ∷ []))

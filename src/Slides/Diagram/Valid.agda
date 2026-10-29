@@ -58,11 +58,18 @@ nn+ pa pb = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono pa pb)
 nn⊔ˡ : ∀ {a b} → NN a → NN (a ⊔ b)
 nn⊔ˡ pa = ≤-trans pa (⊔-ub₁ _ _)
 
+-- the extent of any list of coordinates is non-negative: it is at least the unit `0`
+nn-extent : ∀ xs → NN (P.extent xs)
+nn-extent []       = ≤-refl
+nn-extent (x ∷ xs) = ≤-trans (nn-extent xs) (⊔-ub₂ _ _)
+
 okH : Handler (DiagramC S) Set
 okH (Rectangle w h _)     k = NN w × NN h
 okH (Segment w h _)       k = NN w × NN h
 okH (Disc r _)            k = NN r
 okH (Text w h _ _ _)      k = NN w × NN h
+okH (Ellipse a b _)       k = NN a × NN b
+okH (Polyline _ _ _)      k = ⊤                    -- the frame reaches 0 and every point
 okH (Path w h _ _)        k = NN w × NN h
 okH (Spacer w h)          k = NN w × NN h
 okH (Beside _)            k = k zero × k (suc zero)
@@ -88,6 +95,8 @@ valid-size = pfold-rel (λ s v → v → NN (proj₁ s) × NN (proj₂ s)) hom (
     hom (Segment _ _ _)   k k′ e p = p
     hom (Disc _ _)        k k′ e p = nn+ p p , nn+ p p
     hom (Text _ _ _ _ _)  k k′ e p = p
+    hom (Ellipse _ _ _)   k k′ e (p , q) = nn+ p p , nn+ q q
+    hom (Polyline _ ps _) k k′ e _ = nn-extent (map proj₁ ps) , nn-extent (map proj₂ ps)
     hom (Path _ _ _ _)    k k′ e p = p
     hom (Spacer _ _)      k k′ e p = p
     hom (Beside _)        k k′ e (p , q) = nn+ (proj₁ (e zero p)) (proj₁ (e (suc zero) q)) , nn⊔ˡ (proj₂ (e zero p))

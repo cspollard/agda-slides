@@ -108,6 +108,8 @@ names-fusion = pfold-rel (λ l u → anchorNames l ≡ proj₁ u) hom (λ ())
     hom (Rectangle _ _ _) L U e = refl
     hom (Segment _ _ _)   L U e = refl
     hom (Disc _ _)        L U e = refl
+    hom (Ellipse _ _ _)   L U e = refl
+    hom (Polyline _ _ _)  L U e = refl
     hom (Text _ _ _ _ _)  L U e = refl
     hom (Path _ _ _ _)    L U e = refl
     hom (Spacer _ _)      L U e = refl
@@ -197,6 +199,8 @@ private
   clean (Rectangle _ _ _) U h ()
   clean (Segment _ _ _)   U h ()
   clean (Disc _ _)        U h ()
+  clean (Ellipse _ _ _)   U h ()
+  clean (Polyline _ _ _)  U h ()
   clean (Text _ _ _ _ _)  U h ()
   clean (Path _ _ _ _)    U h ()
   clean (Spacer _ _)      U h ()
@@ -221,6 +225,8 @@ soundness (impure (Connect a pa b pb s , k)) h =
 soundness (impure (Rectangle _ _ _ , k)) h = λ ()
 soundness (impure (Segment _ _ _ , k)) h = λ ()
 soundness (impure (Disc _ _ , k)) h = λ ()
+soundness (impure (Ellipse _ _ _ , k)) h = λ ()
+soundness (impure (Polyline _ _ _ , k)) h = λ ()
 soundness (impure (Text _ _ _ _ _ , k)) h = λ ()
 soundness (impure (Path _ _ _ _ , k)) h = λ ()
 soundness (impure (Spacer _ _ , k)) h = λ ()

@@ -45,6 +45,8 @@ usageH : ∀ {S} → Handler (DiagramC S) Usage
 usageH (Rectangle _ _ _)   k = [] , []
 usageH (Segment _ _ _)     k = [] , []
 usageH (Disc _ _)          k = [] , []
+usageH (Ellipse _ _ _)     k = [] , []
+usageH (Polyline _ _ _)    k = [] , []
 usageH (Text _ _ _ _ _)    k = [] , []
 usageH (Path _ _ _ _)      k = [] , []
 usageH (Spacer _ _)        k = [] , []
@@ -70,6 +72,8 @@ usageCong : ∀ {S} → Congruent (DiagramC S) (≡P.setoid Usage) usageH
 usageCong (Rectangle _ _ _)   e = refl
 usageCong (Segment _ _ _)     e = refl
 usageCong (Disc _ _)          e = refl
+usageCong (Ellipse _ _ _)     e = refl
+usageCong (Polyline _ _ _)    e = refl
 usageCong (Text _ _ _ _ _)    e = refl
 usageCong (Path _ _ _ _)      e = refl
 usageCong (Spacer _ _)        e = refl
@@ -93,6 +97,8 @@ usage-mapDia f d =
     same (Rectangle _ _ _)   k = refl
     same (Segment _ _ _)     k = refl
     same (Disc _ _)          k = refl
+    same (Ellipse _ _ _)     k = refl
+    same (Polyline _ _ _)    k = refl
     same (Text _ _ _ _ _)    k = refl
     same (Path _ _ _ _)      k = refl
     same (Spacer _ _)        k = refl

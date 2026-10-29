@@ -30,7 +30,11 @@ open import Container.Interpret.Plain using (Handler; pfold; pfold-rel)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Overlay using (Overlays)
 import Data.List.Properties as ListP
-open import Slides.Diagram.Syntax
+open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Membership.Propositional.Properties using (∈-map⁺)
+open import Data.List.Relation.Unary.Any using (here; there)
+open import Slides.Diagram.Syntax hiding (ellipse)
+import Slides.Diagram.Syntax as D
 open Space Sp
 import Slides.Diagram.Place Sp as P
 open P using (dbl)
@@ -43,6 +47,8 @@ sizeH : Handler (DiagramC S) (S × S)
 sizeH (Rectangle w h _) k = w , h
 sizeH (Segment w h _)   k = w , h
 sizeH (Disc r _)        k = dbl r , dbl r
+sizeH (Ellipse a b _)   k = dbl a , dbl b
+sizeH (Polyline _ ps _) k = P.extent (map proj₁ ps) , P.extent (map proj₂ ps)
 sizeH (Text w h _ _ _)  k = w , h
 sizeH (Path w h _ _)    k = w , h
 sizeH (Spacer w h)      k = w , h
@@ -68,6 +74,8 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
     hom (Rectangle _ _ _) k k′ e = refl
     hom (Segment _ _ _)   k k′ e = refl
     hom (Disc _ _)        k k′ e = refl
+    hom (Ellipse _ _ _)   k k′ e = refl
+    hom (Polyline _ _ _)  k k′ e = refl
     hom (Text _ _ _ _ _)  k k′ e = refl
     hom (Path _ _ _ _)    k k′ e = refl
     hom (Spacer _ _)      k k′ e = refl
@@ -120,6 +128,32 @@ size-atop-comm a b = cong₂ _,_ (⊔-comm _ _) (⊔-comm _ _)
 size-labels : ∀ l d → size (labelAbove l d) ≡ size (labelBelow l d)
 size-labels l d = refl
 
+-- Ellipses and polylines.  A disc is the ellipse with equal radii; a polygon is the polyline with
+-- the same points (closing changes the ink, not the frame); the frame of a polyline is the extent
+-- of its points from the origin (no points, no extent) and reaches every point.
+size-ellipse : ∀ a b s → size (D.ellipse a b s) ≡ (dbl a , dbl b)
+size-ellipse a b s = refl
+
+size-disc-ellipse : ∀ r s → size (disc r s) ≡ size (D.ellipse r r s)
+size-disc-ellipse r s = refl
+
+size-polyline-nil : ∀ s → size (polyline [] s) ≡ (0# , 0#)
+size-polyline-nil s = refl
+
+size-polyline-cons : ∀ x y ps s → size (polyline ((x , y) ∷ ps) s) ≡ (x ⊔ proj₁ (size (polyline ps s)) , y ⊔ proj₂ (size (polyline ps s)))
+size-polyline-cons x y ps s = refl
+
+size-polygon : ∀ ps s → size (polygon ps s) ≡ size (polyline ps s)
+size-polygon ps s = refl
+
+extent-ub : ∀ {x xs} → x ∈ xs → x ≤ P.extent xs
+extent-ub (here refl) = ⊔-ub₁ _ _
+extent-ub (there m)   = ≤-trans (extent-ub m) (⊔-ub₂ _ _)
+
+polyline-reaches : ∀ p ps s → p ∈ ps →
+  proj₁ p ≤ proj₁ (size (polyline ps s)) × proj₂ p ≤ proj₂ (size (polyline ps s))
+polyline-reaches p ps s m = extent-ub (∈-map⁺ proj₁ m) , extent-ub (∈-map⁺ proj₂ m)
+
 -- annotations are invisible to size
 size-named : ∀ n d → size (named n d) ≡ size d
 size-named n d = refl
@@ -133,6 +167,8 @@ size-connect a pa b pb s d = refl
 shiftDraw-zero : ∀ d → P.shiftDraw 0# 0# d ≡ d
 shiftDraw-zero (rect x y w h s)   rewrite +-idʳ x | +-idʳ y = refl
 shiftDraw-zero (circle x y r s)   rewrite +-idʳ x | +-idʳ y = refl
+shiftDraw-zero (ellipse x y a b s) rewrite +-idʳ x | +-idʳ y = refl
+shiftDraw-zero (poly c ps s)      = cong (λ qs → poly c qs s) (trans (ListP.map-cong (λ p → cong₂ _,_ (+-idʳ (proj₁ p)) (+-idʳ (proj₂ p))) ps) (ListP.map-id ps))
 shiftDraw-zero (line a b c d s)   rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
 shiftDraw-zero (arrow a b c d s)  rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
 shiftDraw-zero (label x y n t s)  rewrite +-idʳ x | +-idʳ y = refl
@@ -142,6 +178,8 @@ shiftDraw-zero (group x y ds)     rewrite +-idʳ x | +-idʳ y = refl
 shiftDraw-shift : ∀ a b c d e → P.shiftDraw a b (P.shiftDraw c d e) ≡ P.shiftDraw (c + a) (d + b) e
 shiftDraw-shift a b c d (rect x y w h s)   rewrite +-assoc x c a | +-assoc y d b = refl
 shiftDraw-shift a b c d (circle x y r s)   rewrite +-assoc x c a | +-assoc y d b = refl
+shiftDraw-shift a b c d (ellipse x y p q s) rewrite +-assoc x c a | +-assoc y d b = refl
+shiftDraw-shift a b c d (poly cl ps s)     = cong (λ qs → poly cl qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps))
 shiftDraw-shift a b c d (line x y z u s)   rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
 shiftDraw-shift a b c d (arrow x y z u s)  rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
 shiftDraw-shift a b c d (label x y n t s)  rewrite +-assoc x c a | +-assoc y d b = refl
