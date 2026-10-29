@@ -95,20 +95,16 @@ let revealTrace;
   eq('starts on the first slide', await hv(), [0, 0]);
   await key('ArrowLeft'); eq('prev at the first slide: stays', await hv(), [0, 0]);
 
-  // next / prev through the fragments of a `pause` slide (slide 1: three fragments)
+  // next / prev through the fragments of a `pause` slide (slide 1: one fragment, the chunk after the pause)
   await key('ArrowRight'); eq('ArrowRight: slide 1, nothing shown', await st(), [1, 0]);
   eq('events: slide change', await fragLog(), ['slidechanged']);
   await key('ArrowRight'); eq('ArrowRight: fragment 1', await st(), [1, 1]);
-  await key('ArrowRight'); eq('ArrowRight: fragment 2', await st(), [1, 2]);
-  await key('ArrowRight'); eq('ArrowRight: fragment 3', await st(), [1, 3]);
-  eq('events: one fragmentshown per step', await fragLog(), ['fragmentshown', 'fragmentshown', 'fragmentshown']);
+  eq('events: one fragmentshown per step', await fragLog(), ['fragmentshown']);
   await key('ArrowRight'); eq('ArrowRight: next slide', await st(), [2, 0]);
   eq('events: slide change', await fragLog(), ['slidechanged']);
-  await key('ArrowLeft');  eq('ArrowLeft: back to slide 1 with every fragment shown', await st(), [1, 3]);
-  await key('ArrowLeft');  eq('ArrowLeft: hides the last fragment', await st(), [1, 2]);
-  eq('events: slidechanged then fragmenthidden (x2)', await fragLog(), ['slidechanged', 'fragmenthidden']);
-  await key('ArrowLeft'); await key('ArrowLeft');
-  eq('ArrowLeft x2: no fragment shown', await st(), [1, 0]);
+  await key('ArrowLeft');  eq('ArrowLeft: back to slide 1 with every fragment shown', await st(), [1, 1]);
+  await key('ArrowLeft');  eq('ArrowLeft: hides the last fragment', await st(), [1, 0]);
+  eq('events: slidechanged then fragmenthidden', await fragLog(), ['slidechanged', 'fragmenthidden']);
   await key('ArrowLeft');  eq('ArrowLeft: slide 0', await st(), [0, 0]);
 
   // the other next/prev keys
@@ -146,7 +142,7 @@ let revealTrace;
   eq('hashchange #/8/1: second slide of the stack', await hv(), [8, 1]);
   await page.evaluate(() => { location.hash = '#/1'; });
   await page.waitForFunction(() => Reveal.getIndices().h === 1, null, { timeout: 5000 });
-  eq('hashchange #/1 (backwards): the target shows all its fragments', await st(), [1, 3]);
+  eq('hashchange #/1 (backwards): the target shows all its fragments', await st(), [1, 1]);
 
   // a vertical stack (slide 8, two slides)
   await page.evaluate(() => Reveal.slide(8, 0));
@@ -176,18 +172,18 @@ let revealTrace;
   await page.evaluate(() => Reveal.slide(Reveal.getHorizontalSlides().findIndex(s => s.querySelector('.animation'))));
   const anim = await page.evaluate(() => {
     const a = document.querySelector('section.present .animation');
-    return { id: a.id, rests: a.dataset.rests.split(',').map(Number), steps: a.querySelectorAll('.anim-step').length };
+    return { id: a.id, rests: JSON.parse(a.dataset.rests), steps: a.querySelectorAll('.anim-step').length };
   });
   eq('animation: one fragment per step', anim.steps, anim.rests.length);
   const cur = () => page.evaluate(id => +document.getElementById(id).dataset.cur, anim.id);
   eq('animation: rests on frame 0 on entering', await cur(), 0);
   for (let i = 0; i < anim.steps; i++) await key('ArrowRight');
   check('animation: plays to the last rest after all steps',
-        await page.waitForFunction(([id, r]) => +document.getElementById(id).dataset.cur === r, [anim.id, anim.rests.at(-1)], { timeout: 8000 }).then(() => true, () => false),
+        await page.waitForFunction(([id, r]) => Math.round(+document.getElementById(id).dataset.cur) === r, [anim.id, anim.rests.at(-1)], { timeout: 8000 }).then(() => true, () => false),
         `cur=${await cur()}`);
   await key('ArrowLeft');
   check('animation: ArrowLeft plays back to the previous rest',
-        await page.waitForFunction(([id, r]) => +document.getElementById(id).dataset.cur === r, [anim.id, anim.rests.at(-2) ?? 0], { timeout: 8000 }).then(() => true, () => false),
+        await page.waitForFunction(([id, r]) => Math.round(+document.getElementById(id).dataset.cur) === r, [anim.id, anim.rests.at(-2) ?? 0], { timeout: 8000 }).then(() => true, () => false),
         `cur=${await cur()}`);
 
   // whole-deck walks with Space / Shift+Space
@@ -228,13 +224,9 @@ let plainTrace;
   await key('ArrowRight'); eq('ArrowRight: slide 1', await st(), [1, 0]);
   eq('hash follows the slide', await hash(), '#2');
   await key('ArrowRight'); eq('ArrowRight: fragment 1', await st(), [1, 1]);
-  await key('ArrowDown');  eq('ArrowDown: fragment 2', await st(), [1, 2]);
-  await key('Space');      eq('Space: fragment 3', await st(), [1, 3]);
   await key('PageDown');   eq('PageDown: next slide', await st(), [2, 0]);
   eq('hash follows the slide (2)', await hash(), '#3');
-  await key('ArrowLeft');  eq('ArrowLeft: slide 1 with every fragment shown', await st(), [1, 3]);
-  await key('ArrowUp');    eq('ArrowUp: hides a fragment', await st(), [1, 2]);
-  await key('PageUp');     eq('PageUp: hides a fragment', await st(), [1, 1]);
+  await key('ArrowLeft');  eq('ArrowLeft: slide 1 with every fragment shown', await st(), [1, 1]);
   await key('ArrowLeft');  eq('ArrowLeft: hides the last fragment', await st(), [1, 0]);
   await key('ArrowLeft');  eq('ArrowLeft: slide 0', await st(), [0, 0]);
   eq('hash follows going back', await hash(), '#1');

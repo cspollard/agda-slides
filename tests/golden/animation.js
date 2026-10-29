@@ -5,7 +5,7 @@
 //   var player = SlidesAnimation(function (a) { return <is animation element `a`'s slide shown> });
 //
 // An animation (`.animation`, see `Slides.Backend.Animation`) ships the *event list* of its scene
-// in `data-events`: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
+// as JSON in its `script.events` child: onset, span, driver and leaf of each event, the leaf a diagram whose scalars
 // are expression trees over one variable.  The page evaluates it at a real time `t` (in ticks):
 // the events active at `t` are laid out at their parameter (the value of the driver at the event's
 // local time, 0 without one), overlaid in the join of their frames, and drawn as SVG.  This is
@@ -16,14 +16,25 @@
 //   scalar/driver term   null (the variable), a number, or [op, args...]:
 //     [0,n,d] the fraction n/d  2 plus  3 max  4 minus  5 [5,a,b,x,y] x if a<=b else y
 //     6 [6,p,a] p percent of a  7 hold (floor)  8 ratio  9 [9,r,a,b] a+r(b-a)  10 [10,e,a] easing
-//     e of a (0 linear, 1 step, 2 step start)
+//     e of a (0 linear, 1 step, 2 step start, [x1,y1,x2,y2] a cubic Bezier in hundredths)
 //   diagram              [op, ...] with op one of R S D T P _ b a @ l L p o n c (see `lay`)
 //   style                {stroke, fill, cls, id, dash, anchor, sw, rx, op}
 function SlidesAnimation(shown) {
   var SVGNS = 'http://www.w3.org/2000/svg';
   function fl(x) { return Math.floor(x + 1e-9); }
   function rat(x) { return typeof x === 'number' ? x : x[0] / x[1]; }
-  function ease(e, r) { return e === 0 ? r : e === 1 ? (r >= 1 ? 1 : 0) : (r <= 0 ? 0 : 1); }
+  // a cubic Bezier [x1, y1, x2, y2] in hundredths: the parameter with x(s) = r by 16 bisection steps
+  function cubic(c1, c2, s) { var u = 1 - s; return 3 * u * u * s * c1 + 3 * u * s * s * c2 + s * s * s; }
+  function ease(e, r) {
+    if (e === 0) return r;
+    if (e === 1) return r >= 1 ? 1 : 0;
+    if (e === 2) return r <= 0 ? 0 : 1;
+    if (r <= 0) return 0;
+    if (r >= 1) return 1;
+    var lo = 0, hi = 1, i;
+    for (i = 0; i < 16; i++) { if (cubic(e[0] / 100, e[2] / 100, (lo + hi) / 2) <= r) lo = (lo + hi) / 2; else hi = (lo + hi) / 2; }
+    return cubic(e[1] / 100, e[3] / 100, (lo + hi) / 2);
+  }
   function ev(e, v) {
     if (e === null) return v;
     if (typeof e === 'number') return e;
@@ -182,7 +193,7 @@ function SlidesAnimation(shown) {
     L.ds.forEach(function (d) { svg.appendChild(draw(d, name)); });
   }
   // ---- the player
-  function events(a) { return a._e || (a._e = JSON.parse(a.dataset.events)); }
+  function events(a) { return a._e || (a._e = JSON.parse(a.querySelector(':scope > script.events').textContent)); }
   function frame(a, t) { paint(a, frameAt(events(a), t)); }
   function target(a) {
     var n = a.querySelectorAll('.anim-step.visible').length;
@@ -191,9 +202,11 @@ function SlidesAnimation(shown) {
     // a step rests at the last instant of its act: at the rest itself the next act has begun
     return rat(r[Math.min(n, r.length) - 1]) - 1e-6;
   }
+  // a loop shows the time `phase`; steps over a loop of `data-phases` phases show the step time
+  // within the current phase (a phase is `duration / phases` ticks long)
   function draw1(a) {
-    var loop = a.getAttribute('data-loop') !== null;
-    frame(a, loop ? +(a.dataset.phase || 0) : +(a.dataset.cur || 0));
+    var loop = a.getAttribute('data-loop') !== null, n = +(a.dataset.phases || 0), cur = +(a.dataset.cur || 0);
+    frame(a, !loop ? cur : n ? Math.floor(+(a.dataset.phase || 0)) * (+a.dataset.duration / n) + cur : +(a.dataset.phase || 0));
   }
   function show(a, t) { a.dataset.cur = String(t); draw1(a); }
   // one tick every `data-ms` milliseconds, on every animation frame
@@ -213,7 +226,7 @@ function SlidesAnimation(shown) {
   }
   // a loop runs while its slide is shown: the phase is the real time in ticks modulo its duration
   function spin(a) {
-    var d = +a.dataset.duration, ms = Math.max(+a.dataset.ms, 1), t0 = null;
+    var d = +(a.dataset.phases || a.dataset.duration), ms = Math.max(+a.dataset.ms, 1), t0 = null;
     requestAnimationFrame(function go(now) {
       if (shown(a)) {
         if (t0 === null) t0 = now;

@@ -35,4 +35,16 @@ for f in sorted(glob.glob(src + '/**/*Main.agda', recursive=True)):
     for x in sorted(c):
         if re.search(r'\.Properties(\.|$)', x) or x.startswith('Slides.Anim.Assembly'):
             bad += 1; print(f'  ERROR: {x} (imported by {via[x]})')
+
+# theory: modules no executable reaches are the proofs and the laws of the design (`make check`
+# checks them; nothing ships them).  Listed so that dead code shows up in review.
+allm = {os.path.relpath(os.path.join(d, f), src)[:-5].replace('/', '.')
+        for d, _, fs in os.walk(src) for f in fs if f.endswith('.agda')}
+shipped = set()
+for f in glob.glob(src + '/**/*Main.agda', recursive=True):
+    shipped |= closure(os.path.relpath(f, src)[:-5].replace('/', '.'))[0]
+theory = sorted(m for m in allm - shipped if not m.endswith('Main'))
+print(f'not shipped (theory): {len(theory)} modules')
+if '-v' in sys.argv:
+    for m in theory: print('  ' + m)
 sys.exit(1 if bad else 0)

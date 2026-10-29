@@ -125,10 +125,29 @@ test-labels: labels
 	cd tests/browser && npm install --silent
 	node tests/browser/labels.mjs out
 
+# Programs that must not typecheck (tests/negative/*.agda): a resource a deck did not declare,
+# animation phases of unequal length, two commands bound to one key, a deck presented on a backend
+# that binds none of `Nav`.  Each file says `-- EXPECT: <regex>`, the message of the rejection (the
+# unsolved check, or the false equation); tests/negative/controls/*.agda are the valid
+# counterparts and MUST typecheck, so a rejection cannot come from a typo.
+.PHONY: test-negative
+test-negative:
+	@for f in tests/negative/*.agda; do \
+	  pat=$$(sed -n 's/^-- EXPECT: //p' $$f); \
+	  [ -n "$$pat" ] || { echo "FAIL $$f has no EXPECT line"; exit 1; }; \
+	  if out=$$($(AGDA) -i tests/negative $$f 2>&1); then \
+	    echo "FAIL $$f typechecks but should not"; exit 1; \
+	  elif echo "$$out" | grep -q "$$pat"; then echo "ok   $$f is rejected"; \
+	  else echo "FAIL $$f failed for another reason:"; echo "$$out"; exit 1; fi; \
+	done
+	@for f in tests/negative/controls/*.agda; do \
+	  $(AGDA) -i tests/negative/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
+
 # Golden-file tests (run `make example talk plain showcase` first), then the browser tests.
 .PHONY: test test-browser
 test:
 	python3 tests/check_closure.py
+	python3 tests/check_plain_keys.py
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
@@ -142,6 +161,9 @@ test:
 	diff -u tests/golden/animation.js out/plain/animation.js
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
+	diff -u tests/golden/pairs.index.html out/pairs/index.html
+	diff -u tests/golden/pairs.init.js out/pairs/init.js
+	diff -u tests/golden/pairs.css out/pairs/pairs.css
 
 test-browser:
 	python3 tests/check_reveal.py out/intro/index.html
@@ -165,3 +187,34 @@ animref:
 test-anim-ref: animref
 	cd tests/browser && npm install --silent
 	node tests/browser/anim-ref.mjs out
+
+# Declared figures exist next to the rendered decks (run `make talk plain` first).
+.PHONY: check-resources
+check-resources:
+	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/talk
+	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/plain
+
+# Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
+.PHONY: test-playwright test-anim test-plain-anim test-nav test-browser-all
+test-playwright:
+	cd tests/browser && npm install --silent
+	node tests/browser/run.mjs out
+
+# Step through the animation slides of the intro deck (needs `make example`).
+test-anim:
+	cd tests/browser && npm install --silent
+	node tests/browser/anim.mjs out
+
+# Play the animations of the standalone backend (needs `make showcase`).
+test-plain-anim:
+	cd tests/browser && npm install --silent
+	node tests/browser/plain-anim.mjs out
+
+# Pin how decks are navigated (next/prev/first/last/goto/overview, fragments, both backends, and
+# that the two backends walk a deck identically).  Needs `make example talk plain showcase`.
+test-nav:
+	cd tests/browser && npm install --silent
+	node tests/browser/nav.mjs out
+
+# Every browser test that needs only local files (test-pairs needs a CDN, or `make pairs-local`).
+test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav test-keys test-labels test-anim-ref

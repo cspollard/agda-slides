@@ -33,8 +33,8 @@ if "lowered" in path:
     check("lowered deck: animations became placeholders", source.count('[animation]') == 2)
 if "still" in path:
     check("still deck: no animation elements", 'class="animation' not in source)
-    check("still deck: animations became their final frames",
-          'id="steps-2"' in source and 'id="blink-0"' in source)
-    check("still deck: only the final frame is kept",
-          'id="steps-0"' not in source and 'id="steps-1"' not in source)
+    check("still deck: animations became stills (a diagram each)",
+          'id="steps"' in source and 'id="blink"' in source)
+    check("still deck: only the final frame is kept (the last word of the steps, the first of the loop)",
+          '>three</text>' in source and '>one</text>' not in source and '>two</text>' not in source and '>tick</text>' in source and '>tock</text>' not in source)
 sys.exit(1 if failures else 0)
