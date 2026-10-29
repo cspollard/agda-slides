@@ -53,6 +53,8 @@ open import Slides.Scalar.Model.Rat
 ι-pct-fails ()
 ι-hold : ∀ n → ι (Time.hold natTime n) ≡ Time.hold ratTime (ι n)
 ι-hold = IsTimeHom.h-hold ι-time-hom
+ι-rem : ∀ n → ι (Time.Rem.rem natTime natSub n) ≡ Time.Rem.rem ratTime ratSub (ι n)
+ι-rem n = IsTimeHom.h-rem ι-time-hom natSub ratSub {n} ℕ.z≤n
 
 -- Lowering
 

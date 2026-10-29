@@ -78,6 +78,11 @@ record IsTimeHom {T T′} (Tm : Time T) (Tn : Time T′) (h : T → T′) : Set 
   h-hold : ∀ x → h (A.hold x) ≡ B.hold (h x)
   h-hold x = trans (h-tick _) (cong B.tick (sym (h-floor x)))
 
+  -- ... and the remainder within the tick, where the instant is non-negative (so `hold x ≤ x`)
+  h-rem : (SA : Sub A.ord) (SB : Sub B.ord) → ∀ {x} → A.0# A.≤ x →
+          h (A.Rem.rem SA x) ≡ B.Rem.rem SB (h x)
+  h-rem SA SB 0≤x = trans (IsOrdMonHom.h-sub ord SA SB (A.hold-≤ 0≤x)) (cong (λ y → Sub._-_ SB (h _) y) (h-hold _))
+
 -- The signature
 
 data TimeOp : Set where
