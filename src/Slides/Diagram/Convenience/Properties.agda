@@ -3,7 +3,8 @@
 -- The laws of the convenience combinators, from the laws of the connectives
 -- (`Slides.Diagram.Assoc`, `Slides.Diagram.Laws`): joining lists with a gap is compatible with
 -- appending them, so a row (column) may be cut anywhere into two rows (columns) with a gap
--- between; and a gap has the size it says.
+-- between; a gap has the size it says; gaps add; and, for a valid diagram, zero margins vanish
+-- (`Slides.Diagram.Valid`: the layout of the empty diagram is a unit).
 
 open import Data.Nat.Base using (ℕ)
 open import Slides.Scalar.Space using (Space)
@@ -11,7 +12,7 @@ open import Slides.Scalar.Space using (Space)
 module Slides.Diagram.Convenience.Properties {S : Set} (Sp : Space S) (fromℕ : ℕ → S) where
 
 open import Data.List.Base using (List; []; _∷_; _++_)
-open import Data.Product.Base using (_,_)
+open import Data.Product.Base using (_,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 
 open Space Sp
@@ -21,6 +22,9 @@ open import Slides.Diagram.Layout Sp using (layout)
 open import Slides.Diagram.Laws Sp using (size)
 open import Slides.Diagram.Assoc Sp using (besideA-assoc; aboveA-assoc)
 import Slides.Diagram.Convenience as C
+import Slides.Diagram.Valid Sp as V
+open C using (_∥_; _═_; _⊙_)
+open import Slides.Diagram.Geometry using (middle; centred)
 open C.ConvenienceWith 0# fromℕ
 
 -- a gap is as wide (high) as it says
@@ -49,3 +53,25 @@ vcat-++ al g x (x′ ∷ xs) y ys =
     (sym (trans (aboveA-assoc al (layout x) (P.aboveA al (layout (↕ g)) (layout (vcatA al g (x′ ∷ xs)))) _)
                 (cong (P.aboveA al (layout x))
                       (aboveA-assoc al (layout (↕ g)) (layout (vcatA al g (x′ ∷ xs))) _))))
+
+-- gaps add, as layouts
+gap-∥ : ∀ a b → layout (↔ a ∥ ↔ b) ≡ layout (↔ (a + b))
+gap-∥ a b = V.gap-beside middle a b
+
+gap-═ : ∀ a b → layout (↕ a ═ ↕ b) ≡ layout (↕ (a + b))
+gap-═ a b = V.gap-above centred a b
+
+gap-⊙ : ∀ a b → layout (↔ a ⊙ ↔ b) ≡ layout (↔ (a ⊔ b))
+gap-⊙ a b rewrite ⊔-≥ (≤-refl {0#}) = refl
+
+-- zero margins vanish from a valid diagram
+margin-zero : ∀ d → V.Valid d → layout (margin 0# 0# 0# 0# d) ≡ layout d
+margin-zero d v =
+  trans (cong (P.besideA middle E) (trans (cong (λ x → P.besideA middle x E) col) (V.besideA-unitʳ middle L h)))
+        (V.besideA-unitˡ middle L h)
+  where
+    L = layout d
+    E = V.empty
+    w = proj₁ (V.valid-layout d v)
+    h = proj₂ (V.valid-layout d v)
+    col = trans (cong (P.aboveA centred E) (V.aboveA-unitʳ centred L w)) (V.aboveA-unitˡ centred L w)
