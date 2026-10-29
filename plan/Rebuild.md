@@ -17,9 +17,13 @@ against `docs/Objects.md`, consulting the legacy only through `docs/Legacy.md`.
   named hypotheses; generic facts in `Container.*`, never per language.
 - Parallelism: steps 2 and 3 are independent after step 1; steps 4 and 5 after both; 6 after 5.
 
-## Status (2026-10-28)
-Steps 0 to 5 are done and merged (Step 5: Program 645, Deck/Content 793, of 1600; 26 s cold): container lemmas +194 lines (budget 300), scalar theories 700 (700),
-Diagram and Layout 1819 (2500), Scene 1490 (2000); `make check` clean, 22 s cold.  Step 5 (Program, Deck) on branch `rebuild-step5`: Program 645 lines, Deck 793 (1438 of 1600).
+## Status (2026-10-29)
+Steps 0 to 6 are done and merged; `make check` clean.  Lines (budget): container lemmas +194 (300), scalar
+theories 700 (700), Diagram and Layout 1819 (2500), Scene 1490 (2000), Program 645 and Deck 793 (1600),
+Step 5b net -6 (generic `pfold-hom`, `pfold-rel-translate`; overlay semigroup and hom records merged),
+Step 6 backends 1918 Agda + `assets/animation.js` 256 (2500).  Talk and Plain byte-identical to goldens;
+Intro, Showcase, Labels, Keys, AnimRef work; browser tests and `anim-ref` pass.  Next: Step 7 (Pairs,
+PairsHero, Collider, remaining tests and lowerings).
 
 ## Steps
 0. **Archive and clean (done in the commit that adds this file).**  Legacy tagged and checked
