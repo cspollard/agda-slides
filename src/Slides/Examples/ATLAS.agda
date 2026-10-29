@@ -41,7 +41,8 @@ module Slides.Examples.ATLAS where
 
 open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; -_ to negᶻ; _≤ᵇ_ to _≤ᶻᵇ_)
+open import Data.Integer using (ℤ; +_) renaming (_*_ to _*ᶻ_; -_ to negᶻ)
+open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ; 0ℚᵘ; -_) renaming (_≤ᵇ_ to _≤ᵠᵇ_)
 open import Data.List using (List; []; _∷_; map; reverse; applyUpTo; concat; foldr; _++_)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _∸_; _/_; _%_; _<ᵇ_)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
@@ -49,6 +50,7 @@ open import Data.String using (String)
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; anchored)
+open import Slides.Trig using (fromℕ)
 open import Slides.Three.Point
 open import Slides.Three.View
 
@@ -64,6 +66,10 @@ CY = 350
 -- half the length of the barrel, in units
 half : ℕ
 half = 180
+
+-- the order of the polynomials that place the cells (5: within 3·10⁻⁴, a third of a pixel at this size)
+order : ℕ
+order = 5
 
 put : ℕ → ℕ → Dia ℕ → Dia ℕ
 put = place W H
@@ -154,30 +160,33 @@ record Layer : Set where
 module Parts (T : Theme) (V : View) where
   open Theme T
 
-  -- the point on the page, and the depth, of the point at radius r, angle a, and z in hundredths
-  pt : ℕ → ℕ → ℤ → ℕ × ℕ
-  pt r a z = project CX CY V (cyl r a z)
+  -- the point on the page, and the depth, of the point at radius r, angle a (in 1/1024 turns), and z
+  spot : ℕ → ℕ → ℚᵘ → Point
+  spot r a z = cyl order (fromℕ r) (mkℚᵘ (+ a) 1023) z
 
-  dp : ℕ → ℕ → ℤ → ℤ
-  dp r a z = depth V (cyl r a z)
+  pt : ℕ → ℕ → ℚᵘ → ℕ × ℕ
+  pt r a z = project CX CY V (spot r a z)
 
-  end : ℤ
-  end = + (half * 100)
+  dp : ℕ → ℕ → ℚᵘ → ℚᵘ
+  dp r a z = depth V (spot r a z)
+
+  end : ℚᵘ
+  end = fromℕ half
 
   -- the points of the arc at radius r from angle a for w, at z, a point every 8
-  arcPts : ℕ → ℕ → ℕ → ℤ → List (ℕ × ℕ)
+  arcPts : ℕ → ℕ → ℕ → ℚᵘ → List (ℕ × ℕ)
   arcPts r a w z = map (λ j → pt r (a + 8 * j) z) (applyUpTo (λ j → j) (suc (w / 8)))
 
   -- the cell between the radii r₀ < r₁, from angle a for w, in the plane z
-  cell : ℕ → ℕ → ℕ → ℕ → ℤ → List (ℕ × ℕ)
+  cell : ℕ → ℕ → ℕ → ℕ → ℚᵘ → List (ℕ × ℕ)
   cell r₀ r₁ a w z = arcPts r₁ a w z ++ reverse (arcPts r₀ a w z)
 
   -- the outer surface of a cell over the whole length of the barrel, and a wall at angle a
   patch : ℕ → ℕ → ℕ → List (ℕ × ℕ)
-  patch r a w = arcPts r a w (negᶻ end) ++ reverse (arcPts r a w end)
+  patch r a w = arcPts r a w (- end) ++ reverse (arcPts r a w end)
 
   wall : ℕ → ℕ → ℕ → List (ℕ × ℕ)
-  wall r₀ r₁ a = pt r₀ a (negᶻ end) ∷ pt r₁ a (negᶻ end) ∷ pt r₁ a end ∷ pt r₀ a end ∷ []
+  wall r₀ r₁ a = pt r₀ a (- end) ∷ pt r₁ a (- end) ∷ pt r₁ a end ∷ pt r₀ a end ∷ []
 
   -- the page, rounded
   background : Dia ℕ
@@ -214,35 +223,35 @@ module Parts (T : Theme) (V : View) where
   -- a face with the depth of a point in it (r , a , z): a translucent fill with an opaque
   -- outline over it
   Face : Set
-  Face = ℤ × List (Dia ℕ)
+  Face = ℚᵘ × List (Dia ℕ)
 
-  face : String → String → ℕ → ℤ → List (ℕ × ℕ) → Face
+  face : String → String → ℕ → ℚᵘ → List (ℕ × ℕ) → Face
   face fl rm o d ps = d , ( put 0 0 (polygon ps (paint fl fl 0 o))
                           ∷ put 0 0 (polygon ps (line rm 1)) ∷ [] )
 
   -- the faces of a cell of a layer, all of them: both end faces, and the surfaces at its two
   -- radii.  The fill is faint enough to see the far side through the near one.
-  cellFaces : String → String → ℕ → ℕ → ℕ → ℕ → ℕ → ℕ → List Face
-  cellFaces fl rm o bias r₀ r₁ a w = ends ++ surfaces
+  cellFaces : String → String → ℕ → ℕ → ℕ → ℕ → ℕ → List Face
+  cellFaces fl rm o r₀ r₁ a w = ends ++ surfaces
     where
       mid rmid : ℕ
       mid  = a + w / 2
       rmid = (r₀ + r₁) / 2
-      ends = face fl rm o (dp rmid mid end +ᶻ + bias) (cell r₀ r₁ a w end)
-           ∷ face fl rm o (dp rmid mid (negᶻ end) +ᶻ + bias) (cell r₀ r₁ a w (negᶻ end))
+      ends = face fl rm o (dp rmid mid end) (cell r₀ r₁ a w end)
+           ∷ face fl rm o (dp rmid mid (- end)) (cell r₀ r₁ a w (- end))
            ∷ []
-      surfaces = face fl rm o (dp r₁ mid (+ 0) +ᶻ + bias) (patch r₁ a w)
-               ∷ (if 0 <ᵇ r₀ then face fl rm o (dp r₀ mid (+ 0) +ᶻ + bias) (patch r₀ a w) ∷ [] else [])
+      surfaces = face fl rm o (dp r₁ mid 0ℚᵘ) (patch r₁ a w)
+               ∷ (if 0 <ᵇ r₀ then face fl rm o (dp r₀ mid 0ℚᵘ) (patch r₀ a w) ∷ [] else [])
 
   -- the faces of a layer: its cells, and the walls the cut leaves
   layerFaces : Layer → List Face
-  layerFaces L = walls ++ concat (map (λ a → cellFaces fill rim 30 0 r₀ r₁ a w) (starts L))
+  layerFaces L = walls ++ concat (map (λ a → cellFaces fill rim 30 r₀ r₁ a w) (starts L))
     where
       open Layer L
       lo : ℕ
       lo = (hi + n * w) % 1024
       wallAt : ℕ → Face
-      wallAt a = face fill rim 30 (dp ((r₀ + r₁) / 2) a (+ 0)) (wall r₀ r₁ a)
+      wallAt a = face fill rim 30 (dp ((r₀ + r₁) / 2) a 0ℚᵘ) (wall r₀ r₁ a)
       walls = if 1024 <ᵇ n * w + 1 then [] else wallAt lo ∷ wallAt hi ∷ []
 
   -- the faces of the lit cells of a layer, whole volumes: the cell's faces and its two walls.  A
@@ -252,14 +261,14 @@ module Parts (T : Theme) (V : View) where
     where
       open Layer L
       volume : Lit → List Face
-      volume (a , l) = cellFaces litC litC (glow l * 38 / 100) 1 r₀ r₁ a w
+      volume (a , l) = cellFaces litC litC (glow l * 38 / 100) r₀ r₁ a w
         ++ map wallAt (a ∷ a + w ∷ [])
-        where wallAt = λ b → face litC litC (glow l * 38 / 100) (dp ((r₀ + r₁) / 2) b (+ 0) +ᶻ + 1) (wall r₀ r₁ b)
+        where wallAt = λ b → face litC litC (glow l * 38 / 100) (dp ((r₀ + r₁) / 2) b 0ℚᵘ) (wall r₀ r₁ b)
 
   -- insertion sort by depth, the farthest first
   insert : Face → List Face → List Face
   insert p []       = p ∷ []
-  insert p (q ∷ qs) = if proj₁ p ≤ᶻᵇ proj₁ q then p ∷ q ∷ qs else q ∷ insert p qs
+  insert p (q ∷ qs) = if proj₁ p ≤ᵠᵇ proj₁ q then p ∷ q ∷ qs else q ∷ insert p qs
 
   sortFaces : List Face → List Face
   sortFaces = foldr insert []
@@ -284,7 +293,7 @@ module Parts (T : Theme) (V : View) where
   -- The particles
 
   trackPt : ℕ → Bool → ℕ → ℤ → ℕ → ℕ × ℕ
-  trackPt φ neg b s r = pt r (bendAt φ neg b r) (s *ᶻ + r)
+  trackPt φ neg b s r = pt r (bendAt φ neg b r) (mkℚᵘ (s *ᶻ + r) 99)
 
   -- a track out to radius rEnd (a multiple of 24), as a curve of segments 24 long; it goes along
   -- the beam by `s` percent of its radius

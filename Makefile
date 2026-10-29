@@ -168,6 +168,12 @@ test-negative:
 	@for f in tests/negative/controls/*.agda; do \
 	  $(AGDA) -i tests/negative/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
 
+# Closed numeric checks of Slides.Trig against exact values; `refl` on ℚ normalises slowly, so they
+# stay out of `make check`.
+.PHONY: test-numeric
+test-numeric:
+	$(AGDA) -i tests/numeric tests/numeric/TrigCheck.agda
+
 # Golden-file tests (run `make example talk plain showcase` first), then the browser tests.
 .PHONY: test test-browser
 test:

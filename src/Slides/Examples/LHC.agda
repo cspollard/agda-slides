@@ -15,8 +15,7 @@
 -- once, not once per frame.  The legacy version evaluated tables of positions as formulas in the
 -- tick, because its scalars had a sine-less multiplication; here the scalars of a leaf are the
 -- Space and Time terms, which have no product of two variables, so each frame is a diagram over
--- literals computed in whole numbers (`trig`, a 17-entry sine table with linear interpolation,
--- under 0.2 % off).  Both bunches meet at the bottom at tick 0 and pass each other at the top
+-- literals computed in whole numbers (rounded from the rational polynomials of `Slides.Trig`).  Both bunches meet at the bottom at tick 0 and pass each other at the top
 -- at tick 32 (two beams in one pipe); only the meeting at the bottom flashes.
 
 module Slides.Examples.LHC where
@@ -31,7 +30,9 @@ open import Data.String using (String; toList; fromList) renaming (_++_ to _++ˢ
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.TextMetrics using (textWidth)
-import Slides.Trig as T
+open import Data.Integer using (+_)
+open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ)
+open import Slides.Trig using (cis; shift)
 open import Data.Container.FreeMonad using (pure)
 open import Slides.Deck.Anim using (Anim; frame′; hold; ι; _⨾_; liftDia) renaming (_∥_ to _∥ₛ_)
 
@@ -59,24 +60,18 @@ RX = 220 * K
 RY = 85 * K
 
 ------------------------------------------------------------------------
--- Trigonometry in whole numbers: an angle is a number of 1/256 turns
+-- Directions: (cos , sin) of an angle of a 1/256 turns
 
-trig : ℕ → (ℕ × Bool) × (ℕ × Bool)
-trig a = T.trig (4 * a)
-
--- a signed value moved up by 10000, so that it is never negative: 0 … 20000
-lifted : ℕ × Bool → ℕ
-lifted (m , neg) = if neg then 10000 ∸ m else 10000 + m
+dir : ℕ → ℚᵘ × ℚᵘ
+dir a = cis 5 (mkℚᵘ (+ a) 255)
 
 -- a point on the ellipse at angle a (screen coordinates: y grows downwards, so 64 is the bottom)
 ellipseAt : ℕ → ℕ × ℕ
-ellipseAt a =
-    (CX ∸ RX) + RX * lifted (proj₁ (trig a)) / 10000
-  , (CY ∸ RY) + RY * lifted (proj₂ (trig a)) / 10000
+ellipseAt a = shift CX RX (proj₁ (dir a)) , shift CY RY (proj₂ (dir a))
 
 -- eight directions for the sparks, 45° apart
-sparkDirs : List ((ℕ × Bool) × (ℕ × Bool))
-sparkDirs = map (λ j → trig (32 * j)) (applyUpTo (λ j → j) 8)
+sparkDirs : List (ℚᵘ × ℚᵘ)
+sparkDirs = map (λ j → dir (32 * j)) (applyUpTo (λ j → j) 8)
 
 ------------------------------------------------------------------------
 -- The layers, as diagrams over whole numbers
@@ -174,12 +169,10 @@ sparkR : ℕ
 sparkR = 3 * K
 
 -- a spark flies from the collision point along (cos , sin), squashed to 60 % vertically
-spark : ℕ → (ℕ × Bool) × (ℕ × Bool) → Dia ℕ
-spark u ((cm , cn) , (sm , sn)) =
-  let dx = cm * sparkD u / 10000
-      dy = sm * 60 / 100 * sparkD u / 10000
-      x  = if cn then CX ∸ dx else CX + dx
-      y  = if sn then (CY + RY) ∸ dy else (CY + RY) + dy
+spark : ℕ → ℚᵘ × ℚᵘ → Dia ℕ
+spark u (c , s) =
+  let x = shift CX (sparkD u) c
+      y = shift (CY + RY) (sparkD u * 3 / 5) s
   in put (x ∸ sparkR) (y ∸ sparkR) (disc sparkR (cls "spark"))
 
 flash : ℕ → Dia ℕ
@@ -261,18 +254,15 @@ VX = slotS / 2
 VY = H2 / 2
 
 -- a point `d` from the vertex along a direction (cos , sin)
-along : (ℕ × Bool) × (ℕ × Bool) → ℕ → ℕ × ℕ
-along ((cm , cn) , (sm , sn)) d =
-  let dx = cm * d / 10000
-      dy = sm * d / 10000
-  in (if cn then VX ∸ dx else VX + dx) , (if sn then VY ∸ dy else VY + dy)
+along : ℚᵘ × ℚᵘ → ℕ → ℕ × ℕ
+along (c , s) d = shift VX d c , shift VY d s
 
 -- eight tracks, 45° apart but not quite regularly
-trackDirs : List ((ℕ × Bool) × (ℕ × Bool))
-trackDirs = map (λ j → trig (32 * j + 8 + 5 * (j % 3))) (applyUpTo (λ j → j) 8)
+trackDirs : List (ℚᵘ × ℚᵘ)
+trackDirs = map (λ j → dir (32 * j + 8 + 5 * (j % 3))) (applyUpTo (λ j → j) 8)
 
 -- a track after `u` ticks: a line from the vertex and a dot at its tip
-track : ℕ → (ℕ × Bool) × (ℕ × Bool) → List (Dia ℕ)
+track : ℕ → ℚᵘ × ℚᵘ → List (Dia ℕ)
 track u dir =
   let p = along dir (6 * K + (44 * K * u) / 31)
   in put2 (proj₁ p ∸ 3 * K) (proj₂ p ∸ 3 * K) (disc (3 * K) (cls "spark"))

@@ -1,60 +1,62 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Looking at a `Point`: a `View` turns space about the vertical axis (`yaw`, which shows the
--- length of a cylinder) and about the line of sight (`roll`, which tilts the picture), in 1/1024
--- turns; `project` is the point on the page, in orthographic projection, about a given centre.
--- The view `flat` looks down the axis.
+-- length of a cylinder) and about the line of sight (`roll`, which tilts the picture); `project` is
+-- the point on the page, in orthographic projection, about a given centre.
+--
+-- A turn is the pair (cos , sin) of its angle.  It comes from an angle in turns (`viewA`, by the
+-- polynomials of `Slides.Trig`), or from a rational tangent of the half angle (`viewT`): t gives
+-- (1 − t² , 2t) / (1 + t²), exactly a unit vector, so these turns need no trig and compose
+-- without error.
 
 module Slides.Three.View where
 
-open import Data.Integer using (ℤ; +_) renaming (_+_ to _+ᶻ_; _*_ to _*ᶻ_; _-_ to _-ᶻ_; ∣_∣ to absᶻ)
-open import Data.Nat using (ℕ; _+_; _*_; _∸_; _/_)
+open import Data.Integer as ℤ using (ℤ; +_)
+open import Data.Nat as ℕ using (ℕ; suc)
 open import Data.Product using (_×_; _,_; proj₁; proj₂)
+open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ; 0ℚᵘ; _+_; _-_; _*_)
 
-open import Slides.Trig using (sc)
+open import Slides.Trig using (cis; fromℕ; nearest)
 open import Slides.Three.Point
 
-------------------------------------------------------------------------
--- Views
+-- the turn (c , s) acting on the pair (x , y)
+act : ℚᵘ × ℚᵘ → ℚᵘ × ℚᵘ → ℚᵘ × ℚᵘ
+act (c , s) (x , y) = c * x - s * y , s * x + c * y
+
+-- the turn whose half angle has tangent t
+tangent : ℚᵘ → ℚᵘ × ℚᵘ
+tangent (mkℚᵘ p q) = mkℚᵘ (+ (suc q ℕ.* suc q) ℤ.- + p²) m , mkℚᵘ (+ 2 ℤ.* p ℤ.* + suc q) m
+  where p² = ℤ.∣ p ∣ ℕ.* ℤ.∣ p ∣
+        m  = q ℕ.+ q ℕ.* suc q ℕ.+ p²
 
 record View : Set where
   constructor view
   field
-    yaw roll : ℕ
+    yaw roll : ℚᵘ × ℚᵘ
+
+-- two angles in turns (polynomials of order n), and two tangents of half angles
+viewA : ℕ → ℚᵘ → ℚᵘ → View
+viewA n a b = view (cis n a) (cis n b)
+
+viewT : ℚᵘ → ℚᵘ → View
+viewT t u = view (tangent t) (tangent u)
 
 -- looking down the axis, and a little turned (14° and 3°) to show the length
 flat turned : View
-flat   = view 0 0
-turned = view 40 8
+flat   = viewT 0ℚᵘ 0ℚᵘ
+turned = viewT (mkℚᵘ (+ 37) 299) (mkℚᵘ (+ 4) 162)
+
+rotate : View → Point → Point
+rotate (view yw rl) (point x y z) = point (proj₁ b) (proj₂ b) (proj₂ a)
+  where a = act yw (x , z)
+        b = act rl (proj₁ a , y)
 
 -- the point on the page, about the centre (cx , cy).  The far end (z negative) moves to the right,
 -- so the outer surface of a cylinder shows on the right.
 project : ℕ → ℕ → View → Point → ℕ × ℕ
-project cx cy (view yw rl) (cyl r a z) = fin cx x₂ , fin cy y₂
-  where
-    c  s  cθ sθ cρ sρ : ℤ
-    c  = proj₁ (sc a)
-    s  = proj₂ (sc a)
-    cθ = proj₁ (sc yw)
-    sθ = proj₂ (sc yw)
-    cρ = proj₁ (sc rl)
-    sρ = proj₂ (sc rl)
+project cx cy V p = nearest (fromℕ cx + x) , nearest (fromℕ cy + y)
+  where open Point (rotate V p)
 
-    -- the turn about the vertical axis (scaled 10⁸), then the roll (10¹²)
-    x₁ y₁ x₂ y₂ : ℤ
-    x₁ = (((+ r) *ᶻ c) *ᶻ cθ) -ᶻ ((z *ᶻ + 100) *ᶻ sθ)
-    y₁ = ((+ r) *ᶻ s) *ᶻ + 10000
-    x₂ = (x₁ *ᶻ cρ) -ᶻ (y₁ *ᶻ sρ)
-    y₂ = (x₁ *ᶻ sρ) +ᶻ (y₁ *ᶻ cρ)
-
-    scale : ℕ
-    scale = 1000000000000
-
-    -- the centre moved by the scaled offset, to the nearest unit (the offset keeps it positive)
-    fin : ℕ → ℤ → ℕ
-    fin c₀ v = (absᶻ (v +ᶻ + ((c₀ + 2000) * scale + scale / 2)) / scale) ∸ 2000
-
--- how far towards the viewer a point is, to compare: the turn about the vertical axis takes its x
--- to a depth of x times the sine of the yaw
-depth : View → Point → ℤ
-depth (view yw _) (cyl r a z) = (((+ r) *ᶻ proj₁ (sc a)) *ᶻ proj₂ (sc yw)) +ᶻ ((z *ᶻ + 100) *ᶻ proj₁ (sc yw))
+-- how far towards the viewer a point is, to compare
+depth : View → Point → ℚᵘ
+depth V p = Point.z (rotate V p)
