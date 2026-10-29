@@ -10,8 +10,8 @@ AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 # `Driver.agda`) need --guardedness and are checked on their own.
 check:
 	@mkdir -p _build
-	@(echo "module Everything where"; for f in $$(find src -name '*.agda' ! -name '*Main.agda' ! -name Driver.agda | sort); do \
-	    echo "import $$(echo $${f#src/} | sed -E 's#/#.#g; s#\.agda$$##')"; done) > _build/Everything.agda
+	@(echo "module Everything where"; for f in $$(find src \( -name '*.agda' -o -name '*.lagda.md' \) ! -name '*Main.agda' ! -name Driver.agda | sort); do \
+	    echo "import $$(echo $${f#src/} | sed -E 's#/#.#g; s#\.(agda|lagda\.md)$$##')"; done) > _build/Everything.agda
 	$(AGDA) -i _build _build/Everything.agda
 	@for f in $$(find src -name '*Main.agda' -o -name Driver.agda); do $(AGDA) $$f || exit 1; done
 
@@ -74,6 +74,28 @@ showcase:
 	cp assets/slides.css assets/animation.js assets/plot.svg out/showcase/
 	cp $(PLAIN_FILES) out/showcase-plain/
 	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
+
+# The outreach deck "How collider physics is accelerating data science", a literate Agda file
+# (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
+# loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=...` links a
+# local copy (out/collider-local/).  `make test-collider` drives out/collider-local in a browser.
+COLLIDER_FILES = assets/slides.css assets/animation.js assets/collider/collider.css
+
+.PHONY: collider collider-local test-collider
+collider:
+	mkdir -p out/collider $(BUILD_DIR)
+	cp $(COLLIDER_FILES) out/collider/
+	$(call run-main,src/Slides/Examples/ColliderMain.agda,cdn)
+
+collider-local:
+	mkdir -p out/collider-local $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/collider-local/reveal
+	cp $(COLLIDER_FILES) out/collider-local/
+	$(call run-main,src/Slides/Examples/ColliderMain.agda,local)
+
+test-collider: collider-local
+	cd tests/browser && npm install --silent
+	node tests/browser/collider.mjs out
 
 # A deck with a non-default key binding (not a golden), and a deck with named slides.
 .PHONY: keys labels test-keys test-labels
