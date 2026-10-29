@@ -150,7 +150,7 @@ letterSize = 20 * K
 
 letter : Bool → ℕ → Char → Dia ℕ
 letter below xc c =
-  put (xc ∸ advance / 2) ((if below then lineY xc + 26 * K else lineY xc ∸ 26 * K) ∸ letterSize * 3 / 4)
+  put (xc ∸ textWidth letterSize (fromList (c ∷ [])) / 2) ((if below then lineY xc + 26 * K else lineY xc ∸ 26 * K) ∸ letterSize * 3 / 4)
       (text letterSize (fromList (c ∷ [])) (cls ("dim tilt-" ++ˢ (if xc <ᵇ CX then "l-" else "r-") ++ˢ show (tiltOf xc / 2))))
 
 word : Bool → ℕ → List Char → List (Dia ℕ)
