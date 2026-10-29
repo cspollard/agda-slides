@@ -47,7 +47,7 @@ open import Level using (0ℓ)
 open import Data.Empty using (⊥)
 open import Data.Bool using (Bool; true; false)
 open import Data.Fin using (Fin)
-open import Data.List using (List; map)
+open import Data.List using (List; map; length)
 open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.String using (String)
 open import Data.Unit using (⊤)
@@ -60,7 +60,7 @@ open import Container.Lowering using (translate)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Draw using (mapPt)
 open import Slides.Diagram.TextMetrics using (inlineWidth)
-open import Slides.Text using (Inline; parse)
+open import Slides.Text using (Inline; parse; lines)
 open import Slides.Diagram.Geometry public
 
 data Op (S : Set) : Set where
@@ -177,10 +177,13 @@ path w h d s = impure (Path w h d s , λ ())
 
 -- a line of text at a font size: as wide as its characters times `pct` percent (a heavier
 -- font is wider), `size * 3/2` high; `fromℕ` reads a number of units as a length
+textI : ∀ {S} → (ℕ → S) → (pct size : ℕ) → List Inline → Style → Dia S
+textI fromℕ pct size is s =
+  impure (Text (fromℕ ((inlineWidth size is * pct) / 100)) (fromℕ (((size * 3) / 2) * length (lines is))) size is s , λ ())
+
+-- the same for a label written with markup (`Slides.Text.parse`)
 text : ∀ {S} → (ℕ → S) → (pct size : ℕ) → String → Style → Dia S
-text fromℕ pct size t s =
-  impure (Text (fromℕ ((inlineWidth size is * pct) / 100)) (fromℕ ((size * 3) / 2)) size is s , λ ())
-  where is = parse t
+text fromℕ pct size t = textI fromℕ pct size (parse t)
 
 besideA : ∀ {S} → VAlign → Dia S → Dia S → Dia S
 besideA al a b = impure (Beside al , pick2 a b)

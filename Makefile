@@ -56,6 +56,14 @@ example:
 	cp assets/slides.css assets/animation.js out/intro/
 	$(call run-main,src/Slides/Examples/IntroMain.agda)
 
+# One slide of the shared text tree (sub/sup, a style, a break, nested bullets) to out/text/.
+.PHONY: text
+text:
+	mkdir -p out/text $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/text/reveal
+	cp assets/slides.css assets/animation.js out/text/
+	$(call run-main,src/Slides/Examples/TextDemoMain.agda)
+
 # Render the component-based deck to out/talk/ (reveal.js) and out/plain/ (standalone HTML).
 talk:
 	mkdir -p out/talk $(BUILD_DIR)
@@ -183,6 +191,7 @@ test:
 	diff -u tests/golden/intro.index.html out/intro/index.html
 	diff -u tests/golden/intro.init.js out/intro/init.js
 	diff -u tests/golden/slides.css out/intro/slides.css
+	diff -u tests/golden/text.index.html out/text/index.html
 	diff -u tests/golden/talk.index.html out/talk/index.html
 	diff -u tests/golden/plain.index.html out/plain/index.html
 	diff -u tests/golden/showcase.index.html out/showcase/index.html

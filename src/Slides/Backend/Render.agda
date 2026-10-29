@@ -28,7 +28,7 @@
 
 module Slides.Backend.Render where
 
-open import Data.Bool.Base using (Bool; true; false; not)
+open import Data.Bool.Base using (Bool; true; false; not; if_then_else_)
 open import Data.List.Base using (List; []; _∷_; _++_; map; concatMap; filterᵇ)
 open import Data.List.NonEmpty using (List⁺; _∷_)
 import Data.List.NonEmpty as L⁺
@@ -47,6 +47,7 @@ open import Slides.Scalar.Model.Nat using (natSpace)
 open import Slides.Diagram.Print using (natPrint; renderSVG)
 import Slides.Diagram.Layout natSpace as DL
 open import Slides.Math using (toLaTeX)
+open import Slides.Text using (css)
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
@@ -82,6 +83,8 @@ mutual
   piece (inlineMath m) = inj₁ ("\\(" ++ˢ toLaTeX m ++ˢ "\\)") ∷ []
   piece (emph is)      = inj₂ (rich "em" [] is) ∷ []
   piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
+  piece br             = inj₂ (hElement "br" [] []) ∷ []
+  piece (styled s is)  = inj₂ (rich "span" (("style" , css s) ∷ []) is) ∷ []
   piece (sub is)       = inj₂ (rich "sub" [] is) ∷ []
   piece (sup is)       = inj₂ (rich "sup" [] is) ∷ []
   piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
@@ -123,9 +126,19 @@ private
   pct : String → ℕ → String
   pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
 
-  bullet : Bool → Text → XMLDoc
-  bullet true  t = rich "li" (("class" , "fragment") ∷ []) t
-  bullet false t = rich "li" [] t
+  -- a bullet's text, then its sub-bullets as a nested list
+  mutual
+    bulletEl : Bool → Bullet → XMLDoc
+    bulletEl inc (bullet t cs) with normalise (pieces t)
+    ... | s , xs = hMixed "li" (if inc then ("class" , "fragment") ∷ [] else []) (s , xs ++ nest inc cs)
+
+    nest : Bool → List Bullet → List (XMLDoc × String)
+    nest inc [] = []
+    nest inc cs = (hElement "ul" [] (bulletList inc cs) , "") ∷ []
+
+    bulletList : Bool → List Bullet → List XMLDoc
+    bulletList inc []       = []
+    bulletList inc (c ∷ cs) = bulletEl inc c ∷ bulletList inc cs
 
   row : String → List Text → XMLDoc
   row cell cs = hElement "tr" [] (map (rich cell []) cs)
@@ -135,7 +148,7 @@ mutual
   renderBlock : Block → Forest
   renderBlock (heading n t)    = rich (hTag n) [] t ∷ []
   renderBlock (paragraph t)    = rich "p" [] t ∷ []
-  renderBlock (bullets inc ts) = hElement "ul" [] (map (bullet inc) ts) ∷ []
+  renderBlock (bulletTree inc is) = hElement "ul" [] (bulletList inc is) ∷ []
   renderBlock (code lang src)  =
     hElement "pre" [] (hText "code" (("class" , "language-" ++ˢ lang) ∷ ("data-trim" , "") ∷ []) src ∷ []) ∷ []
   renderBlock (displayMath m)  = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ toLaTeX m ++ˢ " \\]") ∷ []

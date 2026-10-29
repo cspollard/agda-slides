@@ -75,6 +75,8 @@ module Prims (X : Set) (one : Block → X) where
   bullets incremental : List Text → X
   bullets xs = one (C.bullets false xs)
   incremental xs = one (C.bullets true xs)
+  nested : Bool → List C.Bullet → X
+  nested b is = one (C.bulletTree b is)
   code : (language source : String) → X
   code l s = one (C.code l s)
   displayMath : Math → X

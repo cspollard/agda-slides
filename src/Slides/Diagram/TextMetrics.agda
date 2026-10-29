@@ -10,10 +10,10 @@
 module Slides.Diagram.TextMetrics where
 
 open import Data.Char using (Char; toℕ)
-open import Data.List using (List; []; _∷_; foldr)
-open import Data.Nat using (ℕ; suc; _+_; _*_; _/_; _∸_)
+open import Data.List using (List; []; _∷_; foldr; map)
+open import Data.Nat using (ℕ; suc; _+_; _*_; _/_; _∸_; _⊔_)
 open import Data.String using (String; toList)
-open import Slides.Text using (Inline; text; sub; sup; plainT; parse)
+open import Slides.Text using (Inline; sub; sup; plainT; parse; lines)
 
 private
   table : List ℕ   -- ' ' … '~' (codes 32 … 126)
@@ -46,9 +46,9 @@ private
   go (sup u ∷ ss)  = (run (plainT u) * 7) / 10 + go ss
   go (i ∷ ss)      = run (plainT (i ∷ [])) + go ss
 
--- width of a label at a font size, in the diagram's units
+-- width of a label at a font size, in the diagram's units: its widest line (a style is not measured)
 inlineWidth : ℕ → List Inline → ℕ
-inlineWidth size is = (go is * size) / 1000
+inlineWidth size is = (foldr _⊔_ 0 (map go (lines is)) * size) / 1000
 
 -- the same for a label written with markup
 textWidth : ℕ → String → ℕ

@@ -22,7 +22,7 @@ module Slides.Deck.Content where
 open import Data.Bool.Base using (Bool)
 open import Data.List.Base using (List; []; _∷_; _++_; map; concatMap)
 open import Data.Maybe.Base using (Maybe)
-open import Data.Nat.Base using (ℕ)
+open import Data.Nat.Base using (ℕ; zero; suc)
 open import Data.Product.Base using (_×_; proj₁; proj₂)
 open import Data.String.Base using (String; intersperse; concat) renaming (_++_ to _++ˢ_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
@@ -36,10 +36,17 @@ open import Slides.Diagram.Draw using (Layout)
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 
+-- a bullet with its sub-bullets (a rose tree); a flat list is a list of `leaf`s
+data Bullet : Set where
+  bullet : Text → List Bullet → Bullet
+
+leaf : Text → Bullet
+leaf t = bullet t []
+
 data Block : Set where
   heading     : ℕ → Text → Block
   paragraph   : Text → Block
-  bullets     : (incremental : Bool) → List Text → Block
+  bulletTree  : (incremental : Bool) → List Bullet → Block
   code        : (language source : String) → Block
   displayMath : Math → Block
   -- an image file with a caption; the width is a percent of the slide's content width (none: the
@@ -71,14 +78,35 @@ data Block : Set where
 Flow : Set
 Flow = List Block
 
+-- the flat call, unchanged
+bullets : Bool → List Text → Block
+bullets inc ts = bulletTree inc (map leaf ts)
+
 ------------------------------------------------------------------------
 -- Plain text
+
+-- a bullet is a line indented by its depth, then its sub-bullets
+mutual
+  plainBullet : ℕ → Bullet → List String
+  plainBullet d (bullet t cs) = indent d (plainT t) ∷ plainBullets (suc d) cs
+    where indent : ℕ → String → String
+          indent zero    s = "- " ++ˢ s
+          indent (suc n) s = "  " ++ˢ indent n s
+
+  plainBullets : ℕ → List Bullet → List String
+  plainBullets d []       = []
+  plainBullets d (i ∷ is) = plainBullet d i ++ plainBullets d is
+
+-- on a flat list this is the old reading, line for line
+plain-flat : ∀ ts → plainBullets 0 (map leaf ts) ≡ map (λ t → "- " ++ˢ plainT t) ts
+plain-flat []       = refl
+plain-flat (t ∷ ts) = cong (_ ∷_) (plain-flat ts)
 
 mutual
   plainB : Block → List String
   plainB (heading _ t)   = plainT t ∷ []
   plainB (paragraph t)   = plainT t ∷ []
-  plainB (bullets _ ts)  = map (λ t → "- " ++ˢ plainT t) ts
+  plainB (bulletTree _ is) = plainBullets 0 is
   plainB (code _ s)      = s ∷ []
   plainB (displayMath m) = toLaTeX m ∷ []
   plainB (figure _ _ c)  = plainT c ∷ []

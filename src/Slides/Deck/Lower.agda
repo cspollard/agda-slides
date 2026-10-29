@@ -81,7 +81,7 @@ mutual
   lowerBlock-id (placed x y w h f) = cong (λ z → placed x y w h z ∷ []) (lowerFlow-id f)
   lowerBlock-id (heading _ _)      = refl
   lowerBlock-id (paragraph _)      = refl
-  lowerBlock-id (bullets _ _)      = refl
+  lowerBlock-id (bulletTree _ _)  = refl
   lowerBlock-id (code _ _)         = refl
   lowerBlock-id (displayMath _)    = refl
   lowerBlock-id (figure _ _ _)     = refl
@@ -119,7 +119,7 @@ mutual
   lowerBlock-fuse l₁ l₂ (placed x y w h f) = trans (cong (λ z → placed x y w h z ∷ []) (lowerFlow-fuse l₁ l₂ f)) (sym (single l₂ (placed x y w h (lowerFlow l₁ f))))
   lowerBlock-fuse l₁ l₂ (heading _ _) = refl
   lowerBlock-fuse l₁ l₂ (paragraph _) = refl
-  lowerBlock-fuse l₁ l₂ (bullets _ _) = refl
+  lowerBlock-fuse l₁ l₂ (bulletTree _ _) = refl
   lowerBlock-fuse l₁ l₂ (code _ _) = refl
   lowerBlock-fuse l₁ l₂ (displayMath _) = refl
   lowerBlock-fuse l₁ l₂ (figure _ _ _) = refl
