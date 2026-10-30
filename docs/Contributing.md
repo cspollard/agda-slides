@@ -1,6 +1,6 @@
 # Working on the library
 
-Design: `docs/Objects.md`.  Open work: `plan/TODO.md`.  Theorems of the previous implementation
+Design: `docs/Objects.md`.  Open work: `plans/TODO.md`.  Theorems of the previous implementation
 that are not yet restated: `docs/Dropped.md`.
 
 ## Rules for every change

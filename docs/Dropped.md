@@ -36,4 +36,4 @@ remains, most useful first:
 - The `Binding` and `Hash` proofs and the `XML` bridge from `Eq` to `_≈ₓ_`: bindings are tables
   with a computed `clash-free`, and render properties use `≡` on forests.
 - Ring-and-setoid scaffolding (`IsLawful`, `_≈ᴸ_`, `_≈ᵖ_`, ℤ/ℚ `Ordered` instances, evaluators,
-  `⊓`): `Space` is `≡`-based with a Max and Minus signature (see the setoid item in `plan/TODO.md`).
+  `⊓`): `Space` is `≡`-based with a Max and Minus signature (see the setoid item in `plans/TODO.md`).

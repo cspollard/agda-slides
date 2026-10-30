@@ -1,6 +1,6 @@
 # Plots: basic plotting on `Dia`
 
-Status: phases 0-3 built on branch `plots` (`make plots` renders `out/plots`; `make check` clean, 107 s for the tree).
+Status: phases 0-3 built merged to main (`make plots` renders `out/plots`; `make check` clean, 107 s for the tree).
 Built: `Slides.Plot.{Axis,Axis.Rat,Format,Ticks,Ticks.Rat,Mark,Clip,Data,Render,Laws}` (~770 lines),
 `Examples/Plots`, `assets/plots.css`.  Proved: `px-max`, `px-mono`, `px-lo`, `px-hi`, `ap-sorted`,
 `size-render` (the frame is exactly `width x height`).  Checked on closed values only: formatting, 1-2-5 ticks
@@ -182,7 +182,7 @@ Status: 1(a) and 1(b) done (`ticks-in-range`, `ticks-sorted`, `clipLine-inside`)
    (c) is not provable as built: two polynomial branches meet at 3.16 only to within the approximation error, so
    monotonicity would need interval bounds on the series; state the error bound as the contract instead.
 2. **Docs**: `docs/Plots.md` (the `Plot` record, marks, `logAxis`, `withRatio`, `reveal`, `morph`, CSV flow, CSS
-   classes) and a pointer in `plan/TODO.md`.
+   classes) and a pointer in `plans/TODO.md`.
 3. **Finish the branch**: rebase onto `main`; decide which targets/CI cover `plots` and `plot-data`; optional golden
    for the plots deck.  Not pushed, no PR yet.
 4. **Quality gaps**: text widths approximate; y label horizontal; filled bands flattened (not clipped) at the box

@@ -1,7 +1,7 @@
 # Plots
 
 Vector plots, computed in ℚ and lowered to `Dia ℕ`, so every backend, the layout laws and the
-animations apply unchanged.  Design and history: `plan/Plots.md`.  Build the examples with
+animations apply unchanged.  Design and history: `plans/Plots.md`.  Build the examples with
 `make plots` (`out/plots`) and `make plot-data` (`out/plot-data`, from `data/spectrum.csv`).
 
 ## Using it

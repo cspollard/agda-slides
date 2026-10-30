@@ -9,7 +9,7 @@ Everything stays parametric in the scalar; adding a model changes no existing mo
   `Slides.Scalar.Hom` with dependencies 7.6 s, of which 6.8 s is loading; no definition above
   0.4 s.  Running Collider took about 40 s, and GMP (all integer arithmetic, gcd included) was
   3.5% of a sampling profile.  The gcd is not the cost; the run time was elsewhere (see
-  `plan/TODO.md`, "Collider run time").
+  `plans/TODO.md`, "Collider run time").
 - **Planned (not started):** the setoid generalisation of the scalar theories (laws up to a
   carried equivalence, folds into setoids), so non-canonical models such as unnormalised ℚ are
   first-class.  It is wanted for the mathematics, not for speed (gcd is not the cost); it
