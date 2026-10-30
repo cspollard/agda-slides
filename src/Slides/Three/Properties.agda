@@ -1,6 +1,6 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Looking down the axis moves nothing: the view `flat` (the turns by tangent 0) is the identity.
+-- Looking down the axis moves nothing: the view `flat` (the three turns by tangent 0) is the identity.
 
 module Slides.Three.Properties where
 
@@ -16,9 +16,13 @@ act-id : ∀ x y → (proj₁ (act (1ℚᵘ , 0ℚᵘ) (x , y)) ≃ x) × (proj�
 act-id x y = ≃-trans (+-cong (*-identityˡ x) (-‿cong (*-zeroˡ y))) (+-identityʳ x)
            , ≃-trans (+-cong (*-zeroˡ x) (*-identityˡ y)) (+-identityˡ y)
 
-rotate-id : ∀ x y z → let q = rotate (view (1ℚᵘ , 0ℚᵘ) (1ℚᵘ , 0ℚᵘ)) (point x y z) in (Point.x q ≃ x) × (Point.y q ≃ y) × (Point.z q ≃ z)
-rotate-id x y z = ≃-trans (proj₁ (act-id x₁ y)) (proj₁ (act-id x z)) , proj₂ (act-id x₁ y) , proj₂ (act-id x z)
+rotate-id : ∀ x y z → let q = rotate (view (1ℚᵘ , 0ℚᵘ) (1ℚᵘ , 0ℚᵘ) (1ℚᵘ , 0ℚᵘ)) (point x y z) in (Point.x q ≃ x) × (Point.y q ≃ y) × (Point.z q ≃ z)
+rotate-id x y z = ≃-trans (proj₁ (act-id x₁ y₁)) (proj₁ (act-id x z))
+               , ≃-trans (proj₂ (act-id x₁ y₁)) (proj₁ (act-id y z₁))
+               , ≃-trans (proj₂ (act-id y z₁)) (proj₂ (act-id x z))
   where x₁ = proj₁ (act (1ℚᵘ , 0ℚᵘ) (x , z))
+        z₁ = proj₂ (act (1ℚᵘ , 0ℚᵘ) (x , z))
+        y₁ = proj₁ (act (1ℚᵘ , 0ℚᵘ) (y , z₁))
 
 -- `flat` is that view, by computation: tangent 0 = (1 , 0)
 rotate-flat : ∀ x y z → let q = rotate flat (point x y z) in (Point.x q ≃ x) × (Point.y q ≃ y) × (Point.z q ≃ z)

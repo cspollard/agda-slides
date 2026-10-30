@@ -1,8 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Looking at a `Point`: a `View` turns space about the vertical axis (`yaw`, which shows the
--- length of a cylinder) and about the line of sight (`roll`, which tilts the picture); `project` is
--- the point on the page, in orthographic projection, about a given centre.
+-- length of a cylinder), about the horizontal axis (`pitch`, which shows the top) and about the line
+-- of sight (`roll`, which tilts the picture); `project` is the point on the page, in orthographic projection, about a given centre.
 --
 -- A turn is the pair (cos , sin) of its angle.  `viewT` takes the rational tangent of the half angle:
 -- t gives (1 − t² , 2t) / (1 + t²), exactly a unit vector, so these turns need no trig and compose
@@ -31,11 +31,14 @@ tangent (mkℚᵘ p q) = mkℚᵘ (+ (suc q ℕ.* suc q) ℤ.- + p²) m , mkℚ�
 record View : Set where
   constructor view
   field
-    yaw roll : ℚᵘ × ℚᵘ
+    yaw pitch roll : ℚᵘ × ℚᵘ
 
--- two tangents of half angles
+-- tangents of half angles: yaw and roll (no pitch), or all three
+viewP : ℚᵘ → ℚᵘ → ℚᵘ → View
+viewP t p u = view (tangent t) (tangent p) (tangent u)
+
 viewT : ℚᵘ → ℚᵘ → View
-viewT t u = view (tangent t) (tangent u)
+viewT t u = viewP t 0ℚᵘ u
 
 -- looking down the axis, and a little turned (14° and 3°) to show the length
 flat turned : View
@@ -43,9 +46,10 @@ flat   = viewT 0ℚᵘ 0ℚᵘ
 turned = viewT (mkℚᵘ (+ 37) 299) (mkℚᵘ (+ 4) 162)
 
 rotate : View → Point → Point
-rotate (view yw rl) (point x y z) = point (proj₁ b) (proj₂ b) (proj₂ a)
+rotate (view yw pt rl) (point x y z) = point (proj₁ c) (proj₂ c) (proj₂ b)
   where a = act yw (x , z)
-        b = act rl (proj₁ a , y)
+        b = act pt (y , proj₂ a)
+        c = act rl (proj₁ a , proj₁ b)
 
 -- the point of the page, about the centre (cx , cy), under a turned point; and under a view.  The
 -- far end (z negative) moves to the right, so the outer surface of a cylinder shows on the right.

@@ -61,6 +61,14 @@ text:
 	cp assets/slides.css assets/animation.js out/text/
 	$(call run-main,src/Slides/Examples/TextDemoMain.agda)
 
+# A 3D cube for a tensor slide (out/tensor; not a golden).
+.PHONY: tensor
+tensor:
+	mkdir -p out/tensor $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/tensor/reveal
+	cp assets/slides.css assets/animation.js out/tensor/
+	$(call run-main,src/Slides/Examples/TensorMain.agda)
+
 talk:
 	mkdir -p out/talk $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/talk/reveal
