@@ -1,12 +1,10 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Writing rendered decks to disk.  A deck's `Main` module is a few lines:
+-- The IO edge: a `Talk` rendered to files.  A deck's `Main` is
 --
---   main : Main
 --   main = run (writeRevealDeck "out/mytalk" defaultConfig mytalk)
 --
--- The directory must exist and hold the assets (the Makefile copies `assets/` and links
--- reveal.js); this only writes the generated files.
+-- The directory must already hold the assets; only generated files are written.
 
 module Slides.Driver where
 
@@ -19,12 +17,10 @@ open import Slides.Deck.Talk using (Talk)
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
 
--- reveal.js: `index.html` and `init.js`
 writeRevealDeck : String → Reveal.RevealConfig → Talk → IO (⊤ {0ℓ})
 writeRevealDeck dir cfg t =
   writeFile (dir ++ "/index.html") (Reveal.renderReveal cfg t)
   >> writeFile (dir ++ "/init.js") (Reveal.initScript t cfg)
 
--- standalone HTML: `index.html`
 writePlainDeck : String → Plain.PlainConfig → Talk → IO (⊤ {0ℓ})
 writePlainDeck dir cfg t = writeFile (dir ++ "/index.html") (Plain.renderPlain cfg t)

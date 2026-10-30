@@ -1,13 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- A talk: the parts a backend lays out, and the deck they mean.
---
--- A part is one slide or a vertical stack of slides (reveal.js nested sections) with the look
--- options of the section.  A talk is a list of parts, the free monoid on them: the Seq-fragment
--- of the deck signature, in which backends are monoid homomorphisms (`Slides.Backend.Render`).
--- `slides` forgets the grouping: the deck the machine runs on is the slides in order
--- (`deckOf` of `Slides.Deck.Syntax`), so the stack is layout only, as `slides-++` and
--- `slides-stack` say.  A stack's label is its first slide's: the outer section carries it.
+-- A talk: a list of parts (a slide, or a vertical stack of slides, each with its `Look`),
+-- the free monoid on them; backends are monoid homomorphisms from it (`Slides.Backend.Render`).
+-- `slides` forgets the grouping, so a stack is layout only:
+--   `slides-++`    slides (xs ++ ys) ≡ slides xs ++ slides ys
+--   `slides-stack` slidesP (vstack l ss) ≡ toList ss
+-- A stack's label is its first slide's.
 
 module Slides.Deck.Talk where
 

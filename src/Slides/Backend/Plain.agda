@@ -1,12 +1,9 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The standalone HTML backend: the second shell over the shared core.
---
--- Every slide is a `<section class="slide">` and a vertical stack is flattened into consecutive
--- slides (with the stack's look on each); navigation is a small external script
--- (`assets/plain.js`) with a print stylesheet (`assets/plain.css`) that shows every slide and
--- fragment.  Nothing else differs from `Slides.Backend.Reveal`: the blocks, the fragments and
--- the laws of `Slides.Backend.Render` are shared.
+-- The standalone HTML backend: the second `Shell` over the shared core (`Slides.Backend.Render`).
+-- A slide is a `<section class="slide">`; a vertical stack is flattened into consecutive slides.
+-- Navigation is `assets/plain.js`, and `assets/plain.css` prints every slide and fragment.
+-- Blocks, fragments and laws are shared with `Slides.Backend.Reveal`.
 
 module Slides.Backend.Plain where
 

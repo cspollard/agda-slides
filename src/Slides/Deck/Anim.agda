@@ -1,13 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Authoring animations: scenes of diagrams over the rationals (`Slides.Scene.Moving` at ℚ).
---
--- An `Anim` is a scene whose leaves are diagrams over scalar *terms* in one variable, the
--- parameter `now` (the value of the enclosing driver at the leaf's local time, 0 outside any).
--- `lit n` is the constant `n`, `_⊞_`/`_⊟_` and the Space and Time operations build terms; a
--- driver is a Coupling term (`move`, `tween`).  Whole ticks are written `ι n` (n/1).  `frame d l`
--- shows the leaf `l` for `d` ticks; `a ⨾ b` is `b` after `a`, `a ∥ b` together.  The leaves
--- use `Slides.Diagram.Syntax` unchanged: `rectangle (lit 40) (lit 30) style`, `beside`, `named`, ...
+-- Authoring animations: an `Anim` is a scene (`Slides.Scene.Moving` at ℚ) whose leaves are
+-- diagrams over scalar terms in one variable `now`, the value of the enclosing driver at the
+-- leaf's local time (0 outside any).  `lit n` is a constant, `_⊞_`/`_⊟_` build terms, a driver
+-- is a Coupling term (`move`, `tween`), `a ⨾ b` is b after a, `a ∥ b` together.  Leaves use
+-- `Slides.Diagram.Syntax` unchanged: `rectangle (lit 40) (lit 30) style`.
+-- Also: acts in `sequence`, their `rests`, and the still frames `Slides.Deck.Lower` ships
+-- (`layoutAt`, `lastTick`).
 
 module Slides.Deck.Anim where
 
@@ -45,7 +44,6 @@ lit n = pure (just (ι n))
 litQ : ℚ → Sc
 litQ q = pure (just q)
 
--- the parameter
 now : Sc
 now = pure nothing
 
@@ -69,7 +67,6 @@ frame′ d l = hold (ι d) (pure l)
 txt : ℕ → String → Style → Leaf
 txt size t = D.text lit 100 size t
 
-------------------------------------------------------------------------
 -- Acts and frame lists as scenes
 
 -- a leaf from a static diagram over ℕ
@@ -97,8 +94,7 @@ rests = go (ι 0)
 frames : List (D.Dia ℕ) → Anim
 frames ds = sequence (map (λ d → frame′ 1 (liftDia d)) ds)
 
--- a flip book: `ticks` frames of `f` at the eased progress `k / ticks`, `k = 0 … ticks - 1` (the
--- raw frame list the legacy `flipTween` computed, as a scene of one-tick frames)
+-- a flip book: `ticks` one-tick frames of `f` at the eased progress `k / ticks`, `k = 0 … ticks - 1`
 flipTween : ℕ → Easing → (ℚ → D.Dia ℕ) → Anim
 flipTween ticks e f = frames (map (λ k → f (ratEase e (ratRatio (ι k) (ι ticks)))) (upTo ticks))
 

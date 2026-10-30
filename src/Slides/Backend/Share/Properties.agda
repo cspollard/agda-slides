@@ -1,7 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Sharing loses nothing: the roots of `shareTop ts []` read back over its table are `ts`.
--- `unshare` is the fold of the table into trees, each entry unfolded over the entries below it.
+-- Sharing loses nothing: `readBack (shareTop ts []) ≡ ts`.  `unshare` folds the table into
+-- trees, each entry unfolded over the entries below it; the table only grows at its new end,
+-- and every entry refers only to entries below it.
 
 module Slides.Backend.Share.Properties where
 
@@ -19,7 +20,6 @@ import Data.List.Properties as Listₚ
 
 open import Slides.Backend.Share
 
-------------------------------------------------------------------------
 -- Reading back: `unshare` is a fold of the table
 
 nth : List Tree → ℕ → Tree
@@ -44,7 +44,6 @@ readEntry d (h , rs) = node h (map (at (unshare d)) rs)
 readBack : List Entry × Dag → List Tree
 readBack (es , d) = map (readEntry d) es
 
-------------------------------------------------------------------------
 -- Sharing loses nothing: `readBack (shareTop ts []) ≡ ts`
 
 -- the table only grows at the new end

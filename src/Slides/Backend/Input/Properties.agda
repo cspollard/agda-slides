@@ -1,11 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The bindings as `Supports` of the program commands, and the laws of the backends' bindings (`Slides.Backend.Input`).
---
---   *-clash-free      no key is in two kinds, in each table (by computation)
---   presents          a backend that binds all of `Nav` skips nothing: presenting a program
---                     leaves it unchanged (`lower-supported` of `Slides.Program.Supports`),
---                     for reveal (`reveal-total`) and plain (`plain-total`)
+-- Laws of the backends' bindings (`Slides.Backend.Input`).
+--   `linear-clash-free`, `stacked-clash-free`, `plain-clash-free`   no key is in two kinds (`refl`)
+--   `reveal-total`, `plain-total`   every `Nav` command has a binding
+--   `presents`   a backend binding all of `Nav` skips nothing: presenting a program leaves it
+--                unchanged (`lower-supported` of `Slides.Program.Supports`)
 
 module Slides.Backend.Input.Properties where
 
@@ -50,7 +49,6 @@ stacked-clash-free = refl
 plain-clash-free : clash-free plainKinds ≡ true
 plain-clash-free = refl
 
-------------------------------------------------------------------------
 -- Every deck is presented unchanged
 
 -- a backend that binds every command of `Nav` skips nothing
@@ -74,7 +72,6 @@ reveal-total n = nav n , refl
 plain-total : ∀ n → Σ[ s ∈ Nav ] Supports.inj plainSupports n ≡ just s
 plain-total n = n , refl
 
-------------------------------------------------------------------------
 -- Hashes are written as the page reads them (`revealHash`, `plainHash`)
 
 _ : showHash (flat 3) ≡ "#3"

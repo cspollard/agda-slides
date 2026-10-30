@@ -2,22 +2,15 @@
 
 -- Decks: a scene of scenes over content leaves.
 --
---   Body         what an author writes for one slide: blocks and `pause`s (the free monoid)
---   chunks b     the Beamer split: the blocks between pauses; fragment index = start tick
---   slideScene   one slide as a scene over `Flow` leaves on the tick clock:
---                chunk i is present from tick i, so a pause is `Delay 1` under `Par`
---                (`chunk i ∥ delay 1 (chunk (i+1) ∥ ...)`), and the slide is held for its
---                `1 + pauses` ticks, one per state a presenter passes through
---   Deck         a scene whose leaves are slides, in sequence (`Seq`): the slide leaf is read
---                for its own duration (`Slides.Deck.Read`), so a deck is a scene of scenes
---   flat         the deck as one scene over `Flow` leaves: substitution of each slide's scene
---                for its leaf, which is `_>>=_` (nesting by substitution)
+--   Body        what an author writes for a slide: blocks and `pause`s (the free monoid)
+--   chunks b    the blocks between pauses; chunk i appears at tick i
+--   slideScene  `chunk 0 ∥ delay 1 (chunk 1 ∥ delay 1 (...))`, held for `1 + pauses` ticks
+--   Deck        a scene whose leaves are slides in sequence: a scene of scenes
+--   flat        the deck as one scene over `Flow`: substitution of each slide's scene, `_>>=_`
 --
--- Why chunks: the legacy elaboration (`Slides.Steps`) threaded a mode through a body and wrapped
--- every later command in a fragment of its own; here the meaning is the start tick of the chunk
--- (`Slides.Deck.Read.index`), and a body's pauses are not rewritten at all.
---
---   chunks-++    a pause in one body affects the content of the next (the legacy `go-bind`)
+--   `length-chunks`  a body has `1 + pauses` chunks, one tick each
+--   `chunks-++`      chunks (xs ++ ys) ≡ glue (chunks xs) (chunks ys): the last chunk of xs
+--                    joins the first of ys, so a pause in one body affects the next
 
 module Slides.Deck.Syntax where
 
@@ -54,7 +47,6 @@ pauses []              = 0
 pauses (block _ ∷ xs)  = pauses xs
 pauses (pause ∷ xs)    = suc (pauses xs)
 
--- one tick per chunk
 length-chunks : ∀ b → L⁺.length (chunks b) ≡ suc (pauses b)
 length-chunks []             = refl
 length-chunks (block _ ∷ xs) with chunks xs | length-chunks xs
@@ -83,7 +75,6 @@ chunks-++ (block b ∷ xs) ys rewrite chunks-++ xs ys = addBlock-glue b (chunks 
 chunks-++ (pause ∷ xs)   ys with chunks xs | chunks (xs ++ ys) | chunks-++ xs ys
 ... | c ∷ cs | _ | refl = refl
 
-------------------------------------------------------------------------
 -- Scenes
 
 record Slide : Set where

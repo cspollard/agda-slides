@@ -1,21 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Content: the leaves of a slide.
+-- Content: the leaves of a slide.  A `Flow` is a list of `Block`s, the free monoid on them,
+-- laid out by the browser; overlaying two leaves of a scene is `++`, all that
+-- `Slides.Scene.Sample` asks of a leaf carrier.  Blocks nest (columns, boxes, fragments hold
+-- flows), so folds recurse through `List` by mutual functions.
 --
--- Flow content (text, lists, math, tables, boxes) is laid out by the browser, so it is a carrier
--- of its own, sharing the temporal structure of scenes but not the geometry of diagrams.  A
--- `Flow` is a list of blocks, the free monoid on them; overlaying two leaves of a scene is
--- concatenation (`++`, associative, which is all `Slides.Scene.Sample` asks of a leaf carrier).
--- Blocks nest (columns, boxes, fragments and styled divisions hold flows), which is a nested
--- inductive type: the recursion below goes through `List` by mutual functions.
---
--- Its semantics is a monoid homomorphism to lines of plain text (`plain`, `plain-++`): the
--- reading a plain-text backend gives.  The HTML reading is the other homomorphism
--- (`Slides.Backend.Render`); both need nothing else from this module.
---
--- The vocabulary is what the examples use (legacy `Slides.Core`): the legacy `Play`,
--- `paramAnimation` and pre-rendered frame lists are not here (an animation is a scene of
--- diagrams, `Slides.Deck.Anim`, shipped by `Slides.Backend.Animation`).
+-- Meaning: a monoid homomorphism to lines of plain text.
+--   `plain-++`   plain (xs ++ ys) ≡ plain xs ++ plain ys
+--   `plain-flat` a flat bullet list reads as one "- " line per item
+-- The HTML reading is the other homomorphism (`Slides.Backend.Render`).
 
 module Slides.Deck.Content where
 
@@ -78,11 +71,9 @@ data Block : Set where
 Flow : Set
 Flow = List Block
 
--- the flat call, unchanged
 bullets : Bool → List Text → Block
 bullets inc ts = bulletTree inc (map leaf ts)
 
-------------------------------------------------------------------------
 -- Plain text
 
 -- a bullet is a line indented by its depth, then its sub-bullets
@@ -97,7 +88,6 @@ mutual
   plainBullets d []       = []
   plainBullets d (i ∷ is) = plainBullet d i ++ plainBullets d is
 
--- on a flat list this is the old reading, line for line
 plain-flat : ∀ ts → plainBullets 0 (map leaf ts) ≡ map (λ t → "- " ++ˢ plainT t) ts
 plain-flat []       = refl
 plain-flat (t ∷ ts) = cong (_ ∷_) (plain-flat ts)

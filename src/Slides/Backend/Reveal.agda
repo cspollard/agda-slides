@@ -1,11 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The reveal.js backend: a shell over the shared core (`Slides.Backend.Render`) and a page.
---
--- Each slide is a `<section>`; a vertical stack is a `<section>` of `<section>`s.  The page loads
--- reveal.js and its plugins, the shared animation player and `init.js`; the options of
--- `Reveal.initialize` are a JSON value printed with parsnip's printer, among them the `keyboard`
--- table for the keys where the binding differs from reveal's own (`Slides.Backend.Input`).
+-- The reveal.js backend: a `Shell` over the shared core (`Slides.Backend.Render`) and a page.
+-- A slide is a `<section>`, a vertical stack a `<section>` of them.  `index.html` loads reveal.js,
+-- the shared animation player and `init.js`, whose `Reveal.initialize` options are a JSON value
+-- printed with parsnip, including the `keyboard` table where the binding differs from reveal's
+-- own (`Slides.Backend.Input`).
 
 module Slides.Backend.Reveal where
 
@@ -39,7 +38,6 @@ shell = record
   { wrapSlide = λ a x → hElement "section" a x ∷ []
   ; wrapStack = λ a xs → hElement "section" a (map (λ x → hElement "section" [] x) xs) ∷ [] }
 
-------------------------------------------------------------------------
 -- The page
 
 -- The look of a deck: a reveal.js theme, a highlight.js style, and extra stylesheets (paths
@@ -118,7 +116,6 @@ page cfg slides =
 renderReveal : RevealConfig → Talk → String
 renderReveal cfg t = prologue ++ˢ renderXML (page cfg (renderTalk shell t))
 
-------------------------------------------------------------------------
 -- `init.js`
 
 -- the `Reveal` method a command runs

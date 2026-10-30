@@ -2,17 +2,15 @@
 
 -- Sharing repeated subtrees: the finite DAG of a tree.
 --
--- A tree is a node (its text, already printed, around its children) over a list of trees.  The shared form is a
--- table of entries, each a node whose children are *references* to earlier entries: a DAG, in which
--- equal subtrees are one entry (hash-consing; the key is the entry itself).  The table is a list,
--- newest entry first; a reference is the position of its entry counted from the oldest.
+-- A tree is a node (printed text around its children) over a list of trees.  The shared form is
+-- a table of entries, each a node whose children are references (positions, counted from the
+-- oldest) to earlier entries, so equal subtrees are one entry (hash-consing).
 --
---   shareTop : List Tree → Dag → List Entry × Dag   roots (kept as entries) over a table
---   unshare  : Dag → List Tree                       the table read back: a fold, each entry
---                                                    unfolded over the trees of the entries below it
+--   shareTop : List Tree → Dag → List Entry × Dag   roots over a table
+--   unshare  : Dag → List Tree                      the fold reading the table back
 --
--- `Slides.Backend.Share.Properties` proves `readBack (shareTop ts []) ≡ ts`: sharing loses nothing.
--- (The page does the same read-back lazily: a reference is looked up when it is reached.)
+-- `readBack (shareTop ts []) ≡ ts` (`Slides.Backend.Share.Properties`): sharing loses nothing.
+-- The page reads back lazily, resolving a reference when it is reached.
 
 module Slides.Backend.Share where
 
@@ -77,7 +75,6 @@ shareTop (node h ts ∷ r) d with share ts d
 ... | rs , d₁ with shareTop r d₁
 ...   | es , d₂ = (h , rs) ∷ es , d₂
 
-------------------------------------------------------------------------
 -- Writing trees and printing entries
 
 -- a tree from text and subtrees, in order
