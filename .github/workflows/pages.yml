@@ -29,11 +29,19 @@ jobs:
       - uses: wenkokke/setup-agda@v2
         with:
           agda-version: 2.7.0.1
-          agda-stdlib-version: 2.3
-          agda-defaults: |
-            standard-library
-          agda-libraries: |
-            https://github.com/agda/agda-categories.git#c2e7c13edfeb3536244777f760265f4cfe960960
+          agda-stdlib-version: none
+
+      # setup-agda only knows stdlib <= 2.1.1, so fetch the pinned libraries ourselves.
+      - name: Install libraries
+        run: |
+          git clone --depth 1 --branch v2.3 https://github.com/agda/agda-stdlib.git ~/agda-stdlib
+          git clone https://github.com/agda/agda-categories.git ~/agda-categories
+          git -C ~/agda-categories checkout c2e7c13edfeb3536244777f760265f4cfe960960
+          mkdir -p ~/.agda
+          {
+            echo ~/agda-stdlib/standard-library.agda-lib
+            echo ~/agda-categories/agda-categories.agda-lib
+          } > ~/.agda/libraries
 
       - name: Typecheck and render html/
         run: make html
