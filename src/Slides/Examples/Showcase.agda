@@ -1,6 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- A deck that uses every feature, for end-to-end tests.
+-- Every DSL feature once (pause, fragments, math, resources, tables, stacks, placed boxes,
+-- diagrams, animations, scripts), for the golden and browser tests.  Build with `make showcase`.
 
 module Slides.Examples.Showcase where
 
@@ -47,7 +48,6 @@ pipeline = connect "parse" east "render" west defaultStyle
 twoCircles : Dia ℕ
 twoCircles = beside (disc 20 (stroked "#e55" defaultStyle)) (disc 20 (stroked "#5e5" defaultStyle))
 
--- a word that changes, one act per step
 word : String → Anim
 word w = frame′ 1 (txt 40 w defaultStyle)
 

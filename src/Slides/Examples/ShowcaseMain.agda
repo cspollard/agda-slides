@@ -1,9 +1,8 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.Showcase.showcase` with both backends, to `out/showcase/`
--- (reveal.js) and `out/showcase-plain/` (standalone HTML), the same deck lowered without notes and
--- diagrams to `out/showcase-lowered/`, and lowered without notes and with animations as stills to
--- `out/showcase-still/`.  Build and run with `make showcase`.
+-- Showcase on both backends (`out/showcase/`, `out/showcase-plain/`) and lowered without notes:
+-- diagrams as placeholders (`out/showcase-lowered/`), animations as stills (`out/showcase-still/`).
+-- `make showcase`.
 
 module Slides.Examples.ShowcaseMain where
 

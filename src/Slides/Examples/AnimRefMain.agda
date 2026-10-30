@@ -1,7 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: the animations of `Slides.Examples.AnimRef` as a standalone deck, to `out/animref/`,
--- with `refs.json`, the frames Agda computes.  Build and run with `make animref`.
+-- AnimRef as a plain deck plus `refs.json`, to `out/animref/` (`make animref`).
 
 module Slides.Examples.AnimRefMain where
 

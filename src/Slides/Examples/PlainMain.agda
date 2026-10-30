@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.Talk.talk` as standalone HTML to `out/plain/`.  Build and run with `make plain`.
+-- Talk on the standalone HTML backend, to `out/plain/` (`make plain`).
 
 module Slides.Examples.PlainMain where
 

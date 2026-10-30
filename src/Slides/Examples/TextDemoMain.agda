@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.TextDemo.demo` to `out/text/`.  Build and run with `make text`.
+-- TextDemo on reveal.js, to `out/text/` (`make text`).
 
 module Slides.Examples.TextDemoMain where
 

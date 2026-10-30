@@ -1,19 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The drifting point pairs behind the title and closing slides of the Pairs deck, as a loop.
--- Each pair is two dots joined by a line; over one period of 64 ticks a pair turns (the pair is
--- unordered, so it has a direction of eight in a half turn, and turns one step every three ticks)
--- and sways to and fro along a fixed direction, a triangle wave, so the last frame runs into the
--- first and nothing jumps.  The pairs are a deterministic function of a seed (a linear
--- congruential generator), so the output is reproducible.
---
--- The picture is one leaf of a scene, a diagram over scalar *terms* in the tick `now` (the
--- parameter of a Linear tween over the period): the sway is a term in `now` (a triangle wave and a
--- percentage), the turning is a step function of `now` (a balanced tree of comparisons whose
--- values are literals, computed here from the seed), so the page evaluates it at every tick and
--- the scene is its own template: nothing is written twice, and no frame is stored.  The pairs
--- are placed on layers of the canvas's size (`place`, `overlay`), so no coordinate depends on
--- the size of another element and the layout is linear in the number of pairs.
+-- The looping background of the Pairs deck: dot pairs that turn (8 directions per half turn, one
+-- step every 3 ticks) and sway (triangle wave) over a 64-tick period, so the last frame meets the first.
+-- Pairs come from a seeded LCG, so output is reproducible.  The diagram is over scalar terms in
+-- `now` (sway: a term; turning: a balanced comparison tree), so the page evaluates it per tick and
+-- no frame is stored.  Pairs sit on canvas-sized layers (`place`, `overlay`): layout is linear in
+-- the number of pairs.
 
 module Slides.Examples.PairsHero where
 

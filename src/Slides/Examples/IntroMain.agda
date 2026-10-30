@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.Intro.demo` to `out/intro/`.  Build and run with `make example`.
+-- Intro on reveal.js, to `out/intro/` (`make example`).
 
 module Slides.Examples.IntroMain where
 

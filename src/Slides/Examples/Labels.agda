@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- A small deck with named slides, for the label navigation test: not part of the goldens.
--- Slides are, from 0: intro, details, an unnamed one, the stack `more` (two slides), end.
+-- Named slides (`slideAs`, `labelled`) for the label-navigation test; not a golden.  Build with
+-- `make labels`.  Slides from 0: intro, details, an unnamed one, the stack `more` (two), end.
 
 module Slides.Examples.Labels where
 

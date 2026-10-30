@@ -1,13 +1,13 @@
-# Minimal while the library is rebuilt (plan/Rebuild.md).  The legacy Makefile is at
-# ../agda-slides-legacy/Makefile; written for BSD tools (sed -E, no `\?`).
+# Targets: check/html (typecheck, docs), example..labels (build decks to out/), test-* (see each).
+# Written for BSD tools (sed -E, no `\?`).
 AGDA_RTS ?= +RTS -A1g -RTS
 AGDA_FLAGS ?=
 AGDA ?= agda $(AGDA_RTS) $(AGDA_FLAGS)
 
 .PHONY: check clean
 
-# Typecheck every module under src/ in one Agda process.  Executables (`*Main.agda`,
-# `Driver.agda`) need --guardedness and are checked on their own.
+# Typecheck src/ in one Agda process; executables (`*Main.agda`, `Driver.agda`) need --guardedness
+# and are checked one by one.
 check:
 	@mkdir -p _build
 	@(echo "module Everything where"; for f in $$(find src \( -name '*.agda' -o -name '*.lagda.md' \) ! -name '*Main.agda' ! -name Driver.agda | sort); do \
@@ -22,8 +22,7 @@ html:
 	    echo "import $$(echo $${f#src/} | sed -E 's#/#.#g; s#\.agda$$##')"; done) > build/Everything.agda
 	$(AGDA) --html --html-dir=html -i build build/Everything.agda
 
-# All executables share one compile directory: MAlonzo output is per module, so the (large)
-# library part is translated and compiled by GHC once.  -O0 and -j are the fastest build.
+# All executables share one compile directory, so the library is compiled by GHC once.
 GHCFLAGS ?= -O0
 GHCJOBS ?= -j
 BUILD_DIR = _build/ghc
@@ -32,8 +31,7 @@ COMPILE = $(AGDA) --compile --compile-dir=$(BUILD_DIR) --ghc-flag=$(GHCFLAGS) --
 # What the standalone (plain) decks need next to index.html.
 PLAIN_FILES = assets/plain.css assets/plain.js assets/animation.js assets/slides.css assets/plot.svg
 
-# Compile the executable module $(1) (the binary lands in the compile directory) and run it
-# with the arguments $(2).
+# Compile executable module $(1), run it with arguments $(2).
 define run-main
 $(COMPILE) $(1)
 $(BUILD_DIR)/$(basename $(notdir $(1))) $(2)
@@ -48,7 +46,7 @@ REVEAL ?= $(CURDIR)/node_modules/reveal.js
 KATEX  ?= $(CURDIR)/node_modules/katex
 FIRA   ?= $(CURDIR)/node_modules/@fontsource/fira-code
 
-# Render the example deck to out/intro/.
+# Single-backend decks: Intro (out/intro), TextDemo (out/text), Talk (reveal: out/talk; plain: out/plain).
 .PHONY: example talk plain
 example:
 	mkdir -p out/intro $(BUILD_DIR)
@@ -56,7 +54,6 @@ example:
 	cp assets/slides.css assets/animation.js out/intro/
 	$(call run-main,src/Slides/Examples/IntroMain.agda)
 
-# One slide of the shared text tree (sub/sup, a style, a break, nested bullets) to out/text/.
 .PHONY: text
 text:
 	mkdir -p out/text $(BUILD_DIR)
@@ -64,7 +61,6 @@ text:
 	cp assets/slides.css assets/animation.js out/text/
 	$(call run-main,src/Slides/Examples/TextDemoMain.agda)
 
-# Render the component-based deck to out/talk/ (reveal.js) and out/plain/ (standalone HTML).
 talk:
 	mkdir -p out/talk $(BUILD_DIR)
 	ln -sfn $(REVEAL) out/talk/reveal
@@ -76,9 +72,7 @@ plain:
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
-# The showcase deck with both backends: out/showcase/ (reveal.js) and out/showcase-plain/, and
-# lowered (no notes, no diagrams) to out/showcase-lowered/, (no notes, animations as stills) to
-# out/showcase-still/.
+# Showcase on both backends plus the lowered variants (out/showcase*).
 .PHONY: showcase
 showcase:
 	mkdir -p out/showcase out/showcase-plain out/showcase-lowered out/showcase-still $(BUILD_DIR)
@@ -89,9 +83,8 @@ showcase:
 	cp $(PLAIN_FILES) out/showcase-still/
 	$(call run-main,src/Slides/Examples/ShowcaseMain.agda)
 
-# The "It Just Takes Two" deck.  `make pairs` loads reveal.js and KaTeX from a CDN (out/pairs/,
-# needs network in the browser); `make pairs-local REVEAL=...` links a local copy of reveal.js
-# (out/pairs-local/).
+# The Pairs deck: `pairs` loads reveal.js and KaTeX from a CDN (needs network in the browser);
+# `pairs-local REVEAL=...` links a local reveal.js.
 PAIRS_FILES = assets/slides.css assets/animation.js assets/light.css assets/pairs/pairs.css
 
 .PHONY: pairs pairs-local test-pairs
@@ -106,17 +99,14 @@ pairs-local:
 	cp $(PAIRS_FILES) out/pairs-local/
 	$(call run-main,src/Slides/Examples/PairsMain.agda,local)
 
-# Drive the deck (needs `make pairs` first; also drives the local-copy build if `make pairs-local`
-# has been run).
+# Drive Pairs in a browser (needs `make pairs`; also `pairs-local` if built).
 test-pairs:
 	cd tests/browser && npm install --silent
 	node tests/browser/pairs.mjs out pairs
 	@if [ -d out/pairs-local ]; then node tests/browser/pairs.mjs out pairs-local; fi
 
-# The outreach deck "How collider physics is accelerating data science", a literate Agda file
-# (src/Slides/Examples/Collider.lagda.md, the deck in ColliderSlides.lagda.md).  `make collider`
-# loads reveal.js and KaTeX from a CDN (out/collider/); `make collider-local REVEAL=... KATEX=...` links a
-# local copy of both (out/collider-local/). 
+# The Collider outreach deck (literate Agda): `collider` uses CDNs, `collider-local` links local
+# reveal.js, KaTeX and fonts.
 COLLIDER_FILES = assets/slides.css assets/animation.js assets/light.css assets/collider/collider.css assets/collider/CMSID.jpg assets/collider/ATLASMS.jpg assets/collider/LHC-FCC.jpg
 
 .PHONY: collider collider-local
@@ -136,7 +126,7 @@ collider-local:
 	sed "1s#.*#@import url('fira.css');#" assets/collider/collider.css > out/collider-local/collider.css
 	$(call run-main,src/Slides/Examples/ColliderMain.agda,local)
 
-# A deck with a non-default key binding (not a golden), and a deck with named slides.
+# Decks for the key-binding and label-navigation tests (not goldens).
 .PHONY: keys labels test-keys test-labels
 keys:
 	mkdir -p out/keys $(BUILD_DIR)
@@ -158,11 +148,8 @@ test-labels: labels
 	cd tests/browser && npm install --silent
 	node tests/browser/labels.mjs out
 
-# Programs that must not typecheck (tests/negative/*.agda): a resource a deck did not declare,
-# animation phases of unequal length, two commands bound to one key, a deck presented on a backend
-# that binds none of `Nav`.  Each file says `-- EXPECT: <regex>`, the message of the rejection (the
-# unsolved check, or the false equation); tests/negative/controls/*.agda are the valid
-# counterparts and MUST typecheck, so a rejection cannot come from a typo.
+# tests/negative/*.agda must be rejected with the message matching their `-- EXPECT: <regex>`;
+# tests/negative/controls/*.agda are the valid counterparts and must typecheck.
 .PHONY: test-negative
 test-negative:
 	@for f in tests/negative/*.agda; do \
@@ -176,14 +163,13 @@ test-negative:
 	@for f in tests/negative/controls/*.agda; do \
 	  $(AGDA) -i tests/negative/controls $$f >/dev/null && echo "ok   $$f typechecks" || { echo "FAIL $$f"; exit 1; }; done
 
-# Closed numeric checks of Slides.Trig against exact values; `refl` on ℚ normalises slowly, so they
-# stay out of `make check`.
+# Numeric checks of Slides.Trig against exact values (slow, so not in `check`).
 .PHONY: test-numeric
 test-numeric:
 	$(AGDA) -i tests/numeric tests/numeric/TrigCheck.agda
 	$(AGDA) -i tests/numeric tests/numeric/ThreeCheck.agda
 
-# Golden-file tests (run `make example talk plain showcase` first), then the browser tests.
+# Golden-file diffs (needs `make example text talk plain showcase pairs`); test-browser: headless-Chrome checks.
 .PHONY: test test-browser
 test:
 	python3 tests/check_closure.py
@@ -218,8 +204,7 @@ test-browser:
 	node tests/browser/anim.mjs out
 	node tests/browser/plain-anim.mjs out
 
-# The page evaluator against the frames Agda computes (`animref` writes a standalone deck of
-# animations and `refs.json` to out/animref/).
+# The page evaluator against the frames Agda computes (`animref` writes the deck and refs.json).
 .PHONY: animref test-anim-ref
 animref:
 	mkdir -p out/animref $(BUILD_DIR)
@@ -230,33 +215,31 @@ test-anim-ref: animref
 	cd tests/browser && npm install --silent
 	node tests/browser/anim-ref.mjs out
 
-# Declared figures exist next to the rendered decks (run `make talk plain` first).
+# Declared figures exist next to the rendered decks (needs `make talk plain`).
 .PHONY: check-resources
 check-resources:
 	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/talk
 	python3 tests/check_resources.py src/Slides/Examples/Talk.agda out/plain
 
-# Drive the rendered showcase deck in a real browser (keyboard, fragments, config).
+# Playwright tests on rendered decks: test-playwright (showcase: keys, fragments, config), test-anim
+# (intro, needs `make example`), test-plain-anim (needs `make showcase`), test-nav (navigation, both
+# backends; needs `make example talk plain showcase`).
 .PHONY: test-playwright test-anim test-plain-anim test-nav test-browser-all
 test-playwright:
 	cd tests/browser && npm install --silent
 	node tests/browser/run.mjs out
 
-# Step through the animation slides of the intro deck (needs `make example`).
 test-anim:
 	cd tests/browser && npm install --silent
 	node tests/browser/anim.mjs out
 
-# Play the animations of the standalone backend (needs `make showcase`).
 test-plain-anim:
 	cd tests/browser && npm install --silent
 	node tests/browser/plain-anim.mjs out
 
-# Pin how decks are navigated (next/prev/first/last/goto/overview, fragments, both backends, and
-# that the two backends walk a deck identically).  Needs `make example talk plain showcase`.
 test-nav:
 	cd tests/browser && npm install --silent
 	node tests/browser/nav.mjs out
 
-# Every browser test that needs only local files (test-pairs needs a CDN, or `make pairs-local`).
+# Every browser test that needs only local files (test-pairs needs a CDN or `pairs-local`).
 test-browser-all: test-browser test-playwright test-anim test-plain-anim test-nav test-keys test-labels test-anim-ref

@@ -1,6 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- An example deck built from components, with checked resources.
+-- A deck of ready-made components (title, section, table, figure, citations, fragments) with
+-- `Resources`: an undeclared figure or reference is a type error.  `make talk` (reveal.js), `make plain`.
 
 module Slides.Examples.Talk where
 
@@ -10,7 +11,6 @@ open import Data.Product using (_,_)
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 
--- Everything the deck may refer to.  A typo in a name below is a type error.
 resources : Resources
 resources = record
   { figures    = "plot.svg" ∷ []

@@ -1,7 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- One slide of the shared text tree: sub- and superscripts, a style and a line break in prose and
--- in a diagram label, and nested bullets.
+-- The shared text tree (`Slides.Text`): sub/superscripts, styles and line breaks in prose and in
+-- diagram labels, nested bullets.  Build with `make text`.
 
 module Slides.Examples.TextDemo where
 

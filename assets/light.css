@@ -1,6 +1,5 @@
-/* The look shared by the light decks (pairs, collider): a classic light theme over reveal.js's
-   `white`.  Grayscale by default; a restrained set of accents is kept for the things the eye
-   should land on.  A deck's own sheet follows this one and sets its font size and its own classes. */
+/* Light theme over reveal.js's `white`, shared by the Pairs and Collider decks; a deck's own sheet
+   follows and sets font size and its classes.  Grayscale, with a few muted accents. */
 
 :root {
   /* neutrals */

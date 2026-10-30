@@ -1,6 +1,6 @@
-// Minimal navigation for the standalone HTML backend: arrow keys / space
-// step through fragments and slides; the slide number lives in the URL hash.
-// It also plays animations.
+// Navigation for the standalone backend (`Slides.Backend.Plain`): keys step through fragments and
+// slides, the slide number is the URL hash, animations play via animation.js.  Its key table is
+// checked against `plainKinds` (Slides.Backend.Input) by tests/check_plain_keys.py.
 (function () {
   var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
   var bar = document.querySelector('.progress');
@@ -21,8 +21,6 @@
     });
   }
 
-  // Animations: the player shared with the reveal.js backend, `animation.js`; an animation
-  // is shown while its slide is the active one
   var player = SlidesAnimation(function (a) { return a.closest('.slide').classList.contains('active'); });
   function syncAll(slide, jump) { player.syncAll(slide, jump); }
 

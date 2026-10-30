@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.Talk.talk` to `out/talk/`.  Build and run with `make talk`.
+-- Talk on reveal.js, to `out/talk/` (`make talk`).
 
 module Slides.Examples.TalkMain where
 
