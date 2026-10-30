@@ -213,6 +213,8 @@ test:
 	diff -u tests/golden/plain.js out/plain/plain.js
 	diff -u tests/golden/plain.css out/plain/plain.css
 	diff -u tests/golden/pairs.index.html out/pairs/index.html
+	diff -u tests/golden/plots.index.html out/plots/index.html
+	diff -u tests/golden/plots.css out/plots/plots.css
 	diff -u tests/golden/pairs.init.js out/pairs/init.js
 	diff -u tests/golden/pairs.css out/pairs/pairs.css
 	diff -u tests/golden/light.css out/pairs/light.css
