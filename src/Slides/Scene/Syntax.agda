@@ -10,7 +10,7 @@
 --   time   0    1    2    3    4    5
 --   a      [a a a)                          Hold 3 a
 --   b                [b b b b)              Delay 3 (Hold 4 b)
---   Seq a b = Par (Hold 3 a) (Delay 3 b);  at tick 4 the sample reads b at its local time 1
+--   Seq (Hold 3 a) (Hold 4 b) = Par (Hold 3 a) (Delay 3 (Hold 4 b));  at tick 4 the sample reads b at its local time 1
 --
 -- `T` is the scalar of durations, `D` the type of drivers (terms of the Coupling theory).
 -- A leaf under no window is present from 0 for ever.  Meaning: `Slides.Scene.Events`.
