@@ -1,0 +1,55 @@
+name: Deploy Agda HTML to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # setup-agda ships a prebuilt Agda 2.7.0.1 binary for 22.04 only (not 24.04 / ubuntu-latest).
+    runs-on: ubuntu-22.04
+    steps:
+      # .gitmodules uses an ssh URL; CI has no ssh key.
+      - run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: wenkokke/setup-agda@v2
+        with:
+          agda-version: 2.7.0.1
+          agda-stdlib-version: 2.3
+          agda-defaults: |
+            standard-library
+          agda-libraries: |
+            https://github.com/agda/agda-categories.git#c2e7c13edfeb3536244777f760265f4cfe960960
+
+      - name: Typecheck and render html/
+        run: make html
+
+      - run: cp html/Everything.html html/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: html
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
