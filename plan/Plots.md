@@ -10,6 +10,12 @@ line, scatter, step histogram, band, error bars, reference lines; linear axes wi
 labels, grid, legend; later a ratio panel under a main panel (shared x), log y, and animation of
 data.  Not in scope: interactivity, 3D surfaces, statistical fitting, reading ROOT files.
 
+**Vector only [decided].**  No rasterising and no raster marks: a plot is SVG from `Dia`, so it
+restyles with CSS, stays crisp at any size, and its output is deterministic.  Dense data is
+thinned (per pixel column for lines, a cap on scatter points).  2D histograms and heatmaps are
+rectangles with a class-based colour ramp, up to a few thousand cells; beyond that is the one
+place to revisit this.  A plot made elsewhere stays the existing `figure` block.
+
 ## Audit: is `Dia` a suitable backend?
 **Yes, with no change to the signature for phases 1-3.**  A plot is a *computation of a `Dia ℕ`
 term*; every fold, law, animation and backend then applies unchanged, as `Slides.Three.*` does.
@@ -121,6 +127,7 @@ Each is its own branch off `plots`, a line budget stated before starting, and th
 | 1 | `Axis`: `px`, `ticks`, `format` (ℚ to decimal string), laws above | 250 | `Slides.Plot.Axis`, `.Axis.Properties` |
 | 2 | Marks and `render`: line, points, steps, band, errors, ref lines; clip; frame law | 300 | `Slides.Plot.Mark`, `.Render`, `.Clip`, `.Render.Properties` |
 | 3 | Decoration and deck: axes, ticks, grid, labels, legend, `plot` in the DSL, CSS classes and palette; one example slide; goldens | 250 | `Slides.Plot.Frame`, `Deck/DSL` (one combinator), `assets/*.css`, `Examples/Plots` |
+| 3b | Optional: `Print ℚ`, a `Dia ℚ` deck block; plots lowered by the identity | 120 | `Slides.Diagram.Print`, `Deck/Content`, `Backend/Render` |
 | 4 | Ratio panel (shared x); log y with the `ln` polynomial | 300 | `Slides.Plot.Stack`, `Slides.Plot.Log` |
 | 5 | Animation: reveal series one by one (a scene of plots), morph between datasets by `Lerp`, frame list when the axis moves | 200 | `Slides.Plot.Anim` |
 | 6 | Data in: CSV read by an executable, passed as `List (ℚ × ℚ)`; nothing in core does IO | 150 | `Examples/*Main`, `Driver` |
@@ -128,9 +135,23 @@ Each is its own branch off `plots`, a line budget stated before starting, and th
 Stop after phase 3 if nothing needs more: it already replaces the static `assets/plot.svg` and
 the magic numbers of `TitleAnim`.
 
+## Optional target: `Dia ℚ`
+`Dia` is scalar-parametric, so the front end computes in ℚ and its last step is a choice of
+lowering: `round : ℚ → ℕ` gives `Dia ℕ` (every existing backend; phases 1-3), the identity gives
+`Dia ℚ` (phase 3b).  What ℚ buys: sub-unit resolution (a 1000-bin histogram on 400 units collapses
+bins in ℕ; curves are quantised to whole units), no silent truncation (`∸` clamps negatives to 0;
+`TitleAnim` works around it by hand; ℚ has negative lengths, which `Valid` already covers), and
+rounding once at the printer instead of compounding.  Safe because layout is natural in the scalar
+(`Hom`, `layout-natural-ok` under `OkDia`): existing `Dia ℕ` decks embed in `Dia ℚ` and their
+goldens do not change.  Costs: a `Print ℚ` (decimals, deterministic; the `ℚ → String` formatter
+needed for tick labels is the same code) and a way to put a `Dia ℚ` in a deck (a `diagramQ` block
+or a `Layout`-level block).  Unchecked: whether `Render`, `Share` and the JS evaluator assume ℕ;
+static plots need only the printer and block, animated ℚ plots need that checked first.  Ship ℕ
+first; if the spike shows quantisation hurting on a real plot, 3b moves earlier.
+
 ## Decisions to make before phase 1
-1. **Data scalar**: ℚ (signed, exact, stdlib) versus ℤ fixed-point (cheaper, no gcd).  Default ℚ;
-   the spike's timing decides.
+1. **Data scalar**: ℚ (signed, exact, stdlib) versus ℤ fixed-point (cheaper, no gcd).  Default ℚ
+   for data, output ℕ or ℚ by the choice above; the spike's timing decides.
 2. **Where the pixel extent comes from**: the plot declares its frame in units; the deck's
    `diagram name percent` already scales the SVG to a percentage of the slide width, so fonts scale
    with the figure.  Default: pick a frame and font size once (e.g. 640×400, 22 px) and let the
