@@ -1,14 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Moore machines over a set of commands, and their equality.
+-- Moore machines over a set of commands, up to bisimulation.
 --
--- A machine has states, an initial state, a transition for each command and an output for each
--- state.  Two machines are equal when they are *bisimilar*: a relation between their states that
--- holds at the initial states and is preserved by every command and by the output.  This is
--- a setoid (`MachineS`) with no function extensionality (states of products are functions, and
--- the relation is pointwise), which is what the generic fold lemmas of `Container.Interpret.Plain`
--- need.  The output carries its own setoid `O`, so a scene algebra that is congruent for it
--- (`Congruent`) gives congruent machines.
+-- A machine has states, an initial state, a transition per command and an output per state.
+-- Machines are equal when bisimilar: a relation on states holding initially and preserved by
+-- every command and by the output.  `MachineS` is a setoid, with no function extensionality (the
+-- relation on product states is pointwise), as the generic lemmas of `Container.Interpret.Plain`
+-- need.  The output has its own setoid `O`, so a `Congruent` scene algebra gives congruent machines.
 
 module Slides.Program.Machine where
 

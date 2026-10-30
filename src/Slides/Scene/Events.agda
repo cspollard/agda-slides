@@ -1,21 +1,20 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Events: the meaning of a scene as a sparse list.
+-- Events: a scene as a sparse list, the fold `evH` of the signature into durations and events.
 --
--- An `Event` is a leaf with an onset, a span (`nothing`: for ever) and the driver, if any, that
--- feeds the leaf its moving value.  Time inside the leaf is local: the leaf is read at the
--- time since its onset.  Shifting by `δ` moves only the onset, so `shiftE` is an action of the
--- durations (`shift-zero`, `shift-shift`): this is the whole of "nested clocks".  A window
--- keeps the events that start inside it and cuts their spans (`clipE`).
+-- An `Event` is a leaf with an onset, a span (`nothing`: for ever) and the driver feeding it.
 --
 --      onset            onset + span
---        |<---- span ---->|           an event, in the time of its enclosing scene
+--        |<---- span ---->|        an event, in the time of the enclosing scene
 --
--- The scene is read by one fold, `evH`, of the signature into `Media`: the duration and the
--- events.  A substitution of scenes for leaves is a bind, so its meaning is the fold with the
--- leaves' meanings (`events-bind`, from `pfold-bind`).  Durations below zero read as zero
--- (`pos`), so every onset is non-negative (`Pos`).  `Seq` and `Repeat` are not primitive
--- here: `Seq a b` is `a` held for its duration beside `b`, delayed by it and held for its own.
+-- Time in a leaf is local (time since onset), so a shift moves only onsets: `shiftE` is an
+-- action of the durations, which is all of "nested clocks".  A window keeps the events that
+-- start inside it and cuts their spans (`clipE`); durations below zero read as zero (`pos`).
+--
+--   shift-zero, shift-shift   `shiftE` is an action
+--   events-bind               meaning of a substitution is the fold with the leaves' meanings
+--
+-- `Seq` and `Repeat` are derived: `a ⨾ b` is `a` held for its duration beside `b` delayed by it.
 
 open import Slides.Scalar.Core using (OrdMon; Sub)
 
@@ -60,7 +59,6 @@ pos-nonneg d = ⊔-ub₁ 0# d
 pos-≤ : ∀ {d} → 0# ≤ d → pos d ≡ d
 pos-≤ 0≤d = ⊔-≤ 0≤d
 
-------------------------------------------------------------------------
 -- Events: shifting, windowing, driving
 
 shiftE : T → ∀ {L} → Event L → Event L
@@ -104,7 +102,6 @@ shift-zero (event o s c a) = cong (λ x → event x s c a) (+-idˡ o)
 shift-shift : ∀ {L} δ ε (e : Event L) → shiftE δ (shiftE ε e) ≡ shiftE (δ + ε) e
 shift-shift δ ε (event o s c a) = cong (λ x → event x s c a) (sym (+-assoc δ ε o))
 
-------------------------------------------------------------------------
 -- The meaning of a scene: duration and events
 
 module _ {L : Set} where

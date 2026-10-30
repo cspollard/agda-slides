@@ -1,17 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Durations, absence and the boundary of `Seq`.
+-- Durations, absence and the boundary of `Seq`, on readings.
 --
---   duration     of `⨾`, `hold`, `delay`, `drive`, `repeat` and `gap`: the sum, the window `pos d`, the
---                delay plus the scene, the scene's, `n` times, and `d`;
---   absence      `hold 0# s` shows nothing (`win-zero`, `absent-sample`), so a gap `delay d (hold 0# s)`
---                shows nothing for `d` (`gap-sample`), and it is the unit of `Par` on readings
---                (`par-gap`) and, for a gap no longer than the scene, on durations (`duration-par-gap`);
---   boundary     the first operand of `a ⨾ b` is seen before its duration, and from the duration on the
---                second, from its own time 0 (`seq-before`, `seq-after`, `seq-boundary`): right-continuity.
+--   win-zero, absent-sample   `hold 0# s` shows nothing
+--   gap-sample                a gap `delay d (hold 0# s)` shows nothing for `d`
+--   par-gap, duration-par-gap a gap is the unit of `Par` on readings, and on durations when no
+--                             longer than the scene
+--   seq-before, seq-after, seq-boundary
+--                             `a ⨾ b` shows `a` before its duration and `b` from its own time 0
+--                             after it: right-continuity
+--   duration-nonneg           every scene has a non-negative duration (the boundary laws need it)
 --
--- Readings are the direct ones (`Slides.Scene.Sample`); `events-sample` carries them to events.  The
--- boundary laws hold for non-negative durations (`duration-nonneg`: every scene has one).
+-- Duration clauses: sum for `⨾`, the window for `hold`, delay plus scene for `delay`, `n` times for
+-- `repeat`.  `events-sample` (`Slides.Scene.Sample`) carries these to events.
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub)
@@ -34,7 +35,6 @@ open import Slides.Scene.Laws M Sb val O using (duration-nonneg)
 open OrdMon M
 open Sub Sb
 
-------------------------------------------------------------------------
 -- Durations (the events' fold; the clauses are the handler's)
 
 module _ {A : Set} where
@@ -76,7 +76,6 @@ gap d s = delay d (absent s)
 duration-gap : ∀ {A : Set} {d} → 0# ≤ d → (s : Scene T D A) → duration (gap d s) ≡ d
 duration-gap {d = d} 0≤d s rewrite pos-≤ (≤-refl {0#}) | pos-≤ 0≤d = +-idʳ d
 
-------------------------------------------------------------------------
 -- Windows and shifts of readings
 
 win-zero : ∀ t (y : Maybe X) → win 0# t y ≡ nothing
@@ -110,7 +109,6 @@ back-after {w} {t} w≤t r with w ≤? t
 ... | yes _ = refl
 ... | no ¬h = ⊥-elim (¬h w≤t)
 
-------------------------------------------------------------------------
 -- Absence and gaps
 
 absent-sample : ∀ {A : Set} (ℓ : A → T → X) (s : Scene T D A) t q →
@@ -135,7 +133,6 @@ duration-par-gap : ∀ {A : Set} {d} → 0# ≤ d → (a : Scene T D A) (s : Sce
                    d ≤ duration a → duration (a ∥ gap d s) ≡ duration a
 duration-par-gap 0≤d a s d≤a = trans (cong (duration a ⊔_) (duration-gap 0≤d s)) (⊔-≥ d≤a)
 
-------------------------------------------------------------------------
 -- The boundary of Seq
 
 module _ {A : Set} (ℓ : A → T → X) (a b : Scene T D A) where

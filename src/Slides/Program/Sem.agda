@@ -2,24 +2,20 @@
 
 -- The meaning of a program: a Moore machine, by a fold.
 --
--- A scene algebra on the output (`hS`, congruent for the output setoid `O`) says what a scene
--- operation does to the outputs of its children; `blank` is the output of a machine that is
--- waiting for its first command.  The fold of the program signature into machines is
+--   state --output--> scene reading            command --> next state
 --
---   scene op o, children k   the product machine: every child sees every command, the output is
---                            `hS o` of the children's outputs (a synchronous product: `Par`
---                            of two programs that wait both wait for the same commands)
---   await c ; k              waits in a blank state; `c` moves to the start of `k`, any other
---                            command is ignored
---   pure a                   the leaf machine given by `l a`
+-- Given a scene algebra `hS` on outputs (congruent for `O`) and a leaf machine `l a`, the fold is
 --
--- Laws (machine equality is bisimilarity, `Slides.Program.Machine`):
+--   scene op o, children k   the synchronous product: every child sees every command; the output
+--                            is `hS o` of theirs (`Par` of two waiting programs waits for both)
+--   await c ; k              a blank state; `c` moves to the start of `k`, others are ignored
+--   pure a                   `l a`
 --
---   sem-bind       the fold is a monad morphism: grafting leaves commutes with it
---   inject-const   a program that never waits is a constant machine, with the scene's meaning
+--   sem-bind               the fold is a monad morphism: grafting leaves commutes with it
+--   inject-const           a program that never waits is a constant machine, the scene's meaning
 --   await-step, await-ignore   the transitions of a wait
 --
--- Both are instances of the generic lemmas of `Container.Interpret.Plain`.
+-- Equality of machines is bisimilarity (`Slides.Program.Machine`).
 
 open import Level using (0ℓ)
 open import Relation.Binary.Bundles using (Setoid)
@@ -51,7 +47,6 @@ open import Slides.Program.Machine
 private module O = Setoid O
 open Machine
 
-------------------------------------------------------------------------
 -- The machine algebra
 
 Mach : Set₁
@@ -114,7 +109,6 @@ sem-bind : ∀ {A B} (l : B → Mach) (f : A → Program T D C B) (p : Program T
            Bisim O (sem l (p >>= f)) (sem (λ a → sem l (f a)) p)
 sem-bind l f = pfold-bind (MachineS O C) hP-cong f (λ a → bisim-refl O)
 
-------------------------------------------------------------------------
 -- Waiting
 
 sem-await : ∀ {A} (l : A → Mach) (k : Program T D C A) (c : C) →
@@ -139,7 +133,6 @@ await-step M c rewrite ⌊⌋-refl c = refl
 await-ignore : ∀ M {c c′} → (c′ ≡ c → ⊥) → step (awaitM c M) (init (awaitM c M)) c′ ≡ inj₁ tt
 await-ignore M n rewrite ⌊⌋-no n = refl
 
-------------------------------------------------------------------------
 -- A scene is a program that never waits
 
 -- the algebra of constant machines is the scene algebra

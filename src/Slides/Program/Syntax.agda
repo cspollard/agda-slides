@@ -2,15 +2,16 @@
 
 -- Programs: scenes that can wait for a command.
 --
--- The signature of a program is the scene signature plus one operation, `await c`, with a
--- single continuation: "wait until the command `c` arrives, then go on".  A program is the free
--- monad over the sum (`Container.Sum`), so a scene is a program that never waits (`inject`),
--- substitution is bind, and the meaning is a fold (`Slides.Program.Machine`).
+-- The scene signature plus `await c`, with one continuation: wait until `c` arrives, then go on.
+-- A program is the free monad over the sum, so substitution is bind.
 --
---   inject s   a scene as a program (the container morphism `inl`)
---   skip p     a program as a scene: every wait is taken as already satisfied (a lowering)
+--   inject s   a scene as a program: it never waits
+--   skip p     a program as a scene: every wait is taken as satisfied
 --
--- `skip-inject`: skip is a retraction of inject; `skip-bind`: skip is a monad morphism.
+--   skip-inject   `skip` is a retraction of `inject`
+--   skip-bind     `skip` is a monad morphism
+--
+-- Meaning: a Moore machine (`Slides.Program.Sem`).
 
 module Slides.Program.Syntax where
 

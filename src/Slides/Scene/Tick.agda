@@ -2,13 +2,15 @@
 
 -- Clocks: reading a scene along an order embedding of time (`ι : ℕ → ℚ`).
 --
--- A scene over the durations of one clock maps to a scene over another by `h` on its durations
--- (`mapScene h g`, `Slides.Scene.Syntax`, a container morphism, so `translate`).  If `h` is an order embedding
--- (`IsOrdMonHom`, which preserves `⊔`, comparisons and exact differences), drivers are carried
--- (`g-val`) and overlay is (`IsOverlayHom`), then reading the mapped scene at `h t` is reading the
--- original at `t` (`tick-hom`): durations map by `h`, and the frames by `F`, given that leaves
--- do (`ℓ-ok`).  It is the logical relation `R` over the signature, one lemma per operation.
--- `Slides.Scene.Digital` instantiates it at `ι` with `digitise` for the leaves.
+-- `mapScene h g` maps durations by `h` and drivers by `g`.  If `h` is an order embedding
+-- (`IsOrdMonHom`: preserves `⊔`, comparisons, exact differences), drivers are carried (`g-val`)
+-- and overlay is (`IsOverlayHom`), then
+--
+--   tick-hom   reading the mapped scene at `h t` is reading the original at `t`:
+--              durations map by `h`, frames by `F`, given that leaves do (`ℓ-ok`)
+--
+-- A logical relation over the signature, one lemma per operation.  Instantiated at `ι` in
+-- `Slides.Scene.Digital`.
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub; IsOrdMonHom)
@@ -51,7 +53,6 @@ private
 open IsOrdMonHom H
 open IsOverlayHom HF
 
-------------------------------------------------------------------------
 -- Windows, shifts and overlay commute with `h`
 
 private
@@ -93,7 +94,6 @@ private
   ... | yes hh = ⊥-elim (w≰t (h-reflect hh))
   ... | no _ = refl
 
-------------------------------------------------------------------------
 -- The relation: durations map by `h`, readings by `F`
 
 R : S₁.Timed → S₂.Timed → Set

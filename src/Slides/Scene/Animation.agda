@@ -1,19 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Animation: a scene of diagrams whose scalars mention a time variable, read at a tick.
+-- Animation: a scene of diagrams whose scalars are terms in one time parameter, read at a tick.
 --
--- A leaf is a diagram whose scalars are terms of the Space and Time signatures in one variable,
--- the *parameter* (`nothing`; `just k` is a constant).  The parameter is the value of the
--- driver of the enclosing `Drive` at the leaf's local time (0 outside any `Drive`), so a moving
--- value is a term of the Coupling theory, not a track (`Slides.Scene.Moving`).  Read at a
--- parameter, a leaf is the layout of its instance; frames overlay in the join of their frames
--- (`ovl`, associative: the drawings and anchors concatenate), absence is the unit.
+-- The parameter (`nothing`; `just k` a constant) is the driver's value at the leaf's local time
+-- (0 outside any `Drive`).  Frames overlay in the join of their frames (`ovl`, associative;
+-- absence is the unit).
 --
---   frame s n          the frame of `s` at the tick `n`: the reading at `tick n`
---   frame-assembly     it is the overlay of the layouts of the leaves active at that tick, each
---                      at its local time (the assembly statement, from `Slides.Scene.Laws`)
---
--- Layout is that of `Slides.Diagram.Layout`; the time axis is `Slides.Scalar.Time`'s tick.
+--   frame s n       the frame at tick `n`, the reading at `tick n`
+--   frame-assembly  it is the overlay of the layouts of the leaves active at `n`, each at its
+--                   local time (from `Slides.Scene.Laws`)
 
 open import Slides.Scalar.Space using (Space)
 open import Slides.Scalar.Time using (Time)
@@ -41,7 +36,6 @@ open import Slides.Diagram.Layout Sp using (layout)
 open import Slides.Scene.Syntax
 open Space Sp using (_⊔_; _-_)
 
-------------------------------------------------------------------------
 -- Frames overlay
 
 open import Slides.Scene.Events {T} {D} (Space.ord Sp) (Space.sub Sp) public
@@ -49,7 +43,6 @@ open import Slides.Scene.Sample {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp)
 open import Slides.Scene.Laws {T} {D} {Layout T} (Space.ord Sp) (Space.sub Sp) val layoutOverlay
   using (actives; leafAt; overlay; sample-assembly)
 
-------------------------------------------------------------------------
 -- Leaves: diagrams over scalar terms in the parameter
 
 Sc : Set
@@ -74,7 +67,6 @@ leafLayout l p = layout (inst p l)
 Anim : Set
 Anim = Scene T D Leaf
 
-------------------------------------------------------------------------
 -- Frames
 
 frameAt : Anim → T → Maybe (Layout T)

@@ -1,11 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Change of clock and drivers is a functor: `mapScene` preserves identities and composition,
--- as `mapDia` does (`Slides.Diagram.Functoriality`).  `mapScene h g = translate (mapSC h g)`.
+-- `mapScene` (change of clock and drivers) is a functor, as `mapDia` is.
 --
 --   mapScene id id ≈ id        mapScene h₂ g₂ ∘ mapScene h₁ g₁ ≈ mapScene (h₂ ∘ h₁) (g₂ ∘ g₁)
---
--- and folding a mapped scene is folding the original with the handler pulled back (`fold-mapScene`).
+--   fold-mapScene              folding a mapped scene is folding the original with the handler
+--                              pulled back
 
 module Slides.Scene.Functoriality where
 
