@@ -152,6 +152,10 @@ module ConvenienceWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
   text = Slides.Diagram.Syntax.text fromℕ 100
   bold = Slides.Diagram.Syntax.text fromℕ 108
 
+  -- text anchored on its place (see `textAt`)
+  tagged : String → ℕ → String → Style → Dia S
+  tagged = textAt 0# fromℕ
+
   -- text in the slide colour; `dim` a muted caption, `big` a heavier title
   txt dim big : ℕ → String → Dia S
   txt  size t = text size t defaultStyle

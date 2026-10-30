@@ -39,7 +39,6 @@
 
 module Slides.Examples.ATLAS where
 
-open import Data.Container.FreeMonad using (impure)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Integer using (ℤ; +_) renaming (_*_ to _*ᶻ_; -_ to negᶻ)
 open import Data.Rational.Unnormalised using (ℚᵘ; mkℚᵘ; 0ℚᵘ; 1ℚᵘ; -_)
@@ -49,8 +48,7 @@ open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String)
 
 open import Slides.Diagram.Convenience
-open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed; anchored)
-open import Slides.Text using (parse)
+open import Slides.Diagram.Style using (filled; stroked; thick; faded; dashed)
 open import Slides.Trig using (fromℕ)
 open import Slides.Three.Point
 open import Slides.Three.View
@@ -287,7 +285,7 @@ module Parts (T : Theme) (V : View) where
   -- a line of text that starts at its frame's left edge: the frame has no width, so the text does
   -- not depend on the width the page's font gives it
   label : ℕ → String → Style → Dia ℕ
-  label size t st = impure (Text 0 (size * 3 / 2) size (parse t) (anchored "start" st) , λ ())
+  label = tagged "start"
 
   swatch : String → Dia ℕ
   swatch c = disc 9 (paint c c 1 100)

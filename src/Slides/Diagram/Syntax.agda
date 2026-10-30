@@ -52,7 +52,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 
 open import Container.Pick using (pick2)
 open import Container.Lowering using (translate)
-open import Slides.Diagram.Style using (Style)
+open import Slides.Diagram.Style using (Style; anchored)
 open import Slides.Diagram.Draw using (mapPt)
 open import Slides.Diagram.TextMetrics using (inlineWidth)
 open import Slides.Text using (Inline; parse; lines)
@@ -177,6 +177,12 @@ textI fromℕ pct size is s =
 -- the same for a label written with markup (`Slides.Text.parse`)
 text : ∀ {S} → (ℕ → S) → (pct size : ℕ) → String → Style → Dia S
 text fromℕ pct size t = textI fromℕ pct size (parse t)
+
+-- a line of text in a frame of no width, anchored (at its "start", "middle" or "end") on the point
+-- it is placed at, so that its place does not depend on the width the page's font gives it
+textAt : ∀ {S} → S → (ℕ → S) → String → (size : ℕ) → String → Style → Dia S
+textAt 0# fromℕ a size t s =
+  impure (Text 0# (fromℕ ((size * 3) / 2)) size (parse t) (anchored a s) , λ ())
 
 besideA : ∀ {S} → VAlign → Dia S → Dia S → Dia S
 besideA al a b = impure (Beside al , pick2 a b)

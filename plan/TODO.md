@@ -32,7 +32,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] The open theorems in `docs/Dropped.md`: loop law, example-level agreement, coupling exactness at ticks, scene-level footprint, key-table soundness.
 - [ ] 3D: orthogonality of `tangent` (c² + s² = 1) and invariance of `cis` under full turns; both need ℚ lemmas stdlib lacks (a floor lemma for `(a + d) / d`).
 - [x] 3D: `pitch`, `box`, `cylinder` and the cube example (`make tensor`).
-- [ ] 3D, optional: a shared `labelAt`, perspective, an `Anim` hook (`plan/3D.md`).
+- [ ] 3D, optional: perspective, an `Anim` hook (`plan/3D.md`).
 - [ ] Discharge `PctDigital`; halving for centring; `Min` and `ModBy` nodes.
 - [ ] Non-isotropic scaling as a connective with smeared text (on hold).
 - [ ] Generated JS evaluator, so that `assets/animation.js` is one table rather than tested by hand.
