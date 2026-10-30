@@ -44,5 +44,6 @@ make test-browser-all       browser tests (needs Playwright)
 make html                   rendered module documentation in html/
 ```
 
-`plan/TODO.md` lists what is open; `docs/Dropped.md` lists the theorems of the previous
-implementation (git tag `legacy`) that the rebuild does not yet prove.
+`docs/Contributing.md` has the working rules; `plan/TODO.md` lists what is open;
+`docs/Dropped.md` lists the theorems of the previous implementation (git tag `legacy`) not yet
+restated.
