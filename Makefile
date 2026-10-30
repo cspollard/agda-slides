@@ -80,6 +80,14 @@ plain:
 	cp $(PLAIN_FILES) out/plain/
 	$(call run-main,src/Slides/Examples/PlainMain.agda)
 
+# Plots (Slides.Plot): out/plots.
+.PHONY: plots
+plots:
+	mkdir -p out/plots $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/plots/reveal
+	cp assets/slides.css assets/plots.css out/plots/
+	$(call run-main,src/Slides/Examples/PlotsMain.agda)
+
 # Showcase on both backends plus the lowered variants (out/showcase*).
 .PHONY: showcase
 showcase:

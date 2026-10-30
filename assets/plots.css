@@ -1,0 +1,16 @@
+/* Plots (Slides.Plot): colours and strokes for the classes `Slides.Plot.Render` writes.
+   Series colours are the Okabe-Ito palette (colour-blind safe); override --plot-N per deck. */
+.reveal {
+  --plot-1: #56b4e9; --plot-2: #e69f00; --plot-3: #cc79a7; --plot-4: #f0e442;
+  --plot-5: #009e73; --plot-6: #d55e00; --plot-7: #0072b2; --plot-8: #999999;
+}
+.reveal svg .plot-s1 { --c: var(--plot-1); } .reveal svg .plot-s2 { --c: var(--plot-2); }
+.reveal svg .plot-s3 { --c: var(--plot-3); } .reveal svg .plot-s4 { --c: var(--plot-4); }
+.reveal svg .plot-s5 { --c: var(--plot-5); } .reveal svg .plot-s6 { --c: var(--plot-6); }
+.reveal svg .plot-s7 { --c: var(--plot-7); } .reveal svg .plot-s8 { --c: var(--plot-8); }
+.reveal svg .plot-line { stroke: var(--c); fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+.reveal svg .plot-fill { fill: var(--c); fill-opacity: 0.3; stroke: var(--c); stroke-width: 1.5; }
+.reveal svg .plot-dot  { fill: var(--c); stroke: none; }
+.reveal svg .plot-axis { stroke: currentColor; fill: none; stroke-width: 1.5; }
+.reveal svg .plot-grid { stroke: currentColor; stroke-opacity: 0.15; fill: none; stroke-width: 1; }
+.reveal svg text.plot-text { fill: currentColor; }
