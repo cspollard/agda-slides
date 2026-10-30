@@ -15,30 +15,25 @@ open import Data.Rational as ℚ using (ℚ; _+_; _-_; _*_)
 open import Slides.Deck.Talk using (Talk)
 open import Slides.Deck.DSL
 open import Slides.Diagram.Style using (defaultStyle; dashed)
+open import Slides.Deck.Anim using (Linear)
+open import Slides.Plot.Anim
 open import Slides.Plot.Data
 open import Slides.Plot.Mark
 open import Slides.Plot.Render
 open import Slides.Scalar.Model.Rat using (ι)
 
-private
-  lorentz : ℚ → ℚ
-  lorentz x = inv (ι 1 + x * x)
-
-  xs : List ℚ
-  xs = linspace 80 (ι 0 - ι 4) (ι 4)
-
-  curve : _
-  curve = graph lorentz xs
-
-  band′ : _
-  band′ = map (λ { (x , y) → x , y - decimal (+ 1) 1 * y , y + decimal (+ 1) 1 * y }) curve
-
-peak : Plot
-peak = plot 640 400 (axisSpec (ι 0 - ι 4) (ι 4) "x") (axisSpec (ι 0) (ι 1) "1 / (1 + x²)")
-  ( series (band (colour 2) band′) (just "±10%")
+-- a Lorentzian of curvature `w` with a ±10% band and its half maximum
+peakW : ℚ → Plot
+peakW w = plot 640 400 (axisSpec (ι 0 - ι 4) (ι 4) "x") (axisSpec (ι 0) (ι 1) "1 / (1 + w x²)")
+  ( series (band (colour 2) (map (λ { (x , y) → x , y - tenth * y , y + tenth * y }) curve)) (just "±10%")
   ∷ series (line (colour 1) curve) (just "Lorentzian")
   ∷ series (hline (dashed "6 4" (colour 3)) (decimal (+ 5) 1)) (just "half maximum")
   ∷ [] )
+  where tenth = decimal (+ 1) 1
+        curve = graph (λ x → inv (ι 1 + w * x * x)) (linspace 80 (ι 0 - ι 4) (ι 4))
+
+peak : Plot
+peak = peakW (ι 1)
 
 -- a falling spectrum in ten bins, with a data point (and its error) in each
 edges : List ℚ
@@ -85,3 +80,7 @@ talk = do
             diagram "ratio" 80 (withRatio (record hist { height = 280 }) ratio))
   slide (do heading 2 "A log axis"
             diagram "power" 80 (render power))
+  slide (do heading 2 "Series, one at a time"
+            animate "reveal" 80 400 (reveal peak))
+  slide (do heading 2 "Morphing the data"
+            animate "morph" 80 60 (morph 16 Linear peak (peakW (ι 4)) ∷ []))
