@@ -58,7 +58,7 @@ open import Slides.Scene.Syntax using (_⨾_)
 open import Slides.Text using (markup)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 open Mv using (Anim; Leaf; Sc; Drv; Event; onset; span; driver; leaf)
-open import Slides.Backend.Share using (Tree; tree; ship; shareTop)
+open import Slides.Backend.Share using (Tree; tree; ship; shareTop; emptyTab)
 open import Slides.Backend.HTML using (hElement; hText; Attrs)
 
 -- JSON values
@@ -204,8 +204,8 @@ eventT e = tree
 -- the events with their diagrams and terms shared: {"n": table of nodes, "e": events}.  A node
 -- is an array (a term or a diagram), a reference to a node the string of its position in the table
 eventsJSON : Anim → String
-eventsJSON a with shareTop (map eventT (Mv.events a)) []
-... | es , d with ship es d
+eventsJSON a with shareTop (map eventT (Mv.events a)) emptyTab
+... | es , d , _ with ship es d
 ...   | tbl , evs = "{\"n\":[" ++ˢ intersperse "," tbl ++ˢ "],\"e\":[" ++ˢ intersperse "," evs ++ˢ "]}"
 
 -- The first frame, printed here

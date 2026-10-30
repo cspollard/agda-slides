@@ -25,10 +25,11 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] Background image; PNG and PDF primitives (how to ship: copy into `out/`; what Plain does).
 - [ ] Slide number for the Plain backend (Reveal has it); decide per-slide command versus deck option, and stacks.
 - [ ] README and module-level documentation with geometric intuition, written as each module is touched.
-- [ ] Compilation time: measure first (`n / 1` made `Hom` exponential); pairs with setoid equality.
+- [x] Compilation time: measured, not slow (loading dominates).
+- [x] Collider run time (40 s to about 19 s): sharing looked entries up linearly by decidable equality; `Slides.Backend.Share` now uses an AVL index (validated hint, proof unchanged).  The rest is the sheer number of tree nodes visited (every event carries its whole diagram) and `ship`, which is quadratic in the table; next step would be sharing before the events are expanded.
 
 ## Theory
-- [ ] Setoid equality throughout the scalar theories (unnormalised ℚ as a model); the theory records state their laws with `≡`; make them setoid-based (laws up to a carried equivalence, folds into setoids via the `Container` setoid algebras) so that models with non-canonical representatives fit, e.g. an unnormalised ℚ that defers gcd cost (it made `Hom` exponential when `ι n` was `n / 1`).  Measured (`plan/Rationals.md`): gcd is not the cost (3.5% of Collider's 40 s run; typechecking is load-dominated), so this is a design goal only, not a speed-up; the Collider run time is string and list decidable equality.
+- [ ] Setoid equality throughout the scalar theories (laws up to a carried equivalence; non-canonical models such as an unnormalised ℚ): planned, wanted for the mathematics, not a speed-up (`plan/Rationals.md`).  Until then raw `ℚᵘ` arithmetic is usable as is.
 - [ ] The open theorems in `docs/Dropped.md`: loop law, example-level agreement, coupling exactness at ticks, scene-level footprint, key-table soundness.
 - [ ] 3D: orthogonality of `tangent` (c² + s² = 1) and invariance of `cis` under full turns; both need ℚ lemmas stdlib lacks (a floor lemma for `(a + d) / d`).
 - [x] 3D: `pitch`, `box`, `cylinder` and the cube example (`make tensor`).

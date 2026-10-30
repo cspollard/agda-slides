@@ -1,6 +1,6 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Sharing loses nothing: `readBack (shareTop ts []) ≡ ts`.  `unshare` folds the table into
+-- Sharing loses nothing: `readBack (shareTop ts emptyTab) ≡ ts`.  `unshare` folds the table into
 -- trees, each entry unfolded over the entries below it; the table only grows at its new end,
 -- and every entry refers only to entries below it.
 
@@ -19,6 +19,7 @@ import Data.Nat.Properties as ℕₚ
 import Data.List.Properties as Listₚ
 
 open import Slides.Backend.Share
+import Data.Tree.AVL.Map entryOrder as Index
 
 -- Reading back: `unshare` is a fold of the table
 
@@ -41,10 +42,10 @@ readEntry : Dag → Entry → Tree
 readEntry d (h , rs) = node h (map (at (unshare d)) rs)
 
 -- The statement: the roots read back over the table are the trees shared.
-readBack : List Entry × Dag → List Tree
-readBack (es , d) = map (readEntry d) es
+readBack : List Entry × Tab → List Tree
+readBack (es , d , _) = map (readEntry d) es
 
--- Sharing loses nothing: `readBack (shareTop ts []) ≡ ts`
+-- Sharing loses nothing: `readBack (shareTop ts emptyTab) ≡ ts`
 
 -- the table only grows at the new end
 data _⊑_ : Dag → Dag → Set where
@@ -97,52 +98,56 @@ WF ((h , rs) ∷ d) = All (_< length d) rs × WF d
 ⊑-WF (⊑-cons q) (_ , w) = ⊑-WF q w
 
 -- a found entry sits at the position `length t` above a table `t`
-find-sound : ∀ e d {n i} → n ≡ length d → find e d n ≡ just i → ∃ λ t → (e ∷ t) ⊑ d × i ≡ length t
-find-sound e []       refl ()
-find-sound e (x ∷ xs) {suc n} refl eq with x ≟ᵉ e
-... | yes refl = xs , ⊑-refl , sym (just-injective eq)
-... | no _ with find-sound e xs refl eq
-...   | t , q , r = t , ⊑-cons q , r
+find-sound : ∀ e i d {n j} → n ≡ length d → find e i d n ≡ just j → ∃ λ t → (e ∷ t) ⊑ d × j ≡ length t
+find-sound e i []       refl ()
+find-sound e i (x ∷ xs) {suc n} refl eq with n ℕₚ.≟ i
+... | no _ = let t , q , r = find-sound e i xs refl eq in t , ⊑-cons q , r
+... | yes _ with x ≟ᵉ e
+...   | yes refl = xs , ⊑-refl , sym (just-injective eq)
 
--- what `share₁` and `share` establish
-Ok₁ : Dag → Tree → ℕ × Dag → Set
-Ok₁ d t (r , d′) = WF d′ × d ⊑ d′ × r < length d′ × at (unshare d′) r ≡ t
+known-sound : ∀ e t {j} → known e t ≡ just j → ∃ λ u → (e ∷ u) ⊑ proj₁ t × j ≡ length u
+known-sound e (d , x) eq with Index.lookup x e
+... | just i = find-sound e i d refl eq
 
-Ok : Dag → List Tree → List ℕ × Dag → Set
-Ok d ts (rs , d′) = WF d′ × d ⊑ d′ × All (_< length d′) rs × map (at (unshare d′)) rs ≡ ts
+-- what `share₁` and `share` establish, of the table (the index is any)
+Ok₁ : Dag → Tree → ℕ × Tab → Set
+Ok₁ d t (r , d′ , _) = WF d′ × d ⊑ d′ × r < length d′ × at (unshare d′) r ≡ t
 
-intern-ok : ∀ h rs ts d → WF d → All (_< length d) rs → map (at (unshare d)) rs ≡ ts
-          → Ok₁ d (node h ts) (intern (h , rs) d)
-intern-ok h rs ts d w ps eq with find (h , rs) d (length d) in f
+Ok : Dag → List Tree → List ℕ × Tab → Set
+Ok d ts (rs , d′ , _) = WF d′ × d ⊑ d′ × All (_< length d′) rs × map (at (unshare d′)) rs ≡ ts
+
+intern-ok : ∀ h rs ts d x → WF d → All (_< length d) rs → map (at (unshare d)) rs ≡ ts
+          → Ok₁ d (node h ts) (intern (h , rs) (d , x))
+intern-ok h rs ts d x w ps eq with known (h , rs) (d , x) in f
 ... | nothing = (ps , w) , ⊑-cons ⊑-refl , ℕₚ.n<1+n _ , trans (at-top (unshare d) _ (sym (length-unshare d))) (cong (node h) eq)
-... | just i with find-sound (h , rs) d refl f
+... | just i with known-sound (h , rs) (d , x) f
 ...   | t , q , refl with ⊑-WF q w
 ...     | ps′ , _ = w , ⊑-refl , ℕₚ.<-≤-trans (ℕₚ.n<1+n _) (⊑-length q)
                   , trans (stable q (ℕₚ.n<1+n _)) (trans (at-top (unshare t) _ (sym (length-unshare t)))
                           (cong (node h) (trans (sym (map-stable (⊑-trans (⊑-cons ⊑-refl) q) ps′)) eq)))
 
 mutual
-  share₁-ok : ∀ t d → WF d → Ok₁ d t (share₁ t d)
-  share₁-ok (node h ts) d w with share ts d | share-ok ts d w
-  ... | rs , d₁ | w₁ , q , ps , eq with intern-ok h rs ts d₁ w₁ ps eq
+  share₁-ok : ∀ t d x → WF d → Ok₁ d t (share₁ t (d , x))
+  share₁-ok (node h ts) d x w with share ts (d , x) | share-ok ts d x w
+  ... | rs , d₁ , x₁ | w₁ , q , ps , eq with intern-ok h rs ts d₁ x₁ w₁ ps eq
   ...   | w₂ , q₂ , r , e = w₂ , ⊑-trans q q₂ , r , e
 
-  share-ok : ∀ ts d → WF d → Ok d ts (share ts d)
-  share-ok []       d w = w , ⊑-refl , [] , refl
-  share-ok (t ∷ ts) d w with share₁ t d | share₁-ok t d w
-  ... | r , d₁ | w₁ , q₁ , p₁ , e₁ with share ts d₁ | share-ok ts d₁ w₁
-  ...   | rs , d₂ | w₂ , q₂ , ps , eq =
+  share-ok : ∀ ts d x → WF d → Ok d ts (share ts (d , x))
+  share-ok []       d x w = w , ⊑-refl , [] , refl
+  share-ok (t ∷ ts) d x w with share₁ t (d , x) | share₁-ok t d x w
+  ... | r , d₁ , x₁ | w₁ , q₁ , p₁ , e₁ with share ts (d₁ , x₁) | share-ok ts d₁ x₁ w₁
+  ...   | rs , d₂ , x₂ | w₂ , q₂ , ps , eq =
     w₂ , ⊑-trans q₁ q₂ , ℕₚ.<-≤-trans p₁ (⊑-length q₂) ∷ ps
        , cong₂ _∷_ (trans (stable q₂ p₁) e₁) eq
 
 -- the roots of `shareTop` read back, over its table, are the trees shared
-shareTop-ok : ∀ ts d → WF d → WF (proj₂ (shareTop ts d)) × d ⊑ proj₂ (shareTop ts d)
-                              × readBack (shareTop ts d) ≡ ts
-shareTop-ok []              d w = w , ⊑-refl , refl
-shareTop-ok (node h ts ∷ r) d w with share ts d | share-ok ts d w
-... | rs , d₁ | w₁ , q₁ , ps , eq with shareTop r d₁ | shareTop-ok r d₁ w₁
-...   | es , d₂ | w₂ , q₂ , eq₂ =
+shareTop-ok : ∀ ts d x → WF d → WF (proj₁ (proj₂ (shareTop ts (d , x)))) × d ⊑ proj₁ (proj₂ (shareTop ts (d , x)))
+                              × readBack (shareTop ts (d , x)) ≡ ts
+shareTop-ok []              d x w = w , ⊑-refl , refl
+shareTop-ok (node h ts ∷ r) d x w with share ts (d , x) | share-ok ts d x w
+... | rs , d₁ , x₁ | w₁ , q₁ , ps , eq with shareTop r (d₁ , x₁) | shareTop-ok r d₁ x₁ w₁
+...   | es , d₂ , x₂ | w₂ , q₂ , eq₂ =
   w₂ , ⊑-trans q₁ q₂ , cong₂ _∷_ (cong (node h) (trans (map-stable q₂ ps) eq)) eq₂
 
-unshare-share : ∀ ts → readBack (shareTop ts []) ≡ ts
-unshare-share ts = proj₂ (proj₂ (shareTop-ok ts [] tt))
+unshare-share : ∀ ts → readBack (shareTop ts emptyTab) ≡ ts
+unshare-share ts = proj₂ (proj₂ (shareTop-ok ts [] _ tt))
