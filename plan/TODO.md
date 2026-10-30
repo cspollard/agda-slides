@@ -26,7 +26,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] Slide number for the Plain backend (Reveal has it); decide per-slide command versus deck option, and stacks.
 - [ ] README and module-level documentation with geometric intuition, written as each module is touched.
 - [x] Compilation time: measured, not slow (loading dominates).
-- [x] Collider run time (40 s to about 19 s): sharing looked entries up linearly by decidable equality; `Slides.Backend.Share` now uses an AVL index (validated hint, proof unchanged).  The rest is the sheer number of tree nodes visited (every event carries its whole diagram) and `ship`, which is quadratic in the table; next step would be sharing before the events are expanded.
+- [x] Collider run time (40 s to about 19 s to about 10 s): sharing looked entries up linearly by decidable equality; `Slides.Backend.Share` now uses an AVL index (validated hint, proof unchanged).  Then measured by stubbing, not guessed: interning was never the main cost (only ~10 000 tree nodes, ~4 000 distinct).  The deck's own `_⊓_` on ℕ recurses on the value (millions), 7 s; replaced by built-in subtraction.  `ship` was quadratic (a `where` definition is lifted and recomputed at every use, so its use counts were rebuilt per position); it is now one pass with indexed maps.  Left (~4 s over a 5.7 s floor): interning lookups, rendering, and the Title animation's terms.  Sharing before the events are expanded is no longer worth it.
 
 ## Theory
 - [ ] Setoid equality throughout the scalar theories (laws up to a carried equivalence; non-canonical models such as an unnormalised ℚ): planned, wanted for the mathematics, not a speed-up (`plan/Rationals.md`).  Until then raw `ℚᵘ` arithmetic is usable as is.

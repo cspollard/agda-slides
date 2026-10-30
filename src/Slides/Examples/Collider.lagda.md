@@ -16,7 +16,7 @@ module Slides.Examples.Collider where
 
 open import Data.Bool using (Bool; false; if_then_else_)
 open import Data.List using (List; _∷_; []; zipWith; map; foldr; concat; applyUpTo; reverse)
-open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_; _/_; _%_; _⊓_; _≡ᵇ_; _≤ᵇ_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_; _/_; _%_; _≡ᵇ_; _≤ᵇ_)
 open import Data.Nat.Show using (show)
 open import Data.Product using (_×_; _,_)
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
@@ -425,6 +425,10 @@ one outline of columns of width 5; on the right each step adds one dot.  The bas
 scanLo scanSteps : ℕ
 scanLo    = 20
 scanSteps = 24
+
+-- the smaller of two numbers by built-in subtraction (`_⊓_` recurses on the value: values here run to millions)
+_⊓_ : ℕ → ℕ → ℕ
+a ⊓ b = a ∸ (a ∸ b)
 
 -- the smallest -2 ln L over the scan, so the curve can be drawn from its minimum
 nllMin : ℕ

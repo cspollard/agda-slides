@@ -14,9 +14,9 @@
 
 module Slides.Backend.Share where
 
-open import Data.List.Base using (List; []; _∷_; _++_; map; length; reverse; concat; filterᵇ)
-open import Data.Maybe.Base using (Maybe; just; nothing)
-open import Data.Nat.Base using (ℕ; zero; suc; _≤ᵇ_; _≡ᵇ_)
+open import Data.List.Base using (List; []; _∷_; _++_; map; length; reverse; concat)
+open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
+open import Data.Nat.Base using (ℕ; zero; suc; _≤ᵇ_)
 open import Data.Bool.Base using (if_then_else_)
 import Data.String.Base
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
@@ -53,6 +53,7 @@ entryOrder : StrictTotalOrder _ _ _
 entryOrder = ×-strictTotalOrder (Lex.<-strictTotalOrder Strₚ.<-strictTotalOrder-≈) (Lex.<-strictTotalOrder ℕₚ.<-strictTotalOrder)
 
 open import Data.Tree.AVL.Map entryOrder as Index using (Map)
+import Data.Tree.AVL.Map ℕₚ.<-strictTotalOrder as Pos
 
 Tab : Set
 Tab = Dag × Map ℕ
@@ -121,18 +122,18 @@ render ref (ps , _)          = Data.String.Base.concat ps
 -- the entry's position (`"7"`), except that an entry referred to once is written where it is
 -- used, so only the shared entries are in the table (and renumbered).
 ship : List Entry → Dag → List String × List String
-ship roots d = go 0 0 [] [] (reverse d)
+ship roots d = go (count (concat (map proj₂ (roots ++ d))) Pos.empty) 0 0 Pos.empty [] (reverse d)
   where
-    refs : List ℕ
-    refs = concat (map proj₂ (roots ++ d))
-    uses : ℕ → ℕ
-    uses i = length (filterᵇ (_≡ᵇ i) refs)
-    nth′ : List String → ℕ → String
-    nth′ []       _       = ""
-    nth′ (x ∷ _)  zero    = x
-    nth′ (_ ∷ xs) (suc i) = nth′ xs i
-    go : ℕ → ℕ → List String → List String → List Entry → List String × List String
-    go pos kept env tbl []       = reverse tbl , map (render (nth′ env)) roots
-    go pos kept env tbl (e ∷ es) with render (nth′ env) e
-    ... | t = if uses pos ≤ᵇ 1 then go (suc pos) kept (env ++ t ∷ []) tbl es
-              else go (suc pos) (suc kept) (env ++ ("\"" ++ˢ show kept ++ˢ "\"") ∷ []) (t ∷ tbl) es
+    -- the number of references to each position, in one pass
+    count : List ℕ → Pos.Map ℕ → Pos.Map ℕ
+    count []       m = m
+    count (r ∷ rs) m = count rs (Pos.insertWith r (λ { nothing → 1 ; (just k) → suc k }) m)
+    -- the text standing for each position seen so far
+    at : Pos.Map String → ℕ → String
+    at env i = maybe′ (λ t → t) "" (Pos.lookup env i)
+    go : Pos.Map ℕ → ℕ → ℕ → Pos.Map String → List String → List Entry → List String × List String
+    go uses pos kept env tbl []       = reverse tbl , map (render (at env)) roots
+    go uses pos kept env tbl (e ∷ es) with render (at env) e
+    ... | t = if maybe′ (λ k → k) 0 (Pos.lookup uses pos) ≤ᵇ 1
+              then go uses (suc pos) kept (Pos.insert pos t env) tbl es
+              else go uses (suc pos) (suc kept) (Pos.insert pos ("\"" ++ˢ show kept ++ˢ "\"") env) (t ∷ tbl) es
