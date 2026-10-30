@@ -1,8 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The children of a node of arity 2 or 4, as a function of the position: the continuation
--- of `impure (s , pick2 a b)` in the free monad of a container whose shape has positions
--- `Fin 2`.  One definition for every syntax of the library (animations, diagrams, expressions).
+-- The continuation `Fin n → A` of a node of arity 2 or 4, from its children:
+-- `impure (s , pick2 a b)` in the free monad of a container whose shape has positions `Fin 2`.
 
 module Container.Pick where
 

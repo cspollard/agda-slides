@@ -1,19 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- `⟦C⟧`-algebras are the Eilenberg–Moore algebras of the free monad.
+-- `⟦ C ⟧`-algebras are the Eilenberg–Moore algebras of the free monad:
+-- `Free ⊣ Forget` is a monadic adjunction (`Free⊣Forget-monadic`).
 --
--- agda-categories gives the comparison functor
+--   Comparison⁻¹ : EilenbergMoore ⟶ Alg      a module's action applied to a node of variables
 --
---   K : Alg ⟶ EilenbergMoore (monad of Free ⊣ Forget)
---
--- of an adjunction.  Here we build an inverse `Comparison⁻¹` and the two
--- natural isomorphisms, so `Free ⊣ Forget` is a monadic adjunction
--- (`IsMonadicAdjunction`): a backend, an algebra of the signature, is the
--- same thing as an algebra of the free monad.
---
--- All the isomorphisms are the identity on carriers.  The one lemma with
--- content is `fold-action`: for a module `(A , a)`, folding the induced
--- algebra over the identity is `a`.
+-- A backend (an algebra of the signature) is thus the same as an algebra of the free monad.
+-- Both composites with the comparison functor are the identity on carriers; the one lemma
+-- with content is `fold-action`: folding the algebra induced by a module `(A , a)` over the
+-- identity is `a`.
 
 module Container.FreeMonad.Properties.Monadic where
 
@@ -50,7 +45,6 @@ module Monadic {s p} (c ℓ : Level) (C : Container s p) where
   module EMM = EilenbergMooreC T
   open EMM using (Module; Module⇒; EilenbergMoore)
 
-  ----------------------------------------------------------------------
   -- The inverse of the comparison functor
 
   -- A module for the free monad gives an algebra for the signature: apply
@@ -84,7 +78,6 @@ module Monadic {s p} (c ℓ : Level) (C : Container s p) where
     idFunc : (X : Setoid c′ ℓ′) → Func X X
     idFunc X = record { to = λ x → x ; cong = λ e → e }
 
-  ----------------------------------------------------------------------
   -- Algebras → modules → algebras is the identity
 
   Comparison⁻¹∘K≃id : NaturalIsomorphism (Comparison⁻¹ ∘F K) (idF {C = Alg})
@@ -111,7 +104,6 @@ module Monadic {s p} (c ℓ : Level) (C : Container s p) where
         }
     }
 
-  ----------------------------------------------------------------------
   -- Modules → algebras → modules is the identity
 
   -- For a module `(A , a)`, folding the induced algebra over the identity
@@ -171,7 +163,6 @@ module Monadic {s p} (c ℓ : Level) (C : Container s p) where
         }
     }
 
-  ----------------------------------------------------------------------
   -- Free ⊣ Forget is monadic
 
   Free⊣Forget-monadic : IsMonadicAdjunction Free⊣Forget

@@ -2,15 +2,10 @@
 
 -- Containers are polynomial functors on Setoids.
 --
--- A container `C = S ▷ P` determines the functor
---
---   ⟦ C ⟧ X = Σ[ s ∈ S ] (P s → X)
---
--- from `Setoids c ℓ` to `Setoids (s ⊔ p ⊔ c) (s ⊔ p ⊔ ℓ)`, where two elements
--- are equal when their shapes are propositionally equal and their
--- continuations are pointwise equal in `X` (stdlib's
--- `Data.Container.Relation.Binary.Pointwise`).  When the container lives
--- in `Set 0ℓ` this is an endofunctor on `Setoids c ℓ`.
+-- A container `S ▷ P` gives the functor `⟦ C ⟧ X = Σ[ s ∈ S ] (P s → X)`; two elements are
+-- equal when their shapes are propositionally equal and their continuations pointwise equal
+-- in `X`.  Proved: this is an equivalence (`poly-isEquivalence`), and `Poly₁` (post-compose the
+-- continuation) makes `Poly C` a functor.
 
 module Container.Polynomial where
 

@@ -1,6 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The monad of the adjunction `Free ⊣ Forget` is the free monad on trees: the two are isomorphic as monads.
+-- The monad of `Free ⊣ Forget` is the tree monad: `AdjMonad ≅ TreeMonad` as monads.
+--
+--   fold-bind                              folding into a free algebra is bind
+--   tree⇒adj-monad, adj⇒tree-monad         monad morphisms, both the identity on carriers
+--   tree-adj-tree, adj-tree-adj            mutually inverse
+--
+-- So the two descriptions of the free monad (trees, adjunction) are interchangeable.
+
 module Container.FreeMonad.Algebraic.Properties where
 
 open import Level using (Level; lift)
@@ -24,8 +31,6 @@ open import Container.FreeMonad.Properties
 
 open import Container.FreeMonad.Algebraic
 
-------------------------------------------------------------------------
--- The monad of the adjunction is the free monad
 
 module Agreement {s p} (c ℓ : Level) (C : Container s p) where
   open Alg c ℓ C

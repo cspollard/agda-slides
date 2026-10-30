@@ -1,16 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Interpretation of programs in the free monad, i.e. folds into algebras.
+-- Translation of programs along a container morphism, the operation fusion is stated for.
 --
--- A *backend* for a container `C` is an `⟦C⟧`-algebra.  Interpreting a
--- program is `fold`, the unique algebra homomorphism out of the free
--- algebra (see `Container.FreeMonad.Algebraic`).  This module collects the
--- consequences we use for backends:
+--   translate m : C ⋆ X → D ⋆ X       renames each command by `shape m`, re-indexes continuations by `position m`
 --
--- * `Free₀ C ⊥` is the initial `⟦C⟧`-algebra, hence satisfies Lambek's lemma;
--- * folding commutes with algebra homomorphisms (backends can be post-processed);
--- * fusion: translating a program along a container morphism and then
---   interpreting it is the same as interpreting with the pulled-back algebra.
+-- Its laws with folds are in `Container.Interpret.Properties`; with lowerings, in
+-- `Container.Lowering.Translate`.
 
 module Container.Interpret where
 

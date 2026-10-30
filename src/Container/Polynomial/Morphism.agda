@@ -1,8 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Container morphisms are natural transformations between polynomial
--- functors, and the assignment is functorial: identities and composites of
--- container morphisms go to identities and vertical composites.
+-- A container morphism `m : C ⇒ D` is a natural transformation `Poly-⇒ m : ⟦ C ⟧ ⇒ ⟦ D ⟧`,
+-- with component `Poly-η m X = ⟪ m ⟫`, and the assignment is functorial:
+-- `Poly-id` (identity to identity) and `Poly-∘` (composite to vertical composite).
 
 module Container.Polynomial.Morphism where
 

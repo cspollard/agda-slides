@@ -2,15 +2,14 @@
 
 -- Space: lengths and positions.  Layout depends on this theory only.
 --
--- `Space S` is an ordered monoid of lengths (zero, `+`, frame union `⊔`, comparison), the
--- exact-subtraction layer `Sub` (centring, `atop`), and `pct p x`, "p percent of x".  `Scale`
--- is the optional layer of an ordered module over a ring of ratios `R`: ℚ over itself, and
--- also ℕ over itself (whole-number scaling).  There are no ticks here; a tick read as a
--- length is Coupling.
+--   Space S    an ordered monoid of lengths with exact subtraction `Sub` (centring, `atop`)
+--              and `pct p x`, "p percent of x"
+--   Scale M R  an ordered module over ratios `R` (ℚ over itself, ℕ over itself)
 --
--- Signature: `SpaceC`, one command per operation; `SpaceC ⋆ V` are the symbolic scalars of a
--- layout, read by `pfold` with the handler `spaceH` of a model.  Two commands are lowered
--- along ℕ → ℚ (`Slides.Scalar.Hom`).
+-- Signature: `SpaceC` has one command per operation (`SpaceOp`); `SpaceC ⋆ V` are the
+-- symbolic scalars of a layout, read by `pfold` with the handler `spaceH` of a model
+-- (`spaceCong`: congruent).  `Minus` and `Pct` are lowered along ℕ → ℚ (`Slides.Scalar.Hom`).
+-- No ticks here: a tick read as a length is Coupling.
 
 module Slides.Scalar.Space where
 
@@ -59,7 +58,6 @@ record IsScaleHom {S S′ R R′} {M : OrdMon S} {N : OrdMon S′} (Sc : Scale M
                   (h : S → S′) (ρ : R → R′) : Set where
   field h-· : ∀ r x → h (Scale._·_ Sc r x) ≡ Scale._·_ Sc′ (ρ r) (h x)
 
-------------------------------------------------------------------------
 -- The signature
 
 data SpaceOp : Set where

@@ -2,18 +2,13 @@
 
 -- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
 --
--- The category of containers and container morphisms, and its two
--- functors out:
+-- The category of containers and container morphisms, with two functors out:
 --
--- * `PolyFunctor`: a container to its polynomial endofunctor on `Setoids`
---   and a morphism to the natural transformation (`Container.Polynomial.Morphism`);
--- * `EmbedFunctor`: into the category of containers and lowerings
---   (`Container.Lowering.Category`), a morphism being the lowering of each
---   command to one command.
+--   PolyFunctor  : Containers ⟶ Functors Setoids Setoids   C ↦ ⟦ C ⟧, m ↦ its natural transformation
+--   EmbedFunctor : Containers ⟶ Lowerings                  m ↦ the lowering of each command to one command
 --
--- Arrows are equal when they induce equal natural transformations, which
--- is the pointwise equality of shapes and positions and needs no function
--- extensionality.
+-- Arrows are equal (`_≈ᶜ_`) when they act equally on every extension; this is pointwise
+-- equality of shapes and positions and needs no function extensionality.
 
 module Container.Category where
 
