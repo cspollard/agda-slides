@@ -11,18 +11,21 @@
 module Slides.Plot.Csv where
 
 open import Data.Bool using (Bool; true; false; not; _∨_; _∧_; if_then_else_)
-open import Data.Char using (Char; toℕ; _≟_)
+open import Data.Char using (Char; _≟_)
+open import Data.Sign as Sign using (Sign)
 open import Data.Integer as ℤ using (ℤ; +_; -_)
-open import Data.List using (List; []; _∷_; map; foldl; wordsByᵇ; filter; mapMaybe; filterᵇ)
+open import Data.List using (List; []; _∷_; map; length; wordsByᵇ; filter; mapMaybe; filterᵇ)
 open import Data.Maybe using (Maybe; just; nothing)
 import Data.Maybe as Maybe
-open import Data.Nat as ℕ using (ℕ; _≤ᵇ_; _∸_; suc)
+open import Data.Nat as ℕ using (ℕ)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ)
 open import Data.String using (String; toList)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Relation.Nullary.Decidable using (does)
 
+open import Data.CSS.Number using (CSSNumber; cssNumber; lexNumber)
+open import Data.Number.Digits using (digitsToNat)
 open import Slides.Plot.Data using (decimal)
 open import Slides.Scalar.Model.Rat using (ι)
 
@@ -30,43 +33,24 @@ private
   is : Char → Char → Bool
   is a b = does (a ≟ b)
 
-  digit : Char → Maybe ℕ
-  digit c = if (48 ≤ᵇ toℕ c) ∧ (toℕ c ≤ᵇ 57) then just (toℕ c ∸ 48) else nothing
+  -- the lexer of `parsnip` reads `digits [. digits]` (no exponent) as sign, integral, fraction digits
+  value : CSSNumber → ℚ
+  value (cssNumber sg i f) = signed sg (decimal (+ (i ℕ.* 10 ℕ.^ k ℕ.+ digitsToNat f)) k)
+    where k = length f
+          signed : Sign → ℚ → ℚ
+          signed Sign.+ q = q
+          signed Sign.- q = ℚ.- q
 
-  -- the value of a run of digits and how many there are
-  digits : List Char → Maybe (ℕ × ℕ)
-  digits = foldl step (just (0 , 0))
-    where step : Maybe (ℕ × ℕ) → Char → Maybe (ℕ × ℕ)
-          step nothing         _ = nothing
-          step (just (m , k)) c with digit c
-          ... | just d  = just (10 ℕ.* m ℕ.+ d , suc k)
-          ... | nothing = nothing
+  whole : Sign → List Char → Maybe ℚ
+  whole sg cs with lexNumber sg cs
+  ... | just (n , []) = just (value n)
+  ... | _             = nothing
 
-  pow10 : ℕ → ℕ
-  pow10 ℕ.zero = 1
-  pow10 (suc k) = 10 ℕ.* pow10 k
-
-  -- the text before and after the first `.`
-  split : List Char → List Char × Maybe (List Char)
-  split []       = [] , nothing
-  split (c ∷ cs) with is c '.'
-  ... | true  = [] , just cs
-  ... | false with split cs
-  ...   | a , r = c ∷ a , r
-
-  unsigned : List Char → Maybe ℚ
-  unsigned cs with split cs
-  ... | ip , nothing with digits ip
-  ...   | just (m , suc _) = just (ι m)
-  ...   | _                = nothing
-  unsigned cs | ip , just fp with digits ip | digits fp
-  ... | just (m , _) | just (f , k) = just (decimal (+ (m ℕ.* pow10 k ℕ.+ f)) k)
-  ... | _            | _            = nothing
-
+  -- a whole field is one number
   signed : List Char → Maybe ℚ
-  signed ('-' ∷ cs) = Maybe.map ℚ.-_ (unsigned cs)
-  signed ('+' ∷ cs) = unsigned cs
-  signed cs         = unsigned cs
+  signed ('-' ∷ cs) = whole Sign.- cs
+  signed ('+' ∷ cs) = whole Sign.+ cs
+  signed cs         = whole Sign.+ cs
 
   number : List Char → Maybe ℚ
   number cs = signed (filterᵇ (λ c → not (is c ' ')) cs)
