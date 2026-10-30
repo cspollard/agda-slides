@@ -1,11 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Animations for checking the page evaluator against Agda (`make test-anim-ref`).
---
--- `animations` are shipped as in any deck; `reference` computes, with `Slides.Scene.Animation.frameAt`
--- (the exact semantics, in ℚ), the drawing commands of each animation at every quarter tick of its
--- duration, as JSON for `tests/browser/anim-ref.mjs`: for each animation a list of
--- `{"t": time, "ds": [[tag, [numbers]]...]}` with the numbers as the page prints them.
+-- Tween, easing, connector and shape animations, to check the page evaluator against Agda
+-- (`make test-anim-ref`).  `reference` is the JSON of `frameAt` (exact, in ℚ) at every quarter
+-- tick of each animation: `{"t": time, "ds": [[tag, [numbers]]...]}`, read by tests/browser/anim-ref.mjs.
 
 module Slides.Examples.AnimRef where
 
@@ -31,12 +28,11 @@ open import Slides.Diagram.Draw using (Draw; rect; circle; ellipse; poly; line; 
 open import Slides.Backend.Animation using (qⱼ; natⱼ)
 open import Slides.Examples.Intro using (mover; counter)
 
--- a box easing right, a label that moves with it, an arrow between two named boxes
 slider : Anim
 slider = tween Linear (ι 0) (ι 120) (ι 6)
   (D.beside (D.spacer now (lit 0)) (D.named "s" (D.rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle))))
 
--- the same with a cubic Bézier ease-out
+-- a cubic Bézier ease-out
 eased : Anim
 eased = tween (Bezier 20 90 20 100) (ι 0) (ι 120) (ι 6)
   (D.beside (D.spacer now (lit 0)) (D.named "s" (D.rectangle (lit 40) (lit 30) (filled "#c96" defaultStyle))))
@@ -114,7 +110,6 @@ private
   upto a zero    = at a zero ∷ []
   upto a (suc n) = upto a n ++ at a (suc n) ∷ []
 
-  -- up to the duration, rounded up to whole ticks
   ticks : Anim → ℕ
   ticks a = 4 * suc (Time.floor ratTime (duration a))
 

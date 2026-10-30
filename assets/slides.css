@@ -1,4 +1,4 @@
-/* Styles for the layout vocabulary (columns, boxes); reveal.js has none. */
+/* Layout vocabulary (columns, boxes, figures, diagrams) for every reveal.js deck. */
 .reveal .columns { display: flex; gap: 2rem; justify-content: space-between; }
 .reveal .column { flex: 1; }
 .reveal .box { border: 2px solid currentColor; border-radius: 0.4rem; padding: 0.5rem 1rem; margin: 1rem 0; }

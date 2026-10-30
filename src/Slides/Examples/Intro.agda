@@ -1,6 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- A small example deck, written with `do`-notation.
+-- The basic deck in `do`-notation: headings, incremental lists, typed math, columns, boxes, notes,
+-- background, vertical stacks, and animations (frames, tweens, sequence, parallel).
+-- Build with `make example`.
 
 module Slides.Examples.Intro where
 

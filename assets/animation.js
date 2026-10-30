@@ -1,19 +1,13 @@
-// The animation player, shared by the reveal.js and the standalone backends (a deck loads it before
-// its own script, which supplies how to tell that an animation's slide is shown and calls
-// `sync`/`syncAll` when a fragment appears or the slide changes).
+// The animation player, shared by the reveal.js and plain backends: `SlidesAnimation(shown)`, where
+// `shown(a)` says whether animation element `a`'s slide is visible; the deck calls `sync`/`syncAll`
+// when a fragment appears or the slide changes.
 //
-//   var player = SlidesAnimation(function (a) { return <is animation element `a`'s slide shown> });
-//
-// An animation (`.animation`, see `Slides.Backend.Animation`) ships the *event list* of its scene
-// as JSON in its `script.events` child: {n: table of nodes, e: events}.  An event has an onset, a
-// span, a driver and a leaf, the leaf a diagram whose scalars are expression trees over one variable;
-// equal subtrees (of diagrams and terms) are one node of the table, referred to by the string of its
-// position.  The page evaluates it at a real time `t` (in ticks):
-// the events active at `t` are laid out at their parameter (the value of the driver at the event's
-// local time, 0 without one), overlaid in the join of their frames, and drawn as SVG.  This is
-// `Slides.Scene.Animation.frame`, once more, in JavaScript: the operations below are the Space,
-// Time and Coupling signatures, and `lay` is `Slides.Diagram.Place`.  Tested against the frames
-// Agda computes (`make test-anim-ref`).
+// Contract with Agda (`Slides.Backend.Animation`): each `.animation` carries its scene's event list
+// as JSON in `script.events`, {n: node table, e: events}; an event is an onset, span, driver and a
+// leaf diagram whose scalars are expression trees over one variable (shared subtrees are table
+// entries, referred to by position).  Invariant: the frame drawn at time `t` equals
+// `Slides.Scene.Animation.frameAt` at `t`; `make test-anim-ref` checks this against Agda's frames.
+// The operations below mirror the Space, Time and Coupling signatures, and `lay` is `Slides.Diagram.Place`.
 //
 //   scalar/driver term   null (the variable), a number, or [op, args...]:
 //     [0,n,d] the fraction n/d  2 plus  3 max  4 minus  5 [5,a,b,x,y] x if a<=b else y

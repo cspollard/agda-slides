@@ -1,4 +1,4 @@
-/* Standalone slides: one slide visible at a time (see plain.js). */
+/* Standalone (plain backend) decks: plain, showcase-plain, showcase-lowered, showcase-still, animref. */
 html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #fff; color: #222; }
 .deck { position: relative; height: 100%; overflow: hidden; }
 .slide { display: none; box-sizing: border-box; height: 100%; padding: 3rem 4rem; font-size: 2rem; overflow: auto; }

@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --guardedness #-}
 
--- Executable: render `Slides.Examples.Labels.labels` to `out/labels/`.  Build and run with `make labels`.
+-- Labels on reveal.js, to `out/labels/` (`make labels`).
 
 module Slides.Examples.LabelsMain where
 

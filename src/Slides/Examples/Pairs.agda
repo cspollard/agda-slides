@@ -1,12 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
--- An introduction to "It Just Takes Two: Scaling Amortized Inference to Large Sets" (Wehenkel,
--- Kagan, Heinrich, Pollard; arXiv:2605.07972) in eleven slides.  It uses typed math, SVG diagrams,
--- cards and callouts styled by `assets/pairs/pairs.css`.  There is no hand-written JavaScript: the
--- drifting point pairs (`Slides.Examples.PairsHero`) and the marching flow arrows are loops; lit
--- stages and links are steps over a loop (`animateBoth`); the filling histogram, the growing bars
--- and the counters are flip books along a Bézier ease-out (`grow`), one reveal step per act.  All
--- are scenes (`Slides.Deck.Anim`).
+-- "It Just Takes Two: Scaling Amortized Inference to Large Sets" (Wehenkel, Kagan, Heinrich,
+-- Pollard; arXiv:2605.07972), eleven slides.  Shows typed math, SVG diagrams styled by
+-- `assets/pairs/pairs.css`, and all animation kinds with no hand-written JS: loops (hero pairs,
+-- marching arrows), steps over a loop (`animateBoth`), Bézier flip books (`grow`).
+-- Build with `make pairs`.
 
 module Slides.Examples.Pairs where
 
@@ -88,7 +86,7 @@ fan src endPct = go 40
     go p (t ∷ ts) = (src ⊢ at south p ⇒ t ⊢ at north endPct) ∷ go (p + 7) ts
 
 ------------------------------------------------------------------------
--- Slide 2: the problem
+-- The problem
 
 problemDia : ℕ → Dia ℕ
 problemDia ph =
@@ -111,7 +109,7 @@ problem : Flow
 problem = Content.animateLoop "d-problem" 100 90 (marching problemDia)
 
 ------------------------------------------------------------------------
--- Slide 5: the building blocks
+-- The building blocks
 
 pipelineDia : ℕ → Dia ℕ
 pipelineDia ph =
@@ -143,7 +141,7 @@ pipeline : Flow
 pipeline = Content.animateLoop "d-pipeline" 100 90 (marching pipelineDia)
 
 ------------------------------------------------------------------------
--- Slide 6: PAIRS
+-- PAIRS
 
 -- A card of centred text lines: a title, body lines and a small note.
 -- `on` lights the card up (the CSS class `on`); the name is for `connect`.
@@ -178,7 +176,7 @@ stageActs ph = (still′ (stagesDia (λ _ → false) ph) ⨾ still′ (stagesDia
              ∷ []
 
 ------------------------------------------------------------------------
--- Slide 7: why pairs are enough
+-- Why pairs are enough
 
 -- the diagram with the first `k` links lit
 chainDia : ℕ → ℕ → Dia ℕ
@@ -221,7 +219,7 @@ fixed3 n = show (n / 1000) ++ˢ "." ++ˢ pad (n % 1000)
         pad k = if k <ᵇ 10 then "00" ++ˢ show k else if k <ᵇ 100 then "0" ++ˢ show k else show k
 
 ------------------------------------------------------------------------
--- Slide 3: a bump hunt
+-- A bump hunt
 
 -- Bin heights (pixels) of 2500 simulated events: a standard-normal background
 -- and a narrow signal bump at ψ = 1.8 with θ = 0.12 (one realisation, 36 bins
@@ -248,7 +246,7 @@ bump : Flow
 bump = Content.animate "bump" 100 130 (grow 12 histogram ∷ [])
 
 ------------------------------------------------------------------------
--- Slide 9: a result
+-- A result
 
 resultsDia : ℚ.ℚ → Dia ℕ
 resultsDia q =
@@ -274,7 +272,7 @@ results : Flow
 results = Content.animate "d-results" 100 130 (grow 10 resultsDia ∷ [])
 
 ------------------------------------------------------------------------
--- Slide 10: cost and scale
+-- Cost and scale
 
 -- a tile: a big number (styled by its class), two lines of text and a note
 tile : String → String → List String → String → Dia ℕ
@@ -330,7 +328,6 @@ memory = M.call "O" (M.juxt "B" (M.idx "N" (M.text "max")) ∷ [])
 pairs : Talk
 pairs = do
 
-  -- 1 ------------------------------------------------------------------
   slide (do
     classed "hero-bg hero-title" (Content.animateLoop "hero-title" 100 100 (heroLoop 26 7))
     classed "title-copy tag" (p■ "Neural posterior estimation · Deep Sets")
@@ -340,7 +337,6 @@ pairs = do
     classed "title-copy small" (p■ ("arXiv:2605.07972 · " ∷ link "https://arxiv.org/abs/2605.07972" "abstract" ∷ []))
     notes "The paper in one line: train a mean-pool Deep Set on sets of at most two elements, then finetune the inference head on cached aggregates.")
 
-  -- 2 ------------------------------------------------------------------
   slide (do
     heading 2 "Inference from a set of observations"
     columns
@@ -357,7 +353,6 @@ pairs = do
                           ∷ " for any set size " ∷ inlineMath N ∷ []))
     notes "The posterior does not factorise over observations because they share the nuisance parameter.")
 
-  -- 3 ------------------------------------------------------------------
   slide (do
     heading 2 "A bump hunt, event by event"
     columns
@@ -373,7 +368,6 @@ pairs = do
     classed "callout"
       (p■ "At N = 100 the PAIRS posterior width tracks MCMC on the full set; the naive product of per-event posteriors is underconfident."))
 
-  -- 4 ------------------------------------------------------------------
   slide (do
     heading 2 "Two ways to scale, both costly"
     classed "card plum"
@@ -388,7 +382,6 @@ pairs = do
     classed "callout blue"
       (p■ "Can we train small, and still deploy on sets of thousands?"))
 
-  -- 5 ------------------------------------------------------------------
   slide (do
     heading 2 "Building blocks: NPE with a Deep Set"
     liftContent pipeline
@@ -396,7 +389,6 @@ pairs = do
     displayMath objective
     notes "t_omega is applied to each element; the mean-pooled embedding and N go to the head, a normalising flow or flow-matching model.")
 
-  -- 6 ------------------------------------------------------------------
   slide (do
     heading 2 "PAIRS: train on pairs, finetune on aggregates"
     classed "small" (p■ "Pretraining Aggregators for Inference at aRbitrary Set-sizes")
@@ -404,7 +396,6 @@ pairs = do
     classed "callout"
       (p■ "Training memory and compute no longer depend on the largest set size."))
 
-  -- 7 ------------------------------------------------------------------
   slide (do
     heading 2 "Why two is enough"
     classed "card wide"
@@ -417,7 +408,6 @@ pairs = do
       (p■ ("At N = 2 the constraint is the additive equation " ∷ inlineMath cauchy
         ∷ ". Mean-pool sufficiency holds exactly when the marginals are an exponential family; errors in pair training degrade gracefully." ∷ [])))
 
-  -- 8 ------------------------------------------------------------------
   slide (do
     heading 2 "Does it work? Five test beds"
     classed "callout blue"
@@ -437,7 +427,6 @@ pairs = do
     classed "small"
       (p■ "Baselines: N = 1, N = 1–10, a Gaussian head, and end-to-end at N = 1000 (synthetic tasks). Three seeds."))
 
-  -- 9 ------------------------------------------------------------------
   slide (do
     heading 2 "Results"
     columns
@@ -451,7 +440,6 @@ pairs = do
       ∷ [])
     )
 
-  -- 10 -----------------------------------------------------------------
   slide (do
     heading 2 "Cost and scale"
     liftContent tiles
@@ -459,7 +447,6 @@ pairs = do
       (p■ "Novel-view synthesis: three coloured spheres, a flow-matching head, one model for N from 1 to 100.")
     )
 
-  -- 11 -----------------------------------------------------------------
   slide (do
     classed "hero-bg hero-end" (Content.animateLoop "hero-end" 100 100 (heroLoop 26 13))
     classed "title-copy"
