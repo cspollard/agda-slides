@@ -189,6 +189,31 @@ Status: 1(a) and 1(b) done (`ticks-in-range`, `ticks-sorted`, `clipLine-inside`)
    edge; no minor ticks on log axes; labels below 10⁻⁴ round to 0; a morph needs plots of one shape.
 5. **Phase 3b** (`Print ℚ`, `Dia ℚ` block) only if quantisation shows on a large histogram.
 
+## Smooth curves (design, not built)
+Today a curve is sampled by the caller and drawn as straight segments (`Polyline`); a backend that can draw smooth
+curves has no way to say so, because the AST only holds the points.  Options weighed:
+- **`Curve f lo hi` in `Dia`.**  `f : S → S` breaks functoriality (`mapOp h` cannot push `h : S → T` through it) and
+  `Space` has no multiplication; an expression language for `f` (a new signature, evaluator, JS emitter, several
+  hundred lines) is the principled form but is not needed while curves arrive as sample lists; an opaque `f : ℚ → ℚ`
+  only moves the sampling into the backend and cannot be serialised for the animation evaluator or compared by `Share`.
+  Not pursued now.
+- **A flag on `Polyline`** (`straight | smooth`, default straight): the control points stay scalar terms (animation,
+  `Lerp`, layout unchanged); SVG/Reveal draw a monotone cubic through them as Bézier segments, other backends draw
+  straight segments (still correct).  Cost: `Polyline` is matched in about nine modules plus `Backend/Animation`,
+  mostly carrying a field; about one phase; no golden changes at the default.
+- **Bézier via `Path`**: smooth on SVG backends but opaque (no morph, no clipping inside).  A fallback only.
+
+Chosen shape: `Plot` stays a separate first-order syntax (already `Plot`/`Mark`), and lowering takes the curve kind as
+data, `line` with `straight`, `smooth`, or (later) `exact f` once an expression language exists; `render` stays one
+fold whose curve step is chosen by that kind.  Laws to state: composition respected (overlay is `layers`, a ratio panel
+is `═`; `size-render`, `size-withRatio` already), axis laws (proved), a morph of one shape commutes with lowering.
+Laws deferred: "the approximation is within ε of `f`" (needs real analysis or interval bounds, not in the repo).
+Details to settle when built: clip into pieces first and do not smooth across cuts (a spline through clipped points
+can leave the box and the clamp would flatten it); use a monotone cubic (Fritsch-Carlson), not Catmull-Rom, which
+overshoots; smooth after the log transform on a log axis; optional adaptive sampling `adaptive f lo hi tol` (bisect
+where the midpoint leaves the chord) in `Slides.Plot.Data` as a separate small step.  Order: flag and SVG/Reveal
+drawing, `smooth` on `line`, clipping into pieces, adaptive sampling.
+
 ## Risks
 - Tick labels are placed using approximate text widths; misalignment of a few percent in y tick
   labels is expected and cosmetic.
