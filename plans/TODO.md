@@ -31,6 +31,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 ## Theory
 - [ ] Setoid equality throughout the scalar theories (laws up to a carried equivalence; non-canonical models such as an unnormalised ℚ): planned, wanted for the mathematics, not a speed-up (`plans/Rationals.md`).  Until then raw `ℚᵘ` arithmetic is usable as is.
 - [x] Plots: axes, marks, log axes, ratio panel, reveal/morph, CSV in (`docs/Plots.md`, history and follow-ups in `plans/Plots.md`; merged to main).
+- [x] Smooth curves: the `Function` extension (`CurveC`, `Dia⁺`, sampling lowering to one Bézier `Path`, `exact` mark; `plans/Plots.md`).  Left: adaptive sampling, the ε-approximation contract `Within` (stated, not proved).
 - [ ] The open theorems in `docs/Dropped.md`: loop law, example-level agreement, coupling exactness at ticks, scene-level footprint, key-table soundness.
 - [ ] 3D: orthogonality of `tangent` (c² + s² = 1) and invariance of `cis` under full turns; both need ℚ lemmas stdlib lacks (a floor lemma for `(a + d) / d`).
 - [x] 3D: `pitch`, `box`, `cylinder` and the cube example (`make tensor`).

@@ -68,6 +68,7 @@ logMark (errors s ts)   = errors s (map (λ { (x , y , e) →
                             in x , (l + h) * decimal (+ 5) 1 , (h - l) * decimal (+ 5) 1 }) ts)
 logMark (hline s y)     = hline s (log10 y)
 logMark (vline s x)     = vline s x
+logMark (exact s f)     = exact s (λ x → log10 (f x))
 logMark (note x y t)    = note x (log10 y) t
 
 private
