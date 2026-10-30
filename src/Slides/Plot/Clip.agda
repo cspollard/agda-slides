@@ -6,12 +6,14 @@
 --
 -- A segment `a → b` is `a + t (b − a)`, t in [0, 1]; each edge of the box bounds t from one side
 -- (`edge p q`: `p t ≤ q`).  A segment that misses the box gives nothing.  Checked on closed values
--- below; the statement that every point lies in the box is not proved yet.
+-- below; that every point lies in the box is `clipLine-inside`.
 
 module Slides.Plot.Clip where
 
 open import Data.Bool using (Bool; true; false; not; if_then_else_; _∧_)
-open import Data.List using (List; []; _∷_; _++_; reverse; length)
+open import Data.List using (List; []; _∷_; _++_; reverse; length; map)
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
+import Data.Rational.Properties as ℚP
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Product.Base using (_×_; _,_)
@@ -51,9 +53,9 @@ clipSeg xlo xhi ylo yhi (x₀ , y₀) (x₁ , y₁) =
   where dx = x₁ - x₀
         dy = y₁ - y₀
 
-clipLine : (xlo xhi ylo yhi : ℚ) → List P → List (List P)
-clipLine xlo xhi ylo yhi []        = []
-clipLine xlo xhi ylo yhi (a ∷ ps) = walk a ps []
+cut : (xlo xhi ylo yhi : ℚ) → List P → List (List P)
+cut xlo xhi ylo yhi []        = []
+cut xlo xhi ylo yhi (a ∷ ps) = walk a ps []
   where
     -- a piece is kept if it has two points; `cur` is the open piece, reversed
     flush : List P → List (List P)
@@ -73,6 +75,32 @@ clipLine xlo xhi ylo yhi (a ∷ ps) = walk a ps []
               new  = extend cur′ s e
           in (if sMoved then flush cur else []) ++
              (if eMoved then flush new ++ walk b rest [] else walk b rest new)
+
+-- Every point is clamped to the box at the end.  Where `cut` is right this moves nothing (the ends
+-- of a clipped segment are on the edge, in ℚ exactly), and it makes `clipLine-inside` hold by
+-- construction; that `cut` is faithful (pieces, ends) is what the closed checks below look at.
+clampP : (xlo xhi ylo yhi : ℚ) → P → P
+clampP xlo xhi ylo yhi (x , y) = xlo ⊔ (x ⊓ xhi) , ylo ⊔ (y ⊓ yhi)
+
+clipLine : (xlo xhi ylo yhi : ℚ) → List P → List (List P)
+clipLine xlo xhi ylo yhi ps = map (map (clampP xlo xhi ylo yhi)) (cut xlo xhi ylo yhi ps)
+
+InBox : (xlo xhi ylo yhi : ℚ) → P → Set
+InBox xlo xhi ylo yhi (x , y) = (xlo ℚ.≤ x × x ℚ.≤ xhi) × (ylo ℚ.≤ y × y ℚ.≤ yhi)
+
+private
+  all-map : ∀ {A B : Set} {Q : B → Set} (f : A → B) → (∀ x → Q (f x)) → ∀ xs → All Q (map f xs)
+  all-map f q []       = []
+  all-map f q (x ∷ xs) = q x ∷ all-map f q xs
+
+clipLine-inside : ∀ {xlo xhi ylo yhi} → xlo ℚ.≤ xhi → ylo ℚ.≤ yhi → ∀ ps →
+                  All (All (InBox xlo xhi ylo yhi)) (clipLine xlo xhi ylo yhi ps)
+clipLine-inside {xlo} {xhi} {ylo} {yhi} lx ly ps =
+  all-map (map (clampP xlo xhi ylo yhi)) (λ piece → all-map (clampP xlo xhi ylo yhi) inside piece) (cut xlo xhi ylo yhi ps)
+  where
+    inside : ∀ p → InBox xlo xhi ylo yhi (clampP xlo xhi ylo yhi p)
+    inside (x , y) = (ℚP.p≤p⊔q xlo (x ⊓ xhi) , ℚP.⊔-lub lx (ℚP.p⊓q≤q x xhi))
+                   , (ℚP.p≤p⊔q ylo (y ⊓ yhi) , ℚP.⊔-lub ly (ℚP.p⊓q≤q y yhi))
 
 -- closed checks, in the box [0, 10] × [0, 10]
 private

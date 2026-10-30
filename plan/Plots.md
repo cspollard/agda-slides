@@ -174,6 +174,7 @@ first; if the spike shows quantisation hurting on a real plot, 3b moves earlier.
 4. **Text rotation**: accepted as horizontal for now (gap 4).
 
 ## Follow-ups (after phase 6), in order
+Status: 1(a) and 1(b) done (`ticks-in-range`, `ticks-sorted`, `clipLine-inside`), 1(c) stated as the contract (not provable as built); 2 done (`docs/Plots.md`).
 1. **Prove what is only checked.**  (a) every tick lies in `[lo, hi]` and the ticks are sorted; (b) every point
    `clipLine` returns lies in the box; (c) `log10` monotone.  Route for (a) and (b): make the property hold by
    construction (filter ticks by the range; clamp clipped points to the box) so the law is `all-filter` / a `⊔ ⊓`
