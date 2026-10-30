@@ -1,10 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The polynomial functor of a sum of containers is the sum of the polynomial functors,
+-- Laws of sums of containers.
 --
---   ⟦ C₁ ⊎ C₂ ⟧ A ≅ ⟦ C₁ ⟧ A ⊎ ⟦ C₂ ⟧ A       (natural in the setoid A)
+--   Poly-⊎ : ⟦ C₁ ⊎ C₂ ⟧ A ≅ ⟦ C₁ ⟧ A ⊎ ⟦ C₂ ⟧ A         (an `Inverse` of setoids)
+--   copair-inj₁, copair-inj₂ : copair α₁ α₂ restricts to α₁, α₂
+--   copair-unique : an algebra for the sum is determined by its two restrictions
 --
--- and the universal property of the copairing of algebras (`Container.Sum.copair`).
+-- So algebras for `C₁ ⊎ C₂` on `A` are exactly pairs of algebras (`Container.Sum.copair`).
 
 module Container.Sum.Properties where
 
@@ -31,7 +33,6 @@ module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
   private
     copair = S.copair C₁ C₂ A
 
-  ----------------------------------------------------------------------
   -- The isomorphism
 
   to-⊎ˢ : Func (Poly₀ (C₁ ⊎ C₂) A) (Poly₀ C₁ A ⊎ₛ Poly₀ C₂ A)
@@ -71,7 +72,6 @@ module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
       , (λ {x} {y} e → P₁₂.trans (Func.cong from-⊎ˢ e) (from∘to x))
     }
 
-  ----------------------------------------------------------------------
   -- Algebras for a sum
 
   copair-inj₁ : ∀ (α₁ : Func (Poly₀ C₁ A) A) (α₂ : Func (Poly₀ C₂ A) A) s f →

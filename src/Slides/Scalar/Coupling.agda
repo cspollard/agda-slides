@@ -2,12 +2,15 @@
 
 -- Coupling: how durations drive lengths.  A moving value is a term of this signature.
 --
--- Over a Time with exact subtraction and an ordered module of ratios on the same carrier,
--- `Coupling` adds the `ratio` of two durations and the easing `ease` of a ratio (curves fixing
--- 0 and 1, among them cubic Béziers); derived are `lerp r a b = a + r·(b - a)` and `progress`.  A tick
--- is read as a length by `tick` (Time).  ℕ has no model (no ratios), so this is the layer ℚ adds.
+-- Over a Time with exact subtraction and ratios on the same carrier, `Coupling` adds
+-- `ratio d d′` and the easing `ease e r` (curves fixing 0 and 1, among them cubic Béziers).
+-- Derived: `lerp r a b = a + r·(b - a)`, `progress e t d = ease e (ratio t d)`, and
 --
--- Signature: `CouplingC` (ratio, ease, lerp); its handler needs the ratios to be the scalar.
+--   move-end : lerp (progress e d d) a b ≡ b       (a ≤ b, d ≠ 0)
+--
+-- ℕ has no model (no ratios); this is the layer ℚ adds.  `IsCouplingHom` is stated only.
+--
+-- Signature: `CouplingC` (ratio, ease, lerp); `couplingH` needs the ratios to be the scalar.
 
 module Slides.Scalar.Coupling where
 
@@ -72,7 +75,6 @@ record IsCouplingHom {K K′ R R′} {Tm : Time K} {Sb Sc} {Tn : Time K′} {Sb�
     h-ratio : ∀ a b → ρ (Coupling.ratio C a b) ≡ Coupling.ratio C′ (h a) (h b)
     h-ease  : ∀ e r → ρ (Coupling.ease C e r) ≡ Coupling.ease C′ e (ρ r)
 
-------------------------------------------------------------------------
 -- The signature
 
 data CouplingOp : Set where

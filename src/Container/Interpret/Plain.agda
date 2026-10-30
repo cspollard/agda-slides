@@ -1,22 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Plain folds: the curried form of a fold, and its laws, stated once.
+-- Plain folds: the curried form of a fold, with its laws stated once.
 --
--- A language over a container `C` is usually interpreted by one handler per command,
--- `(a : Shape C) → (Position C a → A) → A`, and a map from leaves.  `pfold` is that fold.
--- When the handler respects pointwise-equal children (`Congruent`) it is an
--- `⟦ C ⟧`-algebra and `pfold` is `Container.FreeMonad.Algebraic.fold` (`pfold-agrees`).  The
--- laws below are the ones every language re-proved for itself:
+--   Handler A = (a : Shape C) → (Position C a → A) → A       one clause per command
+--   pfold h leaf : C ⋆ X → A                                 the fold of a handler
 --
--- * congruence: pointwise-equal leaves, or equal programs, give equal folds;
--- * the bind law: folding a substitution is folding with the substituted programs folded
---   (`pfold-bind`); for a handler into a monoid this is the statement that the fold of a
---   bind is the fold with the continuation folded;
--- * homomorphisms of handlers, up to a lowering of the source (`pfold-hom`); fusion along a
---   lowering or a morphism is the case `φ = id` with the pulled-back handler;
--- * related handlers give related folds (`pfold-rel`, and along a morphism `pfold-rel-translate`).
+-- A `Congruent` handler is an `⟦ C ⟧`-algebra and `pfold` is `Container.FreeMonad.Algebraic.fold`
+-- (`pfold-agrees`).  Laws, so no language re-proves them:
 --
--- Equality of programs is `_≈⋆_` (propositional equality of leaves).
+-- * `pfold-ext`, `pfold-cong`: pointwise-equal leaves, or equal programs (`_≈⋆_`), give equal folds;
+-- * `pfold-bind`: folding a substitution is folding with the substituted programs folded;
+-- * `pfold-hom`: a map commuting with each command, up to a lowering, commutes with the fold;
+-- * `pfold-translate`: folding a translation is folding with the pulled-back handler (`pull`);
+-- * `pfold-rel`, `pfold-rel-translate`: related handlers give related folds (logical relations).
 
 module Container.Interpret.Plain where
 

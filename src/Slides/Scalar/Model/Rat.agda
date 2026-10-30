@@ -1,7 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The continuous model: ℚ (the standard library's, no instance search).  Subtraction is
--- exact everywhere, a percentage is multiplication by `p/100`, and scaling is ℚ over itself.
+-- The continuous model: ℚ.  Subtraction is exact, a percentage is multiplication by `p/100`,
+-- scaling is ℚ over itself, and `ratCoupling` interprets ratio and easing (Béziers approximately).
+-- `ι : ℕ → ℚ` embeds whole ticks as `n/1`; proofs about it are the only place ℚ is computed in.
 
 module Slides.Scalar.Model.Rat where
 

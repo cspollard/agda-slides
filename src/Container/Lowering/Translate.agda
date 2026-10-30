@@ -1,12 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Container morphisms act on programs: translation is functorial.
+-- Container morphisms act on programs functorially.
 --
--- `translate m` renames every command along `m : C ⇒ D` and re-indexes the continuations.  It
--- respects equality of programs, depends only on the pointwise-equal data of `m`, and satisfies
--- map fusion: translating along a composite is translating twice, and the identity does nothing.
--- Changing a language's scalar, or its vocabulary by renaming, is such a translation, so
--- these are proved here once.  `embed` turns the same laws into laws of lowerings.
+--   translate-cong   translation respects equality of programs
+--   translate-ext    morphisms equal on shapes and (transported) positions translate alike
+--   translate-id     the identity translates to the identity
+--   translate-∘      translating along a composite is translating in turn
+--   embed-id, embed-∘   the same laws for `embed`, as laws of lowerings
+--
+-- Renaming a vocabulary or changing a language's scalar is such a translation.
 
 module Container.Lowering.Translate where
 

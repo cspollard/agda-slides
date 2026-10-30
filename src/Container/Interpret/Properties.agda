@@ -1,7 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of interpretation: `Free₀ C ⊥` is the initial `⟦C⟧`-algebra (Lambek's lemma), folding commutes with algebra
--- homomorphisms, and fusion: interpreting a translated program is interpreting with the pulled-back algebra.
+-- Laws of interpretation: a backend is an algebra, and interpreting is `fold`.
+--
+--   InitialAlgebra, lambek   `Free₀ C ⊥ˢ` is the initial algebra, so `Free₀ C ⊥ˢ ≅ ⟦ C ⟧ (Free₀ C ⊥ˢ)`
+--   fold-hom                 algebra homomorphisms commute with folds (backends can be post-processed)
+--   fusion                   `fold B f (translate t) ≈ fold (pullback B) f t`
+--
+-- Fusion means translating along a morphism costs nothing: interpret with the pulled-back algebra.
+
 module Container.Interpret.Properties where
 
 open import Level using (Level; Lift; lift; lower)

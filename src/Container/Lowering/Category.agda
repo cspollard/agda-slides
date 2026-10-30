@@ -2,12 +2,9 @@
 
 -- THEORY MODULE: proofs and the vocabulary they need; no executable imports it (`tests/check_closure.py`).
 --
--- Containers and lowerings form a category.
---
--- Objects are containers, arrows are lowerings (Kleisli arrows of the free
--- monad, `Container.Lowering`), with `ret` as identity and equality of the
--- lowered programs as the equality of arrows.  Interpreting a deck is then
--- a functor out of this category (`lower-fusion` is its action on arrows).
+-- `Lowerings`: containers as objects, lowerings as arrows (Kleisli arrows of the free monad),
+-- `ret` as identity, equality of the lowered programs as equality of arrows.
+-- Interpreting is a functor out of it (`lower-fusion` is its action on arrows).
 
 module Container.Lowering.Category where
 

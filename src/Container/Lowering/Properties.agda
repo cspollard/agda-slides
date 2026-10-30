@@ -1,7 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of lowerings: equality of programs, `lower` is a monad morphism, lowerings compose and the identity is `ret`
--- (`lower-ret`, `lower-⋙`), lowering along `embed m` is translation (`lower-embed`), and fusion (`lower-fusion`).
+-- Laws of lowerings, up to equality of programs `_≈⋆_` and of lowerings `_≈ˡ_`.
+--
+--   lower-bind       `lower` is a monad morphism: it preserves bind
+--   lower-ret        `lower ret t ≈ t`
+--   lower-⋙          `lower (l ⋙ m) t ≈ lower m (lower l t)`
+--   lower-cong       lowering respects equality of programs and of lowerings
+--   lower-embed      lowering along `embed m` is `translate m`
+--   lower-fusion     `fold B f (lower l t) ≈ fold (pullback B) f t`: interpreting the lowering
+--                    is interpreting the original with the pulled-back algebra
+
 module Container.Lowering.Properties where
 
 open import Level using (Level; 0ℓ; _⊔_; lift)
@@ -28,7 +36,6 @@ private
   variable
     s p c a b d : Level
 
-------------------------------------------------------------------------
 -- Equality of programs
 
 -- (the relation itself is in `Container.Lowering`, so that folds need not import the laws)
@@ -62,8 +69,6 @@ infix 4 _≈ˡ_
 _≈ˡ_ : ∀ {C D : Container s p} → Lowering C D → Lowering C D → Set (s ⊔ p)
 l ≈ˡ m = ∀ a → l a ≈⋆ m a
 
-------------------------------------------------------------------------
--- Laws
 
 module _ {C D : Container s p} where
 
@@ -104,7 +109,6 @@ lower-embed : ∀ {C D : Container s p} {X : Set c} (m : C ⇒ D) (t : C ⋆ X) 
 lower-embed m (pure _)         = lift refl
 lower-embed m (impure (a , k)) = refl , λ q → lower-embed m (k (position m q))
 
-------------------------------------------------------------------------
 -- Fusion
 
 module FoldLemmas {s p} (c ℓ : Level) (C : Container s p) where

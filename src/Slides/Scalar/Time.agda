@@ -2,12 +2,16 @@
 
 -- Time: instants and durations.  Sampling depends on this theory (and Coupling) only.
 --
--- `Time T` is an ordered monoid with the embedding of whole ticks `tick : ℕ → T` (an order
--- embedding and monoid map) and `floor : T → ℕ`, right adjoint to `tick` on non-negative
--- instants: `tick n ≤ x  iff  n ≤ floor x`.  From this: `floor (tick n) = n`, and
--- `hold x = tick (floor x)`.  The remainder `x - hold x` needs the optional `Sub` layer (`Rem`).
+-- `Time T` is an ordered monoid with whole ticks `tick : ℕ → T` (an order embedding and monoid
+-- map) and `floor : T → ℕ`, right adjoint to `tick` on non-negative instants:
 --
--- Signature: `TimeC` has the one command `Hold`; its ℕ reading is the identity.
+--   tick n ≤ x  iff  n ≤ floor x          (`floor-gal`)
+--
+-- Hence `floor (tick n) ≡ n` and `hold x = tick (floor x)` with `hold x ≤ x`.  The remainder
+-- `rem x = x - hold x` needs exact subtraction (`Rem`), and `hold x + rem x ≡ x`.
+-- `IsTimeHom` preserves tick and floor, hence `hold` and `rem`.
+--
+-- Signature: `TimeC` has the one command `Hold`; handler `timeH`.
 
 module Slides.Scalar.Time where
 

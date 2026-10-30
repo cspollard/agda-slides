@@ -2,23 +2,13 @@
 
 -- Lowerings: Kleisli maps between containers.
 --
--- A container morphism `C ⇒ D` sends each command of `C` to one command of
--- `D`.  A *lowering* sends each command of `C` to a whole *program* over
--- `D` that returns the command's result: it is a natural transformation
--- `⟦C⟧ ⇒ D ⋆` (equivalently a Kleisli arrow for the free monad of `D`),
--- and the vocabulary can shrink or grow along it.  A deck is lowered by
--- extending the lowering to programs (`lower`, the Kleisli extension).
+--   Lowering C D = (a : Shape C) → D ⋆ Position C a      each command of C becomes a program over D
 --
--- * Lowerings compose (`_⋙_`) with the identity `ret`; the laws hold up to
---   equality of programs (`_≈⋆_`, `Container.FreeMonad.Eq` at the
---   propositional setoid), so containers and lowerings form a category
---   (`Container.Lowering.Category`).
--- * Container morphisms are the lowerings of one command to one command
---   (`embed`).
--- * `lower` is a monad morphism (`lower-bind`).
--- * Fusion: interpreting a lowered program equals interpreting the
---   original with the algebra pulled back along the lowering
---   (`lower-fusion`); this generalises `Container.Interpret.fusion`.
+-- A container morphism is the special case of one command to one command (`embed`).
+-- `lower` is the Kleisli extension to whole programs, `_⋙_` composes (first `l`, then `m`),
+-- `ret` is the identity.  Laws, up to equality of programs `_≈⋆_`, are in
+-- `Container.Lowering.Properties`; they make containers and lowerings a category
+-- (`Container.Lowering.Category`).
 
 module Container.Lowering where
 
@@ -37,7 +27,6 @@ private
   variable
     s p c a b d : Level
 
-------------------------------------------------------------------------
 -- Equality of programs: equal shapes, pointwise equal continuations, equal leaves
 
 infix 4 _≈⋆_
@@ -45,8 +34,6 @@ infix 4 _≈⋆_
 _≈⋆_ : ∀ {C : Container s p} {X : Set c} → C ⋆ X → C ⋆ X → Set (c ⊔ s ⊔ p)
 _≈⋆_ {C = C} {X = X} = Eq {C = C} (setoid X)
 
-------------------------------------------------------------------------
--- Lowerings
 
 Lowering : Container s p → Container s p → Set (s ⊔ p)
 Lowering C D = (a : Shape C) → D ⋆ Position C a

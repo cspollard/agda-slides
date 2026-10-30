@@ -1,14 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The polynomial functor of a sum of containers is the sum of the
--- polynomial functors:
+-- Sums of containers: the injections `inl`, `inr`, and copairing of algebras.
 --
---   ⟦ C₁ ⊎ C₂ ⟧ A ≅ ⟦ C₁ ⟧ A ⊎ ⟦ C₂ ⟧ A       (natural in the setoid A)
+--   copair : (⟦ C₁ ⟧ A → A) → (⟦ C₂ ⟧ A → A) → (⟦ C₁ ⊎ C₂ ⟧ A → A)
 --
--- and, consequently, algebras for `C₁ ⊎ C₂` on a carrier `A` are exactly
--- pairs of algebras for `C₁` and `C₂` on `A` (`copair`, with its universal
--- property).  This is how backends for separate slide vocabularies are
--- combined.
+-- This is how backends for separate vocabularies combine.  The universal property
+-- and `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦ C₁ ⟧ ⊎ ⟦ C₂ ⟧` are in `Container.Sum.Properties`.
 
 module Container.Sum where
 
@@ -39,7 +36,6 @@ module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
   private
     module A = Setoid A
 
-  ----------------------------------------------------------------------
   -- Algebras for a sum
 
   -- Copairing of two algebras on the same carrier.

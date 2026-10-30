@@ -1,8 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The tick model: ℕ.  Subtraction is the monus, exact where the minuend is the larger
--- (`Sub` asks for no more), and a percentage is the floor of a product.  Scaling is whole
--- multiplication: ℕ is an ordered module over itself.
+-- The tick model: ℕ.  Subtraction is the monus, a percentage is the floor of a product, and
+-- scaling is multiplication (ℕ is an ordered module over itself).  No coupling: no ratios.
 
 module Slides.Scalar.Model.Nat where
 

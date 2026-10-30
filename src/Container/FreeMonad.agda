@@ -1,12 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The free monad on a container, as a monad on Setoids.
+-- The free monad on a container, as a monad on Setoids: trees of commands with variables at the leaves.
 --
--- The carrier of `Free₀ C X` is stdlib's `C ⋆ X` (trees of `C`-operations
--- with leaves in `X`).  Two trees are equal when they have the same shape
--- at every node (propositionally) and equal leaves in `X`.  Since the
--- equality is defined structurally, no function extensionality is needed
--- for the monad laws.
+--   impure (s , k) : C ⋆ X        a command `s` with a child `k q` for each position `q`
+--   pure x                        a variable
+--
+-- `Eq` is structural equality: equal shapes at every node (propositionally), equal leaves in `X`.
+-- It is defined by recursion, so no function extensionality is needed for the monad laws
+-- (`Container.FreeMonad.Properties`).
 
 module Container.FreeMonad where
 
@@ -24,7 +25,6 @@ private
   variable
     s p c ℓ : Level
 
-------------------------------------------------------------------------
 -- Equality of trees
 
 module _ {C : Container s p} (X : Setoid c ℓ) where
@@ -68,8 +68,6 @@ Free₀ C X = record
   ; isEquivalence = Eq-isEquivalence X
   }
 
-------------------------------------------------------------------------
--- The monad structure
 
 -- Operations on carriers.
 

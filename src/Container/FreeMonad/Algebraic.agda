@@ -1,13 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The algebraic description of the free monad on a container.
+-- The free monad as the free algebra: `(Free₀ C X , impure)` is the free `⟦ C ⟧`-algebra on `X`.
 --
--- Fix a container `C` and let `F = ⟦ C ⟧` be its polynomial endofunctor on
--- `S = Setoids c′ ℓ′`.  The category `Alg` of `F`-algebras has a forgetful
--- functor `Forget : Alg ⟶ S`.  We show that `(Free₀ C X , impure)` is the
--- free `F`-algebra on `X`, in the sense of `Categories.FreeObjects.Free`,
--- with unit `pure` and universal extension `fold`.  From this agda-categories
--- provides the adjunction `Free ⊣ Forget`.
+--   fold : (⟦ C ⟧ A → A) → (X → A) → C ⋆ X → A        the unique algebra map extending `f` along `pure`
+--
+-- `fold-morphism` is an algebra homomorphism and `fold-unique` says it is the only one, so
+-- `FreeObj` is a free object for `Forget : Alg ⟶ Setoids`, giving the adjunction `Free⊣Forget`
+-- from agda-categories.  Everything is parameterised by `Alg c ℓ C`, which fixes the levels.
 
 module Container.FreeMonad.Algebraic where
 
@@ -66,7 +65,6 @@ module Alg {s p} (c ℓ : Level) (C : Container s p) where
         }
     }
 
-  ----------------------------------------------------------------------
   -- Universal property
 
   module _ (A : F-Algebra F) {X : Setoid c′ ℓ′} (f : Func X (F-Algebra.A A)) where

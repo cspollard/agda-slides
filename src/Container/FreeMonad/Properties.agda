@@ -1,7 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The free monad is a monad: `bind` respects equality of trees and satisfies the unit and associativity laws, the functor `Free C`,
--- the laws of `join`, and the monad `FreeMonad c ℓ C` on setoids.
+-- The free monad is a monad.
+--
+--   bind-cong, bind-pure, bind-assoc            bind respects `Eq` and satisfies the unit and associativity laws
+--   join-natural, join-assoc, join-fmap-pure    the laws of `join`
+--
+-- These assemble into the functor `Free C` and the monad `FreeMonad c ℓ C` on setoids.
+
 module Container.FreeMonad.Properties where
 
 open import Level using (Level; _⊔_; lift)
@@ -22,8 +27,6 @@ private
   variable
     s p c ℓ : Level
 
-------------------------------------------------------------------------
--- Properties of bind
 
 module _ {C : Container s p}
          {a ℓa b ℓb} {A : Setoid a ℓa} {B : Setoid b ℓb} where
@@ -54,7 +57,6 @@ bind-assoc : ∀ {C : Container s p} {a ℓa b ℓb d ℓd}
 bind-assoc A B D (pure _)         f g = refl⋆ D (f _ >>= g)
 bind-assoc A B D (impure (_ , k)) f g = refl , λ q → bind-assoc A B D (k q) f g
 
-------------------------------------------------------------------------
 -- The free monad as a functor on Setoids
 
 Free₁ : ∀ (C : Container s p) {X Y : Setoid c ℓ} →

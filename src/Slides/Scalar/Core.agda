@@ -1,12 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The ordered monoid shared by Space and Time, its exact-subtraction layer, and homomorphisms.
+-- The ordered monoid shared by Space and Time, optional exact subtraction, and homomorphisms.
 --
--- Lengths and durations are both a cancellative commutative monoid `(0#, +)` with a total
--- decidable order and a join `_⊔_` (frame union; the longer duration).  Subtraction is the
--- optional layer `Sub`, exact where the minuend is the larger (all ℕ's monus promises).
--- `IsOrdMonHom` is an order-embedding model homomorphism; `h-sub` shows it preserves exact
--- subtraction from the laws.  Equality is `_≡_`.
+--   OrdMon S     cancellative commutative monoid (0#, +), total decidable order, join `_⊔_`
+--                (frame union; the longer duration); equality is `_≡_`
+--   Sub M        exact subtraction: `b ≤ a → b + (a - b) ≡ a` (all that ℕ's monus promises)
+--   IsOrdMonHom  an order embedding preserving 0 and +; from the laws alone `h-⊔`, `h-select`
+--                (comparison) and, where exact, `h-sub` follow
+--
+-- Also the sum `_⊕_` of handlers for a sum of signatures, congruent when both are (`⊕-cong`).
 
 module Slides.Scalar.Core where
 
@@ -99,11 +101,7 @@ record IsOrdMonHom {A B} (M : OrdMon A) (N : OrdMon B) (h : A → B) : Set where
     N.+-cancelˡ (h b) _ _
       (trans (sym (h-+ b _)) (trans (cong h (Sub.sub-add SM b≤a)) (sym (Sub.sub-add SN (h-mono b≤a)))))
 
-------------------------------------------------------------------------
--- Signatures: handlers and their sum
-
--- The term language over a signature `C` is `C ⋆ V` (free monad), read by `pfold` with a
--- `Handler`; a handler for a sum of signatures is a pair, and is congruent when both are.
+-- A handler for a sum of signatures is a pair of handlers.
 
 open import Level using (0ℓ)
 open import Data.Container.Core using (Container)

@@ -1,13 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The model homomorphism ι : ℕ → ℚ, the lowerings for what it does not preserve, digitisation.
+-- The model homomorphism ι : ℕ → ℚ, the lowering for what it does not preserve, digitisation.
 --
--- Unconditional: the ordered monoid (`ι-hom`; hence ⊔ and comparison), scaling, ticks.
--- Conditional: `ι-sub` needs `b ≤ a` (`ι-sub-fails` otherwise).  Not preserved: percentages
--- (`ι-pct-fails`: ℕ floors a product).  `lowerS`, a Kleisli map of `ScC = SpaceC ⊎ TimeC`, sends
--- `a - b` to `(a ⊔ b) - b` and `pct p x` to `hold (pct p x)`.  `digitise`: a lowered ℕ-term at
--- the image of its variables is ι of its ℕ reading; the model fact about floors of percentages
--- is the hypothesis `PctDigital`.  Proofs use the laws of Core and Time and `pfold-bind`.
+-- Preserved: the ordered monoid (`ι-hom`, hence ⊔ and comparison), scaling, ticks, hold, rem.
+-- `ι-sub` needs `b ≤ a` (`ι-sub-fails` otherwise); percentages are not preserved (`ι-pct-fails`:
+-- ℕ floors a product).  `lowerS : Lowering ScC ScC` for `ScC = SpaceC ⊎ TimeC` repairs both:
+--
+--   a - b  ↦  (a ⊔ b) - b          pct p x  ↦  hold (pct p x)
+--
+-- `digitise`: a lowered ℕ-term, read in ℚ at the image of its variables, is ι of its ℕ reading.
+-- The model fact that ℕ's percentage is the floor of ℚ's is the hypothesis `PctDigital`.
 
 module Slides.Scalar.Hom where
 
