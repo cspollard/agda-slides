@@ -6,10 +6,10 @@
 -- a table of entries, each a node whose children are references (positions, counted from the
 -- oldest) to earlier entries, so equal subtrees are one entry (hash-consing).
 --
---   shareTop : List Tree → Dag → List Entry × Dag   roots over a table
+--   shareTop : List Tree → Tab → List Entry × Tab   roots over a table
 --   unshare  : Dag → List Tree                      the fold reading the table back
 --
--- `readBack (shareTop ts []) ≡ ts` (`Slides.Backend.Share.Properties`): sharing loses nothing.
+-- `readBack (shareTop ts emptyTab) ≡ ts` (`Slides.Backend.Share.Properties`): sharing loses nothing.
 -- The page reads back lazily, resolving a reference when it is reached.
 
 module Slides.Backend.Share where
@@ -28,6 +28,10 @@ open import Data.String.Properties using () renaming (_≟_ to _≟ˢ_)
 import Data.Nat.Properties as ℕₚ
 import Data.List.Properties as Listₚ
 import Data.Product.Properties as Prodₚ
+import Data.String.Properties as Strₚ
+import Data.List.Relation.Binary.Lex.Strict as Lex
+open import Data.Product.Relation.Binary.Lex.Strict using (×-strictTotalOrder)
+open import Relation.Binary.Bundles using (StrictTotalOrder)
 
 -- a node: the text around its children (`k + 1` pieces for `k` children), and the children
 data Tree : Set where
@@ -43,33 +47,54 @@ Dag = List Entry
 
 _≟ᵉ_ = Prodₚ.≡-dec (Listₚ.≡-dec _≟ˢ_) (Listₚ.≡-dec ℕₚ._≟_)
 
--- the position (from the oldest) of an entry, given the length of the table
-find : Entry → Dag → ℕ → Maybe ℕ
-find e []       n       = nothing
-find e (x ∷ xs) zero    = nothing
-find e (x ∷ xs) (suc n) with x ≟ᵉ e
-... | yes _ = just n
-... | no  _ = find e xs n
+-- An index from entries to positions finds a candidate in logarithmic time.  It is only a hint:
+-- the table is checked at the position, so the proofs never rely on the index.
+entryOrder : StrictTotalOrder _ _ _
+entryOrder = ×-strictTotalOrder (Lex.<-strictTotalOrder Strₚ.<-strictTotalOrder-≈) (Lex.<-strictTotalOrder ℕₚ.<-strictTotalOrder)
+
+open import Data.Tree.AVL.Map entryOrder as Index using (Map)
+
+Tab : Set
+Tab = Dag × Map ℕ
+
+emptyTab : Tab
+emptyTab = [] , Index.empty
+
+-- the entry at position `i` of a table of length `n` is `e`: its position
+find : Entry → ℕ → Dag → ℕ → Maybe ℕ
+find e i []       n       = nothing
+find e i (x ∷ xs) zero    = nothing
+find e i (x ∷ xs) (suc n) with n ℕₚ.≟ i
+... | no  _    = find e i xs n
+... | yes _ with x ≟ᵉ e
+...   | yes _ = just n
+...   | no  _ = nothing
+
+-- the position of an entry in the table, if it is there
+known : Entry → Tab → Maybe ℕ
+known e (d , x) with Index.lookup x e
+... | nothing = nothing
+... | just i  = find e i d (length d)
 
 -- the position of an entry, adding it if it is new
-intern : Entry → Dag → ℕ × Dag
-intern e d with find e d (length d)
-... | just i  = i , d
-... | nothing = length d , e ∷ d
+intern : Entry → Tab → ℕ × Tab
+intern e t@(d , x) with known e t
+... | just i  = i , t
+... | nothing = length d , e ∷ d , Index.insert e (length d) x
 
 mutual
-  share₁ : Tree → Dag → ℕ × Dag
+  share₁ : Tree → Tab → ℕ × Tab
   share₁ (node h ts) d with share ts d
   ... | rs , d₁ = intern (h , rs) d₁
 
-  share : List Tree → Dag → List ℕ × Dag
+  share : List Tree → Tab → List ℕ × Tab
   share []       d = [] , d
   share (t ∷ ts) d with share₁ t d
   ... | r , d₁ with share ts d₁
   ...   | rs , d₂ = r ∷ rs , d₂
 
 -- roots are not entered in the table: their children are, the roots stay entries
-shareTop : List Tree → Dag → List Entry × Dag
+shareTop : List Tree → Tab → List Entry × Tab
 shareTop []              d = [] , d
 shareTop (node h ts ∷ r) d with share ts d
 ... | rs , d₁ with shareTop r d₁
