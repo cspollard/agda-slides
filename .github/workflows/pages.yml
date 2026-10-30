@@ -37,7 +37,11 @@ jobs:
           git clone --depth 1 --branch v2.3 https://github.com/agda/agda-stdlib.git ~/agda-stdlib
           git clone https://github.com/agda/agda-categories.git ~/agda-categories
           git -C ~/agda-categories checkout c2e7c13edfeb3536244777f760265f4cfe960960
+          # Upstream names these standard-library-2.x; our .agda-lib files say plain standard-library.
+          sed -i 's/^name: standard-library.*/name: standard-library/' ~/agda-stdlib/standard-library.agda-lib
+          sed -i 's/^depend: standard-library.*/depend: standard-library/' ~/agda-categories/agda-categories.agda-lib
           mkdir -p ~/.agda
+          printf 'standard-library\nagda-categories\n' > ~/.agda/defaults
           {
             echo ~/agda-stdlib/standard-library.agda-lib
             echo ~/agda-categories/agda-categories.agda-lib
