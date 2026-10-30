@@ -1,11 +1,9 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Overloaded literals for the authoring vocabulary: a string literal at `Text` or `Inline` is plain
--- text, at `Math` an identifier; a number literal at `Math` is `num`.  This is the one place
--- instance arguments appear, and only because Agda's literal overloading is instance
--- resolution: four non-overlapping instances of `IsString`/`Number`, never used by the
--- core (`Slides.Deck.Content` and below).  Import this module (or `Slides.Deck.DSL`) once per
--- module, not together with `Data.String.Literals` or `Data.Nat.Literals`.
+-- Overloaded literals for authoring: a string at `Text` or `Inline` is plain text, at `Math` an
+-- identifier; a number at `Math` is `num`.  The one place instances appear (Agda's literal
+-- overloading is instance resolution); the core never uses them.  Import it, or `Slides.Deck.DSL`,
+-- once per module, and not with `Data.String.Literals` or `Data.Nat.Literals`.
 
 module Slides.Deck.Literals where
 

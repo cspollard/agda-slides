@@ -1,19 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Reading a deck: what the audience sees at each tick.
---
--- The deck is read by `Slides.Scene.Sample` on the tick clock ℕ with `Flow` leaves overlaid by
--- concatenation.  `visible s n` is the slide the audience sees at tick `n` (`nothing` before the
--- start or after the end); the *machine view* of a deck (`Slides.Deck.Machine`) is this.
---
---   chunk-visible    on tick `k < ticks` a slide shows chunks `0..k` (the chunks so far)
---   index            fragment index = start tick: the events of a slide's scene are its chunks,
---                    each at the tick equal to the number of pauses before it
---   deck-visible     at tick `n` a deck shows the slide it is in, at its local tick
---   steps            the slides' ticks add up: the machine has `duration` states
---
--- Everything is proved from the laws of the scene readings (`Slides.Scene.Sample`) at the ℕ
--- clock, whose arithmetic reduces; the model facts used are named lemmas below.
+-- Reading a deck: `visible s n`, the `Flow` the audience sees at tick `n` (`nothing` outside
+-- the deck), by `Slides.Scene.Sample` on the ℕ clock with leaves overlaid by `++`.
+-- `Slides.Deck.Machine` runs on this reading.
+--   `chunk-visible`   at tick k < ticks a slide shows chunks 0..k
+--   `fragment-index`  the events of a slide's scene are its chunks, each at its number of pauses
+--   `steps-deck`      the slides' ticks add up
+--   `deck-visible`    at tick n a deck shows the slide it is in, at its local tick
 
 module Slides.Deck.Read where
 
@@ -42,7 +35,6 @@ import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
 open import Slides.Diagram.Overlay using (listOverlay)
 import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
--- leaves are read as themselves, at any local time
 ℓ : Flow → ℕ → Flow
 ℓ a _ = a
 
@@ -59,7 +51,6 @@ accumL c (d ∷ ds) (suc k) = c ++ accumL d ds k
 accum : List⁺ Flow → ℕ → Flow
 accum (c ∷ cs) = accumL c cs
 
-------------------------------------------------------------------------
 -- One slide
 
 go-visible : ∀ c cs t → t < suc (length cs) → visible (chunkFrom c cs) t ≡ just (accumL c cs t)
@@ -78,7 +69,6 @@ chunk-inner (slide l (c ∷ cs)) k lt = go-visible c cs k lt
 chunk-visible : ∀ s k → k < ticks s → visible (slideScene s) k ≡ just (accum (Slide.chunkL s) k)
 chunk-visible s k lt = trans (hold-visible (chunkScene (Slide.chunkL s)) _ k lt) (chunk-inner s k lt)
 
-------------------------------------------------------------------------
 -- Fragment index = start tick
 
 ol : E.Event Flow → ℕ × Flow
@@ -98,7 +88,6 @@ fragment-index c (d ∷ ds) =
                   (trans (ListP.map-∘ (E.events (chunkFrom d ds)))
                          (cong (map (λ x → suc (proj₁ x) , proj₂ x)) (fragment-index d ds)))))
 
-------------------------------------------------------------------------
 -- A deck: the slide the audience is in
 
 -- a slide read in its own time

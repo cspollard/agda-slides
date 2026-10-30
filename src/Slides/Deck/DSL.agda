@@ -1,24 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The authoring vocabulary: smart constructors, `do`-notation and components for talks.
+-- The authoring vocabulary: smart constructors over the free monoids `Body`, `Flow`, `Talk`.
 --
---   demo : Talk
---   demo = do
---     slide (do heading 1 "Title"
---               paragraph ("some " ∷ emph "marked up" ∷ " text" ∷ [])
---               pause
---               bullets ("and" ∷ "more" ∷ []))
+--   demo = slide (do heading 1 "Title"
+--                    pause
+--                    bullets ("and" ∷ "more" ∷ []))
 --
--- A `Body` is the content of one slide: blocks and `pause`s, the free monoid on them
--- (`Slides.Deck.Syntax`); a `Flow` is nested content (columns, boxes); a `Talk` is a list of
--- parts.  All three are lists, so one `_>>_`, list append, sequences each of them and `do` needs
--- no instances.  Associativity and the unit are `Data.List.Properties`; the pause convention
--- across `_>>_` is `chunks-++`.  The commands of a `Flow` are in the `Content` submodule.
---
--- A component is an ordinary function into `Body` or `Talk` (`titled`, `twoColumn`, ...).
--- `Checked R` gives `figure` and `cite` against a declared `Resources`: the check is an implicit
--- argument that is the unit type when the name is declared (solved by eta) and an empty type
--- naming the missing resource when not, an unsolved meta (no instance search).
+-- All three are lists, so `_>>_` is list append and `do` needs no instances; the monoid laws
+-- are `Data.List.Properties`, the pause convention across `_>>_` is `chunks-++`.  Flow commands
+-- live in the `Content` submodule.  `Checked R` makes `figure` and `cite` fail to typecheck
+-- (an unsolved meta naming the resource) unless declared in `Resources`.
 
 module Slides.Deck.DSL where
 
@@ -46,7 +37,6 @@ open import Slides.Deck.Talk
 open import Slides.Diagram.Syntax using (Dia)
 open import Slides.Deck.Anim using (Anim; bothScene; uniform?; rests)
 
-------------------------------------------------------------------------
 -- `do`-notation
 
 infixl 1 _>>_
@@ -56,14 +46,12 @@ _>>_ = _++_
 plain : String → Text
 plain s = text s ∷ []
 
--- a check that is the unit type when it holds and an empty type naming the culprit when not
 data Missing (kind name : String) : Set where
 
 Found : Bool → String → String → Set
 Found true  _    _    = ⊤
 Found false kind name = Missing kind name
 
-------------------------------------------------------------------------
 -- Commands, stated once: as a `Flow` (`Content`, for columns and boxes) and as a `Body`
 
 module Prims (X : Set) (one : Block → X) where
@@ -131,7 +119,6 @@ open Prims Body (λ b → block b ∷ []) public hiding (references)
 pause : Body
 pause = S.pause ∷ []
 
-------------------------------------------------------------------------
 -- Slides
 
 background transition : String → Look
@@ -157,7 +144,6 @@ stackWith o b bs = vstack o (mkSlide (Look.label o) b ∷ map (mkSlide nothing) 
 stack : Body → List Body → Talk
 stack = stackWith plainLook
 
-------------------------------------------------------------------------
 -- Components
 
 titled : Text → Body → Body
@@ -185,7 +171,6 @@ sectionSlide t = slideWith (background "#1b1b2f") (heading 1 t)
 titleSlide : (title subtitle author : Text) → Talk
 titleSlide t s a = slide (titleBody t s a)
 
-------------------------------------------------------------------------
 -- Resources a talk refers to, checked when it typechecks
 
 record Resources : Set where

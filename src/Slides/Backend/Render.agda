@@ -1,30 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The shared deck algebra: one core that both HTML backends use.
+-- Rendering: the fold of the deck's free monoids into the monoid of HTML forests (`List XMLDoc`),
+-- shared by both HTML backends, which differ only in a `Shell` (how slides and stacks are
+-- wrapped) and the page around the forest.
 --
--- Rendering is the fold of the free monoids of the deck language into the monoid of forests
--- (`List XMLDoc`, `_++_`):
---
---   renderFlow   Flow → Forest        a monoid homomorphism (`renderFlow-++`): each block
---                                     contributes its markup (`renderBlock`);
---   renderSlide  Slide → Forest       the chunks of a slide (`Slides.Deck.Syntax`): the first is
---                                     shown, each later one is a fragment, one per tick
---                                     (`render-events`: the same list from the scene's events);
---   renderTalk   Shell → Talk → Forest  a monoid homomorphism in the talk (`renderTalk-++`).
---
--- The backends differ only in a `Shell`, how a slide and a vertical stack are wrapped, and in the
--- page around the forest.  A `Shell` is the whole interface a backend gives the core, so
--- everything proved here is proved for both.  Restyling is a homomorphism of backends:
--- `restyle f sh` applies `f` to the markup of every wrapped part and
--- `renderTalk (restyle f sh) t ≡ map f (renderTalk sh t)` (`restyle-hom`), and likewise on the
--- blocks of a flow (`restyleFlow-hom`).
---
---   pause-free   a body without pauses has one chunk and renders as its flow (`render-single`)
---   render-glue  a pause-free body in front of another renders as its flow followed by the
---                other's slide: the HTML reading of `chunks-++` (legacy `renderBody-bind`)
---
--- Speaker notes and scripts are not part of the slide's visible content, so they are never
--- inside a fragment (a fragment would hide them with its chunk).
+--   renderFlow   Flow → Forest           each block contributes its markup
+--   renderSlide  Slide → Forest          first chunk shown, each later one a fragment
+--   renderTalk   Shell → Talk → Forest   parts rendered one by one
+-- Notes and scripts are never inside a fragment, which would hide them with its chunk.
+-- Laws: `Slides.Backend.Render.Properties`.
 
 module Slides.Backend.Render where
 
@@ -58,7 +42,6 @@ open import Slides.Deck.Anim using (sequence; rests)
 Forest : Set
 Forest = List XMLDoc
 
-------------------------------------------------------------------------
 -- Inline markup
 
 private
@@ -95,7 +78,6 @@ mutual
   rich : String → Attrs → List Inline → XMLDoc
   rich tag attrs is = hMixed tag attrs (normalise (pieces is))
 
-------------------------------------------------------------------------
 -- Blocks
 
 hTag : ℕ → String
@@ -193,7 +175,6 @@ mutual
   renderColumns []       = []
   renderColumns (c ∷ cs) = div "column" (renderFlow c) ∷ renderColumns cs
 
-------------------------------------------------------------------------
 -- Slides: the first chunk is shown, each later chunk is a fragment
 
 aside? : Block → Bool
@@ -214,7 +195,6 @@ renderChunks (c ∷ cs) = renderFlow c ++ concatMap renderStep cs
 renderSlide : Slide → Forest
 renderSlide s = renderChunks (Slide.chunkL s)
 
-------------------------------------------------------------------------
 -- Parts and talks: the backend is a shell
 
 -- how a backend wraps a slide's forest (attributes: the look and the label) and a vertical stack
@@ -240,7 +220,6 @@ renderPart sh (vstack o (s ∷ ss)) = Shell.wrapStack sh (lookAttrs o (Slide.lab
 renderTalk : Shell → Talk → Forest
 renderTalk sh = concatMap (renderPart sh)
 
-------------------------------------------------------------------------
 -- Restyling is a homomorphism of backends
 
 restyle : (XMLDoc → XMLDoc) → Shell → Shell

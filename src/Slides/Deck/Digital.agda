@@ -1,15 +1,10 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Steps are the ℕ-tick reading of a deck.
---
--- A deck is authored on the whole-tick clock ℕ (one tick per pause, `Slides.Deck.Syntax`) and
--- presented by reading it at tick `n` (`Slides.Deck.Read.visible`): that is its steps.  Mapped
--- to the ℚ clock along `ι : ℕ → ℚ` (all durations `ι d`, `Slides.Scene.Tick`) it shows the same
--- at the instant `ι n`: `deck-digital`.  Decks have no drivers (`D = ⊥`) and `Flow` leaves
--- overlay by concatenation whatever the clock, so this is `tick-hom` with the identity on leaves;
--- no lowering of scalars is needed (contrast `Slides.Scene.Digital`, with its percentages).
---
--- `deck-digital-duration`: the duration maps by `ι` too.
+-- A deck's steps are its ℕ-tick reading, and the ℚ clock agrees: this is `tick-hom`
+-- (`Slides.Scene.Tick`) at the identity on leaves, since decks have no drivers and `Flow`
+-- leaves overlay by `++` on any clock.
+--   `deck-digital`           mapped along `ι : ℕ → ℚ`, the scene shows at `ι n` what `visible` shows at `n`
+--   `deck-digital-duration`  the duration maps by `ι` too
 
 module Slides.Deck.Digital where
 
@@ -38,7 +33,6 @@ open import Slides.Scene.Tick {ℕ} {ℚ} {⊥} {⊥} {Flow} {Flow} natMon natSu
   (λ ()) (λ ()) (λ x → x) (λ ()) listOverlay listOverlay (λ x → x) (record { F-⊙ = λ _ _ → refl })
   using (tick-hom)
 
--- leaves are read as themselves on the ℚ clock too
 ℓQ : Flow → ℚ → Flow
 ℓQ a _ = a
 

@@ -1,22 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- What a backend binds: the physical inputs of the browser and the commands they send.
+-- What a backend binds: physical browser input and the program commands it sends.
 --
--- A key is its DOM key code (a number: decidable equality for free, no enumeration of names) and a
--- modifier; `#n`, `#/h/v` and `#/id` are the hashes a page reads on load or on `hashchange`.  A
--- backend binds a subset of the program commands (`Slides.Program.Supports`) and decodes
--- physical input into them:
---
---   Kind         keys that send one command; a binding is a list of kinds, read first match
---   clash-free   no key is in two kinds (decided by computation: the tables below are `refl`)
---   revealSupports   reveal.js binds all of `Nav` and, besides, the grid moves and the overview
---                (commands of its own, `Aux`, that no program awaits): `Supports Nav`
---   plainSupports    the standalone backend binds all of `Nav`: `idSupports`
---
--- Both are total (`AllSup` of every program: nothing is skipped), so `lower-supported`
--- of `Slides.Program.Supports` says a deck's program is presented unchanged by either backend
--- (`reveal-presents`, `plain-presents`).  The tables describe what reveal.js and
--- `assets/plain.js` do; the browser tests check them.
+-- A key is a DOM key code and a modifier; `#n`, `#/h/v`, `#/id` are the hashes a page reads.
+-- A binding is a list of `Kind`s (keys sending one command), read first match; `clash-free`
+-- decides that no key is in two kinds (the tables below are checked by `refl`).
+--   `revealSupports`  all of `Nav` plus reveal's own commands (`Aux`, grid moves, overview)
+--   `plainSupports`   all of `Nav`
+-- Both are total, so a deck's program is presented unchanged (`reveal-total`, `plain-total`,
+-- `Slides.Backend.Input.Properties`).  The tables describe reveal.js and `assets/plain.js`;
+-- the browser tests check them.
 
 module Slides.Backend.Input where
 
@@ -44,7 +37,6 @@ open import Data.Container.FreeMonad using (pure; impure)
 open import Slides.Deck.Talk using (Mode; linear; stacked)
 open import Slides.Program.Navigation using (Nav; next; prev; first; last; goto; gotoLabel; _≟N_)
 
-------------------------------------------------------------------------
 -- Keys and hashes
 
 KeyCode : Set
@@ -91,7 +83,6 @@ showHash (flat n)   = "#" ++ˢ showℕ n
 showHash (grid h v) = "#/" ++ˢ showℕ h ++ˢ "/" ++ˢ showℕ v
 showHash (named l)  = "#/" ++ˢ l
 
-------------------------------------------------------------------------
 -- Bindings
 
 -- the keys of a kind send its command
@@ -117,7 +108,6 @@ clash-free : ∀ {S} → List (Kind S) → Bool
 clash-free []             = true
 clash-free ((ks , _) ∷ r) = all (λ k → not (memberᵇ k (keysOf r))) ks ∧ clash-free r
 
-------------------------------------------------------------------------
 -- reveal.js (`js/controllers/keyboard.js`: this describes what it does, not configuration)
 
 data Aux : Set where
@@ -176,7 +166,6 @@ revealHash (flat n)         = just (goto n)
 revealHash (grid h _)       = just (goto h)
 revealHash (named l)        = just (gotoLabel l)
 
-------------------------------------------------------------------------
 -- The standalone backend (`assets/plain.js`)
 
 plainKinds : List (Kind Nav)

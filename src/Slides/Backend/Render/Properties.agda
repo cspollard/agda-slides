@@ -1,14 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Laws of the shared deck algebra (`Slides.Backend.Render`), proved once for both backends.
---
---   renderFlow-++     a monoid homomorphism: the markup of a flow is the markup of its blocks
---   renderTalk-++     the same in the talk: parts are rendered one by one
---   render-single     a body without pauses is one chunk and renders as its flow
---   render-glue       the HTML reading of `chunks-++` (legacy `renderBody-bind`)
---   render-events     the HTML of a slide is a function of the events of its scene: the chunk
---                     that starts at tick `k` is a fragment (`Slides.Deck.Read.fragment-index`)
---   restyle-hom       restyling is a homomorphism of backends (`restyleFlow-hom` on blocks)
+--   `renderFlow-++`, `renderTalk-++`   rendering is a monoid homomorphism
+--   `render-single`  a pause-free body is one chunk and renders as its flow
+--   `render-glue`    the HTML reading of `chunks-++`
+--   `render-events`  a slide's HTML is a function of the events of its scene: the chunk
+--                    starting at tick k is a fragment (`Slides.Deck.Read.fragment-index`)
+--   `restyle-hom`, `restyleFlow-hom`   restyling is a homomorphism of backends
 
 module Slides.Backend.Render.Properties where
 
@@ -37,7 +35,6 @@ renderFlow-++ (b ∷ xs) ys = trans (cong (renderBlock b ++_) (renderFlow-++ xs 
 render-single : ∀ c → renderChunks (c ∷ []) ≡ renderFlow c
 render-single c = ListP.++-identityʳ (renderFlow c)
 
--- the HTML reading of `chunks-++`: a pause-free body in front of another
 glue-single : ∀ c ys → renderChunks (glue (c ∷ []) ys) ≡ renderFlow c ++ renderChunks ys
 glue-single c (d ∷ ds) =
   trans (cong (_++ concatMap renderStep ds) (renderFlow-++ c d)) (ListP.++-assoc (renderFlow c) (renderFlow d) _)

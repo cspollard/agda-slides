@@ -1,12 +1,9 @@
 {-# OPTIONS --safe --without-K #-}
 
--- HTML5 smart constructors over parsnip's XML.
---
--- parsnip prints XML: an element without content self-closes (`<div />`),
--- which HTML5 only honours for void elements.  The R0 spike showed that a
--- browser nests everything after an empty `<div />` inside it.  These
--- constructors therefore give every empty non-void element a single space
--- of content, and leave void elements (`meta`, `link`, `img`, …) empty.
+-- HTML5 smart constructors over parsnip's XML.  parsnip self-closes an empty element
+-- (`<div />`), which HTML5 honours only for void elements, so a browser would nest what follows
+-- inside it.  Every empty non-void element therefore gets one space of content; void elements
+-- (`meta`, `link`, `img`, ...) stay empty.  Runtime strings are repaired by parsnip's `Sanitize`.
 
 module Slides.Backend.HTML where
 

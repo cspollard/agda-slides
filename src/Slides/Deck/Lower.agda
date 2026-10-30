@@ -1,20 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Lowerings of the deck vocabulary: for a backend that lacks a feature.
---
--- A lowering replaces each block by a flow (`Lowering = Block → Flow`: speaker notes by nothing,
--- an animation by its last frame).  `lowerFlow` extends it to every place blocks occur (columns,
--- boxes, fragments, styled and placed divisions), and `lowerTalk` to the chunks of every slide.
--- A lowering acts on the leaf blocks; the containers are rebuilt around the lowered contents.
---
---   lowerFlow-++    `lowerFlow l` is a monoid homomorphism of flows (`concatMap` of the blocks)
---   lowerFlow-id    the identity lowering is the identity
---   lowerFlow-fuse  lowerings compose before they are lifted: `lowerFlow (l₁ ⋙ l₂)` is
---                   `lowerFlow l₂ ∘ lowerFlow l₁`, so a backend lacking several features applies
---                   one combined lowering
---
--- The chunks of a slide are lowered one by one, so a pause survives its content (`slides-lower`:
--- the slides of a lowered talk are the lowered slides).
+-- Lowerings for a backend that lacks a feature: a Kleisli map `Block → Flow` (notes to nothing,
+-- an animation to its last frame), lifted by `lowerFlow` through every container and by
+-- `lowerTalk` to every chunk of every slide.
+--   `lowerFlow-++`   `lowerFlow l` is a monoid homomorphism (`concatMap`)
+--   `lowerFlow-id`   the identity lowering lifts to the identity
+--   `lowerFlow-fuse` `lowerFlow (l₁ ⋙ l₂) ≡ lowerFlow l₂ ∘ lowerFlow l₁`: one combined lowering
+--   `slides-lower`   slides (lowerTalk l t) ≡ map (lowerSlide l) (slides t); a pause survives
 
 module Slides.Deck.Lower where
 
@@ -35,7 +27,6 @@ open import Slides.Deck.Anim using (sequence; layoutAt; lastTick; totalDuration;
 Lowering : Set
 Lowering = Block → Flow
 
-------------------------------------------------------------------------
 -- Lifting a lowering of blocks to flows
 
 module _ (l : Lowering) where
@@ -60,7 +51,7 @@ module _ (l : Lowering) where
   lowerFlow-++ []       ys = refl
   lowerFlow-++ (b ∷ xs) ys = trans (cong (lowerBlock b ++_) (lowerFlow-++ xs ys)) (sym (ListP.++-assoc (lowerBlock b) (lowerFlow xs) (lowerFlow ys)))
 
--- the identity lowering, and composition: the second lowering runs over the result of the first
+-- composition: the second lowering runs over the result of the first
 idL : Lowering
 idL b = b ∷ []
 
@@ -138,7 +129,6 @@ mutual
   lowerFlows-fuse l₁ l₂ []       = refl
   lowerFlows-fuse l₁ l₂ (f ∷ fs) = cong₂ _∷_ (lowerFlow-fuse l₁ l₂ f) (lowerFlows-fuse l₁ l₂ fs)
 
-------------------------------------------------------------------------
 -- Slides and talks
 
 lowerSlide : Lowering → Slide → Slide
@@ -159,7 +149,6 @@ slides-lower l (vstack o (s ∷ ss) ∷ t) =
   trans (cong (λ r → lowerSlide l s ∷ map (lowerSlide l) ss ++ r) (slides-lower l t))
         (cong (lowerSlide l s ∷_) (sym (ListP.map-++ (lowerSlide l) ss (slides t))))
 
-------------------------------------------------------------------------
 -- The lowerings
 
 -- drop the speaker notes
@@ -173,8 +162,7 @@ stripScripts (script _) = []
 stripScripts (mount _)  = []
 stripScripts b          = b ∷ []
 
--- replace each diagram and animation by a one-line placeholder, for a backend without vector
--- graphics
+-- a one-line placeholder for each diagram and animation, for a backend without vector graphics
 diagramPlaceholder : Lowering
 diagramPlaceholder (diagram _ _ _)  = paragraph (text "[diagram]" ∷ []) ∷ []
 diagramPlaceholder (still _ _ _)    = paragraph (text "[diagram]" ∷ []) ∷ []
@@ -183,9 +171,8 @@ diagramPlaceholder (animationLoop _ _ _ _) = paragraph (text "[animation]" ∷ [
 diagramPlaceholder (animationBoth _ _ _ _ _ _) = paragraph (text "[animation]" ∷ []) ∷ []
 diagramPlaceholder b                = b ∷ []
 
--- for a backend that cannot play animations (print, a script-free page): an animation as a still
--- of its final frame, the picture the audience is left with: the last tick of the last act (of the
--- first phase, for steps over a loop), the first frame for a loop
+-- an animation as a still of the picture the audience is left with: the last tick of the last act
+-- (first phase, for steps over a loop); the first frame for a loop
 animationFinal : Lowering
 animationFinal (animation n p ms [])      = []
 animationFinal (animation n p ms (a ∷ as)) =

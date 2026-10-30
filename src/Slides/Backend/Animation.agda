@@ -1,29 +1,24 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Shipping an animation to the page: the event list with parametric leaves.
---
--- The meaning of an animation (`Slides.Scene.Events`) is a duration and a sparse list of events
--- (onset, span, driver, leaf).  The page gets exactly that, as JSON in a `script` element of its animation:
+-- Shipping an animation: its meaning (`Slides.Scene.Events`) is a duration and a sparse event
+-- list, and the page gets exactly that as JSON in a `script` child of the animation:
 --
 --   {"n": table, "e": events}
---   event      {"o": onset, "s": span or null, "d": driver term or null, "l": leaf}
---   leaf       a diagram `["R", w, h, style]`, `["b", align, a, b]`, ...: the constructors of
---              `Slides.Diagram.Syntax`, one letter each, its scalars *terms*
---   term       null (the parameter), a number, or `[op, args...]`: the operations of the Space,
---              Time and Coupling signatures, numbered (see `assets/animation.js`)
+--   event  {"o": onset, "s": span or null, "d": driver term or null, "l": leaf}
+--   leaf   a diagram `["R", w, h, style]`, `["b", align, a, b]`, ...: one letter per constructor
+--          of `Slides.Diagram.Syntax`, its scalars terms
+--   term   null (the parameter), a number, or `[op, args...]`: numbered Space, Time and
+--          Coupling operations (see `assets/animation.js`)
 --
--- and the page evaluates the terms, lays the leaves out (`Slides.Diagram.Place`) and draws them
--- (`Slides.Diagram.Print`) at each time: `assets/animation.js` is `Slides.Scene.Animation.frame`
--- in JavaScript.  Diagrams and terms are trees, and equal subtrees are shipped once
--- (`Slides.Backend.Share`): anywhere a diagram or a term may stand, a string is the position of a
--- node of the table `"n"`.  The first frame is printed here, so a page without JavaScript shows
--- it.  The JavaScript is hand-written (a table of the signatures' operations would be as long as
--- the evaluator) and tested against Agda's frames (`make test-anim-ref`).
+-- Diagrams and terms are trees; equal subtrees are shipped once (`Slides.Backend.Share`), and a
+-- string where a diagram or term may stand is a position in `"n"`.  The page evaluates terms,
+-- lays out (`Slides.Diagram.Place`) and prints (`Slides.Diagram.Print`) at each time:
+-- `assets/animation.js` is `Slides.Scene.Animation.frame` in JavaScript, tested against Agda's
+-- frames (`make test-anim-ref`).  The first frame is printed here, so the page works without it.
 --
--- Reveal steps: an animation of acts `a₁ … aₙ` is the scene `a₁ ⨾ … ⨾ aₙ`; its *rests* are the
--- cumulative durations, the page plays from one rest to the next when a fragment appears
--- (`Slides.Deck.Anim`: `sequence`, `rests`).  Steps over a loop: the scene is `n` phases end to
--- end, a loop of period `n` ticks picks the phase and the steps play within it.
+-- Reveal steps: acts `a₁ … aₙ` are the scene `a₁ ⨾ … ⨾ aₙ`, and the page plays from one `rests`
+-- entry to the next per fragment.  Steps over a loop: `n` phases end to end; the loop picks
+-- the phase, the steps play within it.
 
 module Slides.Backend.Animation where
 
@@ -66,7 +61,6 @@ open Mv using (Anim; Leaf; Sc; Drv; Event; onset; span; driver; leaf)
 open import Slides.Backend.Share using (Tree; tree; ship; shareTop)
 open import Slides.Backend.HTML using (hElement; hText; Attrs)
 
-------------------------------------------------------------------------
 -- JSON values
 
 natⱼ : ℕ → JSON
@@ -93,7 +87,6 @@ easingⱼ Step      = natⱼ 1
 easingⱼ StepStart = natⱼ 2
 easingⱼ (Bezier a b c d) = arr (natⱼ a ∷ natⱼ b ∷ natⱼ c ∷ natⱼ d ∷ [])
 
-------------------------------------------------------------------------
 -- Terms (operation numbers: see `assets/animation.js`)
 
 -- An item of a printed array: text, or a subtree that is shared (the page finds it by its position
@@ -132,7 +125,6 @@ drvI (impure (Ratio , k))            = opT 8 (drvI (k zero) ∷ drvI (k (suc zer
 drvI (impure (Lerp , k))             = opT 9 (drvI (k zero) ∷ drvI (k (suc zero)) ∷ drvI (k (suc (suc zero))) ∷ [])
 drvI (impure (Ease e , k))           = opT 10 (txt (easingⱼ e) ∷ drvI (k _) ∷ [])
 
-------------------------------------------------------------------------
 -- Leaves
 
 private
@@ -216,7 +208,6 @@ eventsJSON a with shareTop (map eventT (Mv.events a)) []
 ... | es , d with ship es d
 ...   | tbl , evs = "{\"n\":[" ++ˢ intersperse "," tbl ++ˢ "],\"e\":[" ++ˢ intersperse "," evs ++ˢ "]}"
 
-------------------------------------------------------------------------
 -- The first frame, printed here
 
 -- a number with up to three decimals, trailing zeros dropped (the page prints the same)
@@ -248,7 +239,6 @@ firstFrame a with Mv.frame a 0
 ... | nothing = mkLayout (ι 0) (ι 0) [] []
 ... | just l  = l
 
-------------------------------------------------------------------------
 -- The element
 
 -- a laid-out drawing at rest, as a `diagram` element

@@ -2,19 +2,15 @@
 
 -- A deck as a program: a pause is a wait for `next`.
 --
--- Two readings of one pause convention.  A slide's scene delays chunk i+1 by one tick under
--- `Par` (`Slides.Deck.Syntax`).  Its *program* (`elab`) replaces each `Delay d` by `d` waits for
--- the command `next` and keeps the other scene operations; `elab` is a Kleisli lowering of the
--- scene signature into the program signature (legacy: `Slides.Steps.Input.elab`).  The
--- machine of the program (`Slides.Program.Sem`, with the direct reading `Timed` as output: the
--- state yields a scene) after `k` nexts shows, at its time 0, exactly what the scene shows at
--- tick `k`:
+--   scene:    chunk i+1 delayed by one tick under `Par`    (`Slides.Deck.Syntax`)
+--   program:  `elab` turns each `Delay d` into `d` waits for `next`; a Kleisli lowering
+--             of the scene signature into the program signature
 --
---   pause-agree   reading at 0 the output of the machine of `elab (chunks)` after `k` nexts is
---                 the accumulated chunks `0..k` (for every `k`: the machine saturates)
---   pause-visible for `k` inside the slide this is `visible` (`Slides.Deck.Read`)
---
--- So the waits of a program and the delays of a scene are the same pauses.
+-- The machine of `elab` (`Slides.Program.Sem`) after `k` nexts shows at time 0 what the scene
+-- shows at tick `k`:
+--   `pause-agree`    that output is the accumulated chunks 0..k (every k; the machine saturates)
+--   `pause-visible`  for k inside the slide it is `visible` (`Slides.Deck.Read`)
+--   `skip-elab`      taking every wait as satisfied gives the scene with its delays removed
 
 module Slides.Deck.Program where
 
@@ -46,13 +42,12 @@ open import Slides.Deck.Read using (ℓ; accumL; go-visible; visible)
 open import Slides.Diagram.Overlay using (listOverlay)
 import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
--- the machine's output is the direct reading; a waiting machine shows nothing
+-- a waiting machine shows nothing
 absent : S.Timed
 absent = 0 , λ _ _ → nothing
 
 import Slides.Program.Sem {ℕ} {⊥} {Nav} _≟N_ (≡P.setoid S.Timed) S.dirH S.dirCong absent as P
 
-------------------------------------------------------------------------
 -- Pause as a wait
 
 Prog : Set → Set
@@ -69,10 +64,8 @@ elabOp o         = impure (inj₁ o , pure)
 elab : ∀ {A} → Scene ℕ ⊥ A → Prog A
 elab = lower elabOp
 
-------------------------------------------------------------------------
 -- The machine of a slide's program
 
--- leaves are constant machines showing the leaf
 leafM : Flow → P.Mach
 leafM a = P.constM (S.leafT ℓ a)
 
@@ -119,7 +112,6 @@ pause-visible : ∀ c cs k → k < suc (length cs) →
                 now (after (slideP c cs) (replicate k next)) ≡ visible (chunkFrom c cs) k
 pause-visible c cs k lt = trans (pause-agree c cs k) (sym (go-visible c cs k lt))
 
-------------------------------------------------------------------------
 -- A program as a scene: forget the waits
 
 -- the scene with its delays removed: everything shown at once
@@ -132,8 +124,6 @@ private
   skip-awaits zero    = lift refl
   skip-awaits (suc n) = skip-awaits n
 
--- Taking every wait of the elaborated scene as satisfied gives the scene with its delays removed
--- (the final state of the machine: `pause-agree` at the last tick).
 skip-elab : ∀ {A} (s : Scene ℕ ⊥ A) → skip (elab s) ≈⋆ lower undelayOp s
 skip-elab s = trans≈ (sym≈ (lower-⋙ elabOp skipOp s)) (lower-cong pw (refl≈ s))
   where

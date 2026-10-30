@@ -1,30 +1,20 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The machine of a deck: the visible slide at a position, with labels.
---
--- DECISION (the machine view at deck level).  The machine's state is a tick position and its
--- output is the *visible slide*, the flat scene read at that tick (`Slides.Deck.Read.visible`):
+-- The machine of a deck: a Moore machine whose state is a tick position and whose output is the
+-- visible slide (`Slides.Deck.Read.visible`), with `goto` by slide label.
 --
 --   deckM d = navM (steps d ∸ 1) (labels d) (visible (flat d))
 --
--- The accumulated view (everything shown since the slide began) is derived, not a second
--- machine: on a slide it is the concatenation of the chunks so far, and `accum-step` says each
--- tick only adds a chunk, so the visible slide and the accumulated view coincide for the pause
--- fragment (`chunk-visible`, `accum-step`).  They differ only for content that leaves (a window
--- inside a chunk), which the visible view shows correctly and the accumulated one cannot.  The
--- visible view also makes `prev` and `goto` trivial (no replay), and is the one that agrees with
--- a backend that renders a slide.
---
--- Labels.  A slide carries an optional label; the table maps it to the onset of the slide's
--- event in the deck read with each slide leaf of its own duration (`slideM`).
---
---   slide-starts      the events of a deck of slides are the slides at the running sums of the ticks
---   labelOf-++, labelOf-shift, labelOf-leaf
---                     the table of overlaid scenes is the first's, else the second's; delaying by
---                     `k` shifts every label by `k`; a labelled slide leaf is at its onset
---   start-visible     going to the start of any slide shows its first chunk, nothing else
---   goto-label-visible  `gotoLabel l` shows the first chunk of the slide labelled `l`
---   accum-step        a tick adds exactly the next chunk
+-- The accumulated view is derived, not a second machine (`accum-step`: a tick adds one chunk).
+-- The visible view also covers content that leaves, makes `prev` and `goto` replay-free, and
+-- agrees with a backend that renders a slide.
+--   `slide-starts`        the events of a deck of slides are the slides at the running sums of ticks
+--   `labelOf-++`, `labelOf-shift`, `labelOf-leaf`
+--                         overlay takes the first table's match; delay by k shifts labels by k;
+--                         a labelled leaf is at its onset
+--   `start-visible`       going to the start of any slide shows its first chunk
+--   `goto-label-visible`  `gotoLabel l` shows the first chunk of the slide labelled `l`
+--   `accum-step`          accumL c cs (suc k) ≡ accumL c cs k ++ at cs k
 
 module Slides.Deck.Machine where
 
@@ -61,7 +51,6 @@ open import Slides.Deck.Read
 
 import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
 
-------------------------------------------------------------------------
 -- Slide events: each slide leaf lasts its own ticks
 
 -- a slide as a leaf: it lasts `ticks`, and is present at its onset
@@ -74,7 +63,6 @@ slideEvents d = proj₂ (E.media slideM d)
 steps : Deck → ℕ
 steps d = proj₁ (E.media slideM d)
 
-------------------------------------------------------------------------
 -- The label table
 
 matches : Maybe String → String → Bool
@@ -92,14 +80,14 @@ labelOf-++ (e ∷ es) fs l with matches (Slide.label (E.leaf e)) l
 ... | true  = refl
 ... | false = labelOf-++ es fs l
 
--- delaying a scene by `k` shifts its labels by `k` (the legacy `labelTable-next`)
+-- delaying a scene by `k` shifts its labels by `k`
 labelOf-shift : ∀ k es l → labelOf (map (E.shiftE k) es) l ≡ Maybe.map (k +_) (labelOf es l)
 labelOf-shift k []       l = refl
 labelOf-shift k (e ∷ es) l with matches (Slide.label (E.leaf e)) l
 ... | true  = refl
 ... | false = labelOf-shift k es l
 
--- a labelled slide is at its onset (the legacy `labelTable-label`)
+-- a labelled slide is at its onset
 labelOf-leaf : ∀ s l sp → Slide.label s ≡ just l → labelOf (E.event 0 sp nothing s ∷ []) l ≡ just 0
 labelOf-leaf s l sp e rewrite e with l Str.≟ l
 ... | yes _ = refl
@@ -108,13 +96,11 @@ labelOf-leaf s l sp e rewrite e with l Str.≟ l
 labels : Deck → String → Maybe ℕ
 labels d = labelOf (slideEvents d)
 
-------------------------------------------------------------------------
 -- The machine
 
 deckM : Deck → Machine.Machine Nav (Maybe Flow)
 deckM d = navM (steps d ∸ 1) (labels d) (visible (flat d))
 
-------------------------------------------------------------------------
 -- The events of a deck of slides: each slide at the sum of the ticks before it
 
 starts : Slide → List Slide → List (ℕ × Slide)
@@ -164,7 +150,6 @@ slide-starts s (t ∷ ts) =
   trans (seq-starts s (E.media slideM (deckFrom t ts)) (total t ts) (steps-from t ts) (below t ts))
         (cong (λ z → (0 , s) ∷ map _ z) (slide-starts t ts))
 
-------------------------------------------------------------------------
 -- Labels of a deck of slides
 
 labelIn : List (ℕ × Slide) → String → Maybe ℕ
@@ -218,7 +203,6 @@ goto-label-visible s ss l {i} e p with labelIn-∈ (starts s ss) l (trans (sym (
           (ℕP.m≤n⇒m⊓n≡m (ℕP.<⇒≤pred (subst (i <_) (sym (steps-from s ss)) (starts-lt s ss m))))))
         (start-visible s ss m)
 
-------------------------------------------------------------------------
 -- The accumulated view: a tick adds the next chunk
 
 at : List Flow → ℕ → Flow
