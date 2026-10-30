@@ -1,17 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Associativity of the stacking connectives: `besideA al` and `aboveA al` are associative as
--- layouts (frame, drawings and anchors, in order), for every alignment.
+-- layouts (frame, drawings and anchors, in order), for every alignment (`besideA-assoc`,
+-- `aboveA-assoc`).
 --
 --   (a ∥ b) ∥ c   ≡   a ∥ (b ∥ c)          (a ═ b) ═ c   ≡   a ═ (b ═ c)
 --
--- Both sides place `a`, `b`, `c` at the same positions: a child's position is a sum of
--- offsets (an alignment offset inside the inner frame, then one in the outer), and the two
--- groupings agree because exact subtraction composes, `(y - x) + (z - y) ≡ z - x` for
--- `x ≤ y ≤ z` (`sub-trans`), which is all the centring arithmetic needs.  The proof is one
--- generic statement about shifted lists (`Shapes.assoc-shape`), used for drawings and anchors.
--- (`atop`, a join of frames, centred, is associative too, and commutative up to the order of the
--- drawings: `Slides.Diagram.Commute`.)
+-- Both groupings put `a`, `b`, `c` at the same positions: a child's position is a sum of an
+-- inner and an outer alignment offset, and the sums agree because exact subtraction composes,
+-- `(y - x) + (z - y) ≡ z - x` for `x ≤ y ≤ z` (`sub-trans`).  One generic statement about
+-- shifted lists (`Shapes.assoc-shape`) serves drawings and anchors.  For `atop`: `Commute`.
 
 open import Slides.Scalar.Space using (Space)
 
@@ -29,7 +27,6 @@ import Slides.Diagram.Place Sp as P
 open P using (dbl; valignOffset; alignOffset)
 open import Slides.Diagram.Laws Sp using (⊔-assoc; shiftDraw-shift; shiftAnchor-shift; map-map)
 
-------------------------------------------------------------------------
 -- Arithmetic
 
 sub-trans : ∀ {x y z} → x ≤ y → y ≤ z → (y - x) + (z - y) ≡ z - x
@@ -55,7 +52,6 @@ align-trans left    _ _   = +-idˡ 0#
 align-trans centred p q   = sub-trans p q
 align-trans right   p q   = trans (dbl-+ _ _) (cong dbl (sub-trans p q))
 
-------------------------------------------------------------------------
 -- Shifted lists
 
 infixl 6 _⊕_

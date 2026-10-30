@@ -6,11 +6,11 @@
 --   atop a b ≈ᵖ atop b a                               (`atop-comm`)
 --   ovl a b ≈ᵖ ovl b a                                 (`ovl-comm`, the overlay of `Par`)
 --
--- where `l ≈ᵖ m` says the frames are equal and the drawings (anchors) are the same up to order: what
--- is drawn is the same, only the stacking differs.  `atop` centres both children in the join of
--- their frames, so the positions agree by `sub-trans` (as for `besideA-assoc`) and the offsets of
--- `a b` and `b a` are the same numbers, `⊔` being commutative.  No hypothesis on the sizes is needed.
--- Not claimed: `atop a b ≡ atop b a` (the order of the drawings is the stacking order).
+-- where `l ≈ᵖ m` says the frames are equal and the drawings (anchors) are the same up to order:
+-- the same picture, stacked the other way round.  `atop` centres both children in the join of
+-- their frames, so positions agree by `sub-trans` (as in `Assoc`) and the offsets of `a b` and
+-- `b a` coincide, `⊔` being commutative; no hypothesis on sizes.  `atop a b ≡ atop b a` is false
+-- in general: the order of the drawings is the stacking order.
 
 open import Slides.Scalar.Space using (Space)
 

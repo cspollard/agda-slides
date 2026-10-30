@@ -1,20 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- Writing diagrams: operators and one-line combinators over the constructors of
--- `Slides.Diagram.Syntax` (they build the same terms, so every interpretation applies unchanged).
+-- `Slides.Diagram.Syntax`.  They build the same terms, so every interpretation applies unchanged.
 --
--- The algebra.  `Dia` has three associative operations with the unit `empty`:
+-- `Dia` has three associative operations with unit `empty` (`spacer 0 0`):
 --
---   a ∥ b   beside (b to the right of a, centred vertically)
---   a ═ b   above  (b below a, centred horizontally)
+--   a ∥ b   beside (b right of a, centred vertically)      a ∥ ↔ 40 ∥ b   a 40-unit gap
+--   a ═ b   above  (b below a, centred horizontally)       (a gap is just a spacer)
 --   a ⊙ b   atop   (b on top of a, centred)
 --
--- A gap is an ordinary diagram (`↔ n` is n units of width, `↕ n` of height), so
--- `a ∥ ↔ 40 ∥ b` needs no gap parameter.  Margins, minimum widths and captions are built the
--- same way, from spacers.  What needs a zero or a literal is in `ConvenienceWith 0# fromℕ` for a
--- scalar `S`; decks get it at ℕ.  Edges are data, `"a" ⟶ "b"`, and `d ▹[ style ] edges` draws a
--- list of them, in order, over `d`.  Every look comes from a CSS class (`cls`), so diagrams
--- restyle with the deck.  Laws: `Slides.Diagram.Convenience.Properties`.
+-- Margins, minimum widths and captions are likewise built from spacers.  What needs a zero or a
+-- literal is in `ConvenienceWith 0# fromℕ`; decks use it at ℕ.  Edges are data,
+-- `"a" ⟶ "b"`, drawn in order over `d` by `d ▹[ style ] edges`.  Looks come from CSS classes
+-- (`cls`), so diagrams restyle with the deck.  Laws: `Slides.Diagram.Convenience.Properties`.
 
 module Slides.Diagram.Convenience where
 
@@ -42,15 +40,9 @@ _∥↓_ = besideA bottom
 _═◂_ = aboveA left
 _═▸_ = aboveA right
 
-------------------------------------------------------------------------
--- Shapes: `ellipse rx ry`, `polyline pts` (open) and `polygon pts` (closed, fillable) come from
--- `Slides.Diagram.Syntax`; the points are lengths from the top-left corner, so they move with
--- scalars and with the animation time, unlike the opaque `path`.
-
 circle : ∀ {S} → S → Style → Dia S
 circle = disc
 
-------------------------------------------------------------------------
 -- Names and edges
 
 infixr 4 _⦂_
@@ -90,7 +82,6 @@ d ▹[ s ] es = foldl (λ d′ → λ { (edge (a ⊢ pa) (b ⊢ pb)) → connect
 _▹_∶_ : ∀ {S} → Dia S → Edge → Style → Dia S
 d ▹ e ∶ s = d ▹[ s ] (e ∷ [])
 
-------------------------------------------------------------------------
 -- Looks, boxes and layers
 
 cls : String → Style
@@ -105,7 +96,6 @@ card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 layers : ∀ {S} → S → S → List (Dia S) → Dia S
 layers w h = foldr (λ d acc → overlay w h acc d) (spacer w h)
 
-------------------------------------------------------------------------
 -- What needs a zero or a literal
 
 module ConvenienceWith {S : Set} (0# : S) (fromℕ : ℕ → S) where

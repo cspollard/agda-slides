@@ -5,9 +5,8 @@
 -- `dangling d` lists the names that a `connect` refers to and that no `named` inside *that
 -- connect's own diagram* declares; such a connection draws nothing, so a deck can assert
 -- `dangling d ≡ []` (by `refl`) and have a misspelled name fail to typecheck.
--- `Slides.Diagram.Names.Soundness` proves that this guarantees every connection is drawn, and
--- that the declared names are exactly the names of the anchors of the layout.  Names do not
--- depend on sizes: the handler ignores the scalar entirely (`usage-mapDia`).
+-- `Names.Soundness` proves that this guarantees every connection is drawn.  Names do not
+-- depend on sizes: the handler ignores the scalar (`usage-mapDia`).
 --
 --   named "a" ─┐        usage = (declared names, names a connect could not find)
 --              ├─ connect "a" "b"  ⇒  the second component is [] when both are declared below

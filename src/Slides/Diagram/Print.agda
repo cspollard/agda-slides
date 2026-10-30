@@ -1,14 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Printing a layout as inline SVG: one plain function, a map over the primitive list.
+-- Printing a layout as inline SVG: a map over the primitive list.
 --
 --   Layout S ──(map renderDraw over draws)──▶ <svg viewBox="0 0 w h"> <defs/marker> element* </svg>
 --
--- The layout is scalar-generic; a printer is told how to write a scalar (`Print`): `unit`
--- writes a size (units), `pos` a position (kept in half units, so `pos` halves it).  Shapes
--- are parsnip's `Data.SVG` constructors and the tag and attribute names are sanitised there;
--- arrowheads use a marker whose id is derived from the diagram's name.  Labels with markup
--- become one `<text>` with `<tspan>`s shifted by whole user units (portable, unlike
+-- A printer is told how to write a scalar (`Print`): `unit` a size, `pos` a position (stored in
+-- half units, so `pos` halves it).  Shapes are parsnip's `Data.SVG` constructors, which sanitise
+-- tag and attribute names; arrowheads use a marker whose id comes from the diagram's name.  A
+-- label with markup is one `<text>` of `<tspan>`s shifted by whole user units (portable, unlike
 -- `baseline-shift`).
 
 module Slides.Diagram.Print where

@@ -1,15 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The placement operations: what each node of a diagram does to the layouts of its children.
--- They are written once, over any `Space`; `Slides.Diagram.Layout` assembles them into the
--- algebra of the signature and `Slides.Diagram.Laws` states their laws.
+-- The placement operations: what each node does to the layouts of its children, over any `Space`
+-- (`Layout` assembles them into the algebra of the signature, `Laws` states their laws).
 --
 -- Combining layouts shifts the drawings and anchors of each part into a new frame.  The binary
--- connectives make a frame just large enough for both children, so offsets are never negative
--- (`-` is only applied to a larger minuend, which is all `Sub` promises); `place` and `overlay`
--- take the frame as a parameter and do not grow it.  Positions are in half units, sizes in
--- units (`Slides.Diagram.Draw`): a child of size `inner` in a frame of size `outer` is at
--- `outer - inner`, which is half the extra room in units.
+-- connectives take a frame just large enough for both children, so offsets are never negative
+-- (`-` is applied only to a larger minuend); `place` and `overlay` are given the frame and do
+-- not grow it.  A child of size `inner` in a frame of size `outer` sits at `outer - inner` half
+-- units, i.e. half the extra room, which gives the three alignments:
 --
 --     top:  0              middle:  outer - inner         bottom:  2 (outer - inner)
 --     +--------+           +--------+                     +--------+
@@ -41,7 +39,6 @@ open Space Sp
 dbl : S → S
 dbl x = x + x
 
-------------------------------------------------------------------------
 -- Shifting and framing
 
 shiftPt : S → S → S × S → S × S
@@ -85,7 +82,6 @@ width height : Layout S → S
 width  = Layout.width
 height = Layout.height
 
-------------------------------------------------------------------------
 -- Primitives
 
 spacer : S → S → Layout S
@@ -123,7 +119,6 @@ text w h n t s = mkLayout w h (label w h n t s ∷ []) []
 pathL : S → S → String → Style → Layout S
 pathL w h d s = mkLayout w h (path 0# 0# d s ∷ []) []
 
-------------------------------------------------------------------------
 -- Connectives
 
 valignOffset : VAlign → S → S → S
@@ -173,7 +168,6 @@ labelBelow l d =
   combine w (height l + (height d + height l)) (alignOffset centred w (width d) , dbl (height l)) d
           (alignOffset centred w (width l) , dbl (height l + height d)) l
 
-------------------------------------------------------------------------
 -- Names and connections
 
 -- the frame of the layout under a name, in front of its anchors (so, when a name occurs twice,

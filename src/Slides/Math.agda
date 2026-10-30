@@ -1,14 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Typed mathematics.
+-- Typed mathematics: formulas as a small AST, printed to LaTeX by `toLaTeX`.
 --
--- Formulas are a small AST rather than LaTeX strings, so structure is
--- checked when the deck is typechecked (a fraction has two arguments, a sum
--- has bounds) and the printer decides the braces: every argument of `frac`,
--- `^`, `_` and `\sqrt` is wrapped, so output cannot have unbalanced groups
--- or an ambiguous superscript.  `raw` is the escape hatch for anything the
--- AST lacks.  With `Slides.Deck.Literals` in scope, numbers and string literals are
--- overloaded: `2` is `num 2` and `"x"` is the identifier `x`.
+-- Structure is checked when the deck typechecks (a fraction has two arguments, a sum has
+-- bounds), and the printer wraps every argument of `frac`, `^`, `_` and `\sqrt` in braces, so
+-- the output has no unbalanced group or ambiguous superscript.  `raw` is the escape hatch.
+-- With `Slides.Deck.Literals` in scope, `2` is `num 2` and `"x"` the identifier `x`.
 
 module Slides.Math where
 
@@ -53,7 +50,6 @@ data Math : Set where
   text      : String → Math              -- upright text
   raw       : String → Math              -- LaTeX, verbatim
 
-------------------------------------------------------------------------
 -- Printing
 
 private
@@ -138,7 +134,6 @@ mutual
   toLaTeX (text s)           = "\\text" ++ˢ grp (escape s)
   toLaTeX (raw s)            = s
 
-------------------------------------------------------------------------
 -- Authoring: operators
 
 infixl 6 _+_ _-_

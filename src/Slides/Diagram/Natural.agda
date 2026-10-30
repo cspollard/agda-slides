@@ -1,18 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Layout is natural in the scalar.
+-- Layout is natural in the scalar: changing units (ℕ to ℚ, say) before or after placing gives
+-- the same picture.
 --
 -- For an order embedding `h : S → T` of ordered monoids (`IsOrdMonHom`: `0`, `+`, order and its
--- reflection; the join and the exact differences follow, `Slides.Scalar.Core`),
+-- reflection; the join and exact differences follow, `Slides.Scalar.Core`),
 --
 --     layout_T (mapDia h d) ≡ mapLayout h (layout_S d)
 --
 -- for every diagram whose connection ports `h` carries (`layout-natural-ok`): every `side`
 -- port, and, if `h` also preserves percentages (`PctNat`), every port (`layout-natural`).
--- The map of ℕ into ℚ preserves percentages only where they are exact, so it uses the first
--- form for diagrams that attach by sides.  Layout subtracts only a smaller size from a larger
--- (centring), which is exactly where `h` preserves `-`, so no hypothesis on the diagram is
--- needed for it.
+-- ℕ into ℚ preserves percentages only where exact, hence the first form for diagrams that
+-- attach by sides.  Centring subtracts only a smaller size from a larger, exactly where `h`
+-- preserves `-`, so layout itself needs no hypothesis.
 --
 --      d : Dia S ──layout_S──▶ Layout S
 --        │ mapDia h               │ mapLayout h
@@ -75,7 +75,6 @@ align-nat left    _ = h-0
 align-nat centred p = hsub p
 align-nat right   p = trans (dbl-nat _) (cong PT.dbl (hsub p))
 
-------------------------------------------------------------------------
 -- Shifting, framing, overlaying: only `+` is used
 
 -- `mapPt h` commutes with a pointwise change of the points
@@ -142,7 +141,6 @@ place-nat : ∀ w ht x y l →
   mapLayout h (PS.place w ht x y l) ≡ PT.place (h w) (h ht) (h x) (h y) (mapLayout h l)
 place-nat w ht x y l = trans (inFrame-nat w ht _ _ l) (cong₂ (λ u v → PT.inFrame (h w) (h ht) u v (mapLayout h l)) (dbl-nat x) (dbl-nat y))
 
-------------------------------------------------------------------------
 -- Primitives
 
 disc-nat : ∀ r s → mapLayout h (PS.disc r s) ≡ PT.disc (h r) s
@@ -171,7 +169,6 @@ rectangle-nat w ht s rewrite h-0 = refl
 pathL-nat : ∀ w ht d s → mapLayout h (PS.pathL w ht d s) ≡ PT.pathL (h w) (h ht) d s
 pathL-nat w ht d s rewrite h-0 = refl
 
-------------------------------------------------------------------------
 -- Connectives: `-` only where the minuend is the larger
 
 -- `combine`, with the images of the frame and the positions given by equations
@@ -222,7 +219,6 @@ labelBelow-nat l@(mkLayout wl hl _ _) d@(mkLayout wd hd _ _) =
     (⊔-align₂ centred wl wd) (dbl-nat hl) (⊔-align₁ centred wl wd)
     (trans (dbl-nat (hl A.+ hd)) (cong PT.dbl (h-+ hl hd)))
 
-------------------------------------------------------------------------
 -- Names and connections
 
 named-nat : ∀ n l → mapLayout h (PS.named n l) ≡ PT.named n (mapLayout h l)
@@ -271,7 +267,6 @@ connectP-nat a pa b pb s (mkLayout w ht ds as) npa npb
   rewrite find-map a as | find-map b as | mapDraws-++ ds (PS.connectArrow pa pb s (PS.findAnchor a as) (PS.findAnchor b as))
         | connectArrow-nat pa pb s (PS.findAnchor a as) (PS.findAnchor b as) npa npb = refl
 
-------------------------------------------------------------------------
 -- One command at a time
 
 OkOp : Op S → Set
@@ -298,7 +293,6 @@ layoutH-nat (Overlay w ht)     k _ = overlay-nat w ht (k zero) (k (suc zero))
 layoutH-nat (Named n)          k _ = named-nat n (k tt)
 layoutH-nat (Connect a pa b pb s) k (npa , npb) = connectP-nat a pa b pb s (k tt) npa npb
 
-------------------------------------------------------------------------
 -- Whole diagrams
 
 -- the ports of a diagram are all carried

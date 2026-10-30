@@ -2,24 +2,21 @@
 
 -- Valid diagrams and the units of the empty diagram.
 --
--- `Space` does not say sizes are non-negative (ℚ has negative lengths), so non-negativity is a
--- predicate on diagrams, not an axiom of the theory.  `Valid d` is the fold of the signature into
--- `Set`: every sized leaf has non-negative size (width and height; a radius; the declared frame of
--- `Place` and `Overlay`), and the connectives ask it of their children.  It is closed under the
--- constructors by construction; the one theorem is that it makes the frame non-negative
--- (`valid-size`, `valid-layout`), by `pfold-rel`: the relation "the size is non-negative if the
--- fold says valid" is carried by each operation, which uses only `0 + 0 ≡ 0`, `+` monotone and `⊔`
--- above both sides (`nn+`, `nn⊔`).
+-- Valid diagrams (every sized leaf has non-negative size) and the units of the empty diagram.
 --
--- Units, at the level of layouts (a term `besideA al empty d` is not the term `d`):
+-- `Space` does not make sizes non-negative (ℚ has negative lengths), so that is a predicate on
+-- diagrams: `Valid d` is the fold of the signature into `Set`.  Its theorem is `valid-size`,
+-- `valid-layout`: a valid diagram has a non-negative frame (by `pfold-rel`, using `nn+`, `nn⊔`).
+--
+-- Units, at the level of layouts, with `empty = spacer 0 0` (a term `besideA al empty d` is not
+-- the term `d`); the hypotheses are needed because `0 ⊔ x` is `x` only if `0 ≤ x`:
 --
 --   besideA al empty a ≡ a ≡ besideA al a empty     if 0 ≤ height a      (`besideA-unitˡ`, `-unitʳ`)
 --   aboveA  al empty a ≡ a ≡ aboveA  al a empty     if 0 ≤ width a       (`aboveA-unitˡ`, `-unitʳ`)
 --   atop empty a ≡ a ≡ atop a empty                 if 0 ≤ width a, 0 ≤ height a  (`atop-unitˡ`, `-unitʳ`)
 --
--- where `empty` is `spacer 0 0`, so they hold for the layout of every valid diagram
--- (`layout-beside-unitˡ`, ...); and spacers add without any hypothesis (`gap-beside`, `gap-above`,
--- `gap-atop`).  The hypotheses are needed: the join `0 ⊔ x` is `x` only if `0 ≤ x`.
+-- They hold for every valid diagram (`layout-beside-unitˡ`, ...).  Spacers add with no
+-- hypothesis (`gap-beside`, `gap-above`, `gap-atop`).
 
 open import Slides.Scalar.Space using (Space)
 
@@ -42,7 +39,6 @@ open P using (dbl; valignOffset; alignOffset)
 open import Slides.Diagram.Layout Sp using (layout)
 open import Slides.Diagram.Laws Sp using (size; sizeH; size-layout; shiftDraw-zero; shiftAnchor-zero; map-id)
 
-------------------------------------------------------------------------
 -- Valid diagrams
 
 NN : S → Set
@@ -114,7 +110,6 @@ valid-size = pfold-rel (λ s v → v → NN (proj₁ s) × NN (proj₂ s)) hom (
 valid-layout : ∀ d → Valid d → NN (P.width (layout d)) × NN (P.height (layout d))
 valid-layout d v = subst (λ s → NN (proj₁ s) × NN (proj₂ s)) (sym (size-layout d)) (valid-size d v)
 
-------------------------------------------------------------------------
 -- The empty layout is a unit, where the frame is non-negative
 
 empty : Layout S
@@ -183,7 +178,6 @@ layout-atop-unitˡ d v = atop-unitˡ (layout d) (proj₁ (valid-layout d v)) (pr
 layout-atop-unitʳ : ∀ d → Valid d → layout (atop d (spacer 0# 0#)) ≡ layout d
 layout-atop-unitʳ d v = atop-unitʳ (layout d) (proj₁ (valid-layout d v)) (proj₂ (valid-layout d v))
 
-------------------------------------------------------------------------
 -- Gaps add (no hypothesis: a spacer draws nothing)
 
 gap-beside : ∀ al a b → P.besideA al (P.spacer a 0#) (P.spacer b 0#) ≡ P.spacer (a + b) 0#
