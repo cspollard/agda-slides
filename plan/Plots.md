@@ -1,0 +1,147 @@
+# Plots: basic plotting on `Dia`
+
+Status: plan, nothing built.  Design context in `docs/Objects.md`, rules in `docs/Contributing.md`.
+Branch `plots` (worktree `../agda-slides-plots`).
+
+## Goal
+A deck author writes data and a few mark declarations, and gets an inline SVG plot that restyles
+with the deck (CSS classes), prints on every backend, and can sit in an animation.  "Basic" means:
+line, scatter, step histogram, band, error bars, reference lines; linear axes with nice ticks,
+labels, grid, legend; later a ratio panel under a main panel (shared x), log y, and animation of
+data.  Not in scope: interactivity, 3D surfaces, statistical fitting, reading ROOT files.
+
+## Audit: is `Dia` a suitable backend?
+**Yes, with no change to the signature for phases 1-3.**  A plot is a *computation of a `Dia ℕ`
+term*; every fold, law, animation and backend then applies unchanged, as `Slides.Three.*` does.
+What the audit found, against the sources:
+
+### What already fits
+- **Marks are primitives.**  `Polyline`/`Polygon` (scalar-parametric point lists: curves, step
+  outlines, filled bands), `Disc`/`Ellipse`/`Rectangle` (markers, bars), `Segment` (ticks, error
+  bars), `Text` (tick and axis labels).  One `Polyline` op carries a whole series, so a
+  1000-point curve is one node, not 1000 (layout cost and the `Share` DAG stay small).  `Path` is
+  *not* needed: a filled histogram is a closed polygon.
+- **Absolute placement.**  `place w h x y d` and `layers w h` put marks in a plot frame of
+  declared size; `layers` gives exactly `w × h` regardless of content, which is the frame law we
+  want (a plot's size is independent of its data).  Sub-diagrams may stick out of a frame, so
+  clipped curves are the only thing to take care of (below).
+- **Styling.**  `Style` has stroke, fill, dash, width, opacity, `cls`, `ident`; series colour and
+  line style come from CSS classes (`cls "plot-s1"`), so plots restyle with the deck (dark/light,
+  Plain vs Reveal), as the `curve`/`axis` classes of `TitleAnim` already do.
+- **Anchors.**  `named` marks and `connect` give annotation arrows (an arrow to a peak) for free.
+- **Layout glue.**  `Convenience` (`margin`, `hcat`/`vcat`, `labelAbove`/`Below`, `boxWidth`)
+  composes axis labels, legend and panels.
+- **Animation.**  Polyline points are scalar terms, so a leaf can move with `now`
+  (`Examples/AnimRef`), and a dataset morph is a point-wise `Lerp`.  A static plot lifts with
+  `liftDia`; a frame list is a scene of one-tick frames (`TitleAnim.curveFrame` already animates a
+  plot this way: the existing proof of concept, with `plotL`, `visible`, `rise` as hand-written
+  magic numbers that this plan replaces).
+- **Deck block.**  `Block.diagram name percent (Dia ℕ)` exists; `name` must be unique (marker id).
+
+### Gaps and constraints, most important first
+1. **Coordinates are ℕ in half units; y points down.**  Data are signed, rational, and y is
+   flipped, so the data-to-pixel map is the heart of the work and lives outside `Dia`: data in ℚ
+   (stdlib `Data.Rational`), `Axis` carries `lo hi` and a pixel extent, `px : Axis → ℚ → ℕ`
+   computes `⌊(x − lo)·W/(hi − lo)⌋`, y is `H ∸ px`.  Resolution is one unit (the printer halves
+   half-units), so a 400-unit frame resolves 1 part in 400: fine for slides.  `Dia ℕ` is the only
+   printable instance (`natPrint`; no ℚ printer), so we compute in ℚ and round once at the end.
+   Cost risk: `ℚ` normalisation (gcd) per point; the data run in compiled Haskell (GHC integers)
+   so it is fine at run time, but proofs by evaluation must stay on small closed terms.  Measure
+   with a 1000-point series before committing (TODO already notes `n / 1` blowing up `Hom`).
+2. **No multiplication or division in `Space`**, only `+ ∸ ⊔ pct`, so scaling cannot be a scalar
+   term.  Consequence: pixel positions are literals, and an animated data morph is `Lerp` between
+   precomputed literals (fine) but an animated *axis range* is not expressible as one term: it is a
+   frame list (`frames`), which is the existing approach.  Accept.
+3. **No clipping.**  A curve leaving the axis range would draw over the margins.  Clip by
+   computation (Liang-Barsky on each segment, or drop points as `TitleAnim.visible` does) and prove
+   the result lies in the box.  No new constructor: a clip connective would touch every fold
+   (`Natural`, `Valid`, `Names`, `Print`, `Share`, the `AnimRef` JS evaluator) for little.
+4. **No rotated text.**  The y-axis label cannot be vertical.  Put it horizontally above the axis
+   (as `TitleAnim` does with "−2 ln L").  A `Rotate` annotation is the clean fix but costs the
+   same 17-case sweep as a new primitive; defer, revisit only if horizontal labels prove ugly.
+5. **Text placement and measurement.**  `Text` is centred on its frame; `anchored` only sets
+   `text-anchor`.  Right-aligning y tick labels means computing the left edge from
+   `TextMetrics.textWidth` (good to a few percent: enough for ticks, not for exact alignment).
+   Number formatting is missing: need `ℚ → String` with a fixed number of decimals (stdlib has
+   `Data.Nat.Show` only for ℕ), and a unit scale for tick labels (`10³`).
+6. **Labels are plain SVG text.**  `Inline.inlineMath` prints as raw LaTeX source in a diagram
+   label (`runsI`), so `"p_T [GeV]"` works through `sub`/`sup` markup and Unicode, but `\sqrt{s}`
+   does not.  Axis labels use markup and Unicode; KaTeX-in-SVG is out of scope.
+7. **Log axes need a logarithm.**  No reals and no `Float` (`--safe`, reproducible output).  Decade
+   ticks are exact (`10ⁿ`); mapping an arbitrary value needs `ln`, as `Slides.Trig` needs `sin`:
+   a rational polynomial of chosen order with a closed-value test (`make test-numeric`).  Log y is
+   the norm in collider plots, so it is phase 4, not "never".
+8. **CSS surface.**  New classes (`plot-axis`, `plot-grid`, `plot-s1..s8`, `plot-tick`) land in
+   `assets/slides.css` and `assets/plain.css`; the goldens copy the stylesheets, so this is an
+   intended golden change, done in its own commit.  Palette: colour-blind-safe, 8 entries,
+   defined once as CSS variables.
+9. **Layout laws and validity.**  `Valid` needs non-negative sizes (plot frames are literals, so
+   fine); `Names.usage` wants unique names (each plot prefixes its ids; Contributing's unique-name
+   rule applies to SVG `id`s, which a `ident` style would put in the DOM).
+
+### Verdict
+`Dia` is suitable as the backend and needs no new constructor.  The two things it lacks (rotated
+text, clipping) have workarounds that are better than new constructors.  All the real design is a
+new front end above it.
+
+## Design: a front end that lowers to `Dia`
+Principles apply (every type motivated, folds, laws).  A plot is data plus a fold:
+
+- **`Axis`**: `lo hi : ℚ`, `kind : Lin | Log`, pixel extent `n : ℕ`.  Folds: `px : Axis → ℚ → ℕ`
+  (the unique affine map sending `lo` to 0 and `hi` to `n`), `ticks : Axis → List ℚ` (nice 1-2-5
+  steps).
+- **`Mark`** (the signature of what is drawn): `Line pts`, `Points pts`, `Steps edges counts`,
+  `Band lo hi`, `Errors pts`, `HLine y`, `VLine x`, `Note x y text`; each with a `Style` and a
+  legend entry.  Marks have no sub-terms, so a plot's content is `List Mark` (the free monoid;
+  overlay is `++`), not a free monad.  Panels (ratio plot under a main plot) are the one
+  connective with children: `Stack` shares an x axis.  If a second connective appears, that is the
+  moment to make `Plot` a free monad over a container and state the lowering as a Kleisli map in
+  `Container.Lowering` (reuse, do not reprove).
+- **`render : Plot → Dia ℕ`**: the fold.  Meaning first: a `Mark` denotes a set of points in data
+  space; `render` is a homomorphism of overlay (`render (p ++ q) = render p ⊙ render q` up to the
+  frame) and natural in restyling.
+
+### Laws to prove (state them first, in the module header, before the code)
+- `px` is monotone, `px lo = 0`, `px hi = n`, and `px x ≤ n` inside the range (names from the
+  affine map; model facts as hypotheses, no ℚ computation in proofs).
+- Clip: every point emitted by `clip` lies in the box; a series wholly inside is unchanged.
+- Ticks: increasing, all in `[lo, hi]`, equally spaced, include 0 when the range straddles it.
+- Step outline: `2n + 2` points, x monotone, closes on the baseline (the polygon of `n` bins).
+- Frame law: the `size` of `render p` is the declared `w × h`, whatever the data
+  (from `layers`/`place`).
+- Overlay: `render` of `++` is `layers` of the renders (same frame).
+
+## Phases
+Each is its own branch off `plots`, a line budget stated before starting, and the gate in
+`docs/Contributing.md`.
+
+| # | Deliverable | Budget | Modules |
+|---|-------------|--------|---------|
+| 0 | Spike: re-express `TitleAnim`'s plot (axes, curve, interval) with hand-built `Dia` and measure the pain; list the combinators missing.  Confirms or revises the audit. | 100 | `Examples/PlotSpike` (deleted after) |
+| 1 | `Axis`: `px`, `ticks`, `format` (ℚ to decimal string), laws above | 250 | `Slides.Plot.Axis`, `.Axis.Properties` |
+| 2 | Marks and `render`: line, points, steps, band, errors, ref lines; clip; frame law | 300 | `Slides.Plot.Mark`, `.Render`, `.Clip`, `.Render.Properties` |
+| 3 | Decoration and deck: axes, ticks, grid, labels, legend, `plot` in the DSL, CSS classes and palette; one example slide; goldens | 250 | `Slides.Plot.Frame`, `Deck/DSL` (one combinator), `assets/*.css`, `Examples/Plots` |
+| 4 | Ratio panel (shared x); log y with the `ln` polynomial | 300 | `Slides.Plot.Stack`, `Slides.Plot.Log` |
+| 5 | Animation: reveal series one by one (a scene of plots), morph between datasets by `Lerp`, frame list when the axis moves | 200 | `Slides.Plot.Anim` |
+| 6 | Data in: CSV read by an executable, passed as `List (ℚ × ℚ)`; nothing in core does IO | 150 | `Examples/*Main`, `Driver` |
+
+Stop after phase 3 if nothing needs more: it already replaces the static `assets/plot.svg` and
+the magic numbers of `TitleAnim`.
+
+## Decisions to make before phase 1
+1. **Data scalar**: ℚ (signed, exact, stdlib) versus ℤ fixed-point (cheaper, no gcd).  Default ℚ;
+   the spike's timing decides.
+2. **Where the pixel extent comes from**: the plot declares its frame in units; the deck's
+   `diagram name percent` already scales the SVG to a percentage of the slide width, so fonts scale
+   with the figure.  Default: pick a frame and font size once (e.g. 640×400, 22 px) and let the
+   percentage scale it.
+3. **Histogram input**: bin edges plus counts (general) with a constructor from uniform bins.
+4. **Text rotation**: accepted as horizontal for now (gap 4).
+
+## Risks
+- Tick labels are placed using approximate text widths; misalignment of a few percent in y tick
+  labels is expected and cosmetic.
+- Output size: a plot with thousands of points ships thousands of coordinates; fine static, heavy
+  in an event list (the `Share` DAG helps only for repeated subtrees).  Thin dense series in
+  `render` (keep every k-th point per pixel column).
+- Golden churn from the stylesheet commit; keep it separate and reviewed on its own.
