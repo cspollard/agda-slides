@@ -2,16 +2,18 @@
 
 -- Text: the one tree of styled runs behind slide prose and diagram labels.
 --
--- An `Inline` is a run of characters (`text`, `codeSpan`), a node that wraps a list of
--- sub-runs (`emph`, `strong`, `sub`, `sup`, `link`), or an atom (`inlineMath`, `cite`).  Every
--- consumer is a fold over it: HTML (`Slides.Backend.Render`), plain text (`runsT`/`plainT` below, a
--- monoid homomorphism to lists of strings: `runsT (xs ++ ys) ≡ runsT xs ++ runsT ys`), SVG `<tspan>`s
--- (`Slides.Diagram.Print`) and width (`Slides.Diagram.TextMetrics`).  A construct a backend
--- cannot show degrades through `plainT`.
+-- An `Inline` is a run of characters (`text`, `codeSpan`), a node wrapping sub-runs (`emph`,
+-- `strong`, `sub`, `sup`, `link`, `styled`), or an atom (`inlineMath`, `cite`, `br`).  Every
+-- consumer is a fold over it: HTML (`Slides.Backend.Render`), SVG `<tspan>`s
+-- (`Slides.Diagram.Print`), width (`Slides.Diagram.TextMetrics`), and plain text, the fallback for
+-- anything a backend cannot show (`runsT`/`plainT`; `runs-++`: `runsT (xs ++ ys) ≡ runsT xs ++
+-- runsT ys`, a monoid homomorphism to lists of strings).
 --
--- Labels are written as strings with light markup: `_x` or `_{xyz}` is a subscript, `^x` or
--- `^{xyz}` a superscript, a backslash quotes the next character.  `parse` reads it once, where
--- a label is built; a newline in a label is a line break (`br`). `parse "x_i^2"` is `text "x" ∷ sub (text "i" ∷ []) ∷ sup (text "2" ∷ []) ∷ []`.
+-- Labels are strings with light markup: `_x` or `_{xyz}` a subscript, `^x` or `^{xyz}` a
+-- superscript, a backslash quotes the next character, a newline is `br`.  `parse` reads it once,
+-- where a label is built:  `parse "x_i^2" ≡ text "x" ∷ sub [ text "i" ] ∷ sup [ text "2" ] ∷ []`.
+-- Styles form a monoid, the inner one winning (`<>-assoc`), so nested `styled` runs collapse
+-- (`styled-compose`).
 
 module Slides.Text where
 
@@ -29,8 +31,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Slides.Math using (Math; toLaTeX)
 
--- optional colour (a CSS colour), weight (a CSS font-weight) and size (percent); styles compose by
--- overriding, the inner one winning, as in a CSS cascade: `s <> t` is "inside `s`, then `t`"
+-- optional colour, weight (CSS values) and size (percent); `s <> t` is "inside `s`, then `t`", the
+-- inner one winning as in a CSS cascade
 record TextStyle : Set where
   constructor style
   field colour weight : Maybe String
@@ -42,7 +44,6 @@ noStyle = style nothing nothing nothing
 _<>_ : TextStyle → TextStyle → TextStyle
 style c w z <> style c′ w′ z′ = style (c′ <∣> c) (w′ <∣> w) (z′ <∣> z)
 
--- a monoid (so nested `styled` runs collapse to one, `styled-compose`)
 private
   style≡ : ∀ {c c′ w w′ z z′} → c ≡ c′ → w ≡ w′ → z ≡ z′ → style c w z ≡ style c′ w′ z′
   style≡ refl refl refl = refl
@@ -130,7 +131,6 @@ private
 parse : String → Text
 parse t = runs [] (toList t)
 
--- a label back to its markup (the browser-side player parses it again); scripts hold one run
 runs-++ : ∀ xs ys → runsT (xs ++ ys) ≡ runsT xs ++ runsT ys
 runs-++ []       ys = refl
 runs-++ (i ∷ xs) ys = trans (cong (runsI i ++_) (runs-++ xs ys)) (sym (ListP.++-assoc (runsI i) _ _))
@@ -163,13 +163,14 @@ private
   ... | c ∷ [] = if ⌊ c ≟ '{' ⌋ then m ++ˢ "{" ++ˢ u ++ˢ "}" else m ++ˢ u
   ... | _      = m ++ˢ "{" ++ˢ u ++ˢ "}"
 
+-- a label back to its markup (the browser-side player parses it again)
 markup : Text → String
 markup []             = ""
 markup (sub is ∷ js)  = script "_" (plainT is) ++ˢ markup js
 markup (sup is ∷ js)  = script "^" (plainT is) ++ˢ markup js
 markup (i ∷ js)       = fromList (concatMap esc (toList (plainI i))) ++ˢ markup js
 
--- the label markup reads as the old segments did, and plain text drops exactly the markup
+-- `parse` reads the markup, `plainT` drops exactly the markup, `markup` writes it back
 _ : parse "x_i^2" ≡ text "x" ∷ sub [ text "i" ] ∷ sup [ text "2" ] ∷ []
 _ = refl
 

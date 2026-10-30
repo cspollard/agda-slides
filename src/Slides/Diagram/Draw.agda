@@ -10,10 +10,9 @@
 --        |   [name]      |     and are not counted in it; anchors are named sub-boxes
 --        +---------------+
 --
--- Half units: sizes (`width`, `height`, `w`, `h`, a radius) are in units, but positions (a
--- box's `left` and `top`, every coordinate of a drawing) are in half units, so centring is the
--- difference of two sizes with no division.  A printer halves them (`Slides.Diagram.Print`).
--- Everything is plain data over `S`, so a change of scalar is a map (`mapLayout`).
+-- Sizes are in units, positions (`left`, `top`, every drawing coordinate) in half units, so
+-- centring is a difference of sizes with no division; a printer halves them (`Print`).  It is
+-- plain data over `S`, so a change of scalar is a map (`mapLayout`).
 
 module Slides.Diagram.Draw where
 
@@ -48,7 +47,6 @@ record Layout (S : Set) : Set where
     draws        : List (Draw S)
     anchors      : List (String × Box S)
 
-------------------------------------------------------------------------
 -- Change of scalar
 
 mapBox : ∀ {S T} → (S → T) → Box S → Box T

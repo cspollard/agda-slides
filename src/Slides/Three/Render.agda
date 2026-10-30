@@ -1,18 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Drawing solids as a diagram: the painter's algorithm.
+-- Drawing solids as a diagram, by the painter's algorithm: project every vertex by the view, drop
+-- the faces of a closed solid that turn their backs (`facing`: vertices clockwise on the page),
+-- sort the rest by mean vertex depth, farthest first (ties in the order given), and draw each
+-- as a translucent fill under an opaque rim, in a frame `w` by `h` about the view's centre.
 --
---   1. every vertex is turned once by the view;
---   2. a face of a closed solid that turns its back to the viewer is dropped (`facing`: its
---      vertices run clockwise on the page);
---   3. the faces are ordered by the mean depth of their vertices, the farthest first, equal depths
---      in the order given;
---   4. each is a translucent fill with an opaque rim over it, in a frame `w` by `h`, about the
---      centre (cx , cy) of the view.
---
--- This is right for convex faces that do not interpenetrate (shells, boxes, cells) and wrong for
--- others; when it matters, the caller orders the solids.  The result is a list of layers, the
--- nearest first (see `layers` in `Slides.Diagram.Convenience`).
+-- Right for convex faces that do not interpenetrate (shells, boxes, cells), wrong for others; then
+-- the caller orders the solids.  The result is a list of layers, nearest first (`layers` in
+-- `Slides.Diagram.Convenience`).
 
 module Slides.Three.Render where
 

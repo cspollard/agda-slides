@@ -1,12 +1,11 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Overlay: an associative operation on what a frame shows, with absence as unit, stated once.
+-- Overlay: what two things sharing a frame show together, an associative operation stated once.
 --
--- `Overlays X` is a semigroup; `Absent` lifts it to `Maybe X`, where `nothing` is the unit, so a
--- reading "time to maybe-value" overlays what is present.  Layouts overlay by `ovl`
--- (`Slides.Diagram.Laws`), event lists by concatenation.  `IsOverlayHom` is a semigroup
--- homomorphism, and it commutes with the lift.  The scene readings and their laws
--- (`Slides.Scene.Sample`, `Laws`, `Tick`) take an `Overlays` and derive everything else.
+-- `Overlays X` is a semigroup (layouts by `ovl`, event lists by concatenation); `Absent` lifts it
+-- to `Maybe X` with `nothing` as unit, so a reading "time to maybe-value" overlays what is
+-- present.  `IsOverlayHom` is a semigroup homomorphism and commutes with the lift.  The scene
+-- readings (`Slides.Scene.Sample`) take an `Overlays` and derive everything else.
 
 module Slides.Diagram.Overlay where
 

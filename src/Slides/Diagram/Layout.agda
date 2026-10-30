@@ -1,18 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The placement fold: a diagram is laid out by reading it with the handler of the layout
--- signature into `Layout`.
+-- The placement fold: `layout d = pfold layoutH d`, the handler of the layout signature reading
+-- a diagram (a description: which frames sit where, relative to each other) into a `Layout` (a
+-- drawing: frames resolved, primitives at absolute positions, named boxes recorded).
 --
 --   primitives       a frame of the stored size with at most one drawing
 --   Beside Above     frames touch; sizes add in one direction, join in the other
 --   Atop             both centred in the larger frame, the second drawn second
 --   LabelAbove/Below caption, diagram, room of the caption's height
 --   Place Overlay    the frame is declared, the children are not centred
---   Named Connect    the child's geometry; a name, or one arrow
+--   Named Connect    the child's geometry, plus a name, or one arrow
 --
--- `layout d` is `pfold layoutH` (`Container.Interpret.Plain`), so its laws (congruence, bind,
--- fusion along a change of scalar) are the generic ones; the specific ones are in
--- `Slides.Diagram.Laws`, `Natural`, `Names`.
+-- Generic laws (congruence, bind, fusion along a change of scalar) come from
+-- `Container.Interpret.Plain`; the specific ones are in `Laws`, `Natural`, `Names`.
 
 open import Slides.Scalar.Space using (Space)
 

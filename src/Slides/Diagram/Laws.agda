@@ -2,17 +2,19 @@
 
 -- Laws of placement over a `Space`.
 --
---   * size is synthesised: the frame of `layout d` is `size d`, a fold of its own that
---     never builds a drawing (`size-layout`); so the connectives' sizes can be reasoned about
---     without layouts (`size-beside-assoc`, `size-above-assoc`, `size-atop-assoc`,
---     `size-atop-comm`, `size-labels`);
---   * translation is an action on layouts: `shift 0 0 l ≡ l`, `shift a b (shift c d l) ≡
---     shift (c + a) (d + b) l` (`shift-zero`, `shift-shift`);
---   * annotations do not change a layout's frame or drawings (`named-frame`).
+-- `size d` is a fold of its own that never builds a drawing: beside adds widths and joins
+-- heights, above the reverse, atop joins both.
 --
--- Associativity of beside and above is `Slides.Diagram.Assoc`; validity (non-negative frames) and the
--- units of the empty diagram, which hold for non-negative sizes only, are `Slides.Diagram.Valid`.  Associativity of
--- `atop` and its commutativity up to a permutation of the drawings are `Slides.Diagram.Commute`.
+--     size (beside a b) = (wa + wb , ha ⊔ hb)      size (above a b) = (wa ⊔ wb , ha + hb)
+--
+--   * `size-layout`: the frame of `layout d` is `size d`, so sizes of connectives can be
+--     reasoned about without layouts (`size-beside-assoc`, `size-above-assoc`,
+--     `size-atop-assoc`, `size-atop-comm`, `size-labels`, `size-disc-ellipse`, `size-polygon`);
+--   * translation is an action on layouts (`shift-zero`, `shift-shift`);
+--   * annotations are invisible: `size-named`, `size-connect`, `named-frame`.
+--
+-- Associativity of beside and above: `Assoc`; of atop, and commutativity up to the order of
+-- the drawings: `Commute`; non-negative frames and the unit `spacer 0 0`: `Valid`.
 
 open import Slides.Scalar.Space using (Space)
 
@@ -40,7 +42,6 @@ import Slides.Diagram.Place Sp as P
 open P using (dbl)
 open import Slides.Diagram.Layout Sp using (layoutH; layout)
 
-------------------------------------------------------------------------
 -- Size is a fold
 
 sizeH : Handler (DiagramC S) (S × S)
@@ -89,7 +90,6 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
     hom (Named _)         k k′ e = trans (cong₂ _,_ refl refl) (e tt)
     hom (Connect _ _ _ _ _) k k′ e = e tt
 
-------------------------------------------------------------------------
 -- Sizes of connectives, from the laws of `+` and `⊔`
 
 ⊔-comm : ∀ a b → a ⊔ b ≡ b ⊔ a
@@ -161,7 +161,6 @@ size-named n d = refl
 size-connect : ∀ a pa b pb s d → size (connectP a pa b pb s d) ≡ size d
 size-connect a pa b pb s d = refl
 
-------------------------------------------------------------------------
 -- Translation is an action
 
 shiftDraw-zero : ∀ d → P.shiftDraw 0# 0# d ≡ d

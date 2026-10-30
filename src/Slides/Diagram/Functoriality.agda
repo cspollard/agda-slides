@@ -5,10 +5,10 @@
 --   mapDia id ≈ id          mapDia (g ∘ f) ≈ mapDia g ∘ mapDia f          (equality of programs)
 --   mapLayout id ≡ id       mapLayout (g ∘ f) ≡ mapLayout g ∘ mapLayout f
 --
--- `mapDia f = translate (mapC f)`, so these say that `mapC` is a functor into the container
--- morphisms, one clause per command (`Container.Lowering.Translate` has the generic laws).  Folding
--- along a map is folding with the pulled-back handler (`fold-mapDia`, an instance of `pfold-translate`).
--- Not stated: congruence in the map (`f ≗ g` gives equal results) needs no more than these cases.
+-- (`mapDia-id`, `mapDia-∘`, `mapLayout-id`, `mapLayout-∘`.)  Since `mapDia f = translate (mapC f)`,
+-- these say `mapC` is a functor into container morphisms, one clause per command
+-- (`Container.Lowering.Translate` has the generic laws).  Folding along a map is folding with the
+-- handler pulled back along `mapC f` (`fold-mapDia`, an instance of `pfold-translate`).
 
 module Slides.Diagram.Functoriality where
 
@@ -29,7 +29,6 @@ open import Container.Lowering using (_≈⋆_; translate)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Syntax
 
-------------------------------------------------------------------------
 -- Diagrams
 
 mapDia-id : ∀ {S} (t : Dia S) → mapDia id t ≈⋆ t
@@ -78,7 +77,6 @@ fold-mapDia : ∀ {S T a ℓ} (f : S → T) (A : Setoid a ℓ) {h : Handler (Dia
               Setoid._≈_ A (pfold (DiagramC T) h (λ ()) (mapDia f t)) (pfold (DiagramC S) (pull (mapC f) h) (λ ()) t)
 fold-mapDia f A c t = pfold-translate (mapC f) A c {X = ⊥} {f = λ ()} t
 
-------------------------------------------------------------------------
 -- Layouts
 
 mutual

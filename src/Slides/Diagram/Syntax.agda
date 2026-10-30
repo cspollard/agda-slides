@@ -1,19 +1,18 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The diagram language: the free monad of the layout signature over a scalar `S`.
+-- The diagram language: the free monad `Dia S = DiagramC S ⋆ ⊥` of the layout signature over a
+-- scalar `S`.
 --
--- `Op S` is the signature.  *Primitives* have no sub-diagram and an intrinsic size (a frame
--- stored in the node); *connectives* place the frames of their children relative to each other
--- and *annotations* do not change the geometry.  `arity` makes `DiagramC S = Op S ▷ arity` a
--- container, a diagram is a closed program `DiagramC S ⋆ ⊥`, and an interpretation is a
--- `Handler` read by `pfold` (`Slides.Diagram.Layout`, `Names`, `Size`).  The size of a
--- composite is never stored: it is synthesised (`Slides.Diagram.Size`).  A map of scalars acts
--- on a diagram by the container morphism `mapC` (`mapDia`).
+-- `Op S` is the signature: *primitives* (no sub-diagram, a frame of intrinsic size), *connectives*
+-- (place the frames of their children relative to each other) and *annotations* (`Named`,
+-- `Connect`: the geometry is the child's).  An interpretation is a `Handler` read by `pfold`
+-- (`Layout`, `Names`, `Size`); the size of a composite is synthesised, never stored.  A map of
+-- scalars acts by the container morphism `mapC` (`mapDia`).
 --
---   Conventions.  Origin: top-left of a frame; x grows right, y grows DOWN.  A frame is all a
---   neighbour sees.  A connective never scales a child, it shifts it inside a new frame.  Of
---   two children the second is drawn on top.  Sizes are in units, positions in half units
---   (so centring is a difference of sizes, with no division).
+-- Conventions: origin at the top-left of a frame, x right, y DOWN.  A frame is all a neighbour
+-- sees.  A connective never scales a child, it shifts it inside a new frame; of two children the
+-- second is drawn on top.  Sizes are in units, positions in half units (centring is a difference
+-- of sizes, no division).
 --
 --     Rectangle w h   Disc r        Segment w h   Text w h     Path w h      Spacer w h
 --     +-------+       +-----+       *             +--------+   +-------+     +       +
@@ -22,15 +21,11 @@
 --
 --     Ellipse rx ry   Polyline closed pts
 --     +---------+     +-----------+   frame: the extent of the points from the origin
---     |  ( _ )  | 2ry |  p2       |   (largest x by largest y, so none is negative; no
---     +---------+     | p1  p3    |   points, the empty frame); drawn as an SVG polyline, or a
---      2rx            +-----------+   fillable polygon when closed.  Scalar-parametric, unlike
---                                     `Path`, whose `d` string is opaque and cannot move
---                                     with scalars or the animation time.
+--     |  ( _ )  | 2ry |  p2       |   (largest x by largest y; no points, the empty frame).
+--     +---------+     | p1  p3    |   Unlike `Path`, whose `d` is opaque, the points are
+--      2rx            +-----------+   scalars, so they move with `mapDia` and animation time.
 --
---     `Disc r` has the frame and size of `Ellipse r r` (`size-disc-ellipse`); it stays a
---     constructor so that it prints as `<circle>`.
---
+--     `Disc r` has the size of `Ellipse r r` (`size-disc-ellipse`) and prints as `<circle>`.
 --
 --     Beside al        Above al      Atop          LabelAbove       Place w h x y  Overlay w h
 --     +--+--+          +--+          +----------+  +-----+          +----------+   +-------+
@@ -104,7 +99,6 @@ DiagramC S = Op S ▷ arity
 Dia : Set → Set
 Dia S = DiagramC S ⋆ ⊥
 
-------------------------------------------------------------------------
 -- Change of scalar: the action on maps, a container morphism (same arities)
 
 mapOp : ∀ {S T} → (S → T) → Op S → Op T
@@ -151,7 +145,6 @@ mapC f = record { shape = mapOp f ; position = pos }
 mapDia : ∀ {S T} → (S → T) → Dia S → Dia T
 mapDia f = translate (mapC f)
 
-------------------------------------------------------------------------
 -- The surface language
 
 rectangle segment : ∀ {S} → S → S → Style → Dia S

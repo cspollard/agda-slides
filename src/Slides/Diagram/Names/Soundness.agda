@@ -1,13 +1,12 @@
 {-# OPTIONS --safe --without-K #-}
 
 -- `Slides.Diagram.Names.dangling` is sound: if it reports nothing, every `connect` in the
--- diagram draws an arrow (and none is silently dropped).  Two facts:
+-- diagram draws an arrow (none is silently dropped).  Two facts:
 --
---   * `names-fusion`: the declared names of the usage fold are exactly the names of the
---     anchors of the laid-out diagram, in the same order (one `pfold-rel`: the placement
---     operations keep the anchors of their children in order);
---   * `soundness`: `dangling d ≡ []` implies `Draws d`: each `connect` node, laid out over its
---     own child, appends one arrow.
+--   * `names-fusion`: the declared names of the usage fold are the names of the anchors of the
+--     layout, in order (placement keeps the anchors of its children in order);
+--   * `soundness`: `dangling d ≡ []` implies `Draws d`: each `connect`, laid out over its own
+--     child, appends one arrow.
 --
 --   dangling d ≡ []  ──soundness──▶  Draws d
 --        │ names-fusion                  ▲ connectP-arrow (both names are anchors)
@@ -47,7 +46,6 @@ open import Slides.Diagram.Layout Sp using (layoutH; layout)
 anchorNames : Layout S → List String
 anchorNames l = map proj₁ (Layout.anchors l)
 
-------------------------------------------------------------------------
 -- Names survive the placement operations
 
 names-inFrame : ∀ w h dx dy l → anchorNames (P.inFrame w h dx dy l) ≡ anchorNames l
@@ -64,7 +62,6 @@ names-combine {w} {h} {p} {q} a b =
   trans (names-++ (Layout.anchors (P.inFrame w h (proj₁ p) (proj₂ p) a)) (Layout.anchors (P.inFrame w h (proj₁ q) (proj₂ q) b)))
         (cong₂ _++_ (names-inFrame w h (proj₁ p) (proj₂ p) a) (names-inFrame w h (proj₁ q) (proj₂ q) b))
 
-------------------------------------------------------------------------
 -- The declared names are the anchors' names
 
 -- each binary connective is a `combine` (`Slides.Diagram.Place`): the frame and positions are
@@ -123,7 +120,6 @@ names-fusion = pfold-rel (λ l u → anchorNames l ≡ proj₁ u) hom (λ ())
     hom (Named n)         L U e = cong (n ∷_) (e tt)
     hom (Connect _ _ _ _ _) L U e = e tt
 
-------------------------------------------------------------------------
 -- A connection whose names are declared draws an arrow
 
 just≢nothing : ∀ {A : Set} {x : A} → just x ≡ nothing → ⊥
@@ -151,7 +147,6 @@ connectP-arrow a pa b pb s (mkLayout w h ds as) ia ib
 connectP-anchors : ∀ a pa b pb s l → Layout.anchors (P.connectP a pa b pb s l) ≡ Layout.anchors l
 connectP-anchors a pa b pb s l = refl
 
-------------------------------------------------------------------------
 -- Soundness
 
 -- every `connect` node, laid out over its own child, appends an arrow
