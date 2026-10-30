@@ -8,8 +8,8 @@ module Slides.Examples.Plots where
 open import Data.Integer using (+_; -[1+_])
 open import Data.List using (List; _∷_; []; map; upTo; zip)
 open import Data.Maybe using (just; nothing)
-open import Data.Nat using (ℕ)
-open import Data.Product.Base using (_,_)
+open import Data.Nat as ℕ using (ℕ)
+open import Data.Product.Base using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ; _+_; _-_; _*_)
 
 open import Slides.Deck.Talk using (Talk)
@@ -47,14 +47,33 @@ edges = map ι (upTo 11)
 model : List ℚ
 model = map (λ i → ι 90 * inv (ι 1 + ι i * decimal (+ 4) 1) ) (upTo 10)
 
+dataPts : List (ℚ × ℚ × ℚ)
+dataPts = map (λ i → ι i + decimal (+ 5) 1 , ι 90 * inv (ι 1 + ι i * decimal (+ 4) 1) + decimal (+ 3) 0 , ι 4) (upTo 10)
+
 hist : Plot
 hist = plot 640 400 (axisSpec (ι 0) (ι 10) "m [GeV]") (axisSpec (ι 0) (ι 100) "events / bin")
   ( series (steps (colour 1) edges model) (just "simulation")
   ∷ series (errors (colour 4) dataPts) nothing
   ∷ series (scatter (colour 4) (map (λ { (x , y , _) → x , y }) dataPts)) (just "data")
   ∷ [] )
-  where
-    dataPts = map (λ i → ι i + decimal (+ 5) 1 , ι 90 * inv (ι 1 + ι i * decimal (+ 4) 1) + decimal (+ 3) 0 , ι 4) (upTo 10)
+
+-- under it, data over simulation per bin, sharing the x axis; the upper panel has no x labels
+ratios : List (ℚ × ℚ × ℚ)
+ratios = map (λ { ((x , y , e) , m) → x , y * inv m , e * inv m }) (zip dataPts model)
+
+ratio : Plot
+ratio = plot 640 220 (axisSpec (ι 0) (ι 10) "m [GeV]") (axisSpec (decimal (+ 5) 1) (decimal (+ 15) 1) "data / sim")
+  ( series (hline (dashed "6 4" (colour 3)) (ι 1)) nothing
+  ∷ series (errors (colour 4) ratios) nothing
+  ∷ series (scatter (colour 4) (map (λ { (x , y , _) → x , y }) ratios)) nothing
+  ∷ [] )
+
+-- a power law over three decades, on a log axis
+power : Plot
+power = plot 640 400 (axisSpec (ι 0) (ι 10) "x") (logAxis (ι 1) (ι 1000) "1000 / x²")
+  ( series (line (colour 1) (graph (λ x → ι 1000 * inv (x * x)) (linspace 60 (ι 1) (ι 10)))) (just "model")
+  ∷ series (scatter (colour 5) (map (λ i → ι i , ι 1000 * inv (ι i * ι i) * decimal (+ 11) 1) (map ℕ.suc (upTo 9)))) (just "data")
+  ∷ [] )
 
 talk : Talk
 talk = do
@@ -62,3 +81,7 @@ talk = do
             diagram "peak" 80 (render peak))
   slide (do heading 2 "A histogram with data"
             diagram "hist" 80 (render hist))
+  slide (do heading 2 "A ratio panel"
+            diagram "ratio" 80 (withRatio (record hist { height = 280 }) ratio))
+  slide (do heading 2 "A log axis"
+            diagram "power" 80 (render power))

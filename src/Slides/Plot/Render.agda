@@ -18,18 +18,22 @@
 
 module Slides.Plot.Render where
 
-open import Data.List using (List; []; _∷_; _++_; map; reverse; foldr; concatMap)
+open import Data.List using (List; []; _∷_; _++_; map; reverse; foldr; concatMap; upTo)
+open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Integer as ℤ using (ℤ; +_)
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _/_; _*_; _⊔_)
 open import Data.Nat.Show using (show)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
-open import Data.Rational using (ℚ)
+open import Data.Rational as ℚ using (ℚ; _-_)
+import Data.Rational as ℚ
 open import Data.String using (String) renaming (_++_ to _++ˢ_)
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.TextMetrics using (textWidth)
 open import Slides.Plot.Axis.Rat using (Axis; axisOf; px; flipY)
 open import Slides.Plot.Clip using (clipLine)
+open import Slides.Plot.Log using (log10; tenPow; logMark)
 open import Slides.Plot.Format using (trimmed)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Plot.Mark
@@ -37,10 +41,15 @@ open import Slides.Plot.Ticks.Rat using (ticks)
 
 -- the data range shown on an axis, with its label
 record AxisSpec : Set where
-  constructor axisSpec
+  constructor mkAxis
   field
     lo hi : ℚ
     label : String
+    log   : Bool      -- plotted at log₁₀ (`lo` and `hi` are then the data values, positive)
+
+axisSpec logAxis : ℚ → ℚ → String → AxisSpec
+axisSpec lo hi l = mkAxis lo hi l false
+logAxis  lo hi l = mkAxis lo hi l true
 
 record Plot : Set where
   constructor plot
@@ -51,30 +60,38 @@ record Plot : Set where
 
 private
   -- the plot box inside the frame: room at the left for y tick labels, below for x tick labels
-  mL mT mR mB fontSize : ℕ
+  mL mT mR fontSize : ℕ
   mL = 64
   mT = 40
   mR = 20
-  mB = 72
   fontSize = 20
 
   record Geo : Set where
     field
       W H bw bh : ℕ      -- the frame and the box
       ax ay     : Axis
-      xlo xhi ylo yhi : ℚ
+      xlo xhi ylo yhi : ℚ      -- the ranges as axes see them (y in log space on a log axis)
+      ylog xlab : Bool         -- a log y axis; x tick labels and title drawn
       xlabel ylabel : String
 
-  geo : Plot → Geo
-  geo p = record
+  -- the room below the box: tick labels and title, or none (the upper panel of a stack)
+  mB : Bool → ℕ
+  mB b = if b then 72 else 0
+
+  geo : Bool → Plot → Geo
+  geo xl p = record
     { W = W ; H = H ; bw = bw ; bh = bh
-    ; ax = axisOf (AxisSpec.lo (Plot.xaxis p)) (AxisSpec.hi (Plot.xaxis p)) bw
-    ; ay = axisOf (AxisSpec.lo (Plot.yaxis p)) (AxisSpec.hi (Plot.yaxis p)) bh
-    ; xlo = AxisSpec.lo (Plot.xaxis p) ; xhi = AxisSpec.hi (Plot.xaxis p)
-    ; ylo = AxisSpec.lo (Plot.yaxis p) ; yhi = AxisSpec.hi (Plot.yaxis p)
+    ; ax = axisOf xlo xhi bw
+    ; ay = axisOf ylo yhi bh
+    ; xlo = xlo ; xhi = xhi ; ylo = ylo ; yhi = yhi
+    ; ylog = AxisSpec.log (Plot.yaxis p) ; xlab = xl
     ; xlabel = AxisSpec.label (Plot.xaxis p) ; ylabel = AxisSpec.label (Plot.yaxis p) }
     where W = Plot.width p ; H = Plot.height p
-          bw = W ∸ mL ∸ mR ; bh = H ∸ mT ∸ mB
+          bw = W ∸ mL ∸ mR ; bh = H ∸ mT ∸ mB xl
+          yl = Plot.yaxis p
+          xlo = AxisSpec.lo (Plot.xaxis p) ; xhi = AxisSpec.hi (Plot.xaxis p)
+          ylo = if AxisSpec.log yl then log10 (AxisSpec.lo yl) else AxisSpec.lo yl
+          yhi = if AxisSpec.log yl then log10 (AxisSpec.hi yl) else AxisSpec.hi yl
 
   -- the style with a class for the kind of mark (what CSS paints: a line is stroked and open, a
   -- region filled, a dot filled)
@@ -149,9 +166,20 @@ private
     label t = text fontSize t (cls "plot-text")
 
     -- grid, axes, tick marks and their labels, from the axis ticks
-    xs ys : List ℚ
+    xs : List ℚ
     xs = ticks 6 (Axis.lo ax) (Axis.hi ax)
-    ys = ticks 5 (Axis.lo ay) (Axis.hi ay)
+
+    -- y ticks as (position, text): the nice multiples, or on a log axis the whole decades
+    decades : ℤ → ℤ → List ℤ
+    decades a b = map (λ i → a ℤ.+ + i) (upTo (suc ℤ.∣ b ℤ.- a ∣))
+
+    yticks : List (ℚ × String)
+    yticks = if ylog
+      then map (λ k → (k ℚ./ 1) , trimmed 4 (tenPow k)) (decades (ℚ.ceiling ylo) (ℚ.floor yhi))
+      else map (λ y → y , trimmed 3 y) (ticks (bh / 30 ⊔ 2) ylo yhi)
+
+    ys : List ℚ
+    ys = map proj₁ yticks
 
     lineH : ℕ
     lineH = fontSize * 3 / 2
@@ -162,12 +190,12 @@ private
            ⊙ pathOf (cat (map (λ x → seg (X x , mT + bh) (X x , mT + bh + 5)) xs ++ map (λ y → seg (mL ∸ 5 , Y y) (mL , Y y)) ys)) s
 
     tickLabels : List (Dia ℕ)
-    tickLabels = map (λ x → let t = trimmed 3 x in put (X x ∸ textWidth fontSize t / 2) (mT + bh + 8) (label t)) xs
-              ++ map (λ y → let t = trimmed 3 y in put (mL ∸ 8 ∸ textWidth fontSize t) (Y y ∸ lineH / 2) (label t)) ys
+    tickLabels = (if xlab then map (λ x → let t = trimmed 3 x in put (X x ∸ textWidth fontSize t / 2) (mT + bh + 8) (label t)) xs else [])
+              ++ map (λ { (y , t) → put (mL ∸ 8 ∸ textWidth fontSize t) (Y y ∸ lineH / 2) (label t) }) yticks
 
     titles : List (Dia ℕ)
-    titles = put (mL + bw / 2 ∸ textWidth fontSize xlabel / 2) (H ∸ lineH) (label xlabel)
-           ∷ put 4 2 (label ylabel) ∷ []
+    titles = (if xlab then put (mL + bw / 2 ∸ textWidth fontSize xlabel / 2) (H ∸ lineH) (label xlabel) ∷ [] else [])
+           ++ put 4 2 (label ylabel) ∷ []
 
     -- a legend entry: a sample of the mark's style, then its name
     sample : Mark → Maybe (Dia ℕ)
@@ -203,11 +231,20 @@ private
                 ∷ titles ++ tickLabels ++ axes (cls "plot-axis")
                 ∷ map (λ x → renderMark (Series.mark x)) (reverse ss) ++ grid (cls "plot-grid") ∷ []
 
-drawings : Plot → List (Dia ℕ)
-drawings p = layersOf (geo p) (Plot.content p)
+-- the drawings of one panel (`xl`: with x tick labels and title), the top layer first
+panel : Bool → Plot → List (Dia ℕ)
+panel xl p = layersOf g (map mk (Plot.content p))
+  where g = geo xl p
+        mk = λ x → record x { mark = if Geo.ylog g then logMark (Series.mark x) else Series.mark x }
 
 render : Plot → Dia ℕ
-render p = layers (Plot.width p) (Plot.height p) (drawings p)
+render p = layers (Plot.width p) (Plot.height p) (panel true p)
+
+-- a ratio panel: two plots one above the other that share the x axis (the upper one's range, the
+-- lower one's label; widths agree, so the boxes line up); the upper has no x labels
+withRatio : Plot → Plot → Dia ℕ
+withRatio up lo = layers (Plot.width up) (Plot.height up) (panel false up) ═ render lo′
+  where lo′ = record lo { width = Plot.width up ; xaxis = axisSpec (AxisSpec.lo (Plot.xaxis up)) (AxisSpec.hi (Plot.xaxis up)) (AxisSpec.label (Plot.xaxis lo)) }
 
 -- the style of the n-th series (a CSS class `plot-s1` … colours it)
 colour : ℕ → Style
