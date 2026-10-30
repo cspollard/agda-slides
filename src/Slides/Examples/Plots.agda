@@ -70,6 +70,13 @@ power = plot 640 400 (axisSpec (ι 0) (ι 10) "x") (logAxis (ι 1) (ι 1000) "10
   ∷ series (scatter (colour 5) (map (λ i → ι i , ι 1000 * inv (ι i * ι i) * decimal (+ 11) 1) (map ℕ.suc (upTo 9)))) (just "data")
   ∷ [] )
 
+-- the same Lorentzian as one exact function: a smooth curve, cut where it leaves the box
+smooth : Plot
+smooth = plot 640 400 (axisSpec (ι 0 - ι 4) (ι 4) "x") (axisSpec (ι 0) (ι 1) "1 / (1 + x²)")
+  ( series (exact (colour 1) (λ x → inv (ι 1 + x * x))) (just "exact")
+  ∷ series (line (dashed "6 4" (colour 3)) (graph (λ x → inv (ι 1 + x * x)) (linspace 8 (ι 0 - ι 4) (ι 4)))) (just "9 samples")
+  ∷ [] )
+
 talk : Talk
 talk = do
   slide (do heading 2 "A line with a band"
@@ -78,6 +85,8 @@ talk = do
             diagram "hist" 80 (render hist))
   slide (do heading 2 "A ratio panel"
             diagram "ratio" 80 (withRatio (record hist { height = 280 }) ratio))
+  slide (do heading 2 "A smooth curve from a function"
+            diagram "smooth" 80 (render smooth))
   slide (do heading 2 "A log axis"
             diagram "power" 80 (render power))
   slide (do heading 2 "Series, one at a time"

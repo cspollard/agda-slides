@@ -9,6 +9,7 @@
 --   errors   a vertical bar with caps at each (x, y, err)
 --   hline vline   a reference line across the whole plot
 --   note     text at a data position
+--   exact    the graph of a function ℚ → ℚ, sampled and drawn as a smooth curve (`Slides.Diagram.Curve`)
 
 module Slides.Plot.Mark where
 
@@ -28,6 +29,7 @@ data Mark : Set where
   errors       : Style → List (ℚ × ℚ × ℚ) → Mark
   hline vline  : Style → ℚ → Mark
   note         : ℚ → ℚ → String → Mark
+  exact        : Style → (ℚ → ℚ) → Mark
 
 record Series : Set where
   constructor series

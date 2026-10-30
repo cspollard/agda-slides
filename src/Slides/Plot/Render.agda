@@ -33,6 +33,9 @@ open import Slides.Diagram.Convenience
 open import Slides.Diagram.TextMetrics using (textWidth)
 open import Slides.Plot.Axis.Rat using (Axis; axisOf; px; flipY)
 open import Slides.Plot.Clip using (clipLine)
+open import Slides.Plot.Data using (inv)
+open import Slides.Plot.Exact using (exactDia)
+open import Slides.Scalar.Model.Rat using (ι)
 open import Slides.Plot.Log using (log10; tenPow; logMark)
 open import Slides.Plot.Format using (trimmed)
 open import Slides.Diagram.Style using (Style)
@@ -157,6 +160,9 @@ private
     renderMark (band s ts)      = inFrame (polygon (map (λ { (x , _ , u) → pt (x , u) }) ts ++ map (λ { (x , l , _) → pt (x , l) }) (reverse ts)) (kind "plot-fill" s))
     renderMark (errors s ts)    = pathOf (cat (map (λ { (x , y , e) → bar 3 (X x , Y (y ℚ.- e) , Y (y ℚ.+ e)) }) ts)) (kind "plot-line" s)
       where open import Data.Rational as ℚ using ()
+    -- the function on frame pixels (in ℚ), through the axes; the curve is cut where it leaves the box
+    renderMark (exact s f)      = layers W H (map inFrame (exactDia gx (ι mL) (ι (mL + bw)) (ι mT) (ι (mT + bh)) bw (kind "plot-line" s)))
+      where gx = λ xp → ι (mT + bh) - (f (xlo ℚ.+ (xp - ι mL) ℚ.* inv (Axis.ratio ax)) - ylo) ℚ.* Axis.ratio ay
     renderMark (hline s y)      = inFrame (polyline ((mL , Y y) ∷ (mL + bw , Y y) ∷ []) (kind "plot-line" s))
     renderMark (vline s x)      = inFrame (polyline ((X x , mT) ∷ (X x , mT + bh) ∷ []) (kind "plot-line" s))
     renderMark (note x y t)     = put (X x ∸ textWidth fontSize t / 2) (Y y ∸ lineH / 2) (text fontSize t (cls "plot-text"))
@@ -207,6 +213,7 @@ private
     sample (hline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
     sample (vline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
     sample (note _ _ _)   = nothing
+    sample (exact s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
 
     -- the named entries, as (name, sample)
     entries : List Series → List (String × Dia ℕ)

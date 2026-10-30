@@ -189,30 +189,35 @@ Status: 1(a) and 1(b) done (`ticks-in-range`, `ticks-sorted`, `clipLine-inside`)
    edge; no minor ticks on log axes; labels below 10⁻⁴ round to 0; a morph needs plots of one shape.
 5. **Phase 3b** (`Print ℚ`, `Dia ℚ` block) only if quantisation shows on a large histogram.
 
-## Smooth curves (design, not built)
-Today a curve is sampled by the caller and drawn as straight segments (`Polyline`); a backend that can draw smooth
-curves has no way to say so, because the AST only holds the points.  Options weighed:
-- **`Curve f lo hi` in `Dia`.**  `f : S → S` breaks functoriality (`mapOp h` cannot push `h : S → T` through it) and
-  `Space` has no multiplication; an expression language for `f` (a new signature, evaluator, JS emitter, several
-  hundred lines) is the principled form but is not needed while curves arrive as sample lists; an opaque `f : ℚ → ℚ`
-  only moves the sampling into the backend and cannot be serialised for the animation evaluator or compared by `Share`.
-  Not pursued now.
-- **A flag on `Polyline`** (`straight | smooth`, default straight): the control points stay scalar terms (animation,
-  `Lerp`, layout unchanged); SVG/Reveal draw a monotone cubic through them as Bézier segments, other backends draw
-  straight segments (still correct).  Cost: `Polyline` is matched in about nine modules plus `Backend/Animation`,
-  mostly carrying a field; about one phase; no golden changes at the default.
-- **Bézier via `Path`**: smooth on SVG backends but opaque (no morph, no clipping inside).  A fallback only.
-
-Chosen shape: `Plot` stays a separate first-order syntax (already `Plot`/`Mark`), and lowering takes the curve kind as
-data, `line` with `straight`, `smooth`, or (later) `exact f` once an expression language exists; `render` stays one
-fold whose curve step is chosen by that kind.  Laws to state: composition respected (overlay is `layers`, a ratio panel
-is `═`; `size-render`, `size-withRatio` already), axis laws (proved), a morph of one shape commutes with lowering.
-Laws deferred: "the approximation is within ε of `f`" (needs real analysis or interval bounds, not in the repo).
-Details to settle when built: clip into pieces first and do not smooth across cuts (a spline through clipped points
-can leave the box and the clamp would flatten it); use a monotone cubic (Fritsch-Carlson), not Catmull-Rom, which
-overshoots; smooth after the log transform on a log axis; optional adaptive sampling `adaptive f lo hi tol` (bisect
-where the midpoint leaves the chord) in `Slides.Plot.Data` as a separate small step.  Order: flag and SVG/Reveal
-drawing, `smooth` on `line`, clipping into pieces, adaptive sampling.
+## Smooth curves (built: the `Function` extension)
+Today's curves (`line`) are sampled by the caller and drawn as straight segments.  Options weighed: a `Curve f lo hi`
+in `Dia` (breaks functoriality: `mapOp h` cannot push `h : S → T` through `f : S → S`); a `smooth` flag on `Polyline`
+(about twenty match sites); a Bézier `Path` made by the caller (opaque).  **Built**, in `Slides.Diagram.Curve`
+(about 120 lines) and `Slides.Plot.Exact`:
+- `CurveC S` holds `Function f lo hi style` (arity ⊥); `Dia⁺ S = (DiagramC S ⊎ CurveC S) ⋆ ⊥` (Data types à la
+  carte, `Container.Sum`); `lowerDia sm n = lower (lowerCurve sm n)` is a Kleisli map `Dia⁺ → Dia`, so `Dia`, `Op` and
+  every handler are untouched and run after lowering (function as meaning, sampling as implementation: Elliott,
+  Functional Images; stat then geom as in ggplot2).  A `Sampler S` (arithmetic with a total division, an order, a
+  decimal notation) is its argument; `Slides.Plot.Exact.ratSampler` is the one for ℚ.
+- The lowering samples `n + 1` evenly spaced points and draws a monotone cubic (Fritsch-Carlson in the Fritsch-Butland
+  form: the harmonic mean of neighbouring secants, 0 where they change sign; no sqrt, no overshoot) as one Bézier
+  `Path`: smooth on every backend, opaque (no morph and no clipping inside; accepted).
+- `exact style f` is a `Mark` (data coordinates).  `render` composes `f` with the axis maps (frame pixels in ℚ, so a
+  log axis smooths after the log), cuts the pixel range into runs inside the box on a one-pixel grid (clip before
+  sampling, no smoothing across a cut; a run ends within a pixel of the edge) and lowers each run.  Existing marks and
+  goldens are unchanged; `lerpMark` leaves an `exact` mark as it is (a function cannot be interpolated), so it does not
+  morph.
+- Proved: `lower-inject`, a diagram embedded along `inl` and lowered is itself (`Dia⁺` agrees with `Dia`); the generic
+  Kleisli laws `lower-bind`, `lower-⋙`, `lower-ret` of `Container.Lowering.Properties` apply to `lowerDia` as to any
+  lowering.  Functoriality of `Dia` is untouched (nothing changed in `Syntax`).
+- **`Dia⁺` is deliberately not functorial in `S`.**  `mapDia h` acts on every scalar of a term, but a `Function`
+  holds a function on scalars; `h : S → T` has no way back, so `f : S → S` cannot become `T → T`.  Changing the scalar
+  is done on `Dia`, after lowering (the plot does `mapDia ratFloor` on the lowered path).
+- Named contract, not proved: `Within` (`Curve.agda`): the function the path denotes is within ε of `f` on [lo, hi]
+  (needs bounds on `f`, real analysis or intervals, not in the repo).  The monotone-cubic shape property (no
+  overshoot beyond the samples) is likewise stated in the comment only.
+- Deferred: adaptive sampling (bisect where the midpoint leaves the chord) as a separate step of the lowering; a
+  `Function` over a scalar without a `Sampler` (only ℚ has one); `exact` in `Sample`/legend morphs.
 
 ## Risks
 - Tick labels are placed using approximate text widths; misalignment of a few percent in y tick
