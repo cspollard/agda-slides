@@ -173,6 +173,21 @@ first; if the spike shows quantisation hurting on a real plot, 3b moves earlier.
 3. **Histogram input**: bin edges plus counts (general) with a constructor from uniform bins.
 4. **Text rotation**: accepted as horizontal for now (gap 4).
 
+## Follow-ups (after phase 6), in order
+1. **Prove what is only checked.**  (a) every tick lies in `[lo, hi]` and the ticks are sorted; (b) every point
+   `clipLine` returns lies in the box; (c) `log10` monotone.  Route for (a) and (b): make the property hold by
+   construction (filter ticks by the range; clamp clipped points to the box) so the law is `all-filter` / a `⊔ ⊓`
+   bound, with faithfulness (nothing in range dropped, no point moved when already inside) kept as closed checks.
+   (c) is not provable as built: two polynomial branches meet at 3.16 only to within the approximation error, so
+   monotonicity would need interval bounds on the series; state the error bound as the contract instead.
+2. **Docs**: `docs/Plots.md` (the `Plot` record, marks, `logAxis`, `withRatio`, `reveal`, `morph`, CSV flow, CSS
+   classes) and a pointer in `plan/TODO.md`.
+3. **Finish the branch**: rebase onto `main`; decide which targets/CI cover `plots` and `plot-data`; optional golden
+   for the plots deck.  Not pushed, no PR yet.
+4. **Quality gaps**: text widths approximate; y label horizontal; filled bands flattened (not clipped) at the box
+   edge; no minor ticks on log axes; labels below 10⁻⁴ round to 0; a morph needs plots of one shape.
+5. **Phase 3b** (`Print ℚ`, `Dia ℚ` block) only if quantisation shows on a large histogram.
+
 ## Risks
 - Tick labels are placed using approximate text widths; misalignment of a few percent in y tick
   labels is expected and cosmetic.
