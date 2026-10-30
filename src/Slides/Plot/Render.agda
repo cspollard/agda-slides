@@ -203,8 +203,11 @@ private
                 ∷ titles ++ tickLabels ++ axes (cls "plot-axis")
                 ∷ map (λ x → renderMark (Series.mark x)) (reverse ss) ++ grid (cls "plot-grid") ∷ []
 
+drawings : Plot → List (Dia ℕ)
+drawings p = layersOf (geo p) (Plot.content p)
+
 render : Plot → Dia ℕ
-render p = layers (Plot.width p) (Plot.height p) (layersOf (geo p) (Plot.content p))
+render p = layers (Plot.width p) (Plot.height p) (drawings p)
 
 -- the style of the n-th series (a CSS class `plot-s1` … colours it)
 colour : ℕ → Style

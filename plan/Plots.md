@@ -1,6 +1,11 @@
 # Plots: basic plotting on `Dia`
 
-Status: plan, nothing built.  Design context in `docs/Objects.md`, rules in `docs/Contributing.md`.
+Status: phases 0-3 built on branch `plots` (`make plots` renders `out/plots`; `make check` clean, 107 s for the tree).
+Built: `Slides.Plot.{Axis,Axis.Rat,Format,Ticks,Ticks.Rat,Mark,Clip,Data,Render,Laws}` (~770 lines),
+`Examples/Plots`, `assets/plots.css`.  Proved: `px-max`, `px-mono`, `px-lo`, `px-hi`, `ap-sorted`,
+`size-render` (the frame is exactly `width x height`).  Checked on closed values only: formatting, 1-2-5 ticks
+(in range, spacing), clipping (all points in the box).  Not done: `plot` DSL combinator (a plot is a `Dia ℕ`
+block via `render`, no new deck combinator), goldens untouched (look is in `plots.css`), phases 3b-6.  Design context in `docs/Objects.md`, rules in `docs/Contributing.md`.
 Branch `plots` (worktree `../agda-slides-plots`).
 
 ## Goal
