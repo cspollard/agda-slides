@@ -88,6 +88,14 @@ plots:
 	cp assets/slides.css assets/plots.css assets/animation.js out/plots/
 	$(call run-main,src/Slides/Examples/PlotsMain.agda)
 
+# The same look with the data read from `data/spectrum.csv` (out/plot-data).
+.PHONY: plot-data
+plot-data:
+	mkdir -p out/plot-data $(BUILD_DIR)
+	ln -sfn $(REVEAL) out/plot-data/reveal
+	cp assets/slides.css assets/plots.css assets/animation.js out/plot-data/
+	$(call run-main,src/Slides/Examples/PlotsDataMain.agda)
+
 # Showcase on both backends plus the lowered variants (out/showcase*).
 .PHONY: showcase
 showcase:
