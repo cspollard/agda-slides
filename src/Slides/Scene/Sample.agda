@@ -2,21 +2,18 @@
 
 -- Two readings of a scene as "time to maybe-value", and the theorem that they agree.
 --
--- A leaf is read by `ℓ : L → T → X` at its parameter: the value of its driver at its local
--- time, or 0 if no `Drive` encloses it.  Values overlay by `_⊙_`, associative; absence
--- (`nothing`) is the unit of `Par` per sample (`merge`).
+--   direct   `sample`: fold into `Timed`; `Hold` is a window, `Delay` a shift of the time
+--            argument, `Drive` the choice of driver
+--   events   `readE`: the event list, each event active on [onset, onset + span)
 --
---   direct     the fold of the signature into `Timed`: a duration and a function of time and of
---              the driver of the enclosing `Drive`, with `Hold` a window, `Delay` a shift of the
---              time argument, `Drive` the choice of driver (`sample`);
---   events     the fold of the event list (`readE`), each event active on `[onset, onset+span)`.
+-- A leaf is read by `ℓ : L → T → X` at its parameter (its driver's value at local time, 0 with
+-- no `Drive`); values overlay by the associative `_⊙_`, absence is the unit of `Par` (`merge`).
 --
--- `events-sample`: `readE ℓ (events s) t q ≡ sample ℓ s t q` (the key theorem): the sparse list
--- is the direct pointwise semantics.  It is proved by `pfold-rel`, one lemma per operation of
--- the signature (`rel-par`, `rel-hold`, `rel-delay`, `rel-drive`), with the invariant that
--- onsets are non-negative.  Then: both readings respect bind (`sample-bind`, `events-bind`,
--- `reading-bind`), `Par` is commutative and associative up to permutation of the events,
--- and `Seq` is associative (`seq-assoc`, for non-negative durations).
+--   events-sample   `readE ℓ (events s) t q ≡ sample ℓ s t q`: the sparse list is the pointwise
+--                   semantics.  By `pfold-rel`, one lemma per operation (`rel-par`, `rel-hold`,
+--                   `rel-delay`, `rel-drive`), invariant: onsets are non-negative.
+--
+-- Hence the laws of `Slides.Scene.Laws` may be proved on whichever reading is easier.
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub)
@@ -45,7 +42,6 @@ open import Slides.Scene.Arith M Sb
 open OrdMon M
 open Sub Sb
 
-------------------------------------------------------------------------
 -- Overlay with absence as unit
 
 open Absent O public
@@ -59,7 +55,6 @@ param : Maybe D → T → T
 param nothing  τ = 0#
 param (just c) τ = val c τ
 
-------------------------------------------------------------------------
 -- Reading events
 
 -- an event of span `s` is over once `onset + s` is reached
@@ -86,7 +81,6 @@ module _ {L : Set} (ℓ : L → T → X) where
   read-++ (e ∷ es) fs t q = trans (cong (merge (readEv e t q)) (read-++ es fs t q))
                                   (sym (merge-assoc (readEv e t q) (readE es t q) (readE fs t q)))
 
-------------------------------------------------------------------------
 -- The direct reading
 
 Rd : Set
@@ -150,7 +144,6 @@ timed g = pfold (SceneC T D) dirH g
 sample : ∀ {A : Set} → (A → T → X) → Scene T D A → Timed
 sample ℓ = timed (leafT ℓ)
 
-------------------------------------------------------------------------
 -- Agreement of the two readings
 
 module _ {L : Set} (ℓ : L → T → X) where

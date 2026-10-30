@@ -1,15 +1,14 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Moving values: drivers are terms of the Coupling theory.
+-- Moving values: a driver is a term of the Coupling theory, not a track datatype.
 --
--- A driver is a term of `CouplingC` in the local time (`nothing`) and constants (`just k`); its
--- value at a local time is the fold of the Coupling handler.  `move e a b d` is the term
--- `lerp (ease e (ratio now d)) a b`: the value moving from `a` to `b` over `d` along the
--- easing `e`.  There is no track datatype: a segment is `hold d (drive (move e a b d) leaf)`
--- (`tween`), its leaf reads the parameter, and the endpoint law is the Coupling theory's own
--- (`move-end`: at local time `d` the value is `b`).  The animation of `Slides.Scene.Animation`
--- is instantiated at these drivers and re-exported.  Whole-number ℕ clocks have no ratios, so
--- there is no ℕ instance; the tick clock reads the same scenes at `ι` (`Slides.Scene.Tick`).
+-- `move e a b d` is `lerp (ease e (ratio now d)) a b`: the value going from `a` to `b` over `d`
+-- along the easing `e`.  A segment is `tween`: `hold d (drive (move e a b d) leaf)`.
+--
+--   move-end   at local time `d` the value is `b` (the Coupling theory's own law)
+--
+-- ℕ has no ratios, so there is no ℕ instance; the tick clock reads these scenes at `ι`
+-- (`Slides.Scene.Tick`).  Re-exports `Slides.Scene.Animation` at these drivers.
 
 open import Slides.Scalar.Core using (Sub)
 open import Slides.Scalar.Space using (Space; Scale)

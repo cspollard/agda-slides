@@ -2,21 +2,16 @@
 
 -- What a backend supports: a binding of a subset of the commands.
 --
--- A backend has its own set of commands `S` (decidable), a partial embedding `inj` of the
--- program's commands into it and the decoder `dec` back, inverse to each other where defined, so
--- two commands never share a backend command.  Like the scalar theories it is an explicit
--- record of operations and laws; there is no instance search.
+-- A backend has decidable commands `S`, a partial embedding `inj` of the program's commands and a
+-- decoder `dec`, inverse where defined.  An explicit record of operations and laws.
 --
---   lowerP b     a program over `C` as a program over `S`: a supported `await c` becomes
---                `await (inj c)`, an unsupported one is skipped (the documented default);
---                scenes are kept.  It is `Container.Lowering.lower`, so a monad morphism.
---   skipU b      the same default inside `C`: unsupported waits removed.
+--   lowerP b   a program over `C` as one over `S`: a supported `await c` becomes `await (inj c)`,
+--              an unsupported one is skipped; scenes are kept (`Container.Lowering.lower`)
+--   skipU b    the same default inside `C`
 --
---   lower-sound      the backend's machine for `lowerP b p`, with its commands decoded by `dec`
+--   lower-sound      the backend's machine for `lowerP b p`, commands decoded by `dec`
 --                    (`Via`: an undecodable command does nothing), is the machine of `skipU b p`
 --   lower-supported  if every wait of `p` is supported, `skipU b p` is `p`
---
--- Same statements as the legacy `Slides.Input.Supports.Properties`, for the new fold.
 
 module Slides.Program.Supports where
 
@@ -108,7 +103,6 @@ module _ {T D C : Set} (b : Supports C) where
   ... | nothing = ⊥-elim (n refl)
   ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) a
 
-------------------------------------------------------------------------
 -- Soundness of the lowering
 
 -- A machine over the backend's commands behaves as one over the program's commands once each

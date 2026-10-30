@@ -1,21 +1,17 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Laws of scenes.
+-- Laws of scenes, on events and on readings.
 --
---   nesting      a substitution of scenes for leaves is bind, and both meanings respect it:
---                `events-bind`, `sample-bind`, `reading-bind`; `nest-window`: a scene put in a
---                windowed, delayed leaf is clipped and shifted (one law for nested clocks);
---   shift        `delay-delay`: delays add (events act by `shiftE`, `shift-zero`, `shift-shift`);
---   Par          events concatenate, so `Par` is associative on the nose and commutative up to
---                permutation of the events (`par-comm-events`); the readings agree when `⊙` is
---                commutative (`read-perm`);
---   Seq          associative as a reading, for non-negative durations (`seq-assoc`).
+--   events-bind, sample-bind, reading-bind   both meanings respect substitution
+--   nest-window     a scene in a windowed, delayed leaf is clipped and shifted
+--   delay-delay     delays add
+--   par-comm-events Par commutes up to permutation of events; `read-perm`: on readings, if `⊙` commutes
+--   seq-assoc       Seq is associative as a reading, for non-negative durations
+--   assembly, sample-assembly   the reading at `t` is the overlay of the active leaves, each at
+--                   its local time
 --
---   assembly     the reading at a time is the overlay of the active leaves, each read at its
---                local time (`assembly`, `sample-assembly`);
---
--- Not claimed: the swap law `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)` (false: leaves are
--- eternal, so the operands need a `Windowed` hypothesis); a tick law for `Repeat` beyond ℕ.
+-- Not claimed: the swap law `(a ⨾ b) ∥ (c ⨾ d) = (a ∥ c) ⨾ (b ∥ d)` (false: leaves are eternal,
+-- so it needs a `Windowed` hypothesis).
 
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Slides.Scalar.Core using (OrdMon; Sub)
@@ -49,7 +45,6 @@ open Overlays O
 open OrdMon M
 open Sub Sb
 
-------------------------------------------------------------------------
 -- Nesting by substitution
 
 events-bind : ∀ {A B L : Set} (f : B → Media L) (h : A → Scene T D B) (s : Scene T D A) →
@@ -73,7 +68,6 @@ nest-window : ∀ {A B : Set} δ d (a : A) (h : A → Scene T D B) →
               mediaOf (delay δ (hold d (pure a)) >>= h) ≡ delayM δ (holdM d (mediaOf (h a)))
 nest-window δ d a h = events-bind leafM h (delay δ (hold d (pure a)))
 
-------------------------------------------------------------------------
 -- Shifts add
 
 map-shift : ∀ {L : Set} δ ε (es : List (Event L)) →
@@ -93,7 +87,6 @@ delay-zero {L} (d , es) rewrite pos-≤ (≤-refl {0#}) | +-idˡ d = cong (d ,_)
         go []       = refl
         go (e ∷ es) = cong₂ _∷_ (shift-zero e) (go es)
 
-------------------------------------------------------------------------
 -- Par
 
 duration-par : ∀ {A} (a b : Scene T D A) → duration (a ∥ b) ≡ duration a ⊔ duration b
@@ -134,7 +127,6 @@ module _ (⊙-comm : ∀ a b → a ⊙ b ≡ b ⊙ a) where
              readE ℓ (events (a ∥ b)) t q ≡ readE ℓ (events (b ∥ a)) t q
   par-comm ℓ a b t q = read-perm ℓ (par-comm-events a b) t q
 
-------------------------------------------------------------------------
 -- Seq is associative (non-negative durations)
 
 private
@@ -214,7 +206,6 @@ seq-assoc-events ℓ a b c t q =
     (trans (proj₂ (seq-assoc ℓ a b c) t q)
            (sym (proj₂ (proj₂ (events-sample ℓ (a ⨾ (b ⨾ c)))) t q)))
 
-------------------------------------------------------------------------
 -- Repeat
 
 repeat-zero : ∀ {A : Set} (a : Scene T D A) → mediaOf (repeat ℕ.zero a) ≡ (0# , [])
@@ -223,7 +214,6 @@ repeat-zero a = refl
 repeat-suc : ∀ {A : Set} n (a : Scene T D A) → mediaOf (repeat (ℕ.suc n) a) ≡ seqM (mediaOf a) (mediaOf (repeat n a))
 repeat-suc n a = refl
 
-------------------------------------------------------------------------
 -- Assembly: the reading at a time is the overlay of the active leaves
 
 presentᵇ : ∀ {L : Set} → Event L → T → Bool

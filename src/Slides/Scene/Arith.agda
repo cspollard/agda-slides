@@ -1,7 +1,8 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Arithmetic of windows: what the scene readings need from an ordered monoid with exact
--- subtraction, derived from the laws of `Slides.Scalar.Core` alone (no computation in a model).
+-- Arithmetic of windows, from the laws of `Slides.Scalar.Core` alone (an ordered monoid with
+-- exact subtraction); no computation in a model.  The facts the scene readings need: order is
+-- reflected by adding on the left, `o ≤ t - w` iff `w + o ≤ t`, and `(t - w) - o ≡ t - (w + o)`.
 
 open import Slides.Scalar.Core using (OrdMon; Sub)
 

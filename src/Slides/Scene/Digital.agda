@@ -1,21 +1,15 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The ℕ tick clock, read through ι.
+-- The ℕ tick clock, read through `ι : ℕ → ℚ`.
 --
--- A scene on the whole-tick clock has durations in ℕ, drivers that are terms of the Space and
--- Time signatures in the local tick (`Dn`), and leaves that are diagrams of such terms
--- attached by sides (`SLeaf`).  Mapped along `ι : ℕ → ℚ` (`Slides.Scene.Tick`) the durations
--- become ℚ durations and the scalars are *lowered* by `lowerS` (`a - b` to `(a ⊔ b) - b`, `pct`
--- to `hold (pct ..)`), and then
+-- A scene on whole ticks has ℕ durations, drivers that are Space/Time terms in the local tick
+-- (`Dn`), and leaves that are diagrams of such terms attached by sides (`SLeaf`).  Mapped along
+-- `ι`, scalars are lowered by `lowerS` (`a - b` to `(a ⊔ b) - b`, `pct` to `hold (pct ..)`).
 --
---     digital:   reading the mapped scene in ℚ at the tick `ι n`, and then forgetting the
---                lowering, is the ℕ reading at `n`, mapped by `ι`
+--   digital   the ℚ frame of the mapped scene at `ι n`, up to `ι`, is the ℕ frame at `n`
 --
--- with the leaf case by Step 2's `digitise` (not re-proved) and Step 3's naturality of layout
--- (`layoutH-nat`), the hypothesis on percentages being `PctDigital`.  Leaves must attach by sides
--- (`Sides`): `ι` does not preserve every percentage port.  Moving ℚ drivers (Coupling terms,
--- `Slides.Scene.Moving`) carry along `ι` exactly when they are exact at whole ticks; here the
--- ℕ drivers are digital terms, so this is the discrete clock of the legacy `RelN`.
+-- By `tick-hom` plus `digitise` for leaves and `layoutH-nat`; `PctDigital` is the hypothesis on
+-- percentages.  Leaves attach by `Sides` because `ι` does not preserve every percentage port.
 
 open import Slides.Scalar.Hom using (PctDigital)
 
@@ -55,7 +49,6 @@ import Slides.Diagram.Place ratSpace as PQ
 import Slides.Diagram.Natural natSpace ratSpace ι ι-hom as N
 open import Slides.Scene.Syntax using (Scene; mapScene)
 
-------------------------------------------------------------------------
 -- The two clocks: drivers and leaves are scalar terms in one variable
 
 Sc : Set
@@ -94,7 +87,6 @@ digit-term τ t = trans (sym (pfold-ext (≡P.setoid ℚ) cQ (val-ι τ) (lowerD
 g-val : ∀ c τ → valQ (lowerD c) (ι τ) ≡ ι (valN c τ)
 g-val c τ = digit-term τ c
 
-------------------------------------------------------------------------
 -- Leaves: diagrams of terms, attached by sides
 
 IsSide : Port → Set
@@ -175,7 +167,6 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
       kN : arity (mapOp f₁ o) → Layout ℕ
       kN q = LN.layout (mapDia f₁ (k (position (mapC f₁) q)))
 
-------------------------------------------------------------------------
 -- The two readings of one scene
 
 SLeaf : Set

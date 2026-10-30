@@ -2,22 +2,16 @@
 
 -- Navigation: moving through a presentation as machine state.
 --
--- The commands a navigating backend sends are `next`, `prev`, `first`, `last`, `goto n` (by
--- tick) and `gotoLabel l` (by name).  The machine `navM len labels view` keeps a position
--- `n ∈ [0, len]` as its state and shows `view n`.  Because the view is a function of the
--- position (a deck is read at a tick, `Slides.Deck.Read`), going back needs no replay of the
--- program: `prev` is the predecessor.  The label table is a partial map from names to
--- positions, built from a deck's events (`Slides.Deck.Read`).
+-- Commands: `next`, `prev`, `first`, `last`, `goto n` (a tick), `gotoLabel l`.  `navM len labels view`
+-- has state a position `n ∈ [0, len]` and output `view n`.  The view is a function of the position,
+-- so `prev` is the predecessor and needs no replay.  Labels are a partial map from names to
+-- positions, built from a deck's events.  `Nav` has decidable equality, so programs can wait for `next`.
 --
--- Laws (the legacy `Slides.Input.Navigation.Properties`, restated for ticks):
---
---   nav-bounded      the position never leaves [0, len]
+--   nav-bounded      the position stays in [0, len]
 --   prev-next        prev undoes next (below the end)
 --   view-next        next shows the view of the next tick (below the end)
 --   gotoLabel-goto   resolving a label then moving is `goto` its position
---   next-steps       k nexts from position n is position n + k (below the end): history by counting
---
--- `Nav` has decidable equality, so programs can wait for `next`.
+--   next-steps       k nexts from n is n + k (below the end): history by counting
 
 module Slides.Program.Navigation where
 

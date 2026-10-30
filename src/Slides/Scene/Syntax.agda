@@ -1,19 +1,19 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The temporal signature and scenes: temporal media after Hudak, as a free monad.
+-- A scene is a term of the temporal signature (after Hudak's temporal media): the free monad
+-- over it, so substituting scenes for leaves is bind.
 --
---   Seq a b     b after a (a window of the length of each)
---   Par a b     together, overlaid; absence is the unit
---   Hold d a    present on [0, d) of its own time (the relative presence window)
---   Delay d a   its time 0 is at d (the shift)
---   Repeat n a  n copies end to end
---   Drive c a   the leaves below read the value of the driver `c` at their local time
+--   Par a b     overlay, absence is the unit      Hold d a    present on [0, d) of its own time
+--   Seq a b     b after a                          Delay d a   its time 0 is at d
+--   Repeat n a  n copies end to end                Drive c a   leaves below read `c` at local time
 --
--- `T` is the scalar of durations and `D` the type of drivers: a driver is a term of the Coupling
--- theory (`Slides.Scene.Animation`), so a moving value is not a separate datatype.  A leaf
--- under no window is present from time 0 for ever; `Hold` gives it a window.  `Scene T D A` is
--- the free monad over the signature, so substituting scenes for leaves is bind (nesting by
--- substitution, `Slides.Scene.Sample.sample-bind`).  Meaning: `Slides.Scene.Events`.
+--   time   0    1    2    3    4    5
+--   a      [a a a)                          Hold 3 a
+--   b                [b b b b)              Delay 3 (Hold 4 b)
+--   Seq a b = Par (Hold 3 a) (Delay 3 b);  at tick 4 the sample reads b at its local time 1
+--
+-- `T` is the scalar of durations, `D` the type of drivers (terms of the Coupling theory).
+-- A leaf under no window is present from 0 for ever.  Meaning: `Slides.Scene.Events`.
 
 module Slides.Scene.Syntax where
 
@@ -65,7 +65,6 @@ module _ {T D A : Set} where
   drive : D → Scene T D A → Scene T D A
   drive c a = impure (Drive c , λ _ → a)
 
-------------------------------------------------------------------------
 -- Change of clock and drivers: a container morphism (same arities), so scenes map by `translate`
 
 mapOp : ∀ {T₁ T₂ D₁ D₂} → (T₁ → T₂) → (D₁ → D₂) → Op T₁ D₁ → Op T₂ D₂

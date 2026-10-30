@@ -1,21 +1,13 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Embeddings with agreement (docs/Objects.md, map 3).
+-- Embeddings with agreement (docs/Objects.md, map 3), as they bear on programs.
 --
---   diagram as constant scene   a diagram is the scene `pure d`: present from time 0 for ever,
---                               at its parameter 0 (`diagram-const`), and the program that
---                               never waits on it is a constant machine (`Slides.Program.Sem.inject-const`
---                               at `pure d`);
---   deck as scene of scenes     `Slides.Deck.Read.flat-visible`, `deck-visible`: reading the
---                               nested scene is reading the flattened one; the deck machine
---                               shows it (`Slides.Deck.Machine`);
---   program as scene            `skip` (`Slides.Program.Syntax`): the retraction `skip-inject`,
---                               the monad morphism `skip-bind`, and for decks `skip-elab`
---                               (`Slides.Deck.Program`): forgetting the waits of the elaborated
---                               scene removes its delays; the machine shows the same
---                               accumulated chunks tick by tick (`pause-agree`).
+--   diagram-const   a diagram is the scene `pure d`, shown from 0 for ever at parameter 0; the
+--                   program that never waits on it is a constant machine (`inject-const`)
 --
--- Only the first has content of its own and lives here.
+-- The other two live with their subjects: deck as scene of scenes (`Slides.Deck.Read.deck-visible`)
+-- and program as scene (`skip-inject`, `skip-bind` in `Slides.Program.Syntax`; `skip-elab`,
+-- `pause-agree` in `Slides.Deck.Program`).
 
 open import Slides.Scalar.Space using (Space)
 open import Slides.Scalar.Time using (Time)
