@@ -38,3 +38,4 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] Discharge `PctDigital`; halving for centring; `Min` and `ModBy` nodes.
 - [ ] Non-isotropic scaling as a connective with smeared text (on hold).
 - [ ] Generated JS evaluator, so that `assets/animation.js` is one table rather than tested by hand.
+- [ ] Curves, later: slopes for `Function` (`plans/Plots.md`, "Smooth curves").  Today the lowering takes Fritsch-Carlson slopes from the samples (about h³ error, no overshoot).  Options: an optional `f′` on `Function` (exact slopes, contract "f′ is the derivative of f" as a named hypothesis, fall back to samples); central differences on `f` itself (about h⁴); forward-mode AD over dual numbers if `f` becomes polymorphic in the scalar (brings back `Set₁`).  Differentiability is never a type: at most a hypothesis in the `Within` law.  Also: SVG `S`/`s` shortcuts and relative coordinates to cut the Bézier path's size by about a third.
