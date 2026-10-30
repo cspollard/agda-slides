@@ -11,10 +11,10 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Repository clutter: step branches and worktrees removed (archive tags remain).
 
 ## Phase 1: simplification and consolidation
-- [ ] Deck DSL: state each primitive once (`fragment`, `fragmentWith`, `figure*` are declared at the flow level and lifted again at body level).  Branch `simplify-dsl`.
-- [ ] Share the LHC tables between `LHC.agda` and the Collider deck (about 21 KB shipped twice).  Branch `simplify-lhc`.
-- [ ] Stylesheets: drop dead and duplicated rules, generate what an Agda record already determines, light highlight theme on white slides.  Branch `simplify-css`.
-- [ ] Rewrite this file as work lands (this item).
+- [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).
+- [x] LHC tables: checked, no duplication (`Collider` imports `lhcAnim` and `triggerAnim` from `LHC.agda`; the built deck repeats nothing).  The old "21 KB shipped twice" was the combined source size.
+- [x] Stylesheets: checked, 8 KB in all; the numbered classes (`ph*`, `plot-s*`, `tilt-*`) are generated, nothing dead to drop.
+- [x] Rewrite this file as work lands.
 
 ## Phase 2: 3D
 - [x] `Slides.Trig` and `Slides.Three.*` (view, solids, render) compiling to `Dia`, extracted from `Examples/ATLAS.agda` (what remains: `plans/3D.md`).
