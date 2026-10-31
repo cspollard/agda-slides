@@ -113,11 +113,15 @@ R = Lg.R
 
 private
   RP-clip : ∀ w {r r′} → RP r r′ → RP (λ t q → S₁.win (E₁.pos w) t (r t q)) (λ t q → S₂.win (E₂.pos (h w)) t (r′ t q))
-  RP-clip w {r} {r′} a rewrite pos-h w = λ t q → trans (cong (S₂.win (h (E₁.pos w)) (h t)) (a t q)) (win-h (E₁.pos w) t (r t q))
+  -- the clamp commutes with `h` (`pos-h`), which is an equation under the reading's window or shift
+  RP-clip w {r} {r′} a t q =
+    trans (cong (λ p → S₂.win p (h t) (r′ (h t) (Maybe.map g q))) (pos-h w))
+          (trans (cong (S₂.win (h (E₁.pos w)) (h t)) (a t q)) (win-h (E₁.pos w) t (r t q)))
 
   RP-shift : ∀ w {r r′} → RP r r′ → RP (λ t q → S₁.back (E₁.pos w) t (λ u → r u q)) (λ t q → S₂.back (E₂.pos (h w)) t (λ u → r′ u q))
-  RP-shift w {r} {r′} a rewrite pos-h w =
-    λ t q → back-h (E₁.pos w) t (λ u → r u q) (λ u → r′ u (Maybe.map g q)) (λ u → a u q)
+  RP-shift w {r} {r′} a t q =
+    trans (cong (λ p → S₂.back p (h t) (λ u → r′ u (Maybe.map g q))) (pos-h w))
+          (back-h (E₁.pos w) t (λ u → r u q) (λ u → r′ u (Maybe.map g q)) (λ u → a u q))
 
 logical : Lg.Logical
 logical = record

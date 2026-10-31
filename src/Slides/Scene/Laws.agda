@@ -36,9 +36,11 @@ open import Relation.Nullary.Decidable using (does)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (refl; cong; cong₂; sym; trans)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
+open import Function.Nary.NonDependent using (congₙ)
 
-open import Container.Interpret.Plain using (pfold; pfold-bind)
+open import Container.Interpret.Plain using (pfold; pfold-bind; pfold-rel)
 open import Slides.Scene.Syntax
+import Slides.Scene.Algebra as Alg
 open import Slides.Scene.Events {T} {D} M Sb
 open import Slides.Scene.Arith M Sb
 open import Slides.Scene.Sample {T} {D} {X} M Sb val O
@@ -81,14 +83,18 @@ map-shift : ∀ {L : Set} δ ε (es : List (Event L)) →
 map-shift δ ε []       = refl
 map-shift δ ε (e ∷ es) = cong₂ _∷_ (shift-shift δ ε e) (map-shift δ ε es)
 
+module AlgE {L : Set} = Alg.Temporal M (evP {L})
+
 delay-delay : ∀ {δ ε} → 0# ≤ δ → 0# ≤ ε → ∀ {L} (x : Media L) →
               delayM δ (delayM ε x) ≡ delayM (δ + ε) x
 delay-delay {δ} {ε} 0≤δ 0≤ε (d , es)
-  rewrite pos-≤ 0≤δ | pos-≤ 0≤ε | pos-≤ (nn+ 0≤δ 0≤ε)
-  = cong₂ _,_ (sym (+-assoc δ ε d)) (map-shift δ ε es)
+  = trans (cong (delayM δ) (AlgE.delayC-≤ 0≤ε (d , es)))
+          (trans (AlgE.delayC-≤ 0≤δ _)
+                 (trans (cong₂ _,_ (sym (+-assoc δ ε d)) (map-shift δ ε es))
+                        (sym (AlgE.delayC-≤ (nn+ 0≤δ 0≤ε) (d , es)))))
 
 delay-zero : ∀ {L} (x : Media L) → delayM 0# x ≡ x
-delay-zero {L} (d , es) rewrite pos-≤ (≤-refl {0#}) | +-idˡ d = cong (d ,_) (go es)
+delay-zero {L} (d , es) = trans (AlgE.delayC-≤ ≤-refl (d , es)) (cong₂ _,_ (+-idˡ d) (go es))
   where go : ∀ (es : List (Event L)) → map (shiftE 0#) es ≡ es
         go []       = refl
         go (e ∷ es) = cong₂ _∷_ (shift-zero e) (go es)
@@ -140,40 +146,56 @@ private
   ge0 : ∀ {a t} → a ≤ t → 0# ≤ t - a
   ge0 {a} a≤t = unshift-≤ a≤t (≤-trans (≤-reflexive (+-idʳ a)) a≤t)
 
+-- The law at the clamped durations is the law at the durations themselves, `seq-assoc-pt′`
+-- (no `pos`: the case analysis below only compares `t` with `a`, `a + b`, `b + c`)
+seq-assoc-pt′ : ∀ {a b c} → 0# ≤ a → 0# ≤ b → 0# ≤ c → ∀ t (ra rb rc : T → Maybe X) →
+  merge (win (a + b) t (merge (win a t (ra t)) (back a t (λ u → win b u (rb u)))))
+        (back (a + b) t (λ u → win c u (rc u)))
+  ≡ merge (win a t (ra t))
+          (back a t (λ u → win (b + c) u
+                 (merge (win b u (rb u)) (back b u (λ v → win c v (rc v))))))
+seq-assoc-pt′ {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc
+  with 0# ≤? t
+... | no 0≰t with (a + b) ≤? t | a ≤? t
+...   | no _ | no _    = refl
+...   | yes h | _      = ⊥-elim (0≰t (≤-trans (nn+ 0≤a 0≤b) h))
+...   | no _ | yes h   = ⊥-elim (0≰t (≤-trans 0≤a h))
+seq-assoc-pt′ {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t with a ≤? t
+... | no a≰t with (a + b) ≤? t
+...   | yes h = ⊥-elim (a≰t (≤-trans (≤-+ 0≤b) h))
+...   | no _  = merge-nothing (merge (ra t) nothing)
+seq-assoc-pt′ {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t with b ≤? (t - a) | (a + b) ≤? t
+... | yes h₁ | no ¬h₂ = ⊥-elim (¬h₂ (shift-≤ a≤t h₁))
+... | no ¬h₁ | yes h₂ = ⊥-elim (¬h₁ (unshift-≤ a≤t h₂))
+seq-assoc-pt′ {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t | no b≰ | no ab≰ with 0# ≤? (t - a) | (b + c) ≤? (t - a)
+... | yes _ | no _  = refl
+... | no ¬0 | _     = ⊥-elim (¬0 (ge0 a≤t))
+... | yes _ | yes h = ⊥-elim (b≰ (≤-trans (≤-+ 0≤c) h))
+seq-assoc-pt′ {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t | yes b≤ | yes ab≤
+  with 0# ≤? (t - a) | (b + c) ≤? (t - a)
+... | no ¬0 | _     = ⊥-elim (¬0 (ge0 a≤t))
+... | yes _ | no _  = cong (λ z → win c z (rc z)) (sym (sub-sub a≤t b≤))
+... | yes _ | yes bc with 0# ≤? (t - (a + b)) | c ≤? (t - (a + b))
+...   | yes _ | yes _ = refl
+...   | yes _ | no ¬c = ⊥-elim (¬c (unshift-≤ ab≤ (≤-trans (≤-reflexive (+-assoc a b c)) (shift-≤ a≤t bc))))
+...   | no ¬0 | _     = ⊥-elim (¬0 (ge0 ab≤))
+
 seq-assoc-pt : ∀ {a b c} → 0# ≤ a → 0# ≤ b → 0# ≤ c → ∀ t (ra rb rc : T → Maybe X) →
   merge (win (pos (a + b)) t (merge (win (pos a) t (ra t)) (back (pos a) t (λ u → win (pos b) u (rb u)))))
         (back (pos (a + b)) t (λ u → win (pos c) u (rc u)))
   ≡ merge (win (pos a) t (ra t))
           (back (pos a) t (λ u → win (pos (b + c)) u
                  (merge (win (pos b) u (rb u)) (back (pos b) u (λ v → win (pos c) v (rc v))))))
-seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc
-  rewrite pos-≤ 0≤a | pos-≤ 0≤b | pos-≤ 0≤c | pos-≤ (nn+ 0≤a 0≤b) | pos-≤ (nn+ 0≤b 0≤c)
-  with 0# ≤? t
-... | no 0≰t with (a + b) ≤? t | a ≤? t
-...   | no _ | no _    = refl
-...   | yes h | _      = ⊥-elim (0≰t (≤-trans (nn+ 0≤a 0≤b) h))
-...   | no _ | yes h   = ⊥-elim (0≰t (≤-trans 0≤a h))
-seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t with a ≤? t
-... | no a≰t with (a + b) ≤? t
-...   | yes h = ⊥-elim (a≰t (≤-trans (≤-+ 0≤b) h))
-...   | no _  = merge-nothing (merge (ra t) nothing)
-seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t with b ≤? (t - a) | (a + b) ≤? t
-... | yes h₁ | no ¬h₂ = ⊥-elim (¬h₂ (shift-≤ a≤t h₁))
-... | no ¬h₁ | yes h₂ = ⊥-elim (¬h₁ (unshift-≤ a≤t h₂))
-seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t | no b≰ | no ab≰ with 0# ≤? (t - a) | (b + c) ≤? (t - a)
-... | yes _ | no _  = refl
-... | no ¬0 | _     = ⊥-elim (¬0 (ge0 a≤t))
-... | yes _ | yes h = ⊥-elim (b≰ (≤-trans (≤-+ 0≤c) h))
-seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc | yes 0≤t | yes a≤t | yes b≤ | yes ab≤
-  rewrite sub-sub a≤t b≤ with 0# ≤? (t - a) | 0# ≤? (t - (a + b)) | c ≤? (t - (a + b)) | (b + c) ≤? (t - a)
-... | yes _ | yes _ | yes _ | yes _ = refl
-... | yes _ | yes _ | no _  | no _  = refl
-... | yes _ | yes _ | yes c≤ | no ¬bc =
-  ⊥-elim (¬bc (unshift-≤ a≤t (≤-trans (≤-reflexive (sym (+-assoc a b c))) (shift-≤ ab≤ c≤))))
-... | yes _ | yes _ | no ¬c | yes bc =
-  ⊥-elim (¬c (unshift-≤ ab≤ (≤-trans (≤-reflexive (+-assoc a b c)) (shift-≤ a≤t bc))))
-... | no ¬0 | _ | _ | _ = ⊥-elim (¬0 (ge0 a≤t))
-... | _ | no ¬0 | _ | _ = ⊥-elim (¬0 (ge0 ab≤))
+seq-assoc-pt {a} {b} {c} 0≤a 0≤b 0≤c t ra rb rc =
+  trans (congₙ 4 lhs (pos-≤ 0≤a) (pos-≤ 0≤b) (pos-≤ 0≤c) (pos-≤ (nn+ 0≤a 0≤b)))
+        (trans (seq-assoc-pt′ 0≤a 0≤b 0≤c t ra rb rc)
+               (sym (congₙ 4 rhs (pos-≤ 0≤a) (pos-≤ 0≤b) (pos-≤ 0≤c) (pos-≤ (nn+ 0≤b 0≤c)))))
+  where
+    lhs rhs : T → T → T → T → Maybe X
+    lhs pa pb pc pab = merge (win pab t (merge (win pa t (ra t)) (back pa t (λ u → win pb u (rb u)))))
+                             (back pab t (λ u → win pc u (rc u)))
+    rhs pa pb pc pbc = merge (win pa t (ra t))
+                             (back pa t (λ u → win pbc u (merge (win pb u (rb u)) (back pb u (λ v → win pc v (rc v))))))
 
 seq-assoc-timed : ∀ (x y z : Timed) → 0# ≤ proj₁ x → 0# ≤ proj₁ y → 0# ≤ proj₁ z →
   proj₁ (seqT (seqT x y) z) ≡ proj₁ (seqT x (seqT y z)) ×
@@ -181,19 +203,26 @@ seq-assoc-timed : ∀ (x y z : Timed) → 0# ≤ proj₁ x → 0# ≤ proj₁ y 
 seq-assoc-timed (a , rx) (b , ry) (c , rz) 0≤a 0≤b 0≤c =
   +-assoc a b c , λ t q → seq-assoc-pt 0≤a 0≤b 0≤c t (λ u → rx u q) (λ u → ry u q) (λ u → rz u q)
 
--- every scene has a non-negative duration
+-- every scene has a non-negative duration: each operation keeps the duration non-negative, so
+-- the fold does (`pfold-rel` with the relation `NN x _ = 0 ≤ proj₁ x`)
 duration-nonneg : ∀ {A : Set} (g : A → Timed) → (∀ a → 0# ≤ proj₁ (g a)) →
                   ∀ s → 0# ≤ proj₁ (timed g s)
-duration-nonneg g ok (pure a)               = ok a
-duration-nonneg g ok (impure (Seq , k))     = nn+ (duration-nonneg g ok (k zero)) (duration-nonneg g ok (k (suc zero)))
-duration-nonneg g ok (impure (Par , k))     = ≤-trans (duration-nonneg g ok (k zero)) (⊔-ub₁ _ _)
-duration-nonneg g ok (impure (Hold d , k))  = pos-nonneg d
-duration-nonneg g ok (impure (Delay d , k)) = nn+ (pos-nonneg d) (duration-nonneg g ok (k tt))
-duration-nonneg g ok (impure (Drive c , k)) = duration-nonneg g ok (k tt)
-duration-nonneg g ok (impure (Repeat n , k)) = rep n (duration-nonneg g ok (k tt))
-  where rep : ∀ n {x : Timed} → 0# ≤ proj₁ x → 0# ≤ proj₁ (repT n x)
-        rep ℕ.zero    h = ≤-refl
-        rep (ℕ.suc n) h = nn+ h (rep n h)
+duration-nonneg g ok = pfold-rel NN {hA = dirH} {hB = dirH} hom {f = g} {g = g} ok
+  where
+    NN : Timed → Timed → Set
+    NN x _ = 0# ≤ proj₁ x
+
+    rep : ∀ n {x : Timed} → 0# ≤ proj₁ x → 0# ≤ proj₁ (repT n x)
+    rep ℕ.zero    h = ≤-refl
+    rep (ℕ.suc n) h = nn+ h (rep n h)
+
+    hom : ∀ o k k′ → (∀ q → NN (k q) (k′ q)) → NN (dirH o k) (dirH o k′)
+    hom Seq        k k′ e = nn+ (e zero) (e (suc zero))
+    hom Par        k k′ e = ≤-trans (e zero) (⊔-ub₁ _ _)
+    hom (Hold d)   k k′ e = pos-nonneg d
+    hom (Delay d)  k k′ e = nn+ (pos-nonneg d) (e tt)
+    hom (Drive c)  k k′ e = e tt
+    hom (Repeat n) k k′ e = rep n (e tt)
 
 seq-assoc : ∀ {A : Set} (ℓ : A → T → X) (a b c : Scene T D A) →
             proj₁ (sample ℓ ((a ⨾ b) ⨾ c)) ≡ proj₁ (sample ℓ (a ⨾ (b ⨾ c))) ×

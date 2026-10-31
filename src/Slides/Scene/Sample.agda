@@ -160,6 +160,7 @@ rdP = record { none = λ _ _ → nothing ; par = λ r r′ t q → merge (r t q)
 
 open Slides.Scene.Algebra.Temporal M rdP public using ()
   renaming (parC to parT; holdC to holdT; delayC to delayT; driveC to driveT; seqC to seqT; repC to repT
+           ; holdC-≤ to holdT-≤; delayC-≤ to delayT-≤; seqC-≤ to seqT-≤
            ; handler to dirH; handler-≡ to dirCong)
 
 -- the direct meaning of a scene whose leaves mean `g a`, and with the eternal leaf
@@ -212,12 +213,11 @@ module _ {L : Set} (ℓ : L → T → X) where
   ---- Delay: the shift of events is the shift of the time argument
   until-shift : ∀ {w t} (s : Maybe T) o (y : Maybe X) → w ≤ t → until s (w + o) t y ≡ until s o (t - w) y
   until-shift nothing  o y w≤t = refl
-  until-shift {w} {t} (just s) o y w≤t
-    rewrite +-assoc w o s with (w + (o + s)) ≤? t | (o + s) ≤? (t - w)
+  until-shift {w} {t} (just s) o y w≤t with ((w + o) + s) ≤? t | (o + s) ≤? (t - w)
   ... | yes _  | yes _  = refl
   ... | no _   | no _   = refl
-  ... | yes h  | no ¬h  = ⊥-elim (¬h (unshift-≤ w≤t h))
-  ... | no ¬h  | yes h  = ⊥-elim (¬h (shift-≤ w≤t h))
+  ... | yes h  | no ¬h  = ⊥-elim (¬h (unshift-≤ w≤t (≤-trans (≤-reflexive (sym (+-assoc w o s))) h)))
+  ... | no ¬h  | yes h  = ⊥-elim (¬h (≤-trans (≤-reflexive (+-assoc w o s)) (shift-≤ w≤t h)))
 
   read-shift-ev : ∀ w (e : Event L) → Pos e → ∀ t q →
                   readEv ℓ (shiftE w e) t q ≡ back w t (λ u → readEv ℓ e u q)
@@ -226,7 +226,9 @@ module _ {L : Set} (ℓ : L → T → X) where
   ...   | no _   = refl
   ...   | yes h  = ⊥-elim (w≰t (≤-trans (≤-+ 0≤o) h))
   read-shift-ev w (event o s c a) 0≤o t q | yes w≤t with o ≤? (t - w) | (w + o) ≤? t
-  ... | yes o≤ | yes _ rewrite sub-sub w≤t o≤ = until-shift s o _ w≤t
+  ... | yes o≤ | yes _ =
+    trans (until-shift s o _ w≤t)
+          (cong (λ z → until s o (t - w) (just (ℓ a (param (orElse c q) z)))) (sym (sub-sub w≤t o≤)))
   ... | no _   | no _  = refl
   ... | yes o≤ | no ¬h = ⊥-elim (¬h (shift-≤ w≤t o≤))
   ... | no ¬o  | yes h = ⊥-elim (¬o (unshift-≤ w≤t h))

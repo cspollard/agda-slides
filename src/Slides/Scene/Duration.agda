@@ -74,7 +74,7 @@ gap : ∀ {A : Set} → T → Scene T D A → Scene T D A
 gap d s = delay d (absent s)
 
 duration-gap : ∀ {A : Set} {d} → 0# ≤ d → (s : Scene T D A) → duration (gap d s) ≡ d
-duration-gap {d = d} 0≤d s rewrite pos-≤ (≤-refl {0#}) | pos-≤ 0≤d = +-idʳ d
+duration-gap {d = d} 0≤d s = trans (cong₂ _+_ (pos-≤ 0≤d) (pos-≤ (≤-refl {0#}))) (+-idʳ d)
 
 -- Windows and shifts of readings
 
@@ -113,7 +113,8 @@ back-after {w} {t} w≤t r with w ≤? t
 
 absent-sample : ∀ {A : Set} (ℓ : A → T → X) (s : Scene T D A) t q →
                 proj₂ (sample ℓ (absent s)) t q ≡ nothing
-absent-sample ℓ s t q rewrite pos-≤ (≤-refl {0#}) = win-zero t _
+absent-sample ℓ s t q =
+  trans (cong (λ m → proj₂ m t q) (holdT-≤ (≤-refl {0#}) (sample ℓ s))) (win-zero t _)
 
 -- a gap is absent: before its start by `back`, after it by absence
 gap-sample : ∀ {A : Set} (ℓ : A → T → X) d (s : Scene T D A) t q →
@@ -141,17 +142,24 @@ module _ {A : Set} (ℓ : A → T → X) (a b : Scene T D A) where
     db = proj₁ (sample ℓ b)
     nn = duration-nonneg (leafT ℓ) (λ _ → ≤-refl)
 
+  -- with non-negative durations `a ⨾ b` is `a` windowed to its duration, overlaid with `b` windowed and shifted
+  seq-sample : ∀ t q → proj₂ (sample ℓ (a ⨾ b)) t q
+               ≡ merge (win da t (proj₂ (sample ℓ a) t q)) (back da t (λ u → win db u (proj₂ (sample ℓ b) u q)))
+  seq-sample t q = cong (λ m → proj₂ m t q) (seqT-≤ (sample ℓ a) (sample ℓ b) (nn a) (nn b))
+
   -- before the first operand's duration, only the first is seen
   seq-before : ∀ {t} q → 0# ≤ t → ¬ (da ≤ t) → proj₂ (sample ℓ (a ⨾ b)) t q ≡ proj₂ (sample ℓ a) t q
-  seq-before {t} q 0≤t da≰t rewrite pos-≤ (nn a) | pos-≤ (nn b) =
-    trans (cong₂ merge (win-in 0≤t da≰t (proj₂ (sample ℓ a) t q)) (back-before da≰t (λ u → win db u (proj₂ (sample ℓ b) u q)))) (merge-nothing _)
+  seq-before {t} q 0≤t da≰t =
+    trans (seq-sample t q) (trans (cong₂ merge (win-in 0≤t da≰t (proj₂ (sample ℓ a) t q)) (back-before da≰t (λ u → win db u (proj₂ (sample ℓ b) u q)))) (merge-nothing _))
 
   -- from its duration on, the second is seen at its own local time, inside its own window
   seq-after : ∀ {t} q → da ≤ t →
               proj₂ (sample ℓ (a ⨾ b)) t q ≡ win db (t - da) (proj₂ (sample ℓ b) (t - da) q)
-  seq-after {t} q da≤t rewrite pos-≤ (nn a) | pos-≤ (nn b) =
-    cong₂ merge (win-out da≤t (proj₂ (sample ℓ a) t q)) (back-after da≤t (λ u → win db u (proj₂ (sample ℓ b) u q)))
+  seq-after {t} q da≤t =
+    trans (seq-sample t q) (cong₂ merge (win-out da≤t (proj₂ (sample ℓ a) t q)) (back-after da≤t (λ u → win db u (proj₂ (sample ℓ b) u q))))
 
   -- right-continuity: at the boundary itself the second operand is at its time 0
   seq-boundary : ∀ q → ¬ (db ≤ 0#) → proj₂ (sample ℓ (a ⨾ b)) da q ≡ proj₂ (sample ℓ b) 0# q
-  seq-boundary q db≰0 rewrite seq-after q (≤-refl {da}) | sub-self da = win-in ≤-refl db≰0 _
+  seq-boundary q db≰0 =
+    trans (seq-after q (≤-refl {da}))
+          (trans (cong (λ u → win db u (proj₂ (sample ℓ b) u q)) (sub-self da)) (win-in ≤-refl db≰0 _))

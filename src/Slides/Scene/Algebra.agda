@@ -70,6 +70,19 @@ module Temporal {D P : Set} (A : Payload D P) where
   repC zero    x = 0# , none
   repC (suc n) x = seqC x (repC n x)
 
+  -- Non-negative durations do not clamp: `hold`, `delay` and `seq` are then the bare window,
+  -- shift and overlay.  Stated once; the laws on events and readings go through these.
+  holdC-≤ : ∀ {w} → 0# ≤ w → ∀ x → holdC w x ≡ (w , clip w (proj₂ x))
+  holdC-≤ 0≤w x = cong (λ v → v , clip v (proj₂ x)) (pos-≤ 0≤w)
+
+  delayC-≤ : ∀ {w} → 0# ≤ w → ∀ x → delayC w x ≡ (w + proj₁ x , shift w (proj₂ x))
+  delayC-≤ 0≤w x = cong (λ v → v + proj₁ x , shift v (proj₂ x)) (pos-≤ 0≤w)
+
+  seqC-≤ : ∀ x y → 0# ≤ proj₁ x → 0# ≤ proj₁ y →
+           seqC x y ≡ (proj₁ x + proj₁ y , par (clip (proj₁ x) (proj₂ x)) (shift (proj₁ x) (clip (proj₁ y) (proj₂ y))))
+  seqC-≤ x y 0≤d 0≤e =
+    cong (_ ,_) (cong₂ (λ u v → par (clip u (proj₂ x)) (shift u (clip v (proj₂ y)))) (pos-≤ 0≤d) (pos-≤ 0≤e))
+
   handler : Handler (SceneC T D) Med
   handler Seq        k = seqC (k zero) (k (suc zero))
   handler Par        k = parC (k zero) (k (suc zero))

@@ -130,16 +130,16 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
   digit : ∀ o (kk : arity (proj₁ o) → Layout ℚ) →
           LQ.layoutH (mapOp ι (mapOp f₁ o)) (λ q → kk q)
           ≡ LQ.layoutH (mapOp f₂ o) (λ q → kk q)
-  digit (Rectangle w h s) kk rewrite e w | e h = refl
+  digit (Rectangle w h s) kk = cong₂ (λ a b → PQ.rectangle a b s) (e w) (e h)
   digit (Segment w h s)   kk = cong₂ (λ a b → PQ.segment a b s) (e w) (e h)
   digit (Disc r s)        kk = cong (λ a → PQ.disc a s) (e r)
   digit (Ellipse a b s)   kk = cong₂ (λ x y → PQ.ellipseL x y s) (e a) (e b)
   digit (Polyline c ps s) kk =
     cong (λ qs → PQ.polyline c qs s)
          (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (e (proj₁ p)) (e (proj₂ p))) ps))
-  digit (Text w h n t s)  kk rewrite e w | e h = refl
-  digit (Path w h d s)    kk rewrite e w | e h = refl
-  digit (Spacer w h)      kk rewrite e w | e h = refl
+  digit (Text w h n t s)  kk = cong₂ (λ a b → PQ.text a b n t s) (e w) (e h)
+  digit (Path w h d s)    kk = cong₂ (λ a b → PQ.pathL a b d s) (e w) (e h)
+  digit (Spacer w h)      kk = cong₂ PQ.spacer (e w) (e h)
   digit (Beside _)        kk = refl
   digit (Above _)         kk = refl
   digit Atop              kk = refl
@@ -147,7 +147,7 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
   digit LabelBelow        kk = refl
   digit (Place w h x y)   kk = cong₂ (λ (a : ℚ × ℚ) (b : ℚ × ℚ) → PQ.place (proj₁ a) (proj₂ a) (proj₁ b) (proj₂ b) (kk tt))
                                     (cong₂ _,_ (e w) (e h)) (cong₂ _,_ (e x) (e y))
-  digit (Overlay w h)     kk rewrite e w | e h = refl
+  digit (Overlay w h)     kk = cong₂ (λ a b → PQ.overlay a b (kk zero) (kk (suc zero))) (e w) (e h)
   digit (Named _)         kk = refl
   digit (Connect _ _ _ _ _) kk = refl
 
