@@ -191,9 +191,6 @@ layout-atop-unitʳ d v = atop-unitʳ (layout d) (proj₁ (valid-layout d v)) (pr
 
 -- Gaps add (no hypothesis: a spacer draws nothing)
 
-⊔-idem : ∀ x → x ⊔ x ≡ x
-⊔-idem x = ⊔-≤ ≤-refl
-
 gap-beside : ∀ al a b → P.besideA al (P.spacer a 0#) (P.spacer b 0#) ≡ P.spacer (a + b) 0#
 gap-beside al a b = cong (P.spacer (a + b)) (⊔-idem 0#)
 

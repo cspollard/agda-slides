@@ -79,6 +79,9 @@ record OrdMon (S : Set) : Set₁ where
   ⊔-≥ : ∀ {a b} → b ≤ a → a ⊔ b ≡ a
   ⊔-≥ {a} b≤a = trans (⊔-comm a _) (⊔-≤ b≤a)
 
+  ⊔-idem : ∀ x → x ⊔ x ≡ x
+  ⊔-idem x = ⊔-≤ ≤-refl
+
   -- comparison as a select: `select (a ≤? b) x y` is `x` if `a ≤ b`, else `y`
   select : ∀ {A : Set} {a b} → Dec (a ≤ b) → A → A → A
   select d x y = if does d then x else y
