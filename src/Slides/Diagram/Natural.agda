@@ -36,7 +36,6 @@ open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _≟_)
 open import Data.Unit using (⊤; tt)
 import Data.List.Properties as ListP
-open import Data.Container.Core using (position)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 open import Relation.Nullary using (yes; no)
@@ -265,7 +264,7 @@ OkOp (Connect _ pa _ pb _) = PortNat pa × PortNat pb
 OkOp _                     = ⊤
 
 layoutH-nat : ∀ o k → OkOp o →
-  mapLayout h (LS.layoutH o k) ≡ LT.layoutH (mapOp h o) (λ q → mapLayout h (k (position (mapC h) q)))
+  mapLayout h (LS.layoutH o k) ≡ LT.layoutH (mapOp h o) (λ q → mapLayout h (k q))
 layoutH-nat (Rectangle w ht s) k _ = rectangle-nat w ht s
 layoutH-nat (Segment w ht s)   k _ = segment-nat w ht s
 layoutH-nat (Disc r s)         k _ = disc-nat r s
@@ -294,7 +293,7 @@ OkDia (impure (o , k)) = OkOp o × (∀ q → OkDia (k q))
 layout-natural-ok : ∀ t → OkDia t → LT.layout (mapDia h t) ≡ mapLayout h (LS.layout t)
 layout-natural-ok (pure ())
 layout-natural-ok (impure (o , k)) (ok , oks) =
-  trans (LT.layoutCong (mapOp h o) (λ q → layout-natural-ok (k (position (mapC h) q)) (oks _)))
+  trans (LT.layoutCong (mapOp h o) (λ q → layout-natural-ok (k q) (oks _)))
         (sym (layoutH-nat o (λ q → LS.layout (k q)) ok))
 
 -- every port is carried when `h` preserves percentages: no condition on the diagram
@@ -325,5 +324,5 @@ module _ (pn : PctNat) where
 
   layout-natural : ∀ t → LT.layout (mapDia h t) ≡ mapLayout h (LS.layout t)
   layout-natural t = sym (pfold-rel-translate (mapC h) (λ l l′ → mapLayout h l ≡ l′)
-    (λ o k k′ e → trans (layoutH-nat o k (okOp o)) (LT.layoutCong (mapOp h o) (λ q → e (position (mapC h) q))))
+    (λ o k k′ e → trans (layoutH-nat o k (okOp o)) (LT.layoutCong (mapOp h o) (λ q → e q)))
     (λ ()) t)

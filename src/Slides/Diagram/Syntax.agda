@@ -45,102 +45,136 @@ open import Data.Fin using (Fin)
 open import Data.List using (List; map; length)
 open import Data.Nat using (ℕ; _*_; _/_)
 open import Data.String using (String)
-open import Data.Unit using (⊤)
-open import Data.Product.Base using (_×_; _,_)
-open import Data.Container.Core using (Container; _▷_; _⇒_)
+open import Data.Unit using (⊤; tt)
+open import Data.Product.Base using (Σ; _×_; _,_; proj₁; proj₂)
+open import Function.Base using (id; _∘_)
+import Data.List.Properties as ListP
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong₂; trans; sym)
+open import Data.Container.Core using (Container; _⇒_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 
 open import Container.Pick using (pick2)
 open import Container.Lowering using (translate)
+open import Container.Tagged using (Tagged; over)
 open import Slides.Diagram.Style using (Style; anchored)
 open import Slides.Diagram.Draw using (mapPt)
 open import Slides.Diagram.TextMetrics using (inlineWidth)
 open import Slides.Text using (Inline; parse; lines)
 open import Slides.Diagram.Geometry public
 
-data Op (S : Set) : Set where
-  Rectangle Segment : (w h : S) → Style → Op S
-  Disc              : (r : S) → Style → Op S
-  Ellipse           : (rx ry : S) → Style → Op S
-  Polyline          : (closed : Bool) → List (S × S) → Style → Op S   -- points from the frame's top-left
-  Text              : (w h : S) (size : ℕ) → List Inline → Style → Op S   -- frame as measured
-  Path              : (w h : S) → String → Style → Op S              -- opaque `d` in the frame's units: not scalar-parametric
-  Spacer            : (w h : S) → Op S
-  Beside            : VAlign → Op S
-  Above             : Align → Op S
-  Atop LabelAbove LabelBelow : Op S
-  Place             : (w h x y : S) → Op S     -- one child at (x, y) of a declared frame
-  Overlay           : (w h : S) → Op S         -- two children at the corner of a declared frame
-  Named             : String → Op S
-  Connect           : String → Port → String → Port → Style → Op S
+-- A command is a tag and a payload.  The payload of a tag is described by `Fields`, so that scalars
+-- are found by structure (`fmap`) and the arity of a tag does not depend on the scalar.
 
-arity : ∀ {S} → Op S → Set
-arity (Rectangle _ _ _)   = ⊥
-arity (Segment _ _ _)     = ⊥
-arity (Disc _ _)          = ⊥
-arity (Ellipse _ _ _)     = ⊥
-arity (Polyline _ _ _)    = ⊥
-arity (Text _ _ _ _ _)    = ⊥
-arity (Path _ _ _ _)      = ⊥
-arity (Spacer _ _)        = ⊥
-arity (Beside _)          = Fin 2
-arity (Above _)           = Fin 2
-arity Atop                = Fin 2
-arity LabelAbove          = Fin 2
-arity LabelBelow          = Fin 2
-arity (Place _ _ _ _)     = ⊤
-arity (Overlay _ _)       = Fin 2
-arity (Named _)           = ⊤
-arity (Connect _ _ _ _ _) = ⊤
+infixr 5 _⊗_
+data Fields : Set₁ where
+  scalar : Fields
+  const  : Set → Fields
+  ptList : Fields                 -- points of scalars
+  _⊗_    : Fields → Fields → Fields
+
+⟦_⟧ : Fields → Set → Set
+⟦ scalar ⟧  S = S
+⟦ const X ⟧ S = X
+⟦ ptList ⟧  S = List (S × S)
+⟦ A ⊗ B ⟧   S = ⟦ A ⟧ S × ⟦ B ⟧ S
+
+fmap : ∀ {S T} → (S → T) → ∀ A → ⟦ A ⟧ S → ⟦ A ⟧ T
+fmap f scalar    x = f x
+fmap f (const _) x = x
+fmap f ptList   ps = map (mapPt f) ps
+fmap f (A ⊗ B)   p = fmap f A (proj₁ p) , fmap f B (proj₂ p)
+
+fmap-id : ∀ {S} A (p : ⟦ A ⟧ S) → fmap id A p ≡ p
+fmap-id scalar    _ = refl
+fmap-id (const _) _ = refl
+fmap-id ptList   ps = trans (ListP.map-cong (λ _ → refl) ps) (ListP.map-id ps)
+fmap-id (A ⊗ B)   p = cong₂ _,_ (fmap-id A _) (fmap-id B _)
+
+fmap-∘ : ∀ {S T U} (g : T → U) (f : S → T) A (p : ⟦ A ⟧ S) → fmap g A (fmap f A p) ≡ fmap (g ∘ f) A p
+fmap-∘ g f scalar    _ = refl
+fmap-∘ g f (const _) _ = refl
+fmap-∘ g f ptList   ps = trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps)
+fmap-∘ g f (A ⊗ B)   p = cong₂ _,_ (fmap-∘ g f A _) (fmap-∘ g f B _)
+
+data Tag : Set where
+  rectT segT discT ellipseT polylineT textT pathT spacerT : Tag
+  besideT aboveT atopT labelAboveT labelBelowT placeT overlayT namedT connectT : Tag
+
+fields : Tag → Fields
+fields rectT       = scalar ⊗ scalar ⊗ const Style
+fields segT        = scalar ⊗ scalar ⊗ const Style
+fields discT       = scalar ⊗ const Style
+fields ellipseT    = scalar ⊗ scalar ⊗ const Style
+fields polylineT   = const Bool ⊗ ptList ⊗ const Style      -- points from the frame's top-left
+fields textT       = scalar ⊗ scalar ⊗ const ℕ ⊗ const (List Inline) ⊗ const Style   -- frame as measured
+fields pathT       = scalar ⊗ scalar ⊗ const String ⊗ const Style   -- opaque `d` in the frame's units: not scalar-parametric
+fields spacerT     = scalar ⊗ scalar
+fields besideT     = const VAlign
+fields aboveT      = const Align
+fields atopT       = const ⊤
+fields labelAboveT = const ⊤
+fields labelBelowT = const ⊤
+fields placeT      = scalar ⊗ scalar ⊗ scalar ⊗ scalar     -- one child at (x, y) of a declared frame
+fields overlayT    = scalar ⊗ scalar                       -- two children at the corner of a declared frame
+fields namedT      = const String
+fields connectT    = const String ⊗ const Port ⊗ const String ⊗ const Port ⊗ const Style
+
+arity : Tag → Set
+arity rectT       = ⊥
+arity segT        = ⊥
+arity discT       = ⊥
+arity ellipseT    = ⊥
+arity polylineT   = ⊥
+arity textT       = ⊥
+arity pathT       = ⊥
+arity spacerT     = ⊥
+arity besideT     = Fin 2
+arity aboveT      = Fin 2
+arity atopT       = Fin 2
+arity labelAboveT = Fin 2
+arity labelBelowT = Fin 2
+arity placeT      = ⊤
+arity overlayT    = Fin 2
+arity namedT      = ⊤
+arity connectT    = ⊤
+
+Payload : Tag → Set → Set
+Payload t = ⟦ fields t ⟧
+
+Op : Set → Set
+Op S = Σ Tag (λ t → Payload t S)
+
+pattern Rectangle w h s       = rectT , w , h , s
+pattern Segment w h s         = segT , w , h , s
+pattern Disc r s              = discT , r , s
+pattern Ellipse a b s         = ellipseT , a , b , s
+pattern Polyline c ps s       = polylineT , c , ps , s
+pattern Text w h n t s        = textT , w , h , n , t , s
+pattern Path w h d s          = pathT , w , h , d , s
+pattern Spacer w h            = spacerT , w , h
+pattern Beside al             = besideT , al
+pattern Above al              = aboveT , al
+pattern Atop                  = atopT , tt
+pattern LabelAbove            = labelAboveT , tt
+pattern LabelBelow            = labelBelowT , tt
+pattern Place w h x y         = placeT , w , h , x , y
+pattern Overlay w h           = overlayT , w , h
+pattern Named n               = namedT , n
+pattern Connect a pa b pb s   = connectT , a , pa , b , pb , s
 
 DiagramC : Set → Container 0ℓ 0ℓ
-DiagramC S = Op S ▷ arity
+DiagramC S = Tagged arity (λ t → Payload t S)
 
 Dia : Set → Set
 Dia S = DiagramC S ⋆ ⊥
 
--- Change of scalar: the action on maps, a container morphism (same arities)
+-- Change of scalar: the action on maps, a container morphism with the identity on positions
 
 mapOp : ∀ {S T} → (S → T) → Op S → Op T
-mapOp f (Rectangle w h s)       = Rectangle (f w) (f h) s
-mapOp f (Segment w h s)         = Segment (f w) (f h) s
-mapOp f (Disc r s)              = Disc (f r) s
-mapOp f (Ellipse a b s)         = Ellipse (f a) (f b) s
-mapOp f (Polyline c ps s)       = Polyline c (map (mapPt f) ps) s
-mapOp f (Text w h n t s)        = Text (f w) (f h) n t s
-mapOp f (Path w h d s)          = Path (f w) (f h) d s
-mapOp f (Spacer w h)            = Spacer (f w) (f h)
-mapOp f (Beside al)             = Beside al
-mapOp f (Above al)              = Above al
-mapOp f Atop                    = Atop
-mapOp f LabelAbove              = LabelAbove
-mapOp f LabelBelow              = LabelBelow
-mapOp f (Place w h x y)         = Place (f w) (f h) (f x) (f y)
-mapOp f (Overlay w h)           = Overlay (f w) (f h)
-mapOp f (Named n)               = Named n
-mapOp f (Connect a pa b pb s)   = Connect a pa b pb s
+mapOp f (t , p) = t , fmap f (fields t) p
 
 mapC : ∀ {S T} → (S → T) → DiagramC S ⇒ DiagramC T
-mapC f = record { shape = mapOp f ; position = pos }
-  where
-    pos : ∀ {o} → arity (mapOp f o) → arity o
-    pos {Rectangle _ _ _}   p = p
-    pos {Segment _ _ _}     p = p
-    pos {Disc _ _}          p = p
-    pos {Ellipse _ _ _}     p = p
-    pos {Polyline _ _ _}    p = p
-    pos {Text _ _ _ _ _}    p = p
-    pos {Path _ _ _ _}      p = p
-    pos {Spacer _ _}        p = p
-    pos {Beside _}          p = p
-    pos {Above _}           p = p
-    pos {Atop}              p = p
-    pos {LabelAbove}        p = p
-    pos {LabelBelow}        p = p
-    pos {Place _ _ _ _}     p = p
-    pos {Overlay _ _}       p = p
-    pos {Named _}           p = p
-    pos {Connect _ _ _ _ _} p = p
+mapC f = over arity (λ t → fmap f (fields t))
 
 mapDia : ∀ {S T} → (S → T) → Dia S → Dia T
 mapDia f = translate (mapC f)

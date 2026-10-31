@@ -6,8 +6,8 @@
 --   mapLayout id ≡ id       mapLayout (g ∘ f) ≡ mapLayout g ∘ mapLayout f
 --
 -- (`mapDia-id`, `mapDia-∘`, `mapLayout-id`, `mapLayout-∘`.)  Since `mapDia f = translate (mapC f)`,
--- these say `mapC` is a functor into container morphisms, one clause per command
--- (`Container.Lowering.Translate` has the generic laws).  Folding along a map is folding with the
+-- these say `mapC` is a functor into container morphisms (`Container.Tagged`: the identity on
+-- positions, so no clause per command).  Folding along a map is folding with the
 -- handler pulled back along `mapC f` (`fold-mapDia`, an instance of `pfold-translate`).
 
 module Slides.Diagram.Functoriality where
@@ -26,50 +26,17 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 
 open import Container.Interpret.Plain using (Handler; Congruent; pfold; pull; pfold-translate)
 open import Container.Lowering using (_≈⋆_; translate)
+open import Container.Tagged using (over-id; over-∘)
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Syntax
 
--- Diagrams
+-- Diagrams: the laws of `fmap` on payloads, lifted by `over-id` and `over-∘`
 
 mapDia-id : ∀ {S} (t : Dia S) → mapDia id t ≈⋆ t
-mapDia-id (pure ())
-mapDia-id (impure (Rectangle _ _ _ , k))   = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Segment _ _ _ , k))     = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Disc _ _ , k))          = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Ellipse _ _ _ , k))     = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Polyline c ps s , k))   = cong (λ qs → Polyline c qs s) (ListP.map-id ps) , λ q → mapDia-id (k q)
-mapDia-id (impure (Text _ _ _ _ _ , k))    = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Path _ _ _ _ , k))      = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Spacer _ _ , k))        = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Beside _ , k))          = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Above _ , k))           = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Atop , k))              = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (LabelAbove , k))        = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (LabelBelow , k))        = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Place _ _ _ _ , k))     = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Overlay _ _ , k))       = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Named _ , k))           = refl , λ q → mapDia-id (k q)
-mapDia-id (impure (Connect _ _ _ _ _ , k)) = refl , λ q → mapDia-id (k q)
+mapDia-id {S} = over-id arity {P = λ t → Payload t S} (λ t → fmap id (fields t)) (λ t → fmap-id (fields t))
 
 mapDia-∘ : ∀ {S T U} (g : T → U) (f : S → T) (t : Dia S) → mapDia g (mapDia f t) ≈⋆ mapDia (g ∘ f) t
-mapDia-∘ g f (pure ())
-mapDia-∘ g f (impure (Rectangle _ _ _ , k))   = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Segment _ _ _ , k))     = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Disc _ _ , k))          = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Ellipse _ _ _ , k))     = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Polyline c ps s , k))   = cong (λ qs → Polyline c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps)) , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Text _ _ _ _ _ , k))    = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Path _ _ _ _ , k))      = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Spacer _ _ , k))        = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Beside _ , k))          = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Above _ , k))           = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Atop , k))              = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (LabelAbove , k))        = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (LabelBelow , k))        = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Place _ _ _ _ , k))     = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Overlay _ _ , k))       = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Named _ , k))           = refl , λ q → mapDia-∘ g f (k q)
-mapDia-∘ g f (impure (Connect _ _ _ _ _ , k)) = refl , λ q → mapDia-∘ g f (k q)
+mapDia-∘ {S} {T} {U} g f = over-∘ arity {P = λ t → Payload t S} {Q = λ t → Payload t T} {R = λ t → Payload t U} (λ t → fmap g (fields t)) (λ t → fmap f (fields t)) (λ t → fmap (g ∘ f) (fields t)) (λ t → fmap-∘ g f (fields t))
 
 -- Folding after a change of scalar is folding the original with the handler pulled back along `mapC f`.
 fold-mapDia : ∀ {S T a ℓ} (f : S → T) (A : Setoid a ℓ) {h : Handler (DiagramC T) (Setoid.Carrier A)}

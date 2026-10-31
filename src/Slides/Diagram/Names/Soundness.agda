@@ -101,7 +101,7 @@ names-fusion = pfold-rel (λ l u → anchorNames l ≡ proj₁ u) hom (λ ())
   where
     two : ∀ {a b c d : List String} → a ≡ c → b ≡ d → a ++ b ≡ c ++ d
     two = cong₂ _++_
-    hom : ∀ (o : Op S) (L : arity o → Layout S) (U : arity o → Usage) → (∀ q → anchorNames (L q) ≡ proj₁ (U q)) → anchorNames (layoutH o L) ≡ proj₁ (usageH o U)
+    hom : ∀ (o : Op S) (L : arity (proj₁ o) → Layout S) (U : arity (proj₁ o) → Usage) → (∀ q → anchorNames (L q) ≡ proj₁ (U q)) → anchorNames (layoutH o L) ≡ proj₁ (usageH o U)
     hom (Rectangle _ _ _) L U e = refl
     hom (Segment _ _ _)   L U e = refl
     hom (Disc _ _)        L U e = refl
@@ -190,7 +190,7 @@ private
   ++ʳ {xs} {ys} = L.++-conicalʳ xs ys
 
   -- a command with nothing dangling has nothing dangling in any child
-  clean : ∀ (o : Op S) (U : arity o → Usage) → proj₂ (usageH o U) ≡ [] → ∀ q → proj₂ (U q) ≡ []
+  clean : ∀ (o : Op S) (U : arity (proj₁ o) → Usage) → proj₂ (usageH o U) ≡ [] → ∀ q → proj₂ (U q) ≡ []
   clean (Rectangle _ _ _) U h ()
   clean (Segment _ _ _)   U h ()
   clean (Disc _ _)        U h ()

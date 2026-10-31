@@ -26,7 +26,6 @@ open import Data.Rational using (ℚ)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
-open import Data.Container.Core using (position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
@@ -130,9 +129,9 @@ private
 -- scalars of the command agree.
 module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ f₂ x) where
 
-  digit : ∀ o (kk : arity o → Layout ℚ) →
-          LQ.layoutH (mapOp ι (mapOp f₁ o)) (λ q → kk (position (mapC f₁) (position (mapC ι) q)))
-          ≡ LQ.layoutH (mapOp f₂ o) (λ q → kk (position (mapC f₂) q))
+  digit : ∀ o (kk : arity (proj₁ o) → Layout ℚ) →
+          LQ.layoutH (mapOp ι (mapOp f₁ o)) (λ q → kk q)
+          ≡ LQ.layoutH (mapOp f₂ o) (λ q → kk q)
   digit (Rectangle w h s) kk rewrite e w | e h = refl
   digit (Segment w h s)   kk = cong₂ (λ a b → PQ.segment a b s) (e w) (e h)
   digit (Disc r s)        kk = cong (λ a → PQ.disc a s) (e r)
@@ -158,14 +157,14 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
             LQ.layout (mapDia f₂ a) ≡ mapLayout ι (LN.layout (mapDia f₁ a))
   leaf-ok (pure ())
   leaf-ok (impure (o , k)) (so , sks) =
-    trans (LQ.layoutCong (mapOp f₂ o) (λ q → leaf-ok (k (position (mapC f₂) q)) (sks _)))
+    trans (LQ.layoutCong (mapOp f₂ o) (λ q → leaf-ok (k q) (sks _)))
       (trans (sym (digit o kk))
              (sym (N.layoutH-nat (mapOp f₁ o) kN (okOp f₁ o so))))
     where
-      kk : arity o → Layout ℚ
+      kk : arity (proj₁ o) → Layout ℚ
       kk p = mapLayout ι (LN.layout (mapDia f₁ (k p)))
-      kN : arity (mapOp f₁ o) → Layout ℕ
-      kN q = LN.layout (mapDia f₁ (k (position (mapC f₁) q)))
+      kN : arity (proj₁ o) → Layout ℕ
+      kN q = LN.layout (mapDia f₁ (k q))
 
 -- The two readings of one scene
 
