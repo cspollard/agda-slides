@@ -7,52 +7,34 @@
 --   `render-events`  a slide's HTML is a function of the events of its scene: the chunk
 --                    after the first is a fragment (`Slides.Deck.Read.fragment-index`)
 --   `render-fragments`  the elements with class `fragment` in a slide's page are the model's steps
---                    (`Slides.Deck.Steps.chunkSteps`), given the count inside blocks (`BlockLaw`)
+--                    (`Slides.Deck.Steps.chunkSteps`), given `saneSlide`: the class strings of the deck
+--                    (`Slides.Backend.Render.Sane`); the count inside blocks is `block-count`
 --   `restyle-hom`, `restyleFlow-hom`   restyling is a homomorphism of backends
 
 module Slides.Backend.Render.Properties where
 
-open import Data.Empty using (⊥)
-open import Data.List.Base using (List; []; _∷_; _++_; map; concatMap)
+open import Data.Bool.Base using (true; false; not; T)
+open import Data.XML.AST using (XMLDoc)
+open import Data.List.Base using (List; []; _∷_; _++_; map; concatMap; filterᵇ)
 open import Data.List.NonEmpty using (_∷_)
-open import Data.Nat.Base using (ℕ; zero; suc; _+_)
+open import Data.Nat.Base using (ℕ; suc; _+_)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 import Data.List.Properties as ListP
+import Data.Nat.Properties as ℕP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym)
 
-open import Data.XML.AST using (XMLDoc; foldXMLM; node; Attributes; parentList; mixed)
-open import Data.Maybe.Base using (nothing)
-import Data.Container.Table as Tbl
-open import Data.Container.Pos using (Pos)
-open import Data.Container.List using (tabulate; length-tabulate; tabulate-map; tabulate-table; listToListC)
-open import Data.Vec.Base as Vec using (Vec)
-import Data.Vec.Properties as VecP
-open import Data.Char.Base using (Char; isSpace)
-import Data.Char.Properties as Char
-open import Data.Bool.Base using (Bool; if_then_else_)
-open import Data.Bool.ListAction using (any)
-open import Data.List.Base using (zip; length; wordsByᵇ)
-open import Data.Nat.ListAction using (sum)
-open import Data.String.Base using (toList)
-open import Relation.Nullary.Decidable using (⌊_⌋)
-open import Function.Base using (_∘_)
-import Data.Nat.Properties as ℕP
-import Data.Nat.Base as ℕ
 import Slides.Deck.Steps as St
-open import Data.Empty using (⊥-elim)
-open import Data.Bool.Base using (true; false; not)
-open import Data.List.Base using (filterᵇ)
 
-open import Slides.Scalar.Model.Nat using (natMon; natSub)
 open import Slides.Deck.Content
-open import Slides.Deck.Steps using (gap)
+open import Slides.Deck.Steps using (gap; aside?)
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Deck.Read using (index; ol; fragment-index)
 open import Slides.Deck.Clock using (module E)
 open import Slides.Backend.Render
+open import Slides.Backend.Fragments
+open import Slides.Backend.Render.Sane
 open import Slides.Backend.HTML using (div)
-open import Data.XML.Sanitize using (fixAttrs; fixName)
 
 renderFlow-++ : ∀ xs ys → renderFlow (xs ++ ys) ≡ renderFlow xs ++ renderFlow ys
 renderFlow-++ []       ys = refl
@@ -120,78 +102,14 @@ restyleFlow-hom : ∀ f bs → restyleFlow f bs ≡ map f (concatMap renderBlock
 restyleFlow-hom f []       = refl
 restyleFlow-hom f (b ∷ bs) = trans (cong (map f (renderBlock b) ++_) (restyleFlow-hom f bs)) (sym (ListP.map-++ f (renderBlock b) _))
 
--- Counting fragments on the markup
---
--- The pages step through every element whose class has the token `fragment`.  `fragCount` counts
--- them as a fold of the XML tree (`foldXMLM`): an element counts for its own class, then its children.
-
-classKey fragTok : List Char → Bool
-classKey k = ⌊ ListP.≡-dec Char._≟_ k (toList "class") ⌋
-fragTok  w = ⌊ ListP.≡-dec Char._≟_ w (toList "fragment") ⌋
-
--- 1 when the class attribute has `fragment` among its tokens
-classHit : Attributes → ℕ
-classHit []             = 0
-classHit ((k , v) ∷ as) = if classKey k then (if any fragTok (wordsByᵇ isSpace v) then 1 else 0) else classHit as
-
-fragCount : XMLDoc → ℕ
-fragCount = foldXMLM (λ ()) (λ _ attrs cs → classHit attrs + sum (map proj₁ (proj₂ cs)))
-
-forestCount : Forest → ℕ
-forestCount = sum ∘ map fragCount
-
-forestCount-++ : ∀ xs ys → forestCount (xs ++ ys) ≡ forestCount xs + forestCount ys
-forestCount-++ []       ys = refl
-forestCount-++ (x ∷ xs) ys = trans (cong (fragCount x +_) (forestCount-++ xs ys)) (sym (ℕP.+-assoc (fragCount x) _ _))
-
--- the sum over the children of a node: `zip` stops at the text slots, which are as many
-private
-  zip-sum : ∀ (L : List ℕ) {T : List (List Char)} → length L ≡ length T → sum (map proj₁ (zip L T)) ≡ sum L
-  zip-sum []       {[]}    e = refl
-  zip-sum (x ∷ L)  {_ ∷ T} e = cong (x +_) (zip-sum L (ℕP.suc-injective e))
-
-  -- the children of a node, listed in order, with the text slots dropped
-  mixed-sum : ∀ n (texts : Vec (List Char) (suc n)) (f : Pos n → ℕ) → sum (map proj₁ (proj₂ (mixed n texts f))) ≡ sum (tabulate n f)
-  mixed-sum n texts f = zip-sum (tabulate n f) (trans (length-tabulate n f) (sym (VecP.length-toList (Vec.tail texts))))
-
-  -- an element with element children counts for its own class and theirs
-  parent-count : ∀ tag attrs (cs : List XMLDoc) {pt pa} → fragCount (parentList tag attrs cs {pt} {pa}) ≡ classHit attrs + forestCount cs
-  parent-count tag attrs cs =
-    trans (cong (classHit attrs +_) (mixed-sum (length cs) (Vec.replicate (suc (length cs)) []) (fragCount ∘ Tbl.table cs)))
-          (cong (classHit attrs +_) (cong sum (trans (tabulate-map (length cs) (Tbl.table cs) fragCount) (cong (map fragCount) (tabulate-table cs)))))
+-- Counting fragments on the markup: `Slides.Backend.Fragments`
 
 -- the wrapper `div.fragment` counts for itself and what it holds
 div-fragment : ∀ kids → forestCount (div "fragment" kids ∷ []) ≡ suc (forestCount kids)
-div-fragment []         = refl
-div-fragment (k ∷ kids) = trans (ℕP.+-identityʳ _) (parent-count (fixName (toList "div")) attrs (k ∷ kids))
-  where attrs = fixAttrs ((toList "class" , toList "fragment") ∷ [])
+div-fragment kids = trans (ℕP.+-identityʳ _) (hElement-count "div" (("class" , "fragment") ∷ []) kids)
 
 -- Chunks: a later chunk is a fragment when it shows something, and holds the fragments of its blocks
 --
--- `Slides.Deck.Steps.aside?` is the test `renderStep` applies, restated to avoid a cycle
-aside?-agree : ∀ b → St.aside? b ≡ aside? b
-aside?-agree (notes _)  = refl
-aside?-agree (script _) = refl
-aside?-agree (heading _ _) = refl
-aside?-agree (paragraph _) = refl
-aside?-agree (bulletTree _ _) = refl
-aside?-agree (code _ _) = refl
-aside?-agree (displayMath _) = refl
-aside?-agree (figure _ _ _) = refl
-aside?-agree (table _ _) = refl
-aside?-agree (references _) = refl
-aside?-agree (diagram _ _ _) = refl
-aside?-agree (animation _ _ _ _) = refl
-aside?-agree (animationLoop _ _ _ _) = refl
-aside?-agree (animationBoth _ _ _ _ _ _) = refl
-aside?-agree (still _ _ _) = refl
-aside?-agree (mount _) = refl
-aside?-agree (columns _) = refl
-aside?-agree (box _ _) = refl
-aside?-agree (fragment _ _) = refl
-aside?-agree (classed _ _) = refl
-aside?-agree (placed _ _ _ _ _) = refl
-
 nonempty : Flow → ℕ
 nonempty []      = 0
 nonempty (_ ∷ _) = 1
@@ -201,16 +119,11 @@ shown asides : Flow → Flow
 shown  = filterᵇ (λ b → not (aside? b))
 asides = filterᵇ aside?
 
-t≢f : ∀ {A : Set} → true ≡ false → A
-t≢f ()
-
 wraps-shown : ∀ f → St.wraps f ≡ nonempty (shown f)
 wraps-shown []       = refl
-wraps-shown (b ∷ bs) with St.aside? b in e₁ | aside? b in e₂
-... | true  | true  = wraps-shown bs
-... | false | false = refl
-... | true  | false = t≢f (trans (sym e₁) (trans (aside?-agree b) e₂))
-... | false | true  = t≢f (trans (sym e₂) (trans (sym (aside?-agree b)) e₁))
+wraps-shown (b ∷ bs) with aside? b
+... | true  = wraps-shown bs
+... | false = refl
 
 swap : ∀ x y z → x + (y + z) ≡ y + (x + z)
 swap x y z = trans (sym (ℕP.+-assoc x y z)) (trans (cong (_+ z) (ℕP.+-comm x y)) (ℕP.+-assoc y x z))
@@ -234,37 +147,20 @@ step-count f with shown f | wraps-shown f | split-count f
         (trans (cong (_+ forestCount (renderFlow (asides f))) (div-fragment (renderFlow (v ∷ vs))))
                (trans (cong suc sp) (sym (cong (_+ forestCount (renderFlow f)) w))))
 
--- The slide.  What the renderer does at the level of chunks is proved; the count inside a block is
--- the `BlockLaw`, which the cases below prove for the blocks whose markup is known
--- (the rest are blocked on inline text, SVG and class strings, which are arbitrary).
-BlockLaw : Set
-BlockLaw = ∀ b → forestCount (renderBlock b) ≡ St.blockSteps b
-
-flow-count : BlockLaw → ∀ f → forestCount (renderFlow f) ≡ St.flowSteps f
-flow-count L []       = refl
-flow-count L (b ∷ bs) = trans (forestCount-++ (renderBlock b) (renderFlow bs)) (cong₂ _+_ (L b) (flow-count L bs))
-
-later-count : BlockLaw → ∀ cs → forestCount (concatMap renderStep cs) ≡ St.laterSteps cs
-later-count L []       = refl
-later-count L (d ∷ ds) =
+-- The slide.  The count inside a block is `Slides.Backend.Render.Sane.block-count`, given the class
+-- strings of the deck (`saneSlide`, decidable by computation).
+later-count : ∀ cs → T (saneC cs) → forestCount (concatMap renderStep cs) ≡ St.laterSteps cs
+later-count []       _ = refl
+later-count (d ∷ ds) h =
   trans (forestCount-++ (renderStep d) (concatMap renderStep ds))
-        (cong₂ _+_ (trans (step-count d) (cong (St.wraps d +_) (flow-count L d))) (later-count L ds))
+        (cong₂ _+_ (trans (step-count d) (cong (St.wraps d +_) (flow-count d (proj₁ (split h))))) (later-count ds (proj₂ (split h))))
 
 -- the fragments of the page are the steps of the model
-render-fragments : BlockLaw → ∀ s → forestCount (renderSlide s) ≡ St.chunkSteps (Slide.chunkL s)
-render-fragments L (slide _ (c ∷ cs)) =
-  trans (forestCount-++ (renderFlow c) (concatMap renderStep cs)) (cong₂ _+_ (flow-count L c) (later-count L cs))
+render-fragments : ∀ s → T (saneSlide s) → forestCount (renderSlide s) ≡ St.chunkSteps (Slide.chunkL s)
+render-fragments (slide _ (c ∷ cs)) h =
+  trans (forestCount-++ (renderFlow c) (concatMap renderStep cs))
+        (cong₂ _+_ (flow-count c (proj₁ (split h))) (later-count cs (proj₂ (split h))))
 
 -- so a slide has one state for the first chunk and one per fragment of its page
-ticks-fragments : BlockLaw → ∀ s → ticks s ≡ suc (forestCount (renderSlide s))
-ticks-fragments L s = sym (cong suc (render-fragments L s))
-
--- blocks whose count is known outright
-fragment-count : ∀ f → forestCount (renderBlock (fragment nothing f)) ≡ suc (forestCount (renderFlow f))
-fragment-count f = div-fragment (renderFlow f)
-
-mount-count : ∀ i → forestCount (renderBlock (mount i)) ≡ 0
-mount-count i = refl
-
-script-count : ∀ js → forestCount (renderBlock (script js)) ≡ 0
-script-count js = refl
+ticks-fragments : ∀ s → T (saneSlide s) → ticks s ≡ suc (forestCount (renderSlide s))
+ticks-fragments s h = sym (cong suc (render-fragments s h))
