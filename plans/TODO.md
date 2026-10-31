@@ -18,7 +18,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
 - [x] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), done in Phase 8; the rest of §5.4 stays open.
 - [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
-- [ ] Phase 5 left over: `F-Coalgebras` category for machines; `skip-inject`/`lower-supported` stay direct.
+- [x] Phase 5 left over: `F-Coalgebras` category for machines (done in Phase 9 S1, `Semantics.Behaviour.final`); `skip-inject`/`lower-supported` stay direct.
 - [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
 - [x] Phase 6, content as containers (7d2d405..529df14, +177 against −300).
 - [x] Phase 8 (§4.3, Phase 4/6 leftovers): size into envelope semigroups, layout `Action`/`Placement`, `IsSemigroup`/`Monoid` packaging, `cut`; scene signature on `Container.Tagged`; `FlowLowering` rename; the former `Program/Embed` module folded into `Scene.Animation` (no longer a module); `toLaTeX-bind`; `glueMonoid` and `chunks` as `IsMonoidHomomorphism` (+238; 23 `rewrite` removed).
@@ -27,16 +27,20 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 
 ## Phase 9: how the objects relate (`plans/Review.md` §9.1, `docs/Objects.md` "How the objects relate")
 - [x] (a) Docs: how the objects relate (forms, sections and retractions, statuses) and where things live, in `docs/Objects.md`; layers in `src/Slides.agda`.
-- [ ] (b) S1: one generic extension retract, `lower (copairL ret h) (translate inl t) ≈⋆ t` in `Container.Sum.Properties` (`lower-inject`, `skip-inject` as instances); `Semantics/Behaviour`: behaviours as `Terminal (F-Coalgebras Moore)` with `mapO`, `reindex`, `hd`; `Program/Machine` and `Program/Sem` ported (generic `sem-inject`).
-- [ ] (c) S4: one notion of step, and the deck as a reindexing of it.
-  - Known bug: the model counts fewer steps than the pages take.  The renderer emits a `.fragment` for each later chunk, each `fragment` block, each incremental bullet `li` and each animation rest (`Backend/Animation.agda:287`); `plain.js` and reveal step through every `.fragment`; `ticks s = length (chunkL s)` (`Deck/Syntax.agda:143`) counts chunks only.  `visible`, `deckM`, `goto` and `render-events` are wrong for slides using the other three (Intro, Talk, Showcase).
-- [ ] (d) S5: `Plot` as framed diagrams (`Framed W H`, `render` into it; marks layer a homomorphism for fixed axes, if it is); plot content as an extension `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` lowered by `copairL ret renderMark`.
-- [ ] (e) `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Diagram/Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`).
+- [x] (b) S1: `lower-copairL-inl` in `Container.Sum.Properties` (`lower-inject`, `skip-inject` its instances); `Semantics.Behaviour` (`final : Terminal (F-Coalgebras Moore)`, `mapO`, `reindex`, `const`/`hd`, `hd∘const`); `Program/Machine` a coalgebra view (`coalg`), `Program/Sem` on the layer, no `rewrite`.  Not done: `sem-inject` generic in the signature (one instance only).
+- [x] (c) S4: one notion of step (`Deck.Steps`: a step is a page fragment), `ticks`/`visible`/`deckM`/labels/`render-events` count it; `deckM` is `visible (flat d)` reindexed along `pos` (`feed-deckM`).  The step-count bug is fixed in the model.
+  - [ ] `render-fragments` holds given `BlockLaw`; prove it for blocks with inline text (no fragment class in `Inline` pieces, by induction on the free monad), SVG (a hypothesis on style strings), sanitised classes (`fixText` keeps class tokens, `fixAttrs` keeps `class`) and animation elements (`length rs` rests).
+  - [ ] `visible` is chunk-granular; fragments inside a chunk would need a reveal operation on flows.
+  - [ ] `Steps.aside?` duplicates `Render.aside?` (`aside?-agree`); make `Render` import it.
+- [x] (d) S5: `Framed W H` with `framedMonoid` (up to layout), `renderF`, `marks-hom` (the marks layer, for fixed axes, a monoid homomorphism from series lists).  Plot content stays `List Series` (lowering per `Geo`, legend entries); an extension only if diagram annotations in plots are wanted.  Dead `lerp-same`, `niceStep` removed.
+  - [ ] `Framed` is generic to Diagram: move it out of `Plot/Laws`.
+- [x] (e) `rewrite` batches 2 (`Diagram/Natural`, 27) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`, 20): none left; `placed-unitˡ`/`placed-unitʳ`, shared `validMonoid`.
+  - [ ] `⊔-idem` sits in `Diagram/Valid`; it belongs with the order laws in `Scalar/Core`.
 - [ ] (f) Later:
   - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
   - S3: the deck behaviour stated once (`deckBeh`), `pause-agree` restated against it.
-  - `rewrite` batches 1 (Scalar, Backend), 4 (Program, Deck/Read, Deck/Machine), 5 (Scene; needs the pos-free sampling lemmas first).
-  - Clarity audit, medium and low: `InlineC`/`MathC` as `Tagged`; one `map-fuse` lemma for the nine `map-∘`/`map-cong` chains; one `Draw` traversal (`mapXY`) for the five hand-spelled copies; `Names/Soundness` clauses via `pfold-rel`; dead code (`deckOf`, `kids`, `noSupports`, `niceStep`, `lerp-same`); unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`); header slips (`Valid` first sentence twice, `Natural` orphan comments, `Mark` says `zipWith`, `Deck/Lower` parenthetical); `besideMonoid`/`aboveMonoid` duplication.
+  - `rewrite` batches 1 (Scalar, Backend), 4 (Program/Supports, Program/Navigation; Deck done in S4), 5 (Scene; needs the pos-free sampling lemmas first).
+  - Clarity audit, medium and low: `InlineC`/`MathC` as `Tagged`; one `map-fuse` lemma for the nine `map-∘`/`map-cong` chains; one `Draw` traversal (`mapXY`) for the five hand-spelled copies; `Names/Soundness` clauses via `pfold-rel`; dead code (`deckOf`, `kids`, `noSupports`); unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`); header slip (`Deck/Lower` parenthetical).
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).

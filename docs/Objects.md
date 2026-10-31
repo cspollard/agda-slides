@@ -39,9 +39,11 @@ extensionality).
 - *Interactive*: behaviours `Beh_C O = List C → O`, the terminal coalgebra of the Moore functor
   `X ↦ O × (C → X)`.  Covariant in the output (`mapO`), contravariant in the words (`reindex`).
   When `O` is a model of a theory, `Beh_C O` is the power `O^(List C)`, so every law of `O` holds
-  for behaviours.  Today `Machine`, `obs`, `final` and `CoHom`/`unique` are by hand
-  (Program/Machine.agda).  As `Terminal (F-Coalgebras Moore)` with `mapO` and `reindex`: planned
-  (S1).  The power-model theorem: planned, later (S2).
+  for behaviours.  `Semantics.Behaviour` states it once, independent of every language: `final :
+  Terminal (F-Coalgebras Moore)` (Semantics/Behaviour.agda:101, unique by `obs-unique`), `mapO`,
+  `reindex`, and the split mono `const`/`hd` (`hd∘const`).  A `Machine` is a coalgebra on its states
+  (`coalg`, Program/Machine.agda:46), so its behaviour `obs` is the unique map into `final`.  The
+  power-model theorem: planned, later (S2).
 
 **The chain of meanings: Plot ⊂ Diagram ⊂ Animation ⊂ Program.**  Each step adds a dimension
 (the fixed frame is dropped, then time is added, then input), and the smaller object sits in the
@@ -51,7 +53,9 @@ larger as the part that ignores the new dimension.
   that `render` lands in it.  `render` itself is not an inclusion: clipping, rounding to pixels
   and the approximate logarithm lose information, and it is not a monoid homomorphism on whole
   plots (legend and axes depend on every series).  At most the marks layer is one, for fixed
-  axes.  `Framed W H` as a Σ type with its overlay, and `render` into it: planned (S5).
+  axes, and it is: `marks-hom` (Plot/Laws.agda:127), from series lists under `++` (later series
+  on top).  `Framed W H` (Plot/Laws.agda:52) is the Σ type, a monoid under overlay in the frame up
+  to layout (`framedMonoid`), and `renderF` (Plot/Laws.agda:103) types `render` into it.
 - *Diagram ⊂ Animation*, a split mono.  Section: a still, `pure` (the unit of the scene monad;
   `liftDia` first, for a `Dia ℕ`).  Retraction: read one frame, the first (`firstFrame`,
   Backend/Animation.agda:248) or the last (`animationFinal`, Deck/Lower.agda:177).
@@ -61,16 +65,19 @@ larger as the part that ignores the new dimension.
   constant behaviour (`constB`).  Constants are closed under every scene operation (which acts
   pointwise, `prodB`) and under every command (the tail of a constant is itself).  Retraction:
   `hd`, the output before any command, a map of scene algebras.  `inject-const`
-  (Program/Sem.agda:128) is the commuting square for scenes.  Generic in the signature
-  (`sem-inject`), with `hd` a named map: planned (S1).
+  (Program/Sem.agda:130) is the commuting square for scenes; `prodB` is the pointwise (power)
+  operation and `awaitB` the one that is not.  `hd` is `Semantics.Behaviour.hd`.  A version generic
+  in the signature (`sem-inject`) would need `ProgC` over any signature; not done while Scene is the
+  only instance.
 - *Deck is not a sub-object of Program*; it is a **reindexing**.  The step clock is the free
   monoid on one command, `List ⊤ ≅ ℕ`, so the ℕ-reading `visible (flat d) : ℕ → Maybe Flow` is a
   one-command behaviour (a stream).  Navigation precomposes it with the position map
-  `runs navM zero : List Nav → ℕ`: `feed (deckM d) cs ≡ visible (flat d) (runs (deckM d) zero cs)`
-  holds by definition (Deck/Machine.agda:88).  The position map is not a monoid homomorphism
+  `pos d : List Nav → ℕ` (the navigation machine run on positions): `deckM` is defined as that
+  reindexing and `feed-deckM : feed (deckM d) cs ≡ visible (flat d) (pos d cs)`
+  (Deck/Machine.agda:108); `label-pos` says where `goto` lands.  The position map is not a monoid homomorphism
   (`prev`, clamping at the ends), which is why `prev` and `goto` need no history.  "A deck is a
-  program" holds per slide (`pause-agree`, Deck/Program.agda:84: `elab` of one slide after `k`
-  nexts shows its first `k + 1` chunks), not per deck: `elab` keeps the sequence of slides as a
+  program" holds per slide (`pause-agree`, Deck/Program.agda:108: `elab` of one slide after `t`
+  nexts shows the chunks whose fragment has appeared by step `t`), not per deck: `elab` keeps the sequence of slides as a
   scene operation and a behaviour is read at time 0 after each command, so slide 2 never shows.
   Removing slide 1 on `next` needs preemption, which `ProgC` lacks **[decided]**: it reopens full
   FRP.  The deck behaviour stated once, `pause-agree` restated against it: planned, later (S3).
@@ -86,14 +93,16 @@ split mono `translate inl : C ⋆ X → (C ⊎ E) ⋆ X`, and its retraction is 
 - Program: `ProgC T D C = SceneC T D ⊎ AwaitC C`; section `inject`; retraction `skip`, the
   lowering by `skipOp = copairL ret (λ _ → pure tt)` (every wait satisfied); `skip-inject`
   (Program/Syntax.agda:56).
-- Plot: content `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥`, lowered by `copairL ret renderMark`: planned (S5).
-  Today content is a list of series; only the comment at Plot/Render.agda:155 says this.
-- The three proofs are one lemma, `lower (copairL ret h) (translate inl t) ≈⋆ t`, in
-  `Container.Sum.Properties`: planned (S1).
+- Plot is *not* an extension: its content is a `List Series`.  A mark is lowered with this plot's
+  frame, axes and log scale (`renderMark` lives in `Geo`) and a series carries a legend entry read
+  off all series together.  Content as `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` would be possible (a lowering per
+  `Geo`) and would buy diagram annotations inside plots; not done until that is wanted.
+- Both proofs are one lemma, `lower-copairL-inl : lower (copairL ret h) (translate inl t) ≈⋆ t`
+  (Container/Sum/Properties.agda:112); `lower-inject` and `skip-inject` are its instances.
 
-Mind the direction: Diagram ⊂ Plot in *syntax* (plot content will contain diagrams), while
-Plot ⊂ Diagram in *meanings* (every plot renders to a framed diagram).  The first is a split mono
-of free algebras, the second only a subset of meanings.
+Mind the direction: were plot content an extension, Diagram ⊂ Plot would hold in *syntax*, while
+Plot ⊂ Diagram holds in *meanings* (every plot renders to a framed diagram).  The first would be a
+split mono of free algebras, the second is only a subset of meanings.
 
 **Reading at one instant.**  `firstFrame`, `now t = proj₂ t 0 nothing` (Deck/Program.agda:77)
 and `hd` read at the start; `animationFinal` reads at the end.  Each is a retraction of a
@@ -109,26 +118,33 @@ content of earlier steps reads as settled.  It is not real-time interaction (a l
 running across a key press).  Should that be wanted, commands become `T × C` (a delay and a
 command) and outputs `O^T`, with no new machinery.
 
-**One notion of step (a known bug).**  "Advance on `next`" is spelled five ways: `pause` items
-(chunks, then `delay 1`), `elab`'s waits, the `fragment` block, incremental bullets (each `li` a
-fragment) and animation rests (`span.fragment anim-step`, Backend/Animation.agda:287).  The pages
-step through every `.fragment` (`assets/plain.js`, reveal.js), but the model's
-`ticks s = length (chunkL s)` (Deck/Syntax.agda:143) counts chunks only.  So `visible`, `deckM`,
-`goto` and `render-events` are wrong for slides that use the other three (Intro, Talk and
-Showcase do).  One fold of steps, with the deck a reindexing of it: planned (S4).
+**One notion of step.**  "Advance on `next`" is spelled five ways: `pause` items (chunks),
+`elab`'s waits, the `fragment` block, incremental bullets (each `li` a fragment) and animation
+rests (`span.fragment anim-step`).  The pages step through every `.fragment` (`assets/plain.js`,
+reveal.js), so a step is a page fragment.  `Slides.Deck.Steps` counts them on the syntax: `flowSteps`
+(a monoid homomorphism from flows under `++`), `wraps` (a later chunk's own wrapper, absent for a
+chunk of notes and scripts only), `gap c d` (the step at which chunk `d` appears) and `chunkSteps`;
+`ticks s = suc (chunkSteps (chunkL s))` (Deck/Syntax.agda:145).  `visible`, `deckM`, `goto`, labels
+and `render-events` count these steps.  Against the page, `render-fragments`
+(Backend/Render/Properties.agda:254) proves the number of `.fragment` elements of `renderSlide s` is
+`chunkSteps`, given `BlockLaw` (each block renders its own `blockSteps` fragments), which is a named
+hypothesis: open for blocks holding inline text, SVG, sanitised classes or animations.  `visible`
+is chunk-granular **[decided]**: at a step it shows each chunk whose wrapper has appeared, whole;
+fragments inside a chunk are not modelled (that needs a reveal operation on flows).
 
 | Relation | Form | Section / retraction | Status |
 |---|---|---|---|
 | `Media → Timed` | model homomorphism | — | holds: `events-sample` (Scene/Sample.agda:340) |
-| Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:25); `Framed W H`: planned (S5); `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
+| Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:25); `Framed W H`, `renderF`, `marks-hom` (Plot/Laws.agda:52,103,127); whole-plot `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
 | Diagram ⊂ Animation | split mono | `pure` / `firstFrame`, `animationFinal` | holds pointwise: `diagram-const` (Scene/Animation.agda:83); the retraction law: planned, later (S2) |
-| Animation ⊂ Program | sub-bialgebra | `inject` / `hd` | holds: `inject-const` (Program/Sem.agda:128); generic `sem-inject`: planned (S1) |
-| Deck → Program | reindexing of the step stream along `runs navM zero` | none | holds by definition (Deck/Machine.agda:88); per slide: `pause-agree` (Deck/Program.agda:84); per deck: does not hold (needs preemption, **[decided]** out); step count: planned (S4); deck behaviour stated once: planned, later (S3) |
+| Animation ⊂ Program | sub-bialgebra | `inject` / `hd` | holds: `inject-const` (Program/Sem.agda:130), `hd∘const` (Semantics/Behaviour.agda:121); generic in the signature: not done (one instance) |
+| Deck → Program | reindexing of the step stream along `pos` | none | holds: `feed-deckM` (Deck/Machine.agda:108); per slide: `pause-agree` (Deck/Program.agda:108); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:254), given `BlockLaw`; deck behaviour stated once: planned, later (S3) |
 | Backend support → Program | reindexing along `mapMaybe dec` | none | holds: `lower-sound` (Program/Supports.agda:147) |
 | Dia ⊂ Dia⁺ (syntax) | extension | `inject` / `lowerDia` (`lowerCurve`) | holds: `lower-inject` (Diagram/Curve/Properties.agda:17) |
 | Scene ⊂ Program (syntax) | extension | `inject` / `skip` (`skipOp`) | holds: `skip-inject` (Program/Syntax.agda:56) |
-| Dia ℕ ⊂ Plot content (syntax) | extension | `translate inl` / `lower (copairL ret renderMark)` | planned (S5) |
-| any extension | split mono, one lemma | `translate inl` / `lower (copairL ret h)` | planned (S1), in `Container.Sum.Properties` |
+| Dia ℕ ⊂ Plot content (syntax) | extension | `translate inl` / `lower (copairL ret renderMark)` | not done: content is `List Series` (lowering per `Geo`, legend entries) |
+| any extension | split mono, one lemma | `translate inl` / `lower (copairL ret h)` | holds: `lower-copairL-inl` (Container/Sum/Properties.agda:112) |
+| behaviours | terminal Moore coalgebra | — | holds: `final` (Semantics/Behaviour.agda:101) |
 | behaviours over a model | power model `O^(List C)` | — | planned, later (S2) |
 | reading at the start | model homomorphism and retraction | constant sections / `firstFrame`, `now`, `hd` | planned, later (S2) |
 
@@ -147,13 +163,14 @@ Showcase do).  One fold of steps, with the deck a reindexing of it: planned (S4)
 - Scene: `Slides.Scene.Syntax`, `.Algebra` (`Payload`, `Temporal`), `.Events`, `.Sample`,
   `.Relation`, `.Equiv` (`_≈ₛ_`, Hudak's axioms), `.Tick`, `.Moving`, `.Animation` (`frameAt`,
   `diagram-const`).
+- Behaviours (no syntax): `Semantics.Behaviour` (`Moore`, `final`, `mapO`, `reindex`, `const`/`hd`).
 - Program: `Slides.Program.Syntax` (`ProgC`, `inject`, `skip`), `.Sem` (`sem`, behaviours),
   `.Machine` (Moore machines), `.Navigation` (`navM`), `.Supports` (`lower-sound`).
 - Deck: `Slides.Deck.Content` (`Block`, `Flow`), `.Syntax` (`Slide`, `ticks`, `flat`), `.Read`
-  (`visible`), `.Machine` (`deckM`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
+  (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
   (`FlowLowering`), `.DSL`, `.Anim`, `.Talk`.
-- Plot: `Slides.Plot.Mark` (`Mark`, `MarkC`), `.Render` (`render`, `renderMark`), `.Laws`,
-  `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
+- Plot: `Slides.Plot.Mark` (`Mark`, `MarkC`), `.Render` (`render`, `renderMark`), `.Laws`
+  (`Framed`, `marks-hom`), `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
 - 3D: `Slides.Trig` (and `.Properties`), `Slides.Three.{Point,View,Solid,Render,Properties}`.
 - Backends: `Slides.Backend.Render` (the shared core), `.Reveal`, `.Plain`, `.HTML`, `.Animation`
   (shipped events, `firstFrame`), `.Share` (sharing), `.Input` (bindings); the IO edge

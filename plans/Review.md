@@ -602,11 +602,11 @@ relations are recorded in `docs/Objects.md`, "How the objects relate"; items in 
 
 | Step | Work | Status |
 |---|---|---|
-| S0 | Docs: relations, forms, statuses, where things live | Done (this commit) |
-| S1 | Generic extension retract in `Container.Sum.Properties`; `Semantics/Behaviour` (final Moore coalgebra); `Program/Machine`, `Program/Sem` ported | Planned |
-| S4 | One notion of step (fixes the step-count mismatch with the pages); deck as a reindexing | Planned |
-| S5 | Plot as framed diagrams; plot content as an extension | Planned |
-| — | `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`) | Planned |
+| S0 | Docs: relations, forms, statuses, where things live | Done |
+| S1 | Generic extension retract in `Container.Sum.Properties`; `Semantics/Behaviour` (final Moore coalgebra); `Program/Machine`, `Program/Sem` ported | Done |
+| S4 | One notion of step (fixes the step-count mismatch with the pages); deck as a reindexing | Done (page count given `BlockLaw`) |
+| S5 | Plot as framed diagrams; plot content as an extension | Done (content stays `List Series`, see TODO) |
+| — | `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`) | Done |
 | S2 | Models layer (powers are models, Hudak laws for programs); read-at-start retraction law, only if conditional laws stay small | Later |
 | S3 | Deck behaviour stated once | Later |
 | — | `rewrite` batches 1, 4, 5; clarity audit medium and low items | Later |
