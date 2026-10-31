@@ -55,15 +55,20 @@ mapBox f (box l t w h) = box (f l) (f t) (f w) (f h)
 mapPt : ∀ {S T : Set} → (S → T) → S × S → T × T
 mapPt f p = f (proj₁ p) , f (proj₂ p)
 
+-- the one traversal of a drawing's scalars: `px`, `py` on the positions (x and y), `pd` on the
+-- dimensions (sizes and radii).  A change of scalar is `mapXY f f f`; moving is `mapXY (_+ dx) (_+ dy) id`.
+mapXY : ∀ {S T} → (S → T) → (S → T) → (S → T) → Draw S → Draw T
+mapXY px py pd (rect x y w h s)   = rect (px x) (py y) (pd w) (pd h) s
+mapXY px py pd (circle x y r s)   = circle (px x) (py y) (pd r) s
+mapXY px py pd (ellipse x y a b s) = ellipse (px x) (py y) (pd a) (pd b) s
+mapXY px py pd (poly c ps s)      = poly c (map (λ p → px (proj₁ p) , py (proj₂ p)) ps) s
+mapXY px py pd (line a b c d s)   = line (px a) (py b) (px c) (py d) s
+mapXY px py pd (arrow a b c d s)  = arrow (px a) (py b) (px c) (py d) s
+mapXY px py pd (label x y n t s)  = label (px x) (py y) n t s
+mapXY px py pd (path x y d s)     = path (px x) (py y) d s
+
 mapDraw : ∀ {S T} → (S → T) → Draw S → Draw T
-mapDraw f (rect x y w h s)   = rect (f x) (f y) (f w) (f h) s
-mapDraw f (circle x y r s)   = circle (f x) (f y) (f r) s
-mapDraw f (ellipse x y a b s) = ellipse (f x) (f y) (f a) (f b) s
-mapDraw f (poly c ps s)      = poly c (map (mapPt f) ps) s
-mapDraw f (line a b c d s)   = line (f a) (f b) (f c) (f d) s
-mapDraw f (arrow a b c d s)  = arrow (f a) (f b) (f c) (f d) s
-mapDraw f (label x y n t s)  = label (f x) (f y) n t s
-mapDraw f (path x y d s)     = path (f x) (f y) d s
+mapDraw f = mapXY f f f
 
 mapAnchor : ∀ {S T} → (S → T) → String × Box S → String × Box T
 mapAnchor f (n , b) = n , mapBox f b

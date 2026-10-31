@@ -44,6 +44,7 @@ import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Container.Interpret.Plain using (Handler; Congruent; pfold-rel-translate)
 open import Slides.Diagram.Draw
+open import Slides.Diagram.DrawLaws using (mapXY-nat)
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Syntax hiding (ellipse)
@@ -84,17 +85,7 @@ map-nat : ∀ {A B C D : Set} (f : A → B) (g : B → D) (f′ : A → C) (g′
 map-nat f g f′ g′ e xs = trans (map-fuse e xs) (sym (map-fuse (λ _ → refl) xs))
 
 shiftDraw-nat : ∀ dx dy d → mapDraw h (PS.shiftDraw dx dy d) ≡ PT.shiftDraw (h dx) (h dy) (mapDraw h d)
-shiftDraw-nat dx dy (rect x y w ht s)   = cong₂ (λ u v → rect u v (h w) (h ht) s) (h-+ x dx) (h-+ y dy)
-shiftDraw-nat dx dy (circle x y r s)    = cong₂ (λ u v → circle u v (h r) s) (h-+ x dx) (h-+ y dy)
-shiftDraw-nat dx dy (ellipse x y a b s) = cong₂ (λ u v → ellipse u v (h a) (h b) s) (h-+ x dx) (h-+ y dy)
-shiftDraw-nat dx dy (poly c ps s)       =
-  cong (λ qs → poly c qs s) (map-nat (PS.shiftPt dx dy) (mapPt h) (mapPt h) (PT.shiftPt (h dx) (h dy)) (λ p → cong₂ _,_ (h-+ _ dx) (h-+ _ dy)) ps)
-shiftDraw-nat dx dy (line a b c d s)    =
-  congₙ 4 (λ a′ b′ c′ d′ → line a′ b′ c′ d′ s) (h-+ a dx) (h-+ b dy) (h-+ c dx) (h-+ d dy)
-shiftDraw-nat dx dy (arrow a b c d s)   =
-  congₙ 4 (λ a′ b′ c′ d′ → arrow a′ b′ c′ d′ s) (h-+ a dx) (h-+ b dy) (h-+ c dx) (h-+ d dy)
-shiftDraw-nat dx dy (label x y n t s)   = cong₂ (λ u v → label u v n t s) (h-+ x dx) (h-+ y dy)
-shiftDraw-nat dx dy (path x y d s)      = cong₂ (λ u v → Draw.path u v d s) (h-+ x dx) (h-+ y dy)
+shiftDraw-nat dx dy = mapXY-nat (λ x → h-+ x dx) (λ y → h-+ y dy) (λ _ → refl)
 
 mapDraws-shift : ∀ dx dy ds → map (mapDraw h) (map (PS.shiftDraw dx dy) ds) ≡ map (PT.shiftDraw (h dx) (h dy)) (map (mapDraw h) ds)
 mapDraws-shift dx dy = map-nat _ _ _ _ (shiftDraw-nat dx dy)

@@ -41,18 +41,8 @@ dbl x = x + x
 
 -- Shifting and framing
 
-shiftPt : S → S → S × S → S × S
-shiftPt dx dy p = proj₁ p + dx , proj₂ p + dy
-
 shiftDraw : S → S → Draw S → Draw S
-shiftDraw dx dy (rect x y w h s)   = rect (x + dx) (y + dy) w h s
-shiftDraw dx dy (circle x y r s)   = circle (x + dx) (y + dy) r s
-shiftDraw dx dy (ellipse x y a b s) = ellipse (x + dx) (y + dy) a b s
-shiftDraw dx dy (poly c ps s)     = poly c (map (shiftPt dx dy) ps) s
-shiftDraw dx dy (line a b c d s)   = line (a + dx) (b + dy) (c + dx) (d + dy) s
-shiftDraw dx dy (arrow a b c d s)  = arrow (a + dx) (b + dy) (c + dx) (d + dy) s
-shiftDraw dx dy (label x y n t s)  = label (x + dx) (y + dy) n t s
-shiftDraw dx dy (path x y d s)     = path (x + dx) (y + dy) d s
+shiftDraw dx dy = mapXY (_+ dx) (_+ dy) (λ r → r)
 
 shiftBox : S → S → Box S → Box S
 shiftBox dx dy (box l t w h) = box (l + dx) (t + dy) w h
