@@ -84,7 +84,7 @@ map-shift δ ε (e ∷ es) = cong₂ _∷_ (shift-shift δ ε e) (map-shift δ �
 delay-delay : ∀ {δ ε} → 0# ≤ δ → 0# ≤ ε → ∀ {L} (x : Media L) →
               delayM δ (delayM ε x) ≡ delayM (δ + ε) x
 delay-delay {δ} {ε} 0≤δ 0≤ε (d , es)
-  rewrite pos-≤ 0≤δ | pos-≤ 0≤ε | pos-≤ (≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono 0≤δ 0≤ε))
+  rewrite pos-≤ 0≤δ | pos-≤ 0≤ε | pos-≤ (nn+ 0≤δ 0≤ε)
   = cong₂ _,_ (sym (+-assoc δ ε d)) (map-shift δ ε es)
 
 delay-zero : ∀ {L} (x : Media L) → delayM 0# x ≡ x
@@ -136,9 +136,6 @@ module _ (⊙-comm : ∀ a b → a ⊙ b ≡ b ⊙ a) where
 -- Seq is associative (non-negative durations)
 
 private
-  nn+ : ∀ {a b} → 0# ≤ a → 0# ≤ b → 0# ≤ a + b
-  nn+ 0≤a 0≤b = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono 0≤a 0≤b)
-
   -- facts about the position of `t` against the three cut points
   ge0 : ∀ {a t} → a ≤ t → 0# ≤ t - a
   ge0 {a} a≤t = unshift-≤ a≤t (≤-trans (≤-reflexive (+-idʳ a)) a≤t)

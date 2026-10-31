@@ -244,7 +244,7 @@ module _ {L : Set} (ℓ : L → T → X) where
   pos-shift 0≤w []                     = []
   pos-shift 0≤w {e ∷ _} (p ∷ ps) = sh e p ∷ pos-shift 0≤w ps
     where sh : ∀ (e : Event L) → Pos e → Pos (shiftE _ e)
-          sh (event o s c a) p = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono 0≤w p)
+          sh (event o s c a) p = nn+ 0≤w p
 
   ---- Hold: the window keeps the events that start inside it
   read-consMb : ∀ m es t q → readE ℓ (consMb m es) t q ≡ merge (readMb ℓ m t q) (readE ℓ es t q)

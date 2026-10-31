@@ -40,6 +40,10 @@ open Sub Sb
 ≤-+ : ∀ {a o} → 0# ≤ o → a ≤ a + o
 ≤-+ {a} {o} 0≤o = ≤-trans (≤-reflexive (sym (+-idʳ a))) (+-mono-r a 0≤o)
 
+-- non-negative durations add
+nn+ : ∀ {a b} → 0# ≤ a → 0# ≤ b → 0# ≤ a + b
+nn+ 0≤a 0≤b = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono 0≤a 0≤b)
+
 -- subtracting zero
 sub-zero : ∀ {a} → 0# ≤ a → a - 0# ≡ a
 sub-zero {a} 0≤a = sym (sub-unique 0≤a (+-idˡ a))
