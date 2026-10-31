@@ -91,18 +91,19 @@ module _ {V : Set} (len : ℕ) (labels : String → Maybe ℕ) (view : ℕ → V
   ... | just k  = ℕP.m⊓n≤n k len
 
   prev-next : ∀ n → suc n ≤ len → navStep (navStep n next) prev ≡ n
-  prev-next n le rewrite m≤n⇒m⊓n≡m le = refl
+  prev-next n le = cong (λ m → navStep m prev) (m≤n⇒m⊓n≡m le)
 
   view-next : ∀ n → suc n ≤ len → out navM (navStep n next) ≡ view (suc n)
   view-next n le = cong view (m≤n⇒m⊓n≡m le)
 
   gotoLabel-goto : ∀ n l i → labels l ≡ just i → navStep n (gotoLabel l) ≡ navStep n (goto i)
-  gotoLabel-goto n l i e rewrite e = refl
+  gotoLabel-goto n l i e = cong (maybe′ (_⊓ len) n) e
 
   -- k nexts from position n, below the end: position n + k (history by counting)
   next-steps : ∀ k n → n + k ≤ len → runs navM n (replicate k next) ≡ n + k
   next-steps zero    n le = sym (ℕP.+-identityʳ n)
   next-steps (suc k) n le with ℕP.≤-trans (s≤s (ℕP.m≤m+n n k)) (subst (_≤ len) (ℕP.+-suc n k) le)
-  ... | le₁ rewrite m≤n⇒m⊓n≡m le₁ =
-    trans (next-steps k (suc n) (subst (_≤ len) (ℕP.+-suc n k) le))
-          (sym (ℕP.+-suc n k))
+  ... | le₁ =
+    trans (cong (λ m → runs navM m (replicate k next)) (m≤n⇒m⊓n≡m le₁))
+    (trans (next-steps k (suc n) (subst (_≤ len) (ℕP.+-suc n k) le))
+           (sym (ℕP.+-suc n k)))
