@@ -29,9 +29,10 @@ open import Level using (0ℓ)
 open import Data.Empty using (⊥)
 open import Data.Fin using (Fin)
 open import Data.List using (List; []; _∷_; _++_; reverse; [_]; concatMap; concat; map; lookup; tabulate; length)
-open import Data.Product.Base using (Σ; _,_; proj₁)
+open import Data.Product.Base using (_,_)
 open import Function.Base using (_∘_)
-open import Data.Container.Core using (Container; _▷_)
+open import Data.Container.Core using (Container)
+open import Container.Tagged using (Tagged)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Container.Interpret.Plain using (Handler; pfold)
 open import Relation.Nullary.Decidable using (⌊_⌋)
@@ -83,7 +84,7 @@ data InlineOp : ℕ → Set where
   wrapO       : Wrap → (n : ℕ) → InlineOp n
 
 InlineC : Container 0ℓ 0ℓ
-InlineC = Σ ℕ InlineOp ▷ (Fin ∘ proj₁)
+InlineC = Tagged Fin InlineOp
 
 Inline : Set
 Inline = InlineC ⋆ ⊥

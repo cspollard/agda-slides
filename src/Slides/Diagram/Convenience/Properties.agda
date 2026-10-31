@@ -76,7 +76,7 @@ gap-═ : ∀ a b → layout (↕ a ═ ↕ b) ≡ layout (↕ (a + b))
 gap-═ a b = V.gap-above centred a b
 
 gap-⊙ : ∀ a b → layout (↔ a ⊙ ↔ b) ≡ layout (↔ (a ⊔ b))
-gap-⊙ a b = cong (P.spacer (a ⊔ b)) (V.⊔-idem 0#)
+gap-⊙ a b = cong (P.spacer (a ⊔ b)) (⊔-idem 0#)
 
 -- zero margins vanish from a valid diagram
 margin-zero : ∀ d → V.Valid d → layout (margin 0# 0# 0# 0# d) ≡ layout d

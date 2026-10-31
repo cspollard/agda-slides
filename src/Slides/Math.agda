@@ -15,11 +15,12 @@ open import Data.List using (List; []; _∷_; map; lookup; tabulate)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ; suc)
 open import Data.Nat.Show using (show)
-open import Data.Product.Base using (Σ; _,_; proj₁)
+open import Data.Product.Base using (_,_)
 open import Data.String using (String; concat; fromList; toList) renaming (_++_ to _++ˢ_)
 open import Data.Char using (Char)
 open import Function.Base using (_∘_)
-open import Data.Container.Core using (Container; _▷_)
+open import Data.Container.Core using (Container)
+open import Container.Tagged using (Tagged)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 import Data.List.Properties as ListP
 open import Function.Nary.NonDependent using (congₙ)
@@ -57,7 +58,7 @@ data Op : ℕ → Set where
   tupleO                  : (n : ℕ) → Op n              -- a, b, c (no brackets)
 
 MathC : Container 0ℓ 0ℓ
-MathC = Σ ℕ Op ▷ (Fin ∘ proj₁)
+MathC = Tagged Fin Op
 
 Math : Set
 Math = MathC ⋆ String

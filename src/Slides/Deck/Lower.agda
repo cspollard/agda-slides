@@ -24,7 +24,8 @@ open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Deck.Anim using (sequence; layoutAt; lastTick; totalDuration; zeroQ)
 
--- (not `Container.Lowering`: `lowerFlow` recurses through the blocks' own structure, which a container lowering cannot express without losing termination)
+-- A lowering of blocks is a plain function, not a `Container.Lowering`: `lowerFlow` recurses through
+-- the blocks' own structure, which a container lowering cannot express without losing termination.
 FlowLowering : Set
 FlowLowering = Block → Flow
 
