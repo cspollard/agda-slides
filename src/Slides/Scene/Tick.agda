@@ -94,39 +94,43 @@ private
   ... | yes hh = ⊥-elim (w≰t (h-reflect hh))
   ... | no _ = refl
 
--- The relation: durations map by `h`, readings by `F`
+-- The relation: durations map by `h`, drivers by `g`, readings by `F` (`Slides.Scene.Relation`)
+
+RT : T₁ → T₂ → Set
+RT d e = e ≡ h d
+
+RD : D₁ → D₂ → Set
+RD c c′ = c′ ≡ g c
+
+RP : S₁.Rd → S₂.Rd → Set
+RP r r′ = ∀ t q → r′ (h t) (Maybe.map g q) ≡ Maybe.map F (r t q)
+
+import Slides.Scene.Relation as Rln
+module Lg = Rln M₁ M₂ S₁.rdP S₂.rdP RT RD RP
 
 R : S₁.Timed → S₂.Timed → Set
-R x y = proj₁ y ≡ h (proj₁ x) × ∀ t q → proj₂ y (h t) (Maybe.map g q) ≡ Maybe.map F (proj₂ x t q)
+R = Lg.R
 
-rel-par : ∀ {x x′ y y′} → R x x′ → R y y′ → R (S₁.parT x y) (S₂.parT x′ y′)
-rel-par {dx , rx} {_ , rx′} {dy , ry} {_ , ry′} (refl , a) (refl , b) =
-  sym (h-⊔ dx dy) , λ t q → trans (cong₂ S₂.merge (a t q) (b t q)) (sym (merge-map (rx t q) (ry t q)))
+private
+  RP-clip : ∀ w {r r′} → RP r r′ → RP (λ t q → S₁.win (E₁.pos w) t (r t q)) (λ t q → S₂.win (E₂.pos (h w)) t (r′ t q))
+  RP-clip w {r} {r′} a rewrite pos-h w = λ t q → trans (cong (S₂.win (h (E₁.pos w)) (h t)) (a t q)) (win-h (E₁.pos w) t (r t q))
 
-rel-hold : ∀ w {x x′} → R x x′ → R (S₁.holdT w x) (S₂.holdT (h w) x′)
-rel-hold w {_ , r} {_ , r′} (_ , a) rewrite pos-h w =
-  refl , λ t q → trans (cong (S₂.win (h (E₁.pos w)) (h t)) (a t q)) (win-h (E₁.pos w) t (r t q))
+  RP-shift : ∀ w {r r′} → RP r r′ → RP (λ t q → S₁.back (E₁.pos w) t (λ u → r u q)) (λ t q → S₂.back (E₂.pos (h w)) t (λ u → r′ u q))
+  RP-shift w {r} {r′} a rewrite pos-h w =
+    λ t q → back-h (E₁.pos w) t (λ u → r u q) (λ u → r′ u (Maybe.map g q)) (λ u → a u q)
 
-rel-delay : ∀ w {x x′} → R x x′ → R (S₁.delayT w x) (S₂.delayT (h w) x′)
-rel-delay w {d , r} {_ , r′} (refl , a) rewrite pos-h w =
-  sym (h-+ (E₁.pos w) d) ,
-  λ t q → back-h (E₁.pos w) t (λ u → r u q) (λ u → r′ u (Maybe.map g q)) (λ u → a u q)
-
-rel-drive : ∀ c {x x′} → R x x′ → R (S₁.driveT c x) (S₂.driveT (g c) x′)
-rel-drive c (e , a) = e , λ t q → a t (just c)
-
-rel-seq : ∀ {x x′ y y′} → R x x′ → R y y′ → R (S₁.seqT x y) (S₂.seqT x′ y′)
-rel-seq {dx , rx} {.(h dx) , rx′} {dy , ry} {.(h dy) , ry′} (refl , a) (refl , b) =
-  sym (h-+ dx dy) ,
-  proj₂ (rel-par {S₁.holdT dx (dx , rx)} {S₂.holdT (h dx) (h dx , rx′)}
-                 {S₁.delayT dx (S₁.holdT dy (dy , ry))} {S₂.delayT (h dx) (S₂.holdT (h dy) (h dy , ry′))}
-           (rel-hold dx {dx , rx} {h dx , rx′} (refl , a))
-           (rel-delay dx {S₁.holdT dy (dy , ry)} {S₂.holdT (h dy) (h dy , ry′)}
-              (rel-hold dy {dy , ry} {h dy , ry′} (refl , b))))
-
-rel-rep : ∀ n {x x′} → R x x′ → R (S₁.repT n x) (S₂.repT n x′)
-rel-rep ℕ.zero    rx = sym h-0 , λ t q → refl
-rel-rep (ℕ.suc n) {x} {x′} rx = rel-seq {x} {x′} {S₁.repT n x} {S₂.repT n x′} rx (rel-rep n rx)
+logical : Lg.Logical
+logical = record
+  { RT-0 = sym h-0
+  ; RT-+ = λ { {a} {_} {b} refl refl → sym (h-+ a b) }
+  ; RT-⊔ = λ { {a} {_} {b} refl refl → sym (h-⊔ a b) }
+  ; RT-pos = λ { {w} refl → pos-h w }
+  ; RP-none = λ t q → refl
+  ; RP-par = λ { {r₁} {r₁′} a b t q → trans (cong₂ S₂.merge (a t q) (b t q)) (sym (merge-map (r₁ t q) (r₁′ t q))) }
+  ; RP-clip = λ { {w} {_} {r} {r′} refl a → RP-clip w {r} {r′} a }
+  ; RP-shift = λ { {w} {_} {r} {r′} refl a → RP-shift w {r} {r′} a }
+  ; RP-drive = λ { {c} refl a t q → a t (just c) }
+  }
 
 module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂) (ℓ-ok : ∀ a p → ℓ₂ a (h p) ≡ F (ℓ₁ a p)) where
 
@@ -138,12 +142,12 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
 
   rel-hom : ∀ o {k : arity o → S₁.Timed} {k′ : arity o → S₂.Timed} → (∀ p → R (k p) (k′ p)) →
             R (S₁.dirH o k) (S₂.dirH (mapOp h g o) (λ q → k′ (position (mapSC h g) q)))
-  rel-hom Seq        {k} {k′} e = rel-seq {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
-  rel-hom Par        {k} {k′} e = rel-par {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
-  rel-hom (Hold d)   {k} {k′} e = rel-hold d {k tt} {k′ tt} (e tt)
-  rel-hom (Delay d)  {k} {k′} e = rel-delay d {k tt} {k′ tt} (e tt)
-  rel-hom (Repeat n) {k} {k′} e = rel-rep n {k tt} {k′ tt} (e tt)
-  rel-hom (Drive c)  {k} {k′} e = rel-drive c {k tt} {k′ tt} (e tt)
+  rel-hom Seq        {k} {k′} e = Lg.rel-seq logical {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
+  rel-hom Par        {k} {k′} e = Lg.rel-par logical {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
+  rel-hom (Hold d)   {k} {k′} e = Lg.rel-hold logical {x = k tt} {k′ tt} refl (e tt)
+  rel-hom (Delay d)  {k} {k′} e = Lg.rel-delay logical {x = k tt} {k′ tt} refl (e tt)
+  rel-hom (Repeat n) {k} {k′} e = Lg.rel-rep logical n {k tt} {k′ tt} (e tt)
+  rel-hom (Drive c)  {k} {k′} e = Lg.rel-drive logical {x = k tt} {k′ tt} refl (e tt)
 
   -- Reading the mapped scene at `h t` is reading the scene at `t`.
   tick-hom : ∀ s → proj₁ (S₂.sample ℓ₂ (mapScene h g s)) ≡ h (proj₁ (S₁.sample ℓ₁ s)) ×

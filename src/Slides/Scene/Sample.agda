@@ -10,8 +10,8 @@
 -- no `Drive`); values overlay by the associative `_⊙_`, absence is the unit of `Par` (`merge`).
 --
 --   events-sample   `readE ℓ (events s) t q ≡ sample ℓ s t q`: the sparse list is the pointwise
---                   semantics.  By `pfold-rel`, one lemma per operation (`rel-par`, `rel-hold`,
---                   `rel-delay`, `rel-drive`), invariant: onsets are non-negative.
+--                   semantics.  By `pfold-rel`, from one lemma per payload operation (`logical`;
+--                   `Seq`, `Repeat` follow), invariant: onsets are non-negative.
 --
 -- Hence the laws of `Slides.Scene.Laws` may be proved on whichever reading is easier.
 
@@ -38,6 +38,8 @@ import Relation.Binary.PropositionalEquality.Properties as ≡P
 open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-rel; pfold-bind)
 open import Slides.Scene.Syntax
 open import Slides.Scene.Events {T} {D} M Sb
+import Slides.Scene.Algebra
+import Slides.Scene.Relation as Rln
 open import Slides.Scene.Arith M Sb
 open OrdMon M
 open Sub Sb
@@ -102,40 +104,34 @@ module _ {L : Set} where
   leafT : (L → T → X) → L → Timed
   leafT ℓ a = 0# , λ t q → select (0# ≤? t) (just (ℓ a (param q t))) nothing
 
-parT : Timed → Timed → Timed
-parT (d , r) (d′ , r′) = d ⊔ d′ , λ t q → merge (r t q) (r′ t q)
+-- overlay commutes with the window and the shift
+win-merge : ∀ w t a b → win w t (merge a b) ≡ merge (win w t a) (win w t b)
+win-merge w t a b with 0# ≤? t
+... | no _  = refl
+... | yes _ with w ≤? t
+...   | yes _ = refl
+...   | no _  = refl
 
-holdT : T → Timed → Timed
-holdT w (_ , r) = pos w , λ t q → win (pos w) t (r t q)
+back-merge : ∀ w t (r r′ : T → Maybe X) →
+             back w t (λ u → merge (r u) (r′ u)) ≡ merge (back w t r) (back w t r′)
+back-merge w t r r′ with w ≤? t
+... | yes _ = refl
+... | no _  = refl
 
-delayT : T → Timed → Timed
-delayT w (d , r) = pos w + d , λ t q → back (pos w) t (λ u → r u q)
+back-cong : ∀ w t {r r′ : T → Maybe X} → (∀ u → r u ≡ r′ u) → back w t r ≡ back w t r′
+back-cong w t e with w ≤? t
+... | yes _ = e _
+... | no _  = refl
 
-driveT : D → Timed → Timed
-driveT c (d , r) = d , λ t _ → r t (just c)
+-- The five operations on readings; the rest is `Slides.Scene.Algebra`
+rdP : Payload D Rd
+rdP = record { none = λ _ _ → nothing ; par = λ r r′ t q → merge (r t q) (r′ t q)
+             ; clip = λ w r t q → win w t (r t q) ; shift = λ w r t q → back w t (λ u → r u q)
+             ; driveP = λ c r t _ → r t (just c) }
 
-seqT : Timed → Timed → Timed
-seqT x y = proj₁ x + proj₁ y , proj₂ (parT (holdT (proj₁ x) x) (delayT (proj₁ x) (holdT (proj₁ y) y)))
-
-repT : ℕ → Timed → Timed
-repT zero    x = 0# , λ _ _ → nothing
-repT (suc n) x = seqT x (repT n x)
-
-dirH : Handler (SceneC T D) Timed
-dirH Seq        k = seqT (k zero) (k (suc zero))
-dirH Par        k = parT (k zero) (k (suc zero))
-dirH (Hold d)   k = holdT d (k tt)
-dirH (Delay d)  k = delayT d (k tt)
-dirH (Repeat n) k = repT n (k tt)
-dirH (Drive c)  k = driveT c (k tt)
-
-dirCong : Congruent (SceneC T D) (≡P.setoid Timed) dirH
-dirCong Seq        e = cong₂ seqT (e zero) (e (suc zero))
-dirCong Par        e = cong₂ parT (e zero) (e (suc zero))
-dirCong (Hold d)   e = cong (holdT d) (e tt)
-dirCong (Delay d)  e = cong (delayT d) (e tt)
-dirCong (Repeat n) e = cong (repT n) (e tt)
-dirCong (Drive c)  e = cong (driveT c) (e tt)
+open Slides.Scene.Algebra.Temporal M rdP public using ()
+  renaming (parC to parT; holdC to holdT; delayC to delayT; driveC to driveT; seqC to seqT; repC to repT
+           ; handler to dirH; handler-≡ to dirCong)
 
 -- the direct meaning of a scene whose leaves mean `g a`, and with the eternal leaf
 timed : ∀ {A : Set} → (A → Timed) → Scene T D A → Timed
@@ -148,27 +144,14 @@ sample ℓ = timed (leafT ℓ)
 
 module _ {L : Set} (ℓ : L → T → X) where
 
+  -- events read as the direct reading, onsets non-negative
+  RP : List (Event L) → Rd → Set
+  RP es r = All Pos es × (∀ t q → readE ℓ es t q ≡ r t q)
+
+  module Lg = Rln M M evP rdP _≡_ _≡_ RP
+
   Rel : Media L → Timed → Set
-  Rel (d , es) (d′ , r) = d ≡ d′ × All Pos es × (∀ t q → readE ℓ es t q ≡ r t q)
-
-  ---- overlay commutes with the window and the shift
-  win-merge : ∀ w t a b → win w t (merge a b) ≡ merge (win w t a) (win w t b)
-  win-merge w t a b with 0# ≤? t
-  ... | no _  = refl
-  ... | yes _ with w ≤? t
-  ...   | yes _ = refl
-  ...   | no _  = refl
-
-  back-merge : ∀ w t (r r′ : T → Maybe X) →
-               back w t (λ u → merge (r u) (r′ u)) ≡ merge (back w t r) (back w t r′)
-  back-merge w t r r′ with w ≤? t
-  ... | yes _ = refl
-  ... | no _  = refl
-
-  back-cong : ∀ w t {r r′ : T → Maybe X} → (∀ u → r u ≡ r′ u) → back w t r ≡ back w t r′
-  back-cong w t e with w ≤? t
-  ... | yes _ = e _
-  ... | no _  = refl
+  Rel = Lg.R
 
   ---- the leaf
   rel-leaf : ∀ a → Rel (leafM a) (leafT ℓ a)
@@ -178,11 +161,6 @@ module _ {L : Set} (ℓ : L → T → X) where
       at t q with 0# ≤? t
       ... | yes 0≤t = cong (λ τ → just (ℓ a (param q τ))) (sub-zero 0≤t)
       ... | no _    = refl
-
-  ---- Par
-  rel-par : ∀ {x x′ y y′} → Rel x x′ → Rel y y′ → Rel (parM x y) (parT x′ y′)
-  rel-par {_ , es} {_ , r} {_ , fs} {_ , r′} (refl , pa , ra) (refl , pb , rb) =
-    refl , ++⁺ pa pb , λ t q → trans (read-++ ℓ es fs t q) (cong₂ merge (ra t q) (rb t q))
 
   ---- Drive
   read-drive : ∀ c es t q → readE ℓ (map (driveE c) es) t q ≡ readE ℓ es t (just c)
@@ -201,10 +179,6 @@ module _ {L : Set} (ℓ : L → T → X) where
     where pd : ∀ (e : Event L) → Pos e → Pos (driveE c e)
           pd (event o s nothing a)  p = p
           pd (event o s (just _) a) p = p
-
-  rel-drive : ∀ c {x x′} → Rel x x′ → Rel (driveM c x) (driveT c x′)
-  rel-drive c {_ , es} {_ , r} (refl , pa , ra) =
-    refl , pos-drive c pa , λ t q → trans (read-drive c es t q) (ra t (just c))
 
   ---- Delay: the shift of events is the shift of the time argument
   until-shift : ∀ {w t} (s : Maybe T) o (y : Maybe X) → w ≤ t → until s (w + o) t y ≡ until s o (t - w) y
@@ -242,11 +216,6 @@ module _ {L : Set} (ℓ : L → T → X) where
   pos-shift 0≤w {e ∷ _} (p ∷ ps) = sh e p ∷ pos-shift 0≤w ps
     where sh : ∀ (e : Event L) → Pos e → Pos (shiftE _ e)
           sh (event o s c a) p = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono 0≤w p)
-
-  rel-delay : ∀ w {x x′} → Rel x x′ → Rel (delayM w x) (delayT w x′)
-  rel-delay w {_ , es} {_ , r} (refl , pa , ra) =
-    refl , pos-shift (pos-nonneg w) pa ,
-    λ t q → trans (read-shift (pos w) pa t q) (back-cong (pos w) t (λ u → ra u q))
 
   ---- Hold: the window keeps the events that start inside it
   read-consMb : ∀ m es t q → readE ℓ (consMb m es) t q ≡ merge (readMb ℓ m t q) (readE ℓ es t q)
@@ -308,27 +277,30 @@ module _ {L : Set} (ℓ : L → T → X) where
   ... | yes _ = pos-clip w ps
   ... | no _  = p ∷ pos-clip w ps
 
-  rel-hold : ∀ w {x x′} → Rel x x′ → Rel (holdM w x) (holdT w x′)
-  rel-hold w {_ , es} {_ , r} (refl , pa , ra) =
-    refl , pos-clip (pos w) pa ,
-    λ t q → trans (read-clip (pos w) pa t q) (cong (win (pos w) t) (ra t q))
-
-  ---- Seq and Repeat are derived
-  rel-seq : ∀ {x x′ y y′} → Rel x x′ → Rel y y′ → Rel (seqM x y) (seqT x′ y′)
-  rel-seq {d , _} {_ , _} {e , _} {_ , _} rx@(refl , _ , _) ry@(refl , _ , _) =
-    refl , proj₂ (rel-par (rel-hold d rx) (rel-delay d (rel-hold e ry)))
-
-  rel-rep : ∀ n {x x′} → Rel x x′ → Rel (repM n x) (repT n x′)
-  rel-rep zero    rx = refl , [] , λ t q → refl
-  rel-rep (suc n) rx = rel-seq rx (rel-rep n rx)
+  ---- The five operations preserve "events read as the direct reading, onsets non-negative";
+  ---- `Seq` and `Repeat` follow (`Slides.Scene.Relation`)
+  logical : Lg.Logical
+  logical = record
+    { RT-0 = refl ; RT-+ = cong₂ _+_ ; RT-⊔ = cong₂ _⊔_ ; RT-pos = cong pos
+    ; RP-none = [] , λ t q → refl
+    ; RP-par = λ { {es} {fs} (pa , ra) (pb , rb) →
+                   ++⁺ pa pb , λ t q → trans (read-++ ℓ es fs t q) (cong₂ merge (ra t q) (rb t q)) }
+    ; RP-clip = λ { {w} refl (pa , ra) →
+                    pos-clip (pos w) pa , λ t q → trans (read-clip (pos w) pa t q) (cong (win (pos w) t) (ra t q)) }
+    ; RP-shift = λ { {w} refl (pa , ra) →
+                     pos-shift (pos-nonneg w) pa ,
+                     λ t q → trans (read-shift (pos w) pa t q) (back-cong (pos w) t (λ u → ra u q)) }
+    ; RP-drive = λ { {c} {_} {es} refl (pa , ra) →
+                     pos-drive c pa , λ t q → trans (read-drive c es t q) (ra t (just c)) }
+    }
 
   rel-hom : ∀ o {k k′} → (∀ p → Rel (k p) (k′ p)) → Rel (evH o k) (dirH o k′)
-  rel-hom Seq        e = rel-seq (e zero) (e (suc zero))
-  rel-hom Par        e = rel-par (e zero) (e (suc zero))
-  rel-hom (Hold d)   e = rel-hold d (e tt)
-  rel-hom (Delay d)  e = rel-delay d (e tt)
-  rel-hom (Repeat n) e = rel-rep n (e tt)
-  rel-hom (Drive c)  e = rel-drive c (e tt)
+  rel-hom Seq        e = Lg.rel-seq logical (e zero) (e (suc zero))
+  rel-hom Par        e = Lg.rel-par logical (e zero) (e (suc zero))
+  rel-hom (Hold d)   e = Lg.rel-hold logical refl (e tt)
+  rel-hom (Delay d)  e = Lg.rel-delay logical refl (e tt)
+  rel-hom (Repeat n) e = Lg.rel-rep logical n (e tt)
+  rel-hom (Drive c)  e = Lg.rel-drive logical refl (e tt)
 
   -- Leaves with arbitrary meanings agree when their meanings do; the fold preserves it.
   agree : ∀ {A : Set} {f : A → Media L} {g : A → Timed} → (∀ a → Rel (f a) (g a)) →

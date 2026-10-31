@@ -34,6 +34,7 @@ import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Container.Interpret.Plain using (Handler; Congruent; pfold)
 open import Slides.Scene.Syntax
+import Slides.Scene.Algebra
 open OrdMon M
 open Sub Sb
 
@@ -50,14 +51,7 @@ Media : Set → Set
 Media L = T × List (Event L)
 
 -- durations below zero read as zero
-pos : T → T
-pos d = 0# ⊔ d
-
-pos-nonneg : ∀ d → 0# ≤ pos d
-pos-nonneg d = ⊔-ub₁ 0# d
-
-pos-≤ : ∀ {d} → 0# ≤ d → pos d ≡ d
-pos-≤ 0≤d = ⊔-≤ 0≤d
+open import Slides.Scene.Algebra M public using (pos; pos-nonneg; pos-≤; Payload)
 
 -- Events: shifting, windowing, driving
 
@@ -109,41 +103,13 @@ module _ {L : Set} where
   leafM : L → Media L
   leafM a = 0# , event 0# nothing nothing a ∷ []
 
-  parM : Media L → Media L → Media L
-  parM (d , es) (d′ , fs) = d ⊔ d′ , es ++ fs
+  evP : Payload D (List (Event L))
+  evP = record { none = [] ; par = _++_ ; clip = λ w → clipE w ; shift = λ w → map (shiftE w) ; driveP = λ c → map (driveE c) }
 
-  holdM : T → Media L → Media L
-  holdM w (_ , es) = pos w , clipE (pos w) es
-
-  delayM : T → Media L → Media L
-  delayM w (d , es) = pos w + d , map (shiftE (pos w)) es
-
-  driveM : D → Media L → Media L
-  driveM c (d , es) = d , map (driveE c) es
-
-  -- `a ⨾ b`: `a` for its duration, then `b` for its duration
-  seqM : Media L → Media L → Media L
-  seqM x y = proj₁ x + proj₁ y , proj₂ (parM (holdM (proj₁ x) x) (delayM (proj₁ x) (holdM (proj₁ y) y)))
-
-  repM : ℕ → Media L → Media L
-  repM zero    x = 0# , []
-  repM (suc n) x = seqM x (repM n x)
-
-  evH : Handler (SceneC T D) (Media L)
-  evH Seq        k = seqM (k zero) (k (suc zero))
-  evH Par        k = parM (k zero) (k (suc zero))
-  evH (Hold d)   k = holdM d (k tt)
-  evH (Delay d)  k = delayM d (k tt)
-  evH (Repeat n) k = repM n (k tt)
-  evH (Drive c)  k = driveM c (k tt)
-
-  evCong : Congruent (SceneC T D) (≡P.setoid (Media L)) evH
-  evCong Seq        e = cong₂ seqM (e zero) (e (suc zero))
-  evCong Par        e = cong₂ parM (e zero) (e (suc zero))
-  evCong (Hold d)   e = cong (holdM d) (e tt)
-  evCong (Delay d)  e = cong (delayM d) (e tt)
-  evCong (Repeat n) e = cong (repM n) (e tt)
-  evCong (Drive c)  e = cong (driveM c) (e tt)
+  -- `a ⨾ b` is `a` for its duration, then `b` for its duration (derived: `Slides.Scene.Algebra`)
+  open Slides.Scene.Algebra.Temporal M evP public using ()
+    renaming (parC to parM; holdC to holdM; delayC to delayM; driveC to driveM; seqC to seqM; repC to repM
+             ; handler to evH; handler-≡ to evCong)
 
 -- the meaning of a scene whose leaves mean `f a`
 media : ∀ {A L : Set} → (A → Media L) → Scene T D A → Media L
