@@ -24,7 +24,7 @@ remains, most useful first:
    it back is the identity (legacy `Binding/*`, `Supports/*`).  Easy.
 6. **Small ones, all easy.**  The rendered forest has one section per slide (legacy
    `renderDeck-length`); `animationFinal` returns the last frame and leaves a looping animation
-   alone (legacy `finalFrame-*`); `glue` is a monoid (follows from `chunks-++`).
+   alone (legacy `finalFrame-*`); `glue` is a monoid (done: `glueMonoid`, `chunks-isMonoidHomomorphism`).
 
 ## Dropped on purpose
 - The shipped encodings `Share`, `Formula`, `Param`, `Phases` and their properties (179 names):

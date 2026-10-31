@@ -21,8 +21,9 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] Phase 5 left over: `F-Coalgebras` category for machines; `skip-inject`/`lower-supported` stay direct.
 - [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
 - [x] Phase 6, content as containers (7d2d405..529df14, +177 against −300).
-- [ ] Phase 6 left over: `chunks-++` as `IsMonoidHomomorphism` (glue monoid on `List⁺ Flow`); `Math` substitution law; `Lower.Lowering` name clash with `Container.Lowering`; `Program/Embed` into `Animation`.
-- [ ] Never assigned: size and layout as monoids (§4.3); `lower`/`translate` as folds (§2).  Line budgets are a tripwire; clarity and robustness justify overshoot.
+- [x] Phase 8 (§4.3, Phase 4/6 leftovers): size into envelope semigroups, layout `Action`/`Placement`, `IsSemigroup`/`Monoid` packaging, `cut`; scene signature on `Container.Tagged`; `FlowLowering` rename; `Program/Embed` into `Scene.Animation`; `toLaTeX-bind`; `glueMonoid` and `chunks` as `IsMonoidHomomorphism` (+238; 23 `rewrite` removed).
+- [ ] Left: layout as a `NaturalTransformation` (§4.2, deferred twice); `_≈ᵖ_` as a permutation `Setoid` with `atop` commutative; `Overlay` on stdlib structures and out of `Diagram`; `Natural` offsets per connective.
+- [ ] No `rewrite` (`docs/Contributing.md`): remaining uses to be listed by the read-only audit.  Line budgets are a tripwire; clarity and robustness justify overshoot.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).

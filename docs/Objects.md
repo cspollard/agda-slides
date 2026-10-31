@@ -37,12 +37,15 @@ text (a monoid homomorphism to lines), SVG, width.
 
 Formulas and runs are free monads of small signatures, a node of `n` sub-terms having positions
 `Fin n`.  `Math = MathC ⋆ String` has identifiers as variables, so substitution is `>>=` and
-`toLaTeX` is a handler.  `Inline = InlineC ⋆ ⊥` has leaf commands (text, code, break, math,
+`toLaTeX` is a handler; `latex` is congruent, so printing commutes with substitution
+(`toLaTeX-bind`, an instance of `pfold-bind`).  `Inline = InlineC ⋆ ⊥` has leaf commands (text, code, break, math,
 citation) and one wrapper command carrying a `Wrap` (emphasis, strong, sub, sup, style, link);
 plain runs and HTML pieces are handlers read by `pfold`, width, `tspan`s and markup match the
 root.  `wrap-runs`: a wrapper has the strings of its sub-runs.  `Block` stays a rose tree over
 lists: `Flow` must remain a monoid under `++` as the leaf carrier of scenes, so deck lowerings
-keep their own recursion.  `Slides.Deck.Clock` instantiates events and sampling once for decks.
+keep their own recursion (`FlowLowering`, `_⋙ᶠ_`, apart from `Container.Lowering`).  `glue`
+is a monoid on `List⁺ Flow` (`glueMonoid`) and `chunks` an `IsMonoidHomomorphism` from `(List
+Item, ++, [])`.  `Slides.Deck.Clock` instantiates events and sampling once for decks.
 
 **Plot marks**: `Mark X Y` is a bifunctor in its coordinate types (`bimap`, `zipWith⁺`, with
 `bimap-id`, `bimap-∘`), so `logMark = bimap id log₁₀` and `lerpMark t` is a zip; error bars are
@@ -64,6 +67,15 @@ positions (`Container.Tagged.over`), `mapDia` is `translate` along it, and its f
 named anchors.  Printers (SVG, others) are maps over its primitive list.  One drawing
 vocabulary.  Layout is natural in the scalar.
 
+Sizes are folds into envelope semigroups (Yorgey): beside into `(S,+)×(S,⊔)`, above into
+`(S,⊔)×(S,+)`, atop into `(S,⊔)×(S,⊔)`, stdlib `CommutativeSemigroup`s by `DirectProduct`, so the
+size laws are their laws (semigroups, not monoids: `OrdMon` has no `0 ≤ x`).  Translation is an
+`Action` of `(S×S, ⊕)`, stated once, on drawings, anchors, lists and their product; a connective
+is a `Placement` (frame and two offsets from the children's frames) given to `combine`, "act,
+then concatenate", so associativity of `combine` and the name laws are single calculations.
+`besideA`/`aboveA` are `IsSemigroup` per alignment, valid layouts form `Monoid`s with `empty`
+(equal when their layouts are), and cutting a row or column is one lemma (`cut`).
+
 **Scene** over leaves: the free algebra of a temporal signature (parallel overlay, windowing,
 shifting, sequence, repetition, driving a leaf by a moving value) over those leaves, after
 Hudak's temporal media.  Meaning: a sparse list of events (onset, duration, leaf in local
@@ -78,6 +90,12 @@ signature is congruent and Hudak's axioms are equations (`Scene.Equiv`: `∥` as
 commutative, absence its unit; `⨾` associative; delays add; `hold`, `delay`, `drive` distribute
 over `∥`).  The unit of `⨾` holds only for windowed scenes and `hold a (hold b s)` is the narrow
 window only for `a ≤ b`, since leaves are eternal and `hold` keeps its given duration.
+
+The scene signature is `Tagged arity (λ t → Held t T D)`, as the Diagram one: a tag fixes the
+arity, `Held t T D` the payload (a duration, a count, a driver, or nothing), the old constructor
+names are pattern synonyms, and a change of clock and drivers `mapSC h g = over arity (mapP h g)`
+has `mapScene-id`/`mapScene-∘` from `over-id`/`over-∘`.  `Held` is per tag rather than `Fields`
+because the payload has two scalar kinds.
 **[decided]** Interpolation is in scope: a moving value
 is a term of Coupling, so no separate track datatype exists.  An *animation* is a scene of
 diagrams with a time variable; a *deck* is a scene of scenes with content leaves
