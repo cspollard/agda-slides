@@ -571,7 +571,7 @@ overshoot (the author's stated position).
 | 1 | **Container spine** (§2): stdlib setoid for `Poly`; one fold with `fold-unique` + fusion; `bind`, `lower`, `translate` defined as folds; laws derived; one monad (adjunction); `copairL`; one `_≈⋆_`; one level discipline; `pfold` as a thin view of `fold`. | −350 | **Done**, b05e69d..763437f, −297. |
 | 2 | **Theories on stdlib structures** (§3).  Prerequisite for the planned setoid equality. | −60 | **Done**, 78f3403, +23. |
 | 3 | **Diagram tag/payload split** and `Draw.group` removal (§4.1, §4.4); derive `mapDia`/`mapScene` functoriality; `layout` as a `NaturalTransformation`. | −250 | **Done**, e9bf14d..67a4c31, −2.  Skipped: layout as a `NaturalTransformation` (§4.2) and collapsing the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`), which are genuine per-operation handlers. |
-| 4 | **Temporal algebra record**, scene setoid `_≈ₛ_`, monoid-homomorphism statements, Hudak axioms (§5). | −100 | Open. |
+| 4 | **Temporal algebra record**, scene setoid `_≈ₛ_`, monoid-homomorphism statements, Hudak axioms (§5). | −100 | **Done**, ddaf6ef..3d7dbc8, +337.  Hudak axioms that fail (`⨾` unit on leaves, `hold`∘`hold` beyond `a ≤ b`) are documented in `Scene.Equiv`.  Left: `Container.Tagged` for the Scene signature and `mapScene` laws, `_≈ₛ_` as the output setoid of `Program.Sem`, most of §5.4. |
 | 5 | **Program behaviours** `List C → O`, bisimulation ⇔ trace equality, `Via` via `mapMaybe` (§6). | −110 | Open. |
 | 6 | **Content as containers** (`BlockC`, `InlineC`, `MathC`, `MarkC`); backends and plots as handlers; generic sharing (§7, §8). | −300 | Open. |
 | 7 | **Small duplicates** (§4.4, §5.4, §8.4).  Can run in parallel with any phase, on disjoint files. | −150 | Open. |
