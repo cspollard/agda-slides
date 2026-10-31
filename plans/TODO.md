@@ -29,18 +29,24 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] (a) Docs: how the objects relate (forms, sections and retractions, statuses) and where things live, in `docs/Objects.md`; layers in `src/Slides.agda`.
 - [x] (b) S1: `lower-copairL-inl` in `Container.Sum.Properties` (`lower-inject`, `skip-inject` its instances); `Semantics.Behaviour` (`final : Terminal (F-Coalgebras Moore)`, `mapO`, `reindex`, `const`/`hd`, `hd∘const`); `Program/Machine` a coalgebra view (`coalg`), `Program/Sem` on the layer, no `rewrite`.  Not done: `sem-inject` generic in the signature (one instance only).
 - [x] (c) S4: one notion of step (`Deck.Steps`: a step is a page fragment), `ticks`/`visible`/`deckM`/labels/`render-events` count it; `deckM` is `visible (flat d)` reindexed along `pos` (`feed-deckM`).  The step-count bug is fixed in the model.
-  - [ ] `render-fragments` holds given `BlockLaw`; prove it for blocks with inline text (no fragment class in `Inline` pieces, by induction on the free monad), SVG (a hypothesis on style strings), sanitised classes (`fixText` keeps class tokens, `fixAttrs` keeps `class`) and animation elements (`length rs` rests).
+  - [x] `render-fragments` holds given `BlockLaw`: proved in Phase 10, `BlockLaw` is now `block-count` under the decidable `saneSlide`, discharged for every shipped deck.
   - [ ] `visible` is chunk-granular; fragments inside a chunk would need a reveal operation on flows.
-  - [ ] `Steps.aside?` duplicates `Render.aside?` (`aside?-agree`); make `Render` import it.
+  - [x] `Steps.aside?` duplicates `Render.aside?`: `Render` imports it (Phase 10).
 - [x] (d) S5: `Framed W H` with `framedMonoid` (up to layout), `renderF`, `marks-hom` (the marks layer, for fixed axes, a monoid homomorphism from series lists).  Plot content stays `List Series` (lowering per `Geo`, legend entries); an extension only if diagram annotations in plots are wanted.  Dead `lerp-same`, `niceStep` removed.
-  - [ ] `Framed` is generic to Diagram: move it out of `Plot/Laws`.
+  - [x] `Framed` is generic to Diagram: `Slides.Diagram.Framed`, over any `Space` (Phase 10).
 - [x] (e) `rewrite` batches 2 (`Diagram/Natural`, 27) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`, 20): none left; `placed-unitˡ`/`placed-unitʳ`, shared `validMonoid`.
-  - [ ] `⊔-idem` sits in `Diagram/Valid`; it belongs with the order laws in `Scalar/Core`.
-- [ ] (f) Later:
+  - [x] `⊔-idem` moved to `Scalar/Core` (Phase 10).
+- [ ] (f) Later (Phase 10 did the `rewrite` batches and most of the clarity audit):
   - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
   - S3: the deck behaviour stated once (`deckBeh`), `pause-agree` restated against it.
-  - `rewrite` batches 1 (Scalar, Backend), 4 (Program/Supports, Program/Navigation; Deck done in S4), 5 (Scene; needs the pos-free sampling lemmas first).
-  - Clarity audit, medium and low: `InlineC`/`MathC` as `Tagged`; one `map-fuse` lemma for the nine `map-∘`/`map-cong` chains; one `Draw` traversal (`mapXY`) for the five hand-spelled copies; `Names/Soundness` clauses via `pfold-rel`; dead code (`deckOf`, `kids`, `noSupports`); unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`); header slip (`Deck/Lower` parenthetical).
+  - Clarity audit, left: `Names/Soundness` clauses via `pfold-rel`; unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`, or drop it).
+  - `visible` below chunk granularity (a reveal operation on flows).
+
+## Phase 10: page steps proved, last `rewrite`s, clarity (`plans/Review.md` §9.2)
+- [x] `BlockLaw` proved: `Backend/Fragments` (counting `.fragment`), `Render/{Inline,Sane,Svg,Properties}`; `render-fragments` and `ticks-fragments` given the decidable `saneSlide` (class strings, `language-` classes, draw style classes); `Render/Shipped` checks every shipped deck by `tt`.
+- [x] SVG condition on the layout's style classes (`svg?`), not the printed output; `Diagram.Print` and `animationEl` pieces lifted to top level, so `renderSVG-count` is proved against the real definitions (no mirror).
+- [x] `rewrite` batches 1, 4, 5: Scene (18, via `holdC-≤`/`delayC-≤`/`seqC-≤`, `seq-assoc-pt′`, `duration-nonneg`), Scalar, `Share/Properties`, Program/Supports and Navigation (22).  `grep -w rewrite src` is empty.
+- [x] Clarity: `InlineC`/`MathC` as `Tagged Fin`; `map-fuse`; `mapXY` with `Diagram.DrawLaws`; `Diagram.Framed`; dead `deckOf`, `kids`, `noSupports` removed; `Deck/Lower` header fixed.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).

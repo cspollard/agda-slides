@@ -604,12 +604,12 @@ relations are recorded in `docs/Objects.md`, "How the objects relate"; items in 
 |---|---|---|
 | S0 | Docs: relations, forms, statuses, where things live | Done |
 | S1 | Generic extension retract in `Container.Sum.Properties`; `Semantics/Behaviour` (final Moore coalgebra); `Program/Machine`, `Program/Sem` ported | Done |
-| S4 | One notion of step (fixes the step-count mismatch with the pages); deck as a reindexing | Done (page count given `BlockLaw`) |
+| S4 | One notion of step (fixes the step-count mismatch with the pages); deck as a reindexing | Done (page count proved in Phase 10, §9.2) |
 | S5 | Plot as framed diagrams; plot content as an extension | Done (content stays `List Series`, see TODO) |
 | — | `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`) | Done |
 | S2 | Models layer (powers are models, Hudak laws for programs); read-at-start retraction law, only if conditional laws stay small | Later |
 | S3 | Deck behaviour stated once | Later |
-| — | `rewrite` batches 1, 4, 5; clarity audit medium and low items | Later |
+| — | `rewrite` batches 1, 4, 5; clarity audit medium and low items | Done in Phase 10 (§9.2) |
 
 **Not worth doing** (recorded so it is not retried):
 - `mu-Bialgebras` / `DistributiveLaw` from agda-categories: they cover simple laws `T F ⇒ F T`;
@@ -626,6 +626,22 @@ relations are recorded in `docs/Objects.md`, "How the objects relate"; items in 
   must commute: the languages are objects related by split monos and reindexings, backends print
   syntax, and agreement with the JS players is tested, not proved.
 
+
+### 9.2 Phase 10: the page count proved, no `rewrite` left
+
+| Task | Work | Result |
+|---|---|---|
+| A | `BlockLaw` as a theorem | `render-fragments`/`ticks-fragments` given `saneSlide`, a decidable check on the deck's strings; `block-count` per block; `Render/Shipped` passes every shipped deck by `tt` |
+| E | SVG part of `saneSlide` | `svg?` on the layout's style classes, not printed output; `Diagram.Print` and `animationEl` lifted to top level so `renderSVG-count` is proved per shape on the real code |
+| B | Scene `rewrite` (18) | `holdC-≤`, `delayC-≤`, `seqC-≤`, `seq-assoc-pt′`, `duration-nonneg` |
+| C | Last `rewrite`s (22): Scalar, `Share/Properties`, Program/Supports and Navigation | none left in `src/`; `noSupports` removed |
+| D | Clarity audit, medium and low | `Tagged` `InlineC`/`MathC`, `map-fuse`, `mapXY` and `DrawLaws`, `Diagram.Framed`, `⊔-idem` to `Scalar/Core`, dead code removed |
+
+Why `saneSlide` stays a check: `fragment (just s)` and `language-lang` count tokens of a string the
+author chose; the `String` lemmas that would make them theorems for all `s` are not `--safe`.
+Lesson for Agda: lemmas about the sanitiser's `element`/`textElement` must take tag, attributes and
+children explicitly; leaving them to unification through `fixName`/`fixAttrs` stalls the checker.
+Left: `Names/Soundness` via `pfold-rel`; unused `chunks-isMonoidHomomorphism`; S2, S3.
 
 ## 10. Literature (to add to `Objects.md`)
 

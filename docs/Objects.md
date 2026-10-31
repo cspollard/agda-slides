@@ -124,21 +124,30 @@ rests (`span.fragment anim-step`).  The pages step through every `.fragment` (`a
 reveal.js), so a step is a page fragment.  `Slides.Deck.Steps` counts them on the syntax: `flowSteps`
 (a monoid homomorphism from flows under `++`), `wraps` (a later chunk's own wrapper, absent for a
 chunk of notes and scripts only), `gap c d` (the step at which chunk `d` appears) and `chunkSteps`;
-`ticks s = suc (chunkSteps (chunkL s))` (Deck/Syntax.agda:145).  `visible`, `deckM`, `goto`, labels
+`ticks s = suc (chunkSteps (chunkL s))` (Deck/Syntax.agda:146).  `visible`, `deckM`, `goto`, labels
 and `render-events` count these steps.  Against the page, `render-fragments`
-(Backend/Render/Properties.agda:254) proves the number of `.fragment` elements of `renderSlide s` is
-`chunkSteps`, given `BlockLaw` (each block renders its own `blockSteps` fragments), which is a named
-hypothesis: open for blocks holding inline text, SVG, sanitised classes or animations.  `visible`
+(Backend/Render/Properties.agda:159) proves the number of `.fragment` elements of `renderSlide s` is
+`chunkSteps`, and `ticks-fragments` that `ticks s` is one more, for every slide with `saneSlide s`
+(Backend/Render/Sane.agda:92).  `saneSlide` is a decidable check on the deck's own strings, the
+only places a stray `fragment` class can come from: a `classed` class (as the sanitiser leaves it,
+`classSeen`), a `fragment (just s)` class, a code block's `language-` class, and the style class of
+each draw in a diagram, still or first animation frame (`svg?`, Backend/Render/Svg.agda).  Under it
+each block renders exactly its `blockSteps` (`block-count`, Sane.agda:168): inline text never holds
+one (`inline-count`, by `pfold` over `InlineC`), the printed SVG holds none (`renderSVG-count`, per
+shape against `Diagram.Print`'s own attribute builders), an animation holds one per rest
+(`animation-count`).  The check is not a theorem for all strings: the `String` lemmas it would need
+are not available under `--safe`.  `Backend/Render/Shipped` discharges it by `tt` for every shipped
+deck, so `make check` fails if a deck ever breaks the count.  `visible`
 is chunk-granular **[decided]**: at a step it shows each chunk whose wrapper has appeared, whole;
 fragments inside a chunk are not modelled (that needs a reveal operation on flows).
 
 | Relation | Form | Section / retraction | Status |
 |---|---|---|---|
 | `Media → Timed` | model homomorphism | — | holds: `events-sample` (Scene/Sample.agda:340) |
-| Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:25); `Framed W H`, `renderF`, `marks-hom` (Plot/Laws.agda:52,103,127); whole-plot `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
+| Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:39); `Framed W H` (Diagram/Framed.agda:25, any `Space`), `renderF`, `marks-hom` (Plot/Laws.agda:47,71); whole-plot `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
 | Diagram ⊂ Animation | split mono | `pure` / `firstFrame`, `animationFinal` | holds pointwise: `diagram-const` (Scene/Animation.agda:83); the retraction law: planned, later (S2) |
 | Animation ⊂ Program | sub-bialgebra | `inject` / `hd` | holds: `inject-const` (Program/Sem.agda:130), `hd∘const` (Semantics/Behaviour.agda:121); generic in the signature: not done (one instance) |
-| Deck → Program | reindexing of the step stream along `pos` | none | holds: `feed-deckM` (Deck/Machine.agda:108); per slide: `pause-agree` (Deck/Program.agda:108); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:254), given `BlockLaw`; deck behaviour stated once: planned, later (S3) |
+| Deck → Program | reindexing of the step stream along `pos` | none | holds: `feed-deckM` (Deck/Machine.agda:109); per slide: `pause-agree` (Deck/Program.agda:103); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:159), given `saneSlide`, which every shipped deck passes (`Render/Shipped`); deck behaviour stated once: planned, later (S3) |
 | Backend support → Program | reindexing along `mapMaybe dec` | none | holds: `lower-sound` (Program/Supports.agda:147) |
 | Dia ⊂ Dia⁺ (syntax) | extension | `inject` / `lowerDia` (`lowerCurve`) | holds: `lower-inject` (Diagram/Curve/Properties.agda:17) |
 | Scene ⊂ Program (syntax) | extension | `inject` / `skip` (`skipOp`) | holds: `skip-inject` (Program/Syntax.agda:56) |
@@ -156,11 +165,13 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
   `Container.Category`, `Container.Pick`.
 - Scalars: `Slides.Scalar.{Core,Space,Time,Coupling,Hom}`; models `Slides.Scalar.Model.{Nat,Rat}`.
 - Text and formulas: `Slides.Text` (`Inline`, runs), `Slides.Math` (`Math`, `toLaTeX`).
-- Diagram: `Slides.Diagram.Syntax` (the signature), `.Draw` (`Layout`), `.Place` (`Placement`),
+- Diagram: `Slides.Diagram.Syntax` (the signature), `.Draw` (`Layout`, `mapXY` the one traversal of a draw's coordinates), `.Place` (`Placement`),
+  `.DrawLaws` (`mapXY` laws), `.Framed` (drawings of a fixed size, a monoid under overlay),
   `.Layout` (the fold), `.Laws` (`Action`, sizes), `.Assoc`, `.Valid`, `.Commute`, `.Overlay`,
   `.Names`, `.Natural`, `.Functoriality`, `.Print` (SVG), `.Convenience`; curves
   `Slides.Diagram.Curve` (`CurveC`, `Dia⁺`, `lowerCurve`).
-- Scene: `Slides.Scene.Syntax`, `.Algebra` (`Payload`, `Temporal`), `.Events`, `.Sample`,
+- Scene: `Slides.Scene.Syntax`, `.Algebra` (`Payload`, `Temporal`; `holdC-≤`, `delayC-≤`, `seqC-≤`
+  for non-negative durations), `.Events`, `.Sample`,
   `.Relation`, `.Equiv` (`_≈ₛ_`, Hudak's axioms), `.Tick`, `.Moving`, `.Animation` (`frameAt`,
   `diagram-const`).
 - Behaviours (no syntax): `Semantics.Behaviour` (`Moore`, `final`, `mapO`, `reindex`, `const`/`hd`).
@@ -170,9 +181,10 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
   (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
   (`FlowLowering`), `.DSL`, `.Anim`, `.Talk`.
 - Plot: `Slides.Plot.Mark` (`Mark`, `MarkC`), `.Render` (`render`, `renderMark`), `.Laws`
-  (`Framed`, `marks-hom`), `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
+  (`renderF`, `marks-hom`), `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
 - 3D: `Slides.Trig` (and `.Properties`), `Slides.Three.{Point,View,Solid,Render,Properties}`.
-- Backends: `Slides.Backend.Render` (the shared core), `.Reveal`, `.Plain`, `.HTML`, `.Animation`
+- Backends: `Slides.Backend.Render` (the shared core; `.Sane`, `.Inline`, `.Svg`, `.Properties`,
+  `.Shipped`: the fragment count), `.Fragments` (counting `.fragment` in HTML trees), `.Reveal`, `.Plain`, `.HTML`, `.Animation`
   (shipped events, `firstFrame`), `.Share` (sharing), `.Input` (bindings); the IO edge
   `Slides.Driver`.
 
@@ -193,7 +205,7 @@ math, link, citation) shared by prose and diagram labels.  Every consumer is a f
 text (a monoid homomorphism to lines), SVG, width.
 
 Formulas and runs are free monads of small signatures, a node of `n` sub-terms having positions
-`Fin n`.  `Math = MathC ⋆ String` has identifiers as variables, so substitution is `>>=` and
+`Fin n` (`InlineC = Tagged Fin InlineOp`, `MathC = Tagged Fin Op`).  `Math = MathC ⋆ String` has identifiers as variables, so substitution is `>>=` and
 `toLaTeX` is a handler; `latex` is congruent, so printing commutes with substitution
 (`toLaTeX-bind`, an instance of `pfold-bind`).  `Inline = InlineC ⋆ ⊥` has leaf commands (text, code, break, math,
 citation) and one wrapper command carrying a `Wrap` (emphasis, strong, sub, sup, style, link);
