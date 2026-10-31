@@ -30,6 +30,12 @@ open Sub Sb
 ... | inj₁ b≤c = b≤c
 ... | inj₂ c≤b = ≤-reflexive (+-cancelˡ a b c (≤-antisym h (+-mono-r a c≤b)))
 
+-- `+` distributes over `⊔`
++-⊔ : ∀ a b c → a + (b ⊔ c) ≡ (a + b) ⊔ (a + c)
++-⊔ a b c with ≤-total b c
+... | inj₁ b≤c = trans (cong (a +_) (⊔-≤ b≤c)) (sym (⊔-≤ (+-mono-r a b≤c)))
+... | inj₂ c≤b = trans (cong (a +_) (⊔-≥ c≤b)) (sym (⊔-≥ (+-mono-r a c≤b)))
+
 -- a duration added to a non-negative one grows
 ≤-+ : ∀ {a o} → 0# ≤ o → a ≤ a + o
 ≤-+ {a} {o} 0≤o = ≤-trans (≤-reflexive (sym (+-idʳ a))) (+-mono-r a 0≤o)
