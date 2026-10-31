@@ -1,6 +1,7 @@
 {-# OPTIONS --safe --without-K #-}
 
--- Typed mathematics: formulas as a small AST, printed to LaTeX by `toLaTeX`.
+-- Typed mathematics: formulas as the free monad of a small signature (identifiers are variables,
+-- so substitution is `>>=`), printed to LaTeX by `toLaTeX`, a fold.
 --
 -- Structure is checked when the deck typechecks (a fraction has two arguments, a sum has
 -- bounds), and the printer wraps every argument of `frac`, `^`, `_` and `\sqrt` in braces, so
@@ -9,11 +10,20 @@
 
 module Slides.Math where
 
-open import Data.List using (List; []; _∷_; map; concat)
-open import Data.Nat using (ℕ)
+open import Level using (0ℓ)
+open import Data.List using (List; []; _∷_; map; lookup; tabulate)
+open import Data.Fin using (Fin; zero; suc)
+open import Data.Nat using (ℕ; suc)
 open import Data.Nat.Show using (show)
+open import Data.Product.Base using (Σ; _,_; proj₁)
 open import Data.String using (String; concat; fromList; toList) renaming (_++_ to _++ˢ_)
 open import Data.Char using (Char)
+open import Function.Base using (_∘_)
+open import Data.Container.Core using (Container; _▷_)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+
+open import Container.Pick using (pick2)
+open import Container.Interpret.Plain using (Handler; pfold)
 
 data Greek : Set where
   alpha beta gamma delta epsilon theta lambda mu nu pi rho sigma tau phi chi psi omega : Greek
@@ -25,30 +35,83 @@ data Fn : Set where
 data Rel : Set where
   eq neq lt gt le ge approx to mid elem : Rel
 
-data Math : Set where
-  var       : String → Math              -- an identifier, printed as written
-  num       : ℕ → Math
-  greek     : Greek → Math
-  add sub mul : Math → Math → Math       -- a + b, a - b, a \cdot b
-  neg       : Math → Math
-  frac      : (numerator denominator : Math) → Math
-  pow       : (base exponent : Math) → Math
-  idx       : (base subscript : Math) → Math
-  sqrt      : Math → Math
-  fn        : Fn → Math → Math           -- \sin\left(…\right)
-  sum       : (lower upper body : Math) → Math
-  integral  : (lower upper body : Math) → Math
-  prod      : (lower upper body : Math) → Math
-  paren     : Math → Math                -- \left( … \right)
-  rel       : Rel → Math → Math → Math
-  vec hat bar : Math → Math
-  cal bb    : Math → Math                -- \mathcal, \mathbb
-  call      : Math → List Math → Math    -- f\left(a, b\right)
-  tuple     : List Math → Math           -- a, b, c (no brackets)
-  juxt      : Math → Math → Math         -- a b, with a thin space
-  dd        : Math → Math                -- \mathrm{d}x, with a thin space before
-  text      : String → Math              -- upright text
-  raw       : String → Math              -- LaTeX, verbatim
+-- The signature: a command of `n` children is an `Op n`; its positions are `Fin n`.  Formulas are
+-- the free monad over it with identifiers as variables (`var = pure`), so substituting a formula
+-- for an identifier is `>>=`, and a printer is a handler read by `pfold`.
+data Op : ℕ → Set where
+  numO                    : ℕ → Op 0
+  greekO                  : Greek → Op 0
+  textO rawO              : String → Op 0               -- upright text; LaTeX, verbatim
+  negO sqrtO parenO       : Op 1
+  vecO hatO barO calO bbO : Op 1                        -- \vec, \hat, \bar, \mathcal, \mathbb
+  ddO                     : Op 1                        -- \mathrm{d}x, with a thin space before
+  fnO                     : Fn → Op 1                   -- \sin\left(…\right)
+  addO subO mulO          : Op 2                        -- a + b, a - b, a \cdot b
+  fracO powO idxO juxtO   : Op 2                        -- juxtaposed with a thin space
+  relO                    : Rel → Op 2
+  sumO integralO prodO    : Op 3                        -- lower, upper, body
+  callO                   : (n : ℕ) → Op (suc n)        -- f\left(a, b\right): the head, then n arguments
+  tupleO                  : (n : ℕ) → Op n              -- a, b, c (no brackets)
+
+MathC : Container 0ℓ 0ℓ
+MathC = Σ ℕ Op ▷ (Fin ∘ proj₁)
+
+Math : Set
+Math = MathC ⋆ String
+
+-- Authoring: the constructors of the surface language
+
+private
+  node : ∀ {n} → Op n → (Fin n → Math) → Math
+  node o k = impure ((_ , o) , k)
+
+  atom : Op 0 → Math
+  atom o = node o λ ()
+
+  un : Op 1 → Math → Math
+  un o a = node o λ _ → a
+
+  bin : Op 2 → Math → Math → Math
+  bin o a b = node o (pick2 a b)
+
+  tri : Op 3 → Math → Math → Math → Math
+  tri o a b c = node o λ { zero → a ; (suc zero) → b ; (suc (suc zero)) → c }
+
+var : String → Math              -- an identifier, printed as written
+var = pure
+
+num : ℕ → Math
+num n = atom (numO n)
+
+greek : Greek → Math
+greek g = atom (greekO g)
+
+text raw : String → Math         -- upright text; LaTeX, verbatim
+text s = atom (textO s)
+raw s  = atom (rawO s)
+
+add sub mul frac pow idx juxt : Math → Math → Math
+add = bin addO; sub = bin subO; mul = bin mulO; frac = bin fracO
+pow = bin powO; idx = bin idxO; juxt = bin juxtO
+
+neg sqrt paren vec hat bar cal bb dd : Math → Math
+neg = un negO; sqrt = un sqrtO; paren = un parenO; vec = un vecO; hat = un hatO
+bar = un barO; cal = un calO; bb = un bbO; dd = un ddO
+
+fn : Fn → Math → Math
+fn f = un (fnO f)
+
+rel : Rel → Math → Math → Math
+rel r = bin (relO r)
+
+sum integral prod : (lower upper body : Math) → Math
+sum = tri sumO; integral = tri integralO; prod = tri prodO
+
+call : Math → List Math → Math
+call f as = node (callO _) λ { zero → f ; (suc i) → lookup as i }
+
+tuple : List Math → Math
+tuple as = node (tupleO _) (lookup as)
 
 -- Printing
 
@@ -94,45 +157,46 @@ private
   grp : String → String
   grp s = "{" ++ˢ s ++ˢ "}"
 
+  big : String → (Fin 3 → String) → String
+  big cmd k = cmd ++ˢ grp (k zero) ++ˢ "^" ++ˢ grp (k (suc zero)) ++ˢ " " ++ˢ k (suc (suc zero))
+
 commaSep : List String → String
 commaSep []           = ""
 commaSep (x ∷ [])     = x
 commaSep (x ∷ y ∷ xs) = x ++ˢ ", " ++ˢ commaSep (y ∷ xs)
 
-mutual
-  toLaTeXs : List Math → List String
-  toLaTeXs []       = []
-  toLaTeXs (m ∷ ms) = toLaTeX m ∷ toLaTeXs ms
+-- the LaTeX of a command, given that of its children
+latex : Handler MathC String
+latex (_ , numO n)      _ = show n
+latex (_ , greekO g)    _ = "\\" ++ˢ greekName g
+latex (_ , textO s)     _ = "\\text" ++ˢ grp (escape s)
+latex (_ , rawO s)      _ = s
+latex (_ , negO)        k = "-" ++ˢ k zero
+latex (_ , sqrtO)       k = "\\sqrt" ++ˢ grp (k zero)
+latex (_ , parenO)      k = "\\left(" ++ˢ k zero ++ˢ "\\right)"
+latex (_ , vecO)        k = "\\vec" ++ˢ grp (k zero)
+latex (_ , hatO)        k = "\\hat" ++ˢ grp (k zero)
+latex (_ , barO)        k = "\\bar" ++ˢ grp (k zero)
+latex (_ , calO)        k = "\\mathcal" ++ˢ grp (k zero)
+latex (_ , bbO)         k = "\\mathbb" ++ˢ grp (k zero)
+latex (_ , ddO)         k = "\\,\\mathrm{d}" ++ˢ k zero
+latex (_ , fnO f)       k = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ k zero ++ˢ "\\right)"
+latex (_ , addO)        k = k zero ++ˢ " + " ++ˢ k (suc zero)
+latex (_ , subO)        k = k zero ++ˢ " - " ++ˢ k (suc zero)
+latex (_ , mulO)        k = k zero ++ˢ " \\cdot " ++ˢ k (suc zero)
+latex (_ , fracO)       k = "\\frac" ++ˢ grp (k zero) ++ˢ grp (k (suc zero))
+latex (_ , powO)        k = grp (k zero) ++ˢ "^" ++ˢ grp (k (suc zero))
+latex (_ , idxO)        k = grp (k zero) ++ˢ "_" ++ˢ grp (k (suc zero))
+latex (_ , juxtO)       k = k zero ++ˢ "\\, " ++ˢ k (suc zero)
+latex (_ , relO r)      k = k zero ++ˢ " " ++ˢ relSymbol r ++ˢ " " ++ˢ k (suc zero)
+latex (_ , sumO)        k = big "\\sum_" k
+latex (_ , integralO)   k = big "\\int_" k
+latex (_ , prodO)       k = big "\\prod_" k
+latex (_ , callO n)     k = k zero ++ˢ "\\left(" ++ˢ commaSep (tabulate (k ∘ suc)) ++ˢ "\\right)"
+latex (_ , tupleO n)    k = commaSep (tabulate k)
 
-  toLaTeX : Math → String
-  toLaTeX (var s)            = s
-  toLaTeX (num n)            = show n
-  toLaTeX (greek g)          = "\\" ++ˢ greekName g
-  toLaTeX (add a b)          = toLaTeX a ++ˢ " + " ++ˢ toLaTeX b
-  toLaTeX (sub a b)          = toLaTeX a ++ˢ " - " ++ˢ toLaTeX b
-  toLaTeX (mul a b)          = toLaTeX a ++ˢ " \\cdot " ++ˢ toLaTeX b
-  toLaTeX (neg a)            = "-" ++ˢ toLaTeX a
-  toLaTeX (frac a b)         = "\\frac" ++ˢ grp (toLaTeX a) ++ˢ grp (toLaTeX b)
-  toLaTeX (pow a b)          = grp (toLaTeX a) ++ˢ "^" ++ˢ grp (toLaTeX b)
-  toLaTeX (idx a b)          = grp (toLaTeX a) ++ˢ "_" ++ˢ grp (toLaTeX b)
-  toLaTeX (sqrt a)           = "\\sqrt" ++ˢ grp (toLaTeX a)
-  toLaTeX (fn f a)           = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
-  toLaTeX (sum l u b)        = "\\sum_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
-  toLaTeX (integral l u b)   = "\\int_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
-  toLaTeX (prod l u b)       = "\\prod_" ++ˢ grp (toLaTeX l) ++ˢ "^" ++ˢ grp (toLaTeX u) ++ˢ " " ++ˢ toLaTeX b
-  toLaTeX (paren a)          = "\\left(" ++ˢ toLaTeX a ++ˢ "\\right)"
-  toLaTeX (rel r a b)        = toLaTeX a ++ˢ " " ++ˢ relSymbol r ++ˢ " " ++ˢ toLaTeX b
-  toLaTeX (vec a)            = "\\vec" ++ˢ grp (toLaTeX a)
-  toLaTeX (hat a)            = "\\hat" ++ˢ grp (toLaTeX a)
-  toLaTeX (bar a)            = "\\bar" ++ˢ grp (toLaTeX a)
-  toLaTeX (cal a)            = "\\mathcal" ++ˢ grp (toLaTeX a)
-  toLaTeX (bb a)             = "\\mathbb" ++ˢ grp (toLaTeX a)
-  toLaTeX (call f as)         = toLaTeX f ++ˢ "\\left(" ++ˢ commaSep (toLaTeXs as) ++ˢ "\\right)"
-  toLaTeX (juxt a b)          = toLaTeX a ++ˢ "\\, " ++ˢ toLaTeX b
-  toLaTeX (tuple as)          = commaSep (toLaTeXs as)
-  toLaTeX (dd a)              = "\\,\\mathrm{d}" ++ˢ toLaTeX a
-  toLaTeX (text s)           = "\\text" ++ˢ grp (escape s)
-  toLaTeX (raw s)            = s
+toLaTeX : Math → String
+toLaTeX = pfold MathC latex (λ s → s)
 
 -- Authoring: operators
 
