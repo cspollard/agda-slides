@@ -15,6 +15,8 @@ open import Slides.Scalar.Space using (Space)
 
 module Slides.Diagram.Assoc {S : Set} (Sp : Space S) where
 
+open import Algebra.Structures using (IsSemigroup)
+import Relation.Binary.PropositionalEquality.Properties as ≡P
 open import Data.List using (List; []; _∷_; map; _++_)
 import Data.List.Properties as L
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
@@ -139,3 +141,10 @@ layout-besideA-assoc al a b c = besideA-assoc al (layout a) (layout b) (layout c
 layout-aboveA-assoc : ∀ al (a b c : D.Dia S) →
   layout (D.aboveA al (D.aboveA al a b) c) ≡ layout (D.aboveA al a (D.aboveA al b c))
 layout-aboveA-assoc al a b c = aboveA-assoc al (layout a) (layout b) (layout c)
+
+-- each alignment is a semigroup of layouts
+besideSG : ∀ al → IsSemigroup _≡_ (P.besideA al)
+besideSG al = record { isMagma = record { isEquivalence = ≡P.isEquivalence ; ∙-cong = cong₂ (P.besideA al) } ; assoc = besideA-assoc al }
+
+aboveSG : ∀ al → IsSemigroup _≡_ (P.aboveA al)
+aboveSG al = record { isMagma = record { isEquivalence = ≡P.isEquivalence ; ∙-cong = cong₂ (P.aboveA al) } ; assoc = aboveA-assoc al }

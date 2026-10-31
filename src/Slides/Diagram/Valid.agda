@@ -26,7 +26,10 @@ open import Data.Empty using (⊥)
 open import Data.Fin using (zero; suc)
 open import Data.List using (List; []; _∷_; map; _++_)
 import Data.List.Properties as ListP
-open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
+open import Level using (0ℓ)
+open import Algebra.Bundles using (Monoid)
+open import Slides.Diagram.Geometry using (VAlign; Align)
+open import Data.Product.Base using (_×_; _,_; proj₁; proj₂; Σ)
 open import Data.Unit using (⊤; tt)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂; subst)
 
@@ -37,6 +40,7 @@ open Space Sp
 import Slides.Diagram.Place Sp as P
 open P using (dbl; valignOffset; alignOffset)
 open import Slides.Diagram.Layout Sp using (layout)
+open import Slides.Diagram.Assoc Sp using (besideA-assoc; aboveA-assoc)
 open import Slides.Diagram.Laws Sp using (size; sizeH; size-layout; shift-zero)
 
 -- Valid diagrams
@@ -180,3 +184,32 @@ gap-above al a b rewrite ⊔-≥ (≤-refl {0#}) = refl
 
 gap-atop : ∀ a b c d → P.atop (P.spacer a b) (P.spacer c d) ≡ P.spacer (a ⊔ c) (b ⊔ d)
 gap-atop a b c d = refl
+
+-- The valid layouts (non-negative frame) with `besideA al` (`aboveA al`) and the empty layout are
+-- monoids, equal when the layouts are
+Valid⁺ : Set
+Valid⁺ = Σ (Layout S) λ l → NN (P.width l) × NN (P.height l)
+
+besideMonoid : VAlign → Monoid 0ℓ 0ℓ
+besideMonoid al = record
+  { Carrier = Valid⁺ ; _≈_ = λ x y → proj₁ x ≡ proj₁ y
+  ; _∙_ = λ (a , wa , ha) (b , wb , hb) → P.besideA al a b , nn+ wa wb , nn⊔ˡ ha
+  ; ε = empty , ≤-refl , ≤-refl
+  ; isMonoid = record
+      { isSemigroup = record
+          { isMagma = record { isEquivalence = record { refl = refl ; sym = sym ; trans = trans }
+                             ; ∙-cong = λ p q → cong₂ (P.besideA al) p q }
+          ; assoc = λ (a , _) (b , _) (c , _) → besideA-assoc al a b c }
+      ; identity = (λ (a , _ , ha) → besideA-unitˡ al a ha) , (λ (a , _ , ha) → besideA-unitʳ al a ha) } }
+
+aboveMonoid : Align → Monoid 0ℓ 0ℓ
+aboveMonoid al = record
+  { Carrier = Valid⁺ ; _≈_ = λ x y → proj₁ x ≡ proj₁ y
+  ; _∙_ = λ (a , wa , ha) (b , wb , hb) → P.aboveA al a b , nn⊔ˡ wa , nn+ ha hb
+  ; ε = empty , ≤-refl , ≤-refl
+  ; isMonoid = record
+      { isSemigroup = record
+          { isMagma = record { isEquivalence = record { refl = refl ; sym = sym ; trans = trans }
+                             ; ∙-cong = λ p q → cong₂ (P.aboveA al) p q }
+          ; assoc = λ (a , _) (b , _) (c , _) → aboveA-assoc al a b c }
+      ; identity = (λ (a , wa , _) → aboveA-unitˡ al a wa) , (λ (a , wa , _) → aboveA-unitʳ al a wa) } }

@@ -96,6 +96,16 @@ card i c r w h d = named i (framed w h (rounded r (withId i (cls c))) d)
 layers : ∀ {S} → S → S → List (Dia S) → Dia S
 layers w h = foldr (λ d acc → overlay w h acc d) (spacer w h)
 
+-- a list joined by an operation with a separator between neighbours (none at the ends)
+cat : ∀ {X : Set} → (X → X → X) → X → X → List X → X
+cat _∙_ g x []       = x
+cat _∙_ g x (y ∷ ys) = x ∙ (g ∙ cat _∙_ g y ys)
+
+-- the empty list is the given unit
+catE : ∀ {X : Set} → (X → X → X) → X → X → List X → X
+catE _∙_ g e []       = e
+catE _∙_ g e (x ∷ xs) = cat _∙_ g x xs
+
 -- What needs a zero or a literal
 
 module ConvenienceWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
@@ -109,17 +119,13 @@ module ConvenienceWith {S : Set} (0# : S) (fromℕ : ℕ → S) where
 
   -- a row / column with the same gap between neighbours (none at the ends)
   hcatA : VAlign → S → List (Dia S) → Dia S
-  hcatA al g []       = empty
-  hcatA al g (d ∷ []) = d
-  hcatA al g (d ∷ ds) = besideA al d (besideA al (↔ g) (hcatA al g ds))
+  hcatA al g = catE (besideA al) (↔ g) empty
 
   hcat : S → List (Dia S) → Dia S
   hcat = hcatA middle
 
   vcatA : Align → S → List (Dia S) → Dia S
-  vcatA al g []       = empty
-  vcatA al g (d ∷ []) = d
-  vcatA al g (d ∷ ds) = aboveA al d (aboveA al (↕ g) (vcatA al g ds))
+  vcatA al g = catE (aboveA al) (↕ g) empty
 
   vcat : S → List (Dia S) → Dia S
   vcat = vcatA centred
