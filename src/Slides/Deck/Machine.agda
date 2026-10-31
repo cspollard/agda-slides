@@ -38,6 +38,7 @@ import Data.String.Properties as Str
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋; dec-false)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
+import Relation.Binary.PropositionalEquality as ≡
 import Data.List.Properties as ListP
 open import Data.List.Membership.Propositional.Properties using (∈-map⁻)
 
@@ -91,7 +92,7 @@ posM : Deck → Machine.Machine Nav ℕ
 posM d = navM (steps d ∸ 1) (labels d) (λ n → n)
 
 pos : Deck → List Nav → ℕ
-pos d = Machine.feed (posM d)
+pos d cs = Machine.out (posM d) (Machine.runs (posM d) (Machine.init (posM d)) cs)
 
 -- the machine of the deck is the reading of the deck reindexed along the position map
 deckM : Deck → Machine.Machine Nav (Maybe Flow)
@@ -105,8 +106,9 @@ runs-deckM : ∀ d q cs → Machine.runs (deckM d) q cs ≡ Machine.runs (posM d
 runs-deckM d q []       = refl
 runs-deckM d q (c ∷ cs) = runs-deckM d _ cs
 
-feed-deckM : ∀ d cs → Machine.feed (deckM d) cs ≡ visible (flat d) (pos d cs)
-feed-deckM d cs = cong (visible (flat d)) (runs-deckM d _ cs)
+feed-deckM : ∀ d cs → Machine.feed (≡.setoid (Maybe Flow)) (deckM d) cs ≡ visible (flat d) (pos d cs)
+feed-deckM d cs = trans (Machine.obs-runs (≡.setoid (Maybe Flow)) (deckM d) _ cs)
+                        (cong (visible (flat d)) (runs-deckM d _ cs))
 
 -- The events of a deck of slides: each slide at the sum of the ticks before it
 
