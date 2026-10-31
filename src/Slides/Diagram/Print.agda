@@ -42,56 +42,86 @@ natPrint = record { unit = show ; pos = λ x → show (x / 2) }
 private
   variable A : Set
 
-  Attrs : Set
-  Attrs = List (String × String)
+Attrs : Set
+Attrs = List (String × String)
 
-  opt : String → Maybe String → Attrs
-  opt k nothing  = []
-  opt k (just v) = (k , v) ∷ []
+opt : String → Maybe String → Attrs
+opt k nothing  = []
+opt k (just v) = (k , v) ∷ []
 
-  padText : String → String
-  padText s = if null (toList s) then " " else s
+padText : String → String
+padText s = if null (toList s) then " " else s
 
-  -- hooks and presentation shared by every element
-  commonAttrs : Style → Attrs
-  commonAttrs s =
-      opt "class" (Style.cls s) ++ opt "id" (Style.ident s) ++ opt "stroke-dasharray" (Style.dash s)
-    ++ opt "opacity" (Maybe.map (λ n → show n ++ˢ "%") (Style.opacity s))
+-- hooks and presentation shared by every element
+commonAttrs : Style → Attrs
+commonAttrs s =
+    opt "class" (Style.cls s) ++ opt "id" (Style.ident s) ++ opt "stroke-dasharray" (Style.dash s)
+  ++ opt "opacity" (Maybe.map (λ n → show n ++ˢ "%") (Style.opacity s))
 
-  -- shapes are outlined in the text colour and unfilled unless styled
-  shapeAttrs : Style → Attrs
-  shapeAttrs s =
-      ("stroke" , fromMaybe "currentColor" (Style.stroke s)) ∷ ("fill" , fromMaybe "none" (Style.fill s))
-    ∷ opt "stroke-width" (Maybe.map show (Style.strokeWidth s)) ++ commonAttrs s
+-- shapes are outlined in the text colour and unfilled unless styled
+shapeAttrs : Style → Attrs
+shapeAttrs s =
+    ("stroke" , fromMaybe "currentColor" (Style.stroke s)) ∷ ("fill" , fromMaybe "none" (Style.fill s))
+  ∷ opt "stroke-width" (Maybe.map show (Style.strokeWidth s)) ++ commonAttrs s
 
-  markerId : String → String
-  markerId n = n ++ˢ "-arrow"
+markerId : String → String
+markerId n = n ++ˢ "-arrow"
 
-  translate : String → String → Attrs
-  translate x y = ("transform" , "translate(" ++ˢ x ++ˢ " " ++ˢ y ++ˢ ")") ∷ []
+translate : String → String → Attrs
+translate x y = ("transform" , "translate(" ++ˢ x ++ˢ " " ++ˢ y ++ˢ ")") ∷ []
 
-  -- `pending` is the vertical shift to undo at the next segment
-  -- the presentation attributes of a style, the size being a percent of the label's
-  styleAttrs : ℕ → TextStyle → Attrs
-  styleAttrs sz (style c w z) = opt "fill" c ++ opt "font-weight" w ++ opt "font-size" (Maybe.map (λ n → show (sz * n / 100)) z)
+-- the presentation attributes of a style, the size being a percent of the label's
+styleAttrs : ℕ → TextStyle → Attrs
+styleAttrs sz (style c w z) = opt "fill" c ++ opt "font-weight" w ++ opt "font-size" (Maybe.map (λ n → show (sz * n / 100)) z)
 
-  -- a construct other than a script is written as its plain text, with its style if it has one
-  tspans : ℕ → String → List Inline → List (XMLM A)
-  tspans sz pending []           = []
-  tspans sz pending (i@Sub ∷ ss) =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []) (padText (plainI i))
-      ∷ tspans sz ("-" ++ˢ show (sz / 4)) ss
-  tspans sz pending (i@Sup ∷ ss) =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []) (padText (plainI i))
-      ∷ tspans sz (show (sz / 3)) ss
-  tspans sz pending (i ∷ ss)     =
-    textElement "tspan" (opt "dy" (undo pending) ++ styleAttrs sz (styleOf i)) (padText (plainI i)) ∷ tspans sz "" ss
-    where styleOf : Inline → TextStyle
-          styleOf (Styled s) = s
-          styleOf _            = noStyle
-          undo : String → Maybe String
-          undo "" = nothing
-          undo d  = just d
+-- a label's pieces: a subscript or superscript is shifted, anything else is written as its plain text
+data Script : Set where
+  sub sup plain : Script
+
+scriptOf : Inline → Script
+scriptOf Sub = sub
+scriptOf Sup = sup
+scriptOf _   = plain
+
+styleOf : Inline → TextStyle
+styleOf (Styled s) = s
+styleOf _          = noStyle
+
+undo : String → Maybe String
+undo "" = nothing
+undo d  = just d
+
+-- `pending` is the vertical shift to undo at the next segment
+tspanAttrs : ℕ → String → Script → Inline → Attrs
+tspanAttrs sz pending sub   i = ("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []
+tspanAttrs sz pending sup   i = ("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []
+tspanAttrs sz pending plain i = opt "dy" (undo pending) ++ styleAttrs sz (styleOf i)
+
+tspan : ℕ → String → Script → Inline → XMLM A
+tspan sz pending k i = textElement "tspan" (tspanAttrs sz pending k i) (padText (plainI i))
+
+-- the shift the next segment undoes
+shift : ℕ → Script → String
+shift sz sub   = "-" ++ˢ show (sz / 4)
+shift sz sup   = show (sz / 3)
+shift sz plain = ""
+
+tspans : ℕ → String → List Inline → List (XMLM A)
+tspans sz pending []       = []
+tspans sz pending (i ∷ ss) = tspan sz pending (scriptOf i) i ∷ tspans sz (shift sz (scriptOf i)) ss
+
+-- how a label's lines are written
+data Lines : Set where
+  oneRun : String → Lines        -- a single plain run
+  blank  : Lines
+  oneRow : Text → Lines          -- one line with markup
+  rowsOf : List Text → Lines     -- none or several
+
+classify : List Text → Lines
+classify ((Run u ∷ []) ∷ []) = oneRun u
+classify ([] ∷ [])            = blank
+classify (l ∷ [])             = oneRow l
+classify ls                   = rowsOf ls
 
 module _ {S : Set} (P : Print S) where
   open Print P
@@ -106,6 +136,27 @@ module _ {S : Set} (P : Print S) where
   points ((x , y) ∷ []) = pos x ++ˢ "," ++ˢ pos y
   points ((x , y) ∷ ps) = pos x ++ˢ "," ++ˢ pos y ++ˢ " " ++ˢ points ps
 
+  -- a label: one `<text>` at a point; several lines are a `<tspan>` for each, the first raised so that the block is centred
+  labelAttrs : S → S → ℕ → Style → Attrs
+  labelAttrs x y sz s =
+    ("x" , pos x) ∷ ("y" , pos y) ∷ ("font-size" , show sz)
+    ∷ ("text-anchor" , fromMaybe "middle" (Style.anchor s)) ∷ ("dominant-baseline" , "central")
+    ∷ ("fill" , fromMaybe "currentColor" (Style.fill s)) ∷ commonAttrs s
+
+  labelRows : S → ℕ → String → List Text → List (XMLM A)
+  labelRows x sz dy []       = []
+  labelRows x sz dy (l ∷ ls) = element "tspan" (("x" , pos x) ∷ ("dy" , dy) ∷ []) (tspans sz "" l) ∷ labelRows x sz (show (sz * 3 / 2)) ls
+
+  -- the first line is raised by half the height of the others
+  firstDy : ℕ → List Text → String
+  firstDy sz ls = "-" ++ˢ show ((length ls ∸ 1) * (sz * 3 / 2) / 2)
+
+  labelEl : S → S → ℕ → Style → Lines → XMLM A
+  labelEl x y sz s (oneRun u)  = textElement "text" (labelAttrs x y sz s) (padText u)
+  labelEl x y sz s blank       = textElement "text" (labelAttrs x y sz s) " "
+  labelEl x y sz s (oneRow l)  = element "text" (labelAttrs x y sz s) (tspans sz "" l)
+  labelEl x y sz s (rowsOf ls) = element "text" (labelAttrs x y sz s) (labelRows x sz (firstDy sz ls) ls)
+
   mutual
     renderDraw : String → Draw S → XMLM A
     renderDraw n (rect x y w h s)  =
@@ -117,37 +168,26 @@ module _ {S : Set} (P : Print S) where
     renderDraw n (line a b c d s)  = lineEl a b c d (shapeAttrs s)
     renderDraw n (arrow a b c d s) =
       lineEl a b c d (shapeAttrs s ++ (("marker-end" , "url(#" ++ˢ markerId n ++ˢ ")") ∷ []))
-    renderDraw n (label x y sz t s) = body (lines t)
-      where
-        attrs : Attrs
-        attrs = ("x" , pos x) ∷ ("y" , pos y) ∷ ("font-size" , show sz)
-              ∷ ("text-anchor" , fromMaybe "middle" (Style.anchor s)) ∷ ("dominant-baseline" , "central")
-              ∷ ("fill" , fromMaybe "currentColor" (Style.fill s)) ∷ commonAttrs s
-        -- several lines: a `<tspan>` for each, the first raised so that the block is centred
-        rows : String → List Text → List (XMLM A)
-        rows dy []       = []
-        rows dy (l ∷ ls) = element "tspan" (("x" , pos x) ∷ ("dy" , dy) ∷ []) (tspans sz "" l) ∷ rows (show (sz * 3 / 2)) ls
-        body : List Text → XMLM A
-        body ((Run u ∷ []) ∷ []) = textElement "text" attrs (padText u)
-        body ([] ∷ [])            = textElement "text" attrs " "
-        body (l ∷ [])             = element "text" attrs (tspans sz "" l)
-        body ls                   = element "text" attrs (rows ("-" ++ˢ show ((length ls ∸ 1) * (sz * 3 / 2) / 2)) ls)
+    renderDraw n (label x y sz t s) = labelEl x y sz s (classify (lines t))
     renderDraw n (path x y d s)    = SVG.path d (translate (pos x) (pos y) ++ shapeAttrs s)
 
   -- the arrowhead, drawn in the current colour
+  markerAttrs : String → Attrs
+  markerAttrs n =
+    ("id" , markerId n) ∷ ("viewBox" , "0 0 10 10") ∷ ("refX" , "9") ∷ ("refY" , "5")
+    ∷ ("markerWidth" , "6") ∷ ("markerHeight" , "6") ∷ ("orient" , "auto") ∷ []
+
+  arrowhead : String → XMLM A
+  arrowhead n = element "marker" (markerAttrs n) (SVG.path "M 0 0 L 10 5 L 0 10 z" (("fill" , "currentColor") ∷ []) ∷ [])
+
   marker : String → XMLM A
-  marker n =
-    element "defs" []
-      ( element "marker"
-          ( ("id" , markerId n) ∷ ("viewBox" , "0 0 10 10") ∷ ("refX" , "9") ∷ ("refY" , "5")
-          ∷ ("markerWidth" , "6") ∷ ("markerHeight" , "6") ∷ ("orient" , "auto") ∷ [])
-          (SVG.path "M 0 0 L 10 5 L 0 10 z" (("fill" , "currentColor") ∷ []) ∷ [])
-      ∷ [] )
+  marker n = element "defs" [] (arrowhead n ∷ [])
 
   -- the layout as an `<svg>` of the given name (unique in the deck), shown `percent` wide
+  svgAttrs : ℕ → Layout S → Attrs
+  svgAttrs percent l =
+    ("viewBox" , "0 0 " ++ˢ unit (Layout.width l) ++ˢ " " ++ˢ unit (Layout.height l))
+    ∷ ("style" , "width:" ++ˢ show percent ++ˢ "%;height:auto;") ∷ []
+
   renderSVG : String → ℕ → Layout S → XMLM A
-  renderSVG n percent l =
-    SVG.svg
-      ( ("viewBox" , "0 0 " ++ˢ unit (Layout.width l) ++ˢ " " ++ˢ unit (Layout.height l))
-      ∷ ("style" , "width:" ++ˢ show percent ++ˢ "%;height:auto;") ∷ [] )
-      (marker n ∷ map (renderDraw n) (Layout.draws l))
+  renderSVG n percent l = SVG.svg (svgAttrs percent l) (marker n ∷ map (renderDraw n) (Layout.draws l))

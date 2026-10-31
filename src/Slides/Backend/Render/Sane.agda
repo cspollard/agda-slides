@@ -12,8 +12,8 @@
 --                      that separates words
 --   `fragment (just s)`  the class `fragment s` has one (the sanitiser may join `fragment` to `s`)
 --   `code lang _`      the class `language-lang` has none (`lang` could hold a space and `fragment`)
---   `diagram`, `still`, an animation  the printed `<svg>` has none (`svg?`): a style class
---                      comes from the deck's strings
+--   `diagram`, `still`, an animation  no draw of the layout has a style class with a fragment
+--                      token (`svg?`): a style class comes from the deck's strings
 --
 -- Everything else (inline text, tables, figures, bullets, notes, ...) holds no fragment but its
 -- own, whatever its strings: `Slides.Backend.Render.Inline`.
@@ -57,12 +57,12 @@ seen? c m = classSeen c ≡ᵇ m
 mutual
   sane : Block → Bool
   sane (code lang _)                  = seen? ("language-" ++ˢ lang) 0
-  sane (diagram n p d)                = svg? natPrint n p (DL.layout d)
+  sane (diagram n p d)                = svg? (DL.layout d)
   sane (animation n p ms [])          = true
-  sane (animation n p ms (a ∷ as))    = svg? qPrint n p (firstFrame (sequence (a ∷ as)))
-  sane (animationLoop n p ms a)       = svg? qPrint n p (firstFrame a)
-  sane (animationBoth n p ms k a rs)  = svg? qPrint n p (firstFrame a)
-  sane (still n p l)                  = svg? qPrint n p l
+  sane (animation n p ms (a ∷ as))    = svg? (firstFrame (sequence (a ∷ as)))
+  sane (animationLoop n p ms a)       = svg? (firstFrame a)
+  sane (animationBoth n p ms k a rs)  = svg? (firstFrame a)
+  sane (still n p l)                  = svg? l
   sane (columns cs)                   = saneC cs
   sane (box _ f)                      = saneF f
   sane (fragment nothing f)           = saneF f
@@ -203,7 +203,7 @@ mutual
   block-count (diagram n p d)  h =
     sing (hElement "div" (("class" , "diagram") ∷ ("id" , n) ∷ []) (renderSVG natPrint n p (DL.layout d) ∷ []))
          (trans (hElement-count "div" (("class" , "diagram") ∷ ("id" , n) ∷ []) (renderSVG natPrint n p (DL.layout d) ∷ []))
-                (add₀ refl (trans (ℕP.+-identityʳ _) (svg-zero natPrint n p (DL.layout d) h))))
+                (add₀ refl (trans (ℕP.+-identityʳ _) (renderSVG-count natPrint n p (DL.layout d) h))))
   block-count (animation n p ms []) _ = refl
   block-count (animation n p ms (a ∷ as)) h =
     sing (animationEl n p ms steps (sequence (a ∷ as)) (rests (a ∷ as)))
