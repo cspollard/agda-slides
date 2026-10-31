@@ -135,37 +135,58 @@ alignOffset right   outer inner = dbl (outer - inner)
 combine : S → S → S × S → Layout S → S × S → Layout S → Layout S
 combine w h p a q b = overlay w h (inFrame w h (proj₁ p) (proj₂ p) a) (inFrame w h (proj₁ q) (proj₂ q) b)
 
+-- where a binary connective puts its children: the frame and the two positions (half units),
+-- determined by the frames of the children alone
+record Placement : Set where
+  constructor placement
+  field frame : S × S
+        posA posB : S × S
+
+placed : Placement → Layout S → Layout S → Layout S
+placed (placement (w , h) p q) a b = combine w h p a q b
+
+-- the frame of a layout
+frameOf : Layout S → S × S
+frameOf l = width l , height l
+
 -- on top of one another, both centred in the larger frame
-atop : Layout S → Layout S → Layout S
-atop a b =
-  let w = width a ⊔ width b ; h = height a ⊔ height b in
-  combine w h (w - width a , h - height a) a (w - width b , h - height b) b
+atopP : S × S → S × S → Placement
+atopP (wa , ha) (wb , hb) =
+  let w = wa ⊔ wb ; h = ha ⊔ hb in placement (w , h) (w - wa , h - ha) (w - wb , h - hb)
 
 -- `b` right of `a`: `a` at x = 0, `b` at x = width a; widths add, heights join
-besideA : VAlign → Layout S → Layout S → Layout S
-besideA al a b =
-  let h = height a ⊔ height b in
-  combine (width a + width b) h (0# , valignOffset al h (height a)) a
-          (dbl (width a) , valignOffset al h (height b)) b
+besideP : VAlign → S × S → S × S → Placement
+besideP al (wa , ha) (wb , hb) =
+  let h = ha ⊔ hb in placement (wa + wb , h) (0# , valignOffset al h ha) (dbl wa , valignOffset al h hb)
 
 -- `b` below `a`
-aboveA : Align → Layout S → Layout S → Layout S
-aboveA al a b =
-  let w = width a ⊔ width b in
-  combine w (height a + height b) (alignOffset al w (width a) , 0#) a
-          (alignOffset al w (width b) , dbl (height a)) b
+aboveP : Align → S × S → S × S → Placement
+aboveP al (wa , ha) (wb , hb) =
+  let w = wa ⊔ wb in placement (w , ha + hb) (alignOffset al w wa , 0#) (alignOffset al w wb , dbl ha)
 
 -- a caption, the diagram, and room of the caption's height on the other side, so the diagram
 -- is at the centre of the frame: the height is two captions plus the diagram
+labelAboveP labelBelowP : S × S → S × S → Placement
+labelAboveP (wl , hl) (wd , hd) =
+  let w = wl ⊔ wd in
+  placement (w , hl + (hd + hl)) (alignOffset centred w wl , 0#) (alignOffset centred w wd , dbl hl)
+labelBelowP (wl , hl) (wd , hd) =
+  let w = wl ⊔ wd in
+  placement (w , hl + (hd + hl)) (alignOffset centred w wd , dbl hl) (alignOffset centred w wl , dbl (hl + hd))
+
+atop : Layout S → Layout S → Layout S
+atop a b = placed (atopP (frameOf a) (frameOf b)) a b
+
+besideA : VAlign → Layout S → Layout S → Layout S
+besideA al a b = placed (besideP al (frameOf a) (frameOf b)) a b
+
+aboveA : Align → Layout S → Layout S → Layout S
+aboveA al a b = placed (aboveP al (frameOf a) (frameOf b)) a b
+
+-- the caption is first in drawing order above, last below
 labelAbove labelBelow : Layout S → Layout S → Layout S
-labelAbove l d =
-  let w = width l ⊔ width d in
-  combine w (height l + (height d + height l)) (alignOffset centred w (width l) , 0#) l
-          (alignOffset centred w (width d) , dbl (height l)) d
-labelBelow l d =
-  let w = width l ⊔ width d in
-  combine w (height l + (height d + height l)) (alignOffset centred w (width d) , dbl (height l)) d
-          (alignOffset centred w (width l) , dbl (height l + height d)) l
+labelAbove l d = placed (labelAboveP (frameOf l) (frameOf d)) l d
+labelBelow l d = placed (labelBelowP (frameOf l) (frameOf d)) d l
 
 -- Names and connections
 

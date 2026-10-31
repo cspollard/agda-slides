@@ -19,13 +19,15 @@ open import Data.List using (List; []; _∷_; map; _++_)
 import Data.List.Properties as L
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (module ≡-Reasoning)
+open ≡-Reasoning
 
 open import Slides.Diagram.Draw
 open import Slides.Diagram.Geometry
 open Space Sp
 import Slides.Diagram.Place Sp as P
 open P using (dbl; valignOffset; alignOffset)
-open import Slides.Diagram.Laws Sp using (shiftDraw-shift; shiftAnchor-shift; map-map)
+open import Slides.Diagram.Laws Sp using (_⊕_; Action; itemsAct; Items)
 
 -- Arithmetic
 
@@ -43,46 +45,50 @@ align-trans left    _ _   = +-idˡ 0#
 align-trans centred p q   = sub-trans p q
 align-trans right   p q   = trans (dbl-+ _ _) (cong dbl (sub-trans p q))
 
--- Shifted lists
+-- Combining: the second item list is shifted and concatenated after the first.  Items (drawings
+-- and anchors) are a semigroup under `++`, componentwise, on which shifting acts by endomorphisms,
+-- so `combine` is "act, then concatenate" and its associativity is one calculation.
 
-infixl 6 _⊕_
-_⊕_ : S × S → S × S → S × S
-p ⊕ o = proj₁ p + proj₁ o , proj₂ p + proj₂ o
-
--- for anything that shifts (drawings, anchors): shifting by `p` then `o` is shifting by `p ⊕ o`
-module Shapes {X : Set} (sh : S × S → X → X) (sh-sh : ∀ p o x → sh o (sh p x) ≡ sh (p ⊕ o) x) where
-
-  shifted : ∀ p o r → p ⊕ o ≡ r → ∀ ds → map (sh o) (map (sh p) ds) ≡ map (sh r) ds
-  shifted p o r e ds = trans (map-map (sh o) (sh p) (sh (p ⊕ o)) (sh-sh p o) ds) (cong (λ q → map (sh q) ds) e)
-
-  -- three lists, grouped left (`a` and `b` inside, shifted by `o₁` outside, `c` beside) or
-  -- right (`b` and `c` inside, shifted by `o₂`), with the positions that make them agree
-  assoc-shape : ∀ pa pb qc ra o₁ sb sc o₂ (dA dB dC : List X) →
-    pa ⊕ o₁ ≡ ra → pb ⊕ o₁ ≡ sb ⊕ o₂ → qc ≡ sc ⊕ o₂ →
-    map (sh o₁) (map (sh pa) dA ++ map (sh pb) dB) ++ map (sh qc) dC
-      ≡ map (sh ra) dA ++ map (sh o₂) (map (sh sb) dB ++ map (sh sc) dC)
-  assoc-shape pa pb qc ra o₁ sb sc o₂ dA dB dC ea eb ec =
-    trans (cong (_++ map (sh qc) dC) (L.map-++ (sh o₁) (map (sh pa) dA) (map (sh pb) dB)))
-     (trans (cong₂ _++_ (cong₂ _++_ (shifted pa o₁ ra ea dA) (trans (shifted pb o₁ (pb ⊕ o₁) refl dB) (trans (cong (λ q → map (sh q) dB) eb) (sym (shifted sb o₂ (sb ⊕ o₂) refl dB))))) (cong (λ q → map (sh q) dC) ec))
-       (trans (L.++-assoc (map (sh ra) dA) (map (sh o₂) (map (sh sb) dB)) (map (sh (sc ⊕ o₂)) dC))
-         (cong (map (sh ra) dA ++_)
-           (trans (cong (map (sh o₂) (map (sh sb) dB) ++_) (sym (shifted sc o₂ (sc ⊕ o₂) refl dC)))
-                  (sym (L.map-++ (sh o₂) (map (sh sb) dB) (map (sh sc) dC)))))))
+infixr 5 _⊞_
+_⊞_ : Items → Items → Items
+(d , a) ⊞ (d′ , a′) = d ++ d′ , a ++ a′
 
 private
-  module D = Shapes (λ p → P.shiftDraw (proj₁ p) (proj₂ p))
-                    (λ p o x → shiftDraw-shift (proj₁ o) (proj₂ o) (proj₁ p) (proj₂ p) x)
-  module N = Shapes (λ p → P.shiftAnchor (proj₁ p) (proj₂ p))
-                    (λ p o x → shiftAnchor-shift (proj₁ o) (proj₂ o) (proj₁ p) (proj₂ p) x)
+  act : S × S → Items → Items
+  act = Action.act itemsAct
+
+  act-⊞ : ∀ p x y → act p (x ⊞ y) ≡ act p x ⊞ act p y
+  act-⊞ p (d , a) (d′ , a′) = cong₂ _,_ (L.map-++ _ d d′) (L.map-++ _ a a′)
+
+  ⊞-assoc : ∀ x y z → (x ⊞ y) ⊞ z ≡ x ⊞ (y ⊞ z)
+  ⊞-assoc (d , a) (d′ , a′) (d″ , a″) = cong₂ _,_ (L.++-assoc d d′ d″) (L.++-assoc a a′ a″)
+
+  comb : S × S → Items → S × S → Items → Items
+  comb p x q y = act p x ⊞ act q y
 
 -- `combine` is associative given the positions that make the three children agree
+comb-assoc : ∀ pa pb qc ra o₁ sb sc o₂ A B C → pa ⊕ o₁ ≡ ra → pb ⊕ o₁ ≡ sb ⊕ o₂ → qc ≡ sc ⊕ o₂ →
+  comb o₁ (comb pa A pb B) qc C ≡ comb ra A o₂ (comb sb B sc C)
+comb-assoc pa pb qc ra o₁ sb sc o₂ A B C ea eb ec = begin
+  act o₁ (act pa A ⊞ act pb B) ⊞ act qc C          ≡⟨ cong (_⊞ act qc C) (act-⊞ o₁ (act pa A) (act pb B)) ⟩
+  (act o₁ (act pa A) ⊞ act o₁ (act pb B)) ⊞ act qc C
+    ≡⟨ cong₂ _⊞_ (cong₂ _⊞_ (act-⊕ pa o₁ A) (act-⊕ pb o₁ B)) (cong (λ q → act q C) ec) ⟩
+  (act (pa ⊕ o₁) A ⊞ act (pb ⊕ o₁) B) ⊞ act (sc ⊕ o₂) C
+    ≡⟨ cong₂ _⊞_ (cong₂ _⊞_ (cong (λ q → act q A) ea) (cong (λ q → act q B) eb)) refl ⟩
+  (act ra A ⊞ act (sb ⊕ o₂) B) ⊞ act (sc ⊕ o₂) C   ≡⟨ ⊞-assoc (act ra A) (act (sb ⊕ o₂) B) (act (sc ⊕ o₂) C) ⟩
+  act ra A ⊞ (act (sb ⊕ o₂) B ⊞ act (sc ⊕ o₂) C)
+    ≡⟨ cong (act ra A ⊞_) (cong₂ _⊞_ (sym (act-⊕ sb o₂ B)) (sym (act-⊕ sc o₂ C))) ⟩
+  act ra A ⊞ (act o₂ (act sb B) ⊞ act o₂ (act sc C)) ≡⟨ cong (act ra A ⊞_) (sym (act-⊞ o₂ (act sb B) (act sc C))) ⟩
+  act ra A ⊞ act o₂ (act sb B ⊞ act sc C)          ∎
+  where open Action itemsAct using (act-⊕)
+
+-- the same for layouts, whose frames are given
 combine-assoc : ∀ {W W′ H H′ Wab Hab Wbc Hbc} pa pb qc ra o₁ sb sc o₂ (a b c : Layout S) →
   W ≡ W′ → H ≡ H′ → pa ⊕ o₁ ≡ ra → pb ⊕ o₁ ≡ sb ⊕ o₂ → qc ≡ sc ⊕ o₂ →
   P.combine W H o₁ (P.combine Wab Hab pa a pb b) qc c
     ≡ P.combine W′ H′ ra a o₂ (P.combine Wbc Hbc sb b sc c)
 combine-assoc pa pb qc ra o₁ sb sc o₂ (mkLayout _ _ dA aA) (mkLayout _ _ dB aB) (mkLayout _ _ dC aC) refl refl ea eb ec =
-  cong₂ (mkLayout _ _) (D.assoc-shape pa pb qc ra o₁ sb sc o₂ dA dB dC ea eb ec)
-                       (N.assoc-shape pa pb qc ra o₁ sb sc o₂ aA aB aC ea eb ec)
+  cong (λ (d , a) → mkLayout _ _ d a) (comb-assoc pa pb qc ra o₁ sb sc o₂ (dA , aA) (dB , aB) (dC , aC) ea eb ec)
 
 besideA-assoc : ∀ al a b c → P.besideA al (P.besideA al a b) c ≡ P.besideA al a (P.besideA al b c)
 besideA-assoc al a@(mkLayout wa ha _ _) b@(mkLayout wb hb _ _) c@(mkLayout wc hc _ _) =

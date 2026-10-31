@@ -26,6 +26,7 @@ import Algebra.Construct.DirectProduct as DP
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 open import Data.Fin using (zero; suc)
 open import Data.List using (List; []; _∷_; map)
+open import Data.String using (String)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂; uncurry)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (tt)
@@ -183,44 +184,78 @@ size-connect a pa b pb s d = refl
 
 -- Translation is an action
 
-shiftDraw-zero : ∀ d → P.shiftDraw 0# 0# d ≡ d
-shiftDraw-zero (rect x y w h s)   rewrite +-idʳ x | +-idʳ y = refl
-shiftDraw-zero (circle x y r s)   rewrite +-idʳ x | +-idʳ y = refl
-shiftDraw-zero (ellipse x y a b s) rewrite +-idʳ x | +-idʳ y = refl
-shiftDraw-zero (poly c ps s)      = cong (λ qs → poly c qs s) (trans (ListP.map-cong (λ p → cong₂ _,_ (+-idʳ (proj₁ p)) (+-idʳ (proj₂ p))) ps) (ListP.map-id ps))
-shiftDraw-zero (line a b c d s)   rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
-shiftDraw-zero (arrow a b c d s)  rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
-shiftDraw-zero (label x y n t s)  rewrite +-idʳ x | +-idʳ y = refl
-shiftDraw-zero (path x y d s)     rewrite +-idʳ x | +-idʳ y = refl
+-- an action of the translations (S×S, ⊕) on a type: shifting by nothing does nothing, and
+-- shifting twice is shifting by the sum.  Drawings, anchors, lists of them, and layouts act.
+infixl 6 _⊕_
+_⊕_ : S × S → S × S → S × S
+p ⊕ o = proj₁ p + proj₁ o , proj₂ p + proj₂ o
 
-shiftDraw-shift : ∀ a b c d e → P.shiftDraw a b (P.shiftDraw c d e) ≡ P.shiftDraw (c + a) (d + b) e
-shiftDraw-shift a b c d (rect x y w h s)   rewrite +-assoc x c a | +-assoc y d b = refl
-shiftDraw-shift a b c d (circle x y r s)   rewrite +-assoc x c a | +-assoc y d b = refl
-shiftDraw-shift a b c d (ellipse x y p q s) rewrite +-assoc x c a | +-assoc y d b = refl
-shiftDraw-shift a b c d (poly cl ps s)     = cong (λ qs → poly cl qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps))
-shiftDraw-shift a b c d (line x y z u s)   rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
-shiftDraw-shift a b c d (arrow x y z u s)  rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
-shiftDraw-shift a b c d (label x y n t s)  rewrite +-assoc x c a | +-assoc y d b = refl
-shiftDraw-shift a b c d (path x y e s)     rewrite +-assoc x c a | +-assoc y d b = refl
+record Action (X : Set) : Set where
+  field
+    act      : S × S → X → X
+    act-zero : ∀ x → act (0# , 0#) x ≡ x
+    act-⊕    : ∀ p o x → act o (act p x) ≡ act (p ⊕ o) x
 
-shiftAnchor-zero : ∀ x → P.shiftAnchor 0# 0# x ≡ x
-shiftAnchor-zero (n , box l t w h) rewrite +-idʳ l | +-idʳ t = refl
+listAct : ∀ {X} → Action X → Action (List X)
+listAct A = record
+  { act = λ p → map (act p)
+  ; act-zero = λ xs → trans (ListP.map-cong act-zero xs) (ListP.map-id xs)
+  ; act-⊕ = λ p o xs → trans (sym (ListP.map-∘ xs)) (ListP.map-cong (act-⊕ p o) xs) }
+  where open Action A
 
-shiftAnchor-shift : ∀ a b c d x → P.shiftAnchor a b (P.shiftAnchor c d x) ≡ P.shiftAnchor (c + a) (d + b) x
-shiftAnchor-shift a b c d (n , box l t w h) rewrite +-assoc l c a | +-assoc t d b = refl
+_×ᵃ_ : ∀ {X Y} → Action X → Action Y → Action (X × Y)
+A ×ᵃ B = record
+  { act = λ p (x , y) → Aˣ.act p x , Bˣ.act p y
+  ; act-zero = λ (x , y) → cong₂ _,_ (Aˣ.act-zero x) (Bˣ.act-zero y)
+  ; act-⊕ = λ p o (x , y) → cong₂ _,_ (Aˣ.act-⊕ p o x) (Bˣ.act-⊕ p o y) }
+  where module Aˣ = Action A; module Bˣ = Action B
 
-map-id : ∀ {A : Set} {f : A → A} → (∀ x → f x ≡ x) → ∀ xs → map f xs ≡ xs
-map-id e xs = trans (ListP.map-cong e xs) (ListP.map-id xs)
+drawAct : Action (Draw S)
+drawAct = record { act = λ p → P.shiftDraw (proj₁ p) (proj₂ p) ; act-zero = zero′ ; act-⊕ = λ p o → shift′ (proj₁ p) (proj₂ p) (proj₁ o) (proj₂ o) }
+  where
+    zero′ : ∀ d → P.shiftDraw 0# 0# d ≡ d
+    zero′ (rect x y w h s)   rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (circle x y r s)   rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (ellipse x y a b s) rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (poly c ps s)      = cong (λ qs → poly c qs s) (trans (ListP.map-cong (λ p → cong₂ _,_ (+-idʳ (proj₁ p)) (+-idʳ (proj₂ p))) ps) (ListP.map-id ps))
+    zero′ (line a b c d s)   rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
+    zero′ (arrow a b c d s)  rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
+    zero′ (label x y n t s)  rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (path x y d s)     rewrite +-idʳ x | +-idʳ y = refl
+    shift′ : ∀ c d a b e → P.shiftDraw a b (P.shiftDraw c d e) ≡ P.shiftDraw (c + a) (d + b) e
+    shift′ c d a b (rect x y w h s)   rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (circle x y r s)   rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (ellipse x y p q s) rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (poly cl ps s)     = cong (λ qs → poly cl qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps))
+    shift′ c d a b (line x y z u s)   rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
+    shift′ c d a b (arrow x y z u s)  rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
+    shift′ c d a b (label x y n t s)  rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (path x y e s)     rewrite +-assoc x c a | +-assoc y d b = refl
 
-map-map : ∀ {A B C : Set} (f : B → C) (g : A → B) (h : A → C) → (∀ x → f (g x) ≡ h x) → ∀ xs → map f (map g xs) ≡ map h xs
-map-map f g h e xs = trans (sym (ListP.map-∘ xs)) (ListP.map-cong e xs)
+anchorAct : Action (String × Box S)
+anchorAct = record { act = λ p → P.shiftAnchor (proj₁ p) (proj₂ p) ; act-zero = zero′ ; act-⊕ = λ p o → shift′ (proj₁ p) (proj₂ p) (proj₁ o) (proj₂ o) }
+  where
+    zero′ : ∀ x → P.shiftAnchor 0# 0# x ≡ x
+    zero′ (n , box l t w h) rewrite +-idʳ l | +-idʳ t = refl
+    shift′ : ∀ c d a b x → P.shiftAnchor a b (P.shiftAnchor c d x) ≡ P.shiftAnchor (c + a) (d + b) x
+    shift′ c d a b (n , box l t w h) rewrite +-assoc l c a | +-assoc t d b = refl
+
+-- what a layout holds besides its frame: the drawings and the anchors
+Items : Set
+Items = List (Draw S) × List (String × Box S)
+
+itemsAct : Action Items
+itemsAct = listAct drawAct ×ᵃ listAct anchorAct
+
+items : Layout S → Items
+items l = Layout.draws l , Layout.anchors l
+
+-- shifting a layout (inside its own frame) is the action on its items
+shift-items : ∀ dx dy l → items (P.shift dx dy l) ≡ Action.act itemsAct (dx , dy) (items l)
+shift-items dx dy l = refl
 
 shift-zero : ∀ l → P.shift 0# 0# l ≡ l
-shift-zero (mkLayout w h ds as) = cong₂ (mkLayout w h) (map-id shiftDraw-zero ds) (map-id shiftAnchor-zero as)
-
-shift-shift : ∀ a b c d l → P.shift a b (P.shift c d l) ≡ P.shift (c + a) (d + b) l
-shift-shift a b c d (mkLayout w h ds as) =
-  cong₂ (mkLayout w h) (map-map _ _ _ (shiftDraw-shift a b c d) ds) (map-map _ _ _ (shiftAnchor-shift a b c d) as)
+shift-zero (mkLayout w h ds as) = cong (λ (d , a) → mkLayout w h d a) (Action.act-zero itemsAct (ds , as))
 
 -- naming changes nothing visible: same frame, same drawings
 named-frame : ∀ n l → (P.width (P.named n l) , P.height (P.named n l) , Layout.draws (P.named n l))

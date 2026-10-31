@@ -57,44 +57,26 @@ names-inFrame w h dx dy (mkLayout _ _ ds as) = go as
 names-++ : ∀ (a b : List (String × Box S)) → map proj₁ (a ++ b) ≡ map proj₁ a ++ map proj₁ b
 names-++ a b = L.map-++ proj₁ a b
 
-names-combine : ∀ {w h p q} a b → anchorNames (P.combine w h p a q b) ≡ anchorNames a ++ anchorNames b
-names-combine {w} {h} {p} {q} a b =
-  trans (names-++ (Layout.anchors (P.inFrame w h (proj₁ p) (proj₂ p) a)) (Layout.anchors (P.inFrame w h (proj₁ q) (proj₂ q) b)))
-        (cong₂ _++_ (names-inFrame w h (proj₁ p) (proj₂ p) a) (names-inFrame w h (proj₁ q) (proj₂ q) b))
+names-placed : ∀ pl a b → anchorNames (P.placed pl a b) ≡ anchorNames a ++ anchorNames b
+names-placed (P.placement (w , h) (px , py) (qx , qy)) a b =
+  trans (names-++ (Layout.anchors (P.inFrame w h px py a)) (Layout.anchors (P.inFrame w h qx qy b)))
+        (cong₂ _++_ (names-inFrame w h px py a) (names-inFrame w h qx qy b))
 
--- The declared names are the anchors' names
-
--- each binary connective is a `combine` (`Slides.Diagram.Place`): the frame and positions are
--- spelled out because they cannot be inferred from the connective
+-- each binary connective places its children (`Slides.Diagram.Place`), the first child first
 names-besideA : ∀ al a b → anchorNames (P.besideA al a b) ≡ anchorNames a ++ anchorNames b
-names-besideA al a b = names-combine
-  {P.width a + P.width b} {P.height a ⊔ P.height b}
-  {0# , P.valignOffset al (P.height a ⊔ P.height b) (P.height a)}
-  {P.dbl (P.width a) , P.valignOffset al (P.height a ⊔ P.height b) (P.height b)} a b
+names-besideA al a b = names-placed (P.besideP al (P.frameOf a) (P.frameOf b)) a b
 
 names-aboveA : ∀ al a b → anchorNames (P.aboveA al a b) ≡ anchorNames a ++ anchorNames b
-names-aboveA al a b = names-combine
-  {P.width a ⊔ P.width b} {P.height a + P.height b}
-  {P.alignOffset al (P.width a ⊔ P.width b) (P.width a) , 0#}
-  {P.alignOffset al (P.width a ⊔ P.width b) (P.width b) , P.dbl (P.height a)} a b
+names-aboveA al a b = names-placed (P.aboveP al (P.frameOf a) (P.frameOf b)) a b
 
 names-atop : ∀ a b → anchorNames (P.atop a b) ≡ anchorNames a ++ anchorNames b
-names-atop a b = names-combine
-  {P.width a ⊔ P.width b} {P.height a ⊔ P.height b}
-  {(P.width a ⊔ P.width b) - P.width a , (P.height a ⊔ P.height b) - P.height a}
-  {(P.width a ⊔ P.width b) - P.width b , (P.height a ⊔ P.height b) - P.height b} a b
+names-atop a b = names-placed (P.atopP (P.frameOf a) (P.frameOf b)) a b
 
 names-labelAbove : ∀ l d → anchorNames (P.labelAbove l d) ≡ anchorNames l ++ anchorNames d
-names-labelAbove l d = names-combine
-  {P.width l ⊔ P.width d} {P.height l + (P.height d + P.height l)}
-  {P.alignOffset centred (P.width l ⊔ P.width d) (P.width l) , 0#}
-  {P.alignOffset centred (P.width l ⊔ P.width d) (P.width d) , P.dbl (P.height l)} l d
+names-labelAbove l d = names-placed (P.labelAboveP (P.frameOf l) (P.frameOf d)) l d
 
 names-labelBelow : ∀ l d → anchorNames (P.labelBelow l d) ≡ anchorNames d ++ anchorNames l
-names-labelBelow l d = names-combine
-  {P.width l ⊔ P.width d} {P.height l + (P.height d + P.height l)}
-  {P.alignOffset centred (P.width l ⊔ P.width d) (P.width d) , P.dbl (P.height l)}
-  {P.alignOffset centred (P.width l ⊔ P.width d) (P.width l) , P.dbl (P.height l + P.height d)} d l
+names-labelBelow l d = names-placed (P.labelBelowP (P.frameOf l) (P.frameOf d)) d l
 
 names-fusion : ∀ t → anchorNames (layout t) ≡ declared t
 names-fusion = pfold-rel (λ l u → anchorNames l ≡ proj₁ u) hom (λ ())
