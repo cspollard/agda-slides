@@ -563,17 +563,18 @@ Total about −90 lines; move the helpers into `Backend/HTML`:
 ## 9. Order of work
 
 Each phase follows `Contributing.md`: a line budget, a clean `make check`, and byte-identical
-goldens.  Phases 1–2 change no output.
+goldens.  Phases 1–2 change no output.  The line budgets are a tripwire: clarity and robustness justify
+overshoot (the author's stated position).
 
-| Phase | Work | Net lines |
-|---|---|---|
-| 1 | **Container spine** (§2): stdlib setoid for `Poly`; one fold with `fold-unique` + fusion; `bind`, `lower`, `translate` defined as folds; laws derived; one monad (adjunction); `copairL`; one `_≈⋆_`; one level discipline; `pfold` as a thin view of `fold`. | −350 |
-| 2 | **Theories on stdlib structures** (§3).  Prerequisite for the planned setoid equality. | −60 |
-| 3 | **Diagram tag/payload split** and `Draw.group` removal (§4.1, §4.4); derive `mapDia`/`mapScene` functoriality; `layout` as a `NaturalTransformation`. | −250 |
-| 4 | **Temporal algebra record**, scene setoid `_≈ₛ_`, monoid-homomorphism statements, Hudak axioms (§5). | −100 |
-| 5 | **Program behaviours** `List C → O`, bisimulation ⇔ trace equality, `Via` via `mapMaybe` (§6). | −110 |
-| 6 | **Content as containers** (`BlockC`, `InlineC`, `MathC`, `MarkC`); backends and plots as handlers; generic sharing (§7, §8). | −300 |
-| 7 | **Small duplicates** (§4.4, §5.4, §8.4).  Can run in parallel with any phase, on disjoint files. | −150 |
+| Phase | Work | Net lines | Status |
+|---|---|---|---|
+| 1 | **Container spine** (§2): stdlib setoid for `Poly`; one fold with `fold-unique` + fusion; `bind`, `lower`, `translate` defined as folds; laws derived; one monad (adjunction); `copairL`; one `_≈⋆_`; one level discipline; `pfold` as a thin view of `fold`. | −350 | **Done**, b05e69d..763437f, −297. |
+| 2 | **Theories on stdlib structures** (§3).  Prerequisite for the planned setoid equality. | −60 | **Done**, 78f3403, +23. |
+| 3 | **Diagram tag/payload split** and `Draw.group` removal (§4.1, §4.4); derive `mapDia`/`mapScene` functoriality; `layout` as a `NaturalTransformation`. | −250 | **Done**, e9bf14d..67a4c31, −2.  Skipped: layout as a `NaturalTransformation` (§4.2) and collapsing the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`), which are genuine per-operation handlers. |
+| 4 | **Temporal algebra record**, scene setoid `_≈ₛ_`, monoid-homomorphism statements, Hudak axioms (§5). | −100 | Open. |
+| 5 | **Program behaviours** `List C → O`, bisimulation ⇔ trace equality, `Via` via `mapMaybe` (§6). | −110 | Open. |
+| 6 | **Content as containers** (`BlockC`, `InlineC`, `MathC`, `MarkC`); backends and plots as handlers; generic sharing (§7, §8). | −300 | Open. |
+| 7 | **Small duplicates** (§4.4, §5.4, §8.4).  Can run in parallel with any phase, on disjoint files. | −150 | Open. |
 
 Phase 1 comes first because every later phase uses its lemmas.  Phases 3, 4 and 6 touch
 disjoint layers and can run in parallel after it.  Update `docs/Objects.md` with each phase,

@@ -10,6 +10,13 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] `figure` against declared resources: `Checked R` in `Deck/DSL.agda`.
 - [x] Repository clutter: step branches and worktrees removed (archive tags remain).
 
+## Review plan (`plans/Review.md` §9)
+- [x] Phase 1, container spine (b05e69d..763437f, −297 lines against −350).
+- [x] Phase 2, theories on stdlib structures (78f3403, +23 against −60).
+- [x] Phase 3, Diagram tag/payload split, `Draw.group` removed, functoriality derived (e9bf14d..67a4c31, −2 against −250).
+- [ ] Phase 3 left over: layout as a `NaturalTransformation` (§4.2); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`) are genuine per-operation handlers and stay.
+- [ ] Phases 4–7: temporal algebra and scene setoid, program behaviours, content as containers, small duplicates.  Line budgets are a tripwire; clarity and robustness justify overshoot.
+
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).
 - [x] LHC tables: checked, no duplication (`Collider` imports `lhcAnim` and `triggerAnim` from `LHC.agda`; the built deck repeats nothing).  The old "21 KB shipped twice" was the combined source size.

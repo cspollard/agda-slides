@@ -8,6 +8,10 @@ Decisions are marked **[decided]**; the rest are defaults to revisit only with a
   substitution is bind, folds are algebras, and relations between languages are lowerings
   (Kleisli maps; an injection is the special case) and homomorphisms.  Every type must say which
   of these it is.
+- The container spine has one fold, `pfold`; `Alg.fold` is `pfold` of an algebra's handler.
+  `fold-fusion` (homomorphisms commute with folds) is derived from `fold-unique`.  The free
+  monad is the one from the adjunction `Free ⊣ Forget` (algebras to setoids); `bind` is its
+  fold.  Sums of signatures are eliminated by `copairL`.
 - Identity and composition laws are proved where the structure is stated, once, generically
   (in `Container.*`), never re-proved per language.
 - Meaning first (denotational design): fix the semantics, then show each implementation is a
@@ -23,7 +27,9 @@ ordered monoid with floor and the embedding of whole ticks (`tick`, a tick read 
 remainder is the optional `Time.Rem`.  *Coupling*: ratio of durations, easing, interpolation
 between lengths.  Layout depends on Space only, sampling on Time and Coupling only.  Proofs use
 the laws of the theory, never computation in ℚ; model facts (density, induction) are named
-hypotheses.  **[decided]** Time is a parameter, ℚ the first model.
+hypotheses.  **[decided]** Time is a parameter, ℚ the first model.  The ordered monoid `OrdMon`
+is stdlib structures (`IsCommutativeMonoid`, `IsDecTotalOrder`, `Supremum` for the join), and a
+model homomorphism `IsOrdMonHom` is an `IsMonoidHomomorphism` with an `IsOrderMonomorphism`.
 
 **Text**: one tree of styled runs (text, code, emphasis, sub- and superscript, style, break,
 math, link, citation) shared by prose and diagram labels.  Every consumer is a fold: HTML, plain
