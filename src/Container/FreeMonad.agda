@@ -7,14 +7,15 @@
 --
 -- `Eq` is structural equality: equal shapes at every node (propositionally), equal leaves in `X`.
 -- It is defined by recursion, so no function extensionality is needed for the monad laws
--- (`Container.FreeMonad.Properties`).
+-- (`Container.FreeMonad.Properties`).  `All⋆ P` says `P` holds of every command of a program.
 
 module Container.FreeMonad where
 
 open import Level using (Level; _⊔_; Lift; lift)
 open import Data.Empty using (⊥)
-open import Data.Product.Base using (_,_; Σ-syntax)
-open import Data.Container.Core using (Container; Position)
+open import Data.Unit using (⊤)
+open import Data.Product.Base using (_,_; _×_; Σ-syntax)
+open import Data.Container.Core using (Container; Shape; Position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Structures using (IsEquivalence)
@@ -67,3 +68,8 @@ Free₀ C X = record
   ; isEquivalence = Eq-isEquivalence X
   }
 
+
+-- A predicate on commands that holds at every node of a program (a fold into `Set`)
+All⋆ : ∀ {C : Container s p} {X : Set c} {ℓ} → (Shape C → Set ℓ) → C ⋆ X → Set (p ⊔ ℓ)
+All⋆ {p = p} {ℓ = ℓ} P (pure _) = Lift (p ⊔ ℓ) ⊤
+All⋆ P (impure (a , k))   = P a × (∀ q → All⋆ P (k q))

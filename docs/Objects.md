@@ -69,9 +69,14 @@ diagrams with a time variable; a *deck* is a scene of scenes with content leaves
 (**[decided]**); a pause is a one-tick delay.
 
 **Program** over user commands: the free monad adding "wait for a command" to scenes.  Meaning:
-a Moore machine (state yields a scene reading, a command yields the next state); scene
-operations over waiting children are the synchronous product of their machines (**[decided]**;
-true parallel composition of programs is not supported); a scene is a program that never waits.
+a *behaviour* `List C → O`, the final Moore machine (a machine is a coalgebra of `X ↦ O × (C → X)`;
+`obs` is its unique map into the behaviours, `final` the converse, bisimilar machines are exactly
+those with equal traces).  Behaviours are compared pointwise, a setoid at level 0; `sem` is the
+fold of the program signature into them.  Scene operations over waiting children are the
+synchronous product (`prodB`: every child sees every command; **[decided]** true parallel
+composition of programs is not supported); `await c` is blank until `c`, then runs the rest; a
+scene is a program that never waits (`inject-const`: a constant behaviour).  A backend's lowering
+is sound as `mapMaybe dec` on the commands (`lower-sound`).
 A backend binds a subset of the commands.  Navigation state is machine state.  **[decided]**
 The machine yields the *visible slide*; the accumulated view (chunks so far) is derived and
 agrees with it for the pause fragment.

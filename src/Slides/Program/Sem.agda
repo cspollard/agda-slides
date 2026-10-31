@@ -1,21 +1,28 @@
 {-# OPTIONS --safe --without-K #-}
 
--- The meaning of a program: a Moore machine, by a fold.
+-- The meaning of a program: its behaviour, by a fold.
 --
---   state --output--> scene reading            command --> next state
+--   commands so far --> scene reading
 --
--- Given a scene algebra `hS` on outputs (congruent for `O`) and a leaf machine `l a`, the fold is
+-- Behaviours `List C → O` are the final Moore machine (`Slides.Program.Machine`), and with a scene
+-- algebra `hS` on `O` (congruent), a leaf behaviour `l a`, they are an algebra of the program
+-- signature: the fold is `sem`, the unique map out of the free monad.
 --
---   scene op o, children k   the synchronous product: every child sees every command; the output
---                            is `hS o` of theirs (`Par` of two waiting programs waits for both)
---   await c ; k              a blank state; `c` moves to the start of `k`, others are ignored
+--   scene op o, children k   the synchronous product (`prodB`): every child sees every command; the
+--                            output is `hS o` of theirs (`Par` of two waiting programs waits for both)
+--   await c ; k              blank until `c` arrives, then `k` on the rest (`awaitB`); other commands
+--                            are ignored
 --   pure a                   `l a`
 --
---   sem-bind               the fold is a monad morphism: grafting leaves commutes with it
---   inject-const           a program that never waits is a constant machine, the scene's meaning
---   await-step, await-ignore   the transitions of a wait
+-- The product is the product of the machines' lenses along the diagonal `C → C × C`; the fold is
+-- a distributive law of the scene algebra over the machine coalgebra, so a congruent `hS` gives a
+-- congruent fold.
 --
--- Equality of machines is bisimilarity (`Slides.Program.Machine`).
+--   sem-bind               the fold is a monad morphism: grafting leaves commutes with it
+--   inject-const           a program that never waits is a constant behaviour, the scene's meaning
+--   await-hit, await-miss  the awaited command starts the rest; others change nothing
+--
+-- Equality of behaviours is pointwise (`BehS`), which is trace equality of machines.
 
 open import Level using (0ℓ)
 open import Relation.Binary.Bundles using (Setoid)
@@ -29,7 +36,7 @@ module Slides.Program.Sem {T D C : Set} (dC : DecidableEquality C) (O : Setoid 0
 
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Product.Base using (_,_)
+open import Data.List.Base using (List; []; _∷_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.Core using (shape; position)
@@ -43,76 +50,57 @@ open import Container.Lowering.Properties using (_≈⋆_)
 open import Container.Sum using (inl)
 open import Slides.Scene.Syntax using (Scene; Op; arity)
 open import Slides.Program.Syntax
-open import Slides.Program.Machine
+open import Slides.Program.Machine using (BehS)
 private module O = Setoid O
-open Machine
 
--- The machine algebra
+-- The behaviour algebra
 
-Mach : Set₁
-Mach = Machine C O.Carrier
+Beh : Set
+Beh = List C → O.Carrier
 
-constM : O.Carrier → Mach
-constM x = record { State = ⊤ ; init = tt ; step = λ q _ → q ; out = λ _ → x }
+constB : O.Carrier → Beh
+constB x _ = x
 
-prodM : (o : Op T D) → (arity o → Mach) → Mach
-prodM o k = record
-  { State = ∀ q → State (k q) ; init = λ q → init (k q)
-  ; step = λ s c q → step (k q) (s q) c ; out = λ s → hS o (λ q → out (k q) (s q)) }
+prodB : (o : Op T D) → (arity o → Beh) → Beh
+prodB o k cs = hS o (λ q → k q cs)
 
-awaitM : C → Mach → Mach
-awaitM c M = record
-  { State = ⊤ ⊎ State M ; init = inj₁ tt
-  ; step = λ { (inj₁ _) c′ → if ⌊ dC c′ c ⌋ then inj₂ (init M) else inj₁ tt
-             ; (inj₂ q) c′ → inj₂ (step M q c′) }
-  ; out = λ { (inj₁ _) → blank ; (inj₂ q) → out M q } }
+awaitB : C → Beh → Beh
+awaitB c k []        = blank
+awaitB c k (c′ ∷ cs) = if ⌊ dC c′ c ⌋ then k cs else awaitB c k cs
 
-hP : Handler (ProgC T D C) Mach
-hP (inj₁ o) k = prodM o k
-hP (inj₂ c) k = awaitM c (k tt)
+hP : Handler (ProgC T D C) Beh
+hP (inj₁ o) k = prodB o k
+hP (inj₂ c) k = awaitB c (k tt)
 
--- the relation of a wait: blank with blank, or related states
-RA : ∀ {M N : Mach} → Bisim O M N → ⊤ ⊎ State M → ⊤ ⊎ State N → Set
-RA b (inj₁ _) (inj₁ _) = ⊤
-RA b (inj₂ p) (inj₂ q) = R b p q
-RA b _        _        = ⊥
+awaitB-cong : ∀ c {k k′ : Beh} → (∀ cs → k cs O.≈ k′ cs) → ∀ cs → awaitB c k cs O.≈ awaitB c k′ cs
+awaitB-cong c e []        = O.refl
+awaitB-cong c e (c′ ∷ cs) with ⌊ dC c′ c ⌋
+... | true  = e cs
+... | false = awaitB-cong c e cs
 
-hP-cong : Congruent (ProgC T D C) (MachineS O C) hP
-hP-cong (inj₁ o) {k} {k′} e = record
-  { R = λ s t → ∀ q → R (e q) (s q) (t q)
-  ; R-init = λ q → R-init (e q)
-  ; R-out = λ r → hS-c o (λ q → R-out (e q) (r q))
-  ; R-step = λ r c q → R-step (e q) (r q) c }
-hP-cong (inj₂ c) {k} {k′} e = record
-  { R = RA b ; R-init = tt
-  ; R-out = λ { {inj₁ _} {inj₁ _} _ → O.refl ; {inj₂ _} {inj₂ _} r → R-out b r }
-  ; R-step = λ { {inj₁ _} {inj₁ _} _ c′ → cond (⌊ dC c′ c ⌋)
-               ; {inj₂ _} {inj₂ _} r c′ → R-step b r c′ } }
-  where
-    b = e tt
-    cond : ∀ x → RA b (if x then inj₂ (init (k tt)) else inj₁ tt) (if x then inj₂ (init (k′ tt)) else inj₁ tt)
-    cond true  = R-init b
-    cond false = tt
+hP-cong : Congruent (ProgC T D C) (BehS O C) hP
+hP-cong (inj₁ o) e cs = hS-c o (λ q → e q cs)
+hP-cong (inj₂ c) e    = awaitB-cong c (e tt)
 
 -- the meaning of a program whose leaves mean `l a`
-sem : ∀ {A : Set} → (A → Mach) → Program T D C A → Mach
+sem : ∀ {A : Set} → (A → Beh) → Program T D C A → Beh
 sem = pfold (ProgC T D C) hP
 
-sem-cong : ∀ {A} {l : A → Mach} {p q : Program T D C A} → p ≈⋆ q → Bisim O (sem l p) (sem l q)
-sem-cong = pfold-cong (MachineS O C) hP-cong
+sem-cong : ∀ {A} {l : A → Beh} {p q : Program T D C A} → p ≈⋆ q → ∀ cs → sem l p cs O.≈ sem l q cs
+sem-cong = pfold-cong (BehS O C) hP-cong
 
-sem-ext : ∀ {A} {l l′ : A → Mach} → (∀ a → Bisim O (l a) (l′ a)) → ∀ p → Bisim O (sem l p) (sem l′ p)
-sem-ext = pfold-ext (MachineS O C) hP-cong
+sem-ext : ∀ {A} {l l′ : A → Beh} → (∀ a cs → l a cs O.≈ l′ a cs) → ∀ p cs → sem l p cs O.≈ sem l′ p cs
+sem-ext = pfold-ext (BehS O C) hP-cong
 
 -- The bind law: the fold of a substitution is the fold with the substituted programs folded.
-sem-bind : ∀ {A B} (l : B → Mach) (f : A → Program T D C B) (p : Program T D C A) →
-           Bisim O (sem l (p >>= f)) (sem (λ a → sem l (f a)) p)
-sem-bind l f = pfold-bind (MachineS O C) hP-cong f (λ a → bisim-refl O)
+sem-bind : ∀ {A B} (l : B → Beh) (f : A → Program T D C B) (p : Program T D C A) →
+           ∀ cs → sem l (p >>= f) cs O.≈ sem (λ a → sem l (f a)) p cs
+sem-bind l f = pfold-bind (BehS O C) hP-cong f (λ a cs → O.refl)
 
 -- Waiting
 
-sem-await : ∀ {A} (l : A → Mach) (k : Program T D C A) (c : C) →
-            sem l (await c >>= λ _ → k) ≡ awaitM c (sem l k)
+sem-await : ∀ {A} (l : A → Beh) (k : Program T D C A) (c : C) →
+            sem l (await c >>= λ _ → k) ≡ awaitB c (sem l k)
 sem-await l k c = refl
 
 private
@@ -126,22 +114,20 @@ private
   ... | yes e = ⊥-elim (n e)
   ... | no _  = refl
 
--- the awaited command moves a waiting machine to the start of the rest; others are ignored
-await-step : ∀ M c → step (awaitM c M) (init (awaitM c M)) c ≡ inj₂ (init M)
-await-step M c rewrite ⌊⌋-refl c = refl
+-- the awaited command starts the rest on what follows; others are ignored
+await-hit : ∀ k c cs → awaitB c k (c ∷ cs) ≡ k cs
+await-hit k c cs rewrite ⌊⌋-refl c = refl
 
-await-ignore : ∀ M {c c′} → (c′ ≡ c → ⊥) → step (awaitM c M) (init (awaitM c M)) c′ ≡ inj₁ tt
-await-ignore M n rewrite ⌊⌋-no n = refl
+await-miss : ∀ k {c c′} cs → (c′ ≡ c → ⊥) → awaitB c k (c′ ∷ cs) ≡ awaitB c k cs
+await-miss k cs n rewrite ⌊⌋-no n = refl
 
 -- A scene is a program that never waits
 
--- the algebra of constant machines is the scene algebra
+-- the algebra of constant behaviours is the scene algebra
 inject-const : ∀ {A : Set} (f : A → O.Carrier) (s : Scene T D A) →
-               Bisim O (sem (λ a → constM (f a)) (inject s)) (constM (pfold (SceneC T D) hS f s))
-inject-const f s = pfold-rel-translate inl (λ x M → Bisim O M (constM x)) hom (λ a → bisim-refl O) s
+               ∀ cs → sem (λ a → constB (f a)) (inject s) cs O.≈ pfold (SceneC T D) hS f s
+inject-const f s = pfold-rel-translate inl (λ x b → ∀ cs → b cs O.≈ x) hom (λ a cs → O.refl) s
   where
-    hom : ∀ o (k′ : arity o → O.Carrier) k → (∀ q → Bisim O (k q) (constM (k′ q))) →
-          Bisim O (prodM o k) (constM (hS o k′))
-    hom o k′ k e = record
-      { R = λ s _ → ∀ q → R (e q) (s q) tt ; R-init = λ q → R-init (e q)
-      ; R-out = λ r → hS-c o (λ q → R-out (e q) (r q)) ; R-step = λ r c q → R-step (e q) (r q) c }
+    hom : ∀ o (k′ : arity o → O.Carrier) k → (∀ q cs → k q cs O.≈ k′ q) →
+          ∀ cs → prodB o k cs O.≈ hS o k′
+    hom o k′ k e cs = hS-c o (λ q → e q cs)

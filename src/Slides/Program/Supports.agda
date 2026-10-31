@@ -9,8 +9,8 @@
 --              an unsupported one is skipped; scenes are kept (`Container.Lowering.lower`)
 --   skipU b    the same default inside `C`
 --
---   lower-sound      the backend's machine for `lowerP b p`, commands decoded by `dec`
---                    (`Via`: an undecodable command does nothing), is the machine of `skipU b p`
+--   lower-sound      the backend's behaviour for `lowerP b p` on commands `cs` is the behaviour of
+--                    `skipU b p` on `mapMaybe dec cs` (an undecodable command does nothing)
 --   lower-supported  if every wait of `p` is supported, `skipU b p` is `p`
 
 module Slides.Program.Supports where
@@ -19,9 +19,11 @@ open import Level using (0ℓ; lift)
 open import Data.Bool.Base using (Bool; true; false; if_then_else_)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Maybe.Base using (Maybe; just; nothing; maybe′)
+open import Data.List.Base using (mapMaybe; []; _∷_)
 open import Data.Product.Base using (_×_; _,_; Σ-syntax)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
+open import Data.Container.Core using (Shape)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋)
@@ -31,11 +33,11 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Data.Maybe.Properties using (just-injective)
 
 open import Container.Interpret.Plain using (Handler; Congruent)
+open import Container.FreeMonad using (All⋆)
 open import Container.Lowering using (Lowering; lower)
 open import Container.Lowering.Properties using (_≈⋆_)
 open import Slides.Scene.Syntax using (SceneC; arity)
 open import Slides.Program.Syntax
-open import Slides.Program.Machine
 
 record Supports (C : Set) : Set₁ where
   field
@@ -74,10 +76,12 @@ module _ {T D C : Set} (b : Supports C) where
   skipU = lower skipUOp
 
   -- every wait of the program is supported
+  SupOp : Shape (ProgC T D C) → Set
+  SupOp (inj₁ _) = ⊤
+  SupOp (inj₂ c) = inj b c ≡ nothing → ⊥
+
   AllSup : ∀ {A} → Program T D C A → Set
-  AllSup (pure _)              = ⊤
-  AllSup (impure (inj₁ _ , k)) = ∀ q → AllSup (k q)
-  AllSup (impure (inj₂ c , k)) = (inj b c ≡ nothing → ⊥) × AllSup (k tt)
+  AllSup = All⋆ SupOp
 
   lowerP-just : ∀ {A} {s} c (k : ⊤ → Program T D C A) → inj b c ≡ just s →
                 lowerP (impure (inj₂ c , k)) ≡ impure (inj₂ s , λ _ → lowerP (k tt))
@@ -98,47 +102,21 @@ module _ {T D C : Set} (b : Supports C) where
   -- nothing to skip when everything is supported
   lower-supported : ∀ {A} (p : Program T D C A) → AllSup p → skipU p ≈⋆ p
   lower-supported (pure _) _ = lift refl
-  lower-supported (impure (inj₁ o , k)) a = refl , λ q → lower-supported (k q) (a q)
+  lower-supported (impure (inj₁ o , k)) (_ , a) = refl , λ q → lower-supported (k q) (a q)
   lower-supported (impure (inj₂ c , k)) (n , a) with inj b c in e
   ... | nothing = ⊥-elim (n refl)
-  ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) a
+  ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) (a tt)
 
 -- Soundness of the lowering
 
--- A machine over the backend's commands behaves as one over the program's commands once each
+-- A behaviour over the backend's commands behaves as one over the program's commands once each
 -- backend command is decoded; one that does not decode does nothing.
-module _ {S C : Set} (O : Setoid 0ℓ 0ℓ) (d : S → Maybe C) where
-  private module O = Setoid O
-
-  record Via (M : Machine S O.Carrier) (N : Machine C O.Carrier) : Set₁ where
-    field
-      R      : State M → State N → Set
-      R-init : R (init M) (init N)
-      R-out  : ∀ {p q} → R p q → out M p O.≈ out N q
-      R-just : ∀ {p q s c} → R p q → d s ≡ just c → R (step M p s) (step N q c)
-      R-none : ∀ {p q s} → R p q → d s ≡ nothing → R (step M p s) q
-  open Via public
-
-  -- a `Via` simulation can be followed by a bisimulation
-  via-bisim : ∀ {M N N′} → Via M N → Bisim O N N′ → Via M N′
-  via-bisim v b = record
-    { R = λ p q′ → Σ[ q ∈ _ ] R v p q × R b q q′
-    ; R-init = _ , R-init v , R-init b
-    ; R-out = λ { (_ , x , y) → O.trans (R-out v x) (R-out b y) }
-    ; R-just = λ { (_ , x , y) e → _ , R-just v x e , R-step b y _ }
-    ; R-none = λ { (_ , x , y) e → _ , R-none v x e , y } }
-
 module _ {T D C : Set} (b : Supports C) (dC : DecidableEquality C) (O : Setoid 0ℓ 0ℓ)
          (hS : Handler (SceneC T D) (Setoid.Carrier O)) (hS-c : Congruent (SceneC T D) O hS)
          (blank : Setoid.Carrier O) where
   private module O = Setoid O
   import Slides.Program.Sem {T} {D} {C} dC O hS hS-c blank as SC
   import Slides.Program.Sem {T} {D} {S b} (_≟S_ b) O hS hS-c blank as SS
-
-  private
-    RV : ∀ {M N : Machine (S b) O.Carrier} → ⊤ ⊎ State M → ⊤ ⊎ State N → Set
-    RV (inj₁ _) (inj₁ _) = ⊤
-    RV _ _ = ⊥
 
   -- the backend command and the program command agree on what a wait waits for
   coh-just : ∀ {c s s′ c′} → inj b c ≡ just s → dec b s′ ≡ just c′ → ⌊ _≟S_ b s′ s ⌋ ≡ ⌊ dC c′ c ⌋
@@ -155,43 +133,30 @@ module _ {T D C : Set} (b : Supports C) (dC : DecidableEquality C) (O : Setoid 0
     where absurd : nothing ≡ just c → ⊥
           absurd ()
 
-  lower-sound : ∀ {A} (ls : A → SS.Mach) (lc : A → SC.Mach) → (∀ a → Via O (dec b) (ls a) (lc a)) →
-                ∀ p → Via O (dec b) (SS.sem ls (lowerP b p)) (SC.sem lc (skipU b p))
+  -- a supported wait, on decoded commands: the same wait on the same rest
+  wait-sound : ∀ {c s} → inj b c ≡ just s → (kS : SS.Beh) (kC : SC.Beh) →
+               (∀ cs → kS cs O.≈ kC (mapMaybe (dec b) cs)) →
+               ∀ cs → SS.awaitB s kS cs O.≈ SC.awaitB c kC (mapMaybe (dec b) cs)
+  wait-sound e kS kC h [] = O.refl
+  wait-sound {c} {s} e kS kC h (s′ ∷ cs) with dec b s′ in e′
+  ... | nothing rewrite coh-none e e′ = wait-sound e kS kC h cs
+  ... | just c′ rewrite coh-just e e′ with ⌊ dC c′ c ⌋
+  ...   | true  = h cs
+  ...   | false = wait-sound e kS kC h cs
+
+  lower-sound : ∀ {A} (ls : A → SS.Beh) (lc : A → SC.Beh) →
+                (∀ a cs → ls a cs O.≈ lc a (mapMaybe (dec b) cs)) →
+                ∀ p cs → SS.sem ls (lowerP b p) cs O.≈ SC.sem lc (skipU b p) (mapMaybe (dec b) cs)
   lower-sound ls lc l (pure a) = l a
-  lower-sound ls lc l (impure (inj₁ o , k)) = record
-    { R = λ s t → ∀ q → R (ih q) (s q) (t q)
-    ; R-init = λ q → R-init (ih q)
-    ; R-out = λ r → hS-c o (λ q → R-out (ih q) (r q))
-    ; R-just = λ r e q → R-just (ih q) (r q) e
-    ; R-none = λ r e q → R-none (ih q) (r q) e }
-    where ih = λ q → lower-sound ls lc l (k q)
+  lower-sound ls lc l (impure (inj₁ o , k)) cs = hS-c o (λ q → lower-sound ls lc l (k q) cs)
   lower-sound ls lc l (impure (inj₂ c , k)) with inj b c in e
   ... | nothing rewrite lowerP-nothing b c k e | skipU-nothing b c k e = lower-sound ls lc l (k tt)
-  ... | just s rewrite lowerP-just b {s = s} c k e | skipU-just b {s = s} c k e = record
-    { R = RW ; R-init = tt
-    ; R-out = λ { {inj₁ _} {inj₁ _} _ → O.refl ; {inj₂ _} {inj₂ _} r → R-out ih r }
-    ; R-just = λ { {inj₁ _} {inj₁ _} _ e′ → wj e′ ; {inj₂ _} {inj₂ _} r e′ → R-just ih r e′ }
-    ; R-none = λ { {inj₁ _} {inj₁ _} _ e′ → wn e′ ; {inj₂ _} {inj₂ _} r e′ → R-none ih r e′ } }
-    where
-      ih = lower-sound ls lc l (k tt)
-      RW : ⊤ ⊎ _ → ⊤ ⊎ _ → Set
-      RW (inj₁ _) (inj₁ _) = ⊤
-      RW (inj₂ p) (inj₂ q) = R ih p q
-      RW _ _ = ⊥
-      cond : ∀ x → RW (if x then inj₂ (init (SS.sem ls (lowerP b (k tt)))) else inj₁ tt)
-                      (if x then inj₂ (init (SC.sem lc (skipU b (k tt)))) else inj₁ tt)
-      cond true  = R-init ih
-      cond false = tt
-      wj : ∀ {s′ c′} → dec b s′ ≡ just c′ →
-           RW (if ⌊ _≟S_ b s′ s ⌋ then inj₂ (init (SS.sem ls (lowerP b (k tt)))) else inj₁ tt)
-              (if ⌊ dC c′ c ⌋ then inj₂ (init (SC.sem lc (skipU b (k tt)))) else inj₁ tt)
-      wj {c′ = c′} e′ rewrite coh-just e e′ = cond ⌊ dC c′ c ⌋
-      wn : ∀ {s′} → dec b s′ ≡ nothing →
-           RW (if ⌊ _≟S_ b s′ s ⌋ then inj₂ (init (SS.sem ls (lowerP b (k tt)))) else inj₁ tt) (inj₁ tt)
-      wn e′ rewrite coh-none e e′ = tt
+  ... | just s rewrite lowerP-just b {s = s} c k e | skipU-just b {s = s} c k e =
+    wait-sound e _ _ (lower-sound ls lc l (k tt))
 
-  -- with every wait supported the backend machine is the program's machine, decoded
-  lower-supported-sound : ∀ {A} (ls : A → SS.Mach) (lc : A → SC.Mach) → (∀ a → Via O (dec b) (ls a) (lc a)) →
-                          ∀ p → AllSup b p → Via O (dec b) (SS.sem ls (lowerP b p)) (SC.sem lc p)
-  lower-supported-sound ls lc l p a =
-    via-bisim O (dec b) (lower-sound ls lc l p) (SC.sem-cong (lower-supported b p a))
+  -- with every wait supported the backend behaviour is the program's, decoded
+  lower-supported-sound : ∀ {A} (ls : A → SS.Beh) (lc : A → SC.Beh) →
+                          (∀ a cs → ls a cs O.≈ lc a (mapMaybe (dec b) cs)) →
+                          ∀ p → AllSup b p → ∀ cs → SS.sem ls (lowerP b p) cs O.≈ SC.sem lc p (mapMaybe (dec b) cs)
+  lower-supported-sound ls lc l p a cs =
+    O.trans (lower-sound ls lc l p cs) (SC.sem-cong (lower-supported b p a) _)

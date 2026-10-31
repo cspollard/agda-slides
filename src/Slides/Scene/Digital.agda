@@ -32,6 +32,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-ext)
+open import Container.FreeMonad using (All⋆)
 open import Container.Lowering using (lower)
 open import Slides.Scalar.Core using (_⊕_; ⊕-cong)
 open import Slides.Scalar.Time using (timeCong)
@@ -95,8 +96,7 @@ SidesOp (Connect _ pa _ pb _) = IsSide pa × IsSide pb
 SidesOp _                     = ⊤
 
 SidesDia : ∀ {S} → Dia S → Set
-SidesDia (pure ())
-SidesDia (impure (o , k)) = SidesOp o × (∀ p → SidesDia (k p))
+SidesDia = All⋆ SidesOp
 
 private
   portOK : ∀ p → IsSide p → N.PortNat p
