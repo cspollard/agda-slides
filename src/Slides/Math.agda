@@ -20,10 +20,12 @@ open import Data.String using (String; concat; fromList; toList) renaming (_++_ 
 open import Data.Char using (Char)
 open import Function.Base using (_∘_)
 open import Data.Container.Core using (Container; _▷_)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
+import Data.List.Properties as ListP
+import Relation.Binary.PropositionalEquality as ≡P
 
 open import Container.Pick using (pick2)
-open import Container.Interpret.Plain using (Handler; pfold)
+open import Container.Interpret.Plain using (Handler; pfold; Congruent; pfold-bind)
 
 data Greek : Set where
   alpha beta gamma delta epsilon theta lambda mu nu pi rho sigma tau phi chi psi omega : Greek
@@ -197,6 +199,43 @@ latex (_ , tupleO n)    k = commaSep (tabulate k)
 
 toLaTeX : Math → String
 toLaTeX = pfold MathC latex (λ s → s)
+
+-- The printer respects pointwise-equal children: each command reads its children at finitely many
+-- positions, so the equalities at those positions rewrite the goal.
+latex-cong : Congruent MathC (≡P.setoid String) latex
+latex-cong (_ , numO _)    e = ≡P.refl
+latex-cong (_ , greekO _)  e = ≡P.refl
+latex-cong (_ , textO _)   e = ≡P.refl
+latex-cong (_ , rawO _)    e = ≡P.refl
+latex-cong (_ , negO)      e rewrite e zero = ≡P.refl
+latex-cong (_ , sqrtO)     e rewrite e zero = ≡P.refl
+latex-cong (_ , parenO)    e rewrite e zero = ≡P.refl
+latex-cong (_ , vecO)      e rewrite e zero = ≡P.refl
+latex-cong (_ , hatO)      e rewrite e zero = ≡P.refl
+latex-cong (_ , barO)      e rewrite e zero = ≡P.refl
+latex-cong (_ , calO)      e rewrite e zero = ≡P.refl
+latex-cong (_ , bbO)       e rewrite e zero = ≡P.refl
+latex-cong (_ , ddO)       e rewrite e zero = ≡P.refl
+latex-cong (_ , fnO _)     e rewrite e zero = ≡P.refl
+latex-cong (_ , addO)      e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , subO)      e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , mulO)      e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , fracO)     e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , powO)      e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , idxO)      e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , juxtO)     e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , relO _)    e rewrite e zero | e (suc zero) = ≡P.refl
+latex-cong (_ , sumO)      e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
+latex-cong (_ , integralO) e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
+latex-cong (_ , prodO)     e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
+latex-cong (_ , callO n)   e rewrite e zero | ListP.tabulate-cong (e ∘ suc) = ≡P.refl
+latex-cong (_ , tupleO n)  e rewrite ListP.tabulate-cong e = ≡P.refl
+
+-- Substitution commutes with printing: print the formula with each identifier replaced by the
+-- print of its substitute (`pfold-bind` at the setoid of strings).
+toLaTeX-bind : ∀ (m : Math) (σ : String → Math) →
+               toLaTeX (m >>= σ) ≡P.≡ pfold MathC latex (λ x → toLaTeX (σ x)) m
+toLaTeX-bind m σ = pfold-bind (≡P.setoid String) latex-cong σ (λ _ → ≡P.refl) m
 
 -- Authoring: operators
 
