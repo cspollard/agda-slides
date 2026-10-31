@@ -5,7 +5,7 @@
 -- `lowerTalk` to every chunk of every slide.
 --   `lowerFlow-++`   `lowerFlow l` is a monoid homomorphism (`concatMap`)
 --   `lowerFlow-id`   the identity lowering lifts to the identity
---   `lowerFlow-fuse` `lowerFlow (l₁ ⋙ l₂) ≡ lowerFlow l₂ ∘ lowerFlow l₁`: one combined lowering
+--   `lowerFlow-fuse` `lowerFlow (l₁ ⋙ᶠ l₂) ≡ lowerFlow l₂ ∘ lowerFlow l₁`: one combined lowering
 --   `slides-lower`   slides (lowerTalk l t) ≡ map (lowerSlide l) (slides t); a pause survives
 
 module Slides.Deck.Lower where
@@ -24,12 +24,13 @@ open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Deck.Anim using (sequence; layoutAt; lastTick; totalDuration; zeroQ)
 
-Lowering : Set
-Lowering = Block → Flow
+-- (not `Container.Lowering`: `lowerFlow` recurses through the blocks' own structure, which a container lowering cannot express without losing termination)
+FlowLowering : Set
+FlowLowering = Block → Flow
 
 -- Lifting a lowering of blocks to flows
 
-module _ (l : Lowering) where
+module _ (l : FlowLowering) where
   mutual
     lowerBlock : Block → Flow
     lowerBlock (columns cs)       = columns (lowerFlows cs) ∷ []
@@ -52,12 +53,12 @@ module _ (l : Lowering) where
   lowerFlow-++ (b ∷ xs) ys = trans (cong (lowerBlock b ++_) (lowerFlow-++ xs ys)) (sym (ListP.++-assoc (lowerBlock b) (lowerFlow xs) (lowerFlow ys)))
 
 -- composition: the second lowering runs over the result of the first
-idL : Lowering
+idL : FlowLowering
 idL b = b ∷ []
 
-infixl 5 _⋙_
-_⋙_ : Lowering → Lowering → Lowering
-(l₁ ⋙ l₂) b = lowerFlow l₂ (l₁ b)
+infixl 5 _⋙ᶠ_
+_⋙ᶠ_ : FlowLowering → FlowLowering → FlowLowering
+(l₁ ⋙ᶠ l₂) b = lowerFlow l₂ (l₁ b)
 
 mutual
   lowerFlow-id : ∀ f → lowerFlow idL f ≡ f
@@ -96,13 +97,13 @@ private
   single l b = ListP.++-identityʳ (lowerBlock l b)
 
 mutual
-  lowerFlow-fuse : ∀ l₁ l₂ f → lowerFlow (l₁ ⋙ l₂) f ≡ lowerFlow l₂ (lowerFlow l₁ f)
+  lowerFlow-fuse : ∀ l₁ l₂ f → lowerFlow (l₁ ⋙ᶠ l₂) f ≡ lowerFlow l₂ (lowerFlow l₁ f)
   lowerFlow-fuse l₁ l₂ []       = refl
   lowerFlow-fuse l₁ l₂ (b ∷ bs) =
     trans (cong₂ _++_ (lowerBlock-fuse l₁ l₂ b) (lowerFlow-fuse l₁ l₂ bs))
           (sym (lowerFlow-++ l₂ (lowerBlock l₁ b) (lowerFlow l₁ bs)))
 
-  lowerBlock-fuse : ∀ l₁ l₂ b → lowerBlock (l₁ ⋙ l₂) b ≡ lowerFlow l₂ (lowerBlock l₁ b)
+  lowerBlock-fuse : ∀ l₁ l₂ b → lowerBlock (l₁ ⋙ᶠ l₂) b ≡ lowerFlow l₂ (lowerBlock l₁ b)
   lowerBlock-fuse l₁ l₂ (columns cs)       = trans (cong (λ x → columns x ∷ []) (lowerFlows-fuse l₁ l₂ cs)) (sym (single l₂ (columns (lowerFlows l₁ cs))))
   lowerBlock-fuse l₁ l₂ (box t f)          = trans (cong (λ x → box t x ∷ []) (lowerFlow-fuse l₁ l₂ f)) (sym (single l₂ (box t (lowerFlow l₁ f))))
   lowerBlock-fuse l₁ l₂ (fragment s f)     = trans (cong (λ x → fragment s x ∷ []) (lowerFlow-fuse l₁ l₂ f)) (sym (single l₂ (fragment s (lowerFlow l₁ f))))
@@ -125,20 +126,20 @@ mutual
   lowerBlock-fuse l₁ l₂ (script _) = refl
   lowerBlock-fuse l₁ l₂ (mount _) = refl
 
-  lowerFlows-fuse : ∀ l₁ l₂ fs → lowerFlows (l₁ ⋙ l₂) fs ≡ lowerFlows l₂ (lowerFlows l₁ fs)
+  lowerFlows-fuse : ∀ l₁ l₂ fs → lowerFlows (l₁ ⋙ᶠ l₂) fs ≡ lowerFlows l₂ (lowerFlows l₁ fs)
   lowerFlows-fuse l₁ l₂ []       = refl
   lowerFlows-fuse l₁ l₂ (f ∷ fs) = cong₂ _∷_ (lowerFlow-fuse l₁ l₂ f) (lowerFlows-fuse l₁ l₂ fs)
 
 -- Slides and talks
 
-lowerSlide : Lowering → Slide → Slide
+lowerSlide : FlowLowering → Slide → Slide
 lowerSlide l (slide lab cs) = slide lab (L⁺.map (lowerFlow l) cs)
 
-lowerPart : Lowering → Part → Part
+lowerPart : FlowLowering → Part → Part
 lowerPart l (solo o s)    = solo o (lowerSlide l s)
 lowerPart l (vstack o ss) = vstack o (L⁺.map (lowerSlide l) ss)
 
-lowerTalk : Lowering → Talk → Talk
+lowerTalk : FlowLowering → Talk → Talk
 lowerTalk l = map (lowerPart l)
 
 -- the grouping is untouched: the slides of a lowered talk are the lowered slides
@@ -152,18 +153,18 @@ slides-lower l (vstack o (s ∷ ss) ∷ t) =
 -- The lowerings
 
 -- drop the speaker notes
-stripNotes : Lowering
+stripNotes : FlowLowering
 stripNotes (notes _) = []
 stripNotes b         = b ∷ []
 
 -- drop the scripts and the elements they draw into, for a backend without JavaScript
-stripScripts : Lowering
+stripScripts : FlowLowering
 stripScripts (script _) = []
 stripScripts (mount _)  = []
 stripScripts b          = b ∷ []
 
 -- a one-line placeholder for each diagram and animation, for a backend without vector graphics
-diagramPlaceholder : Lowering
+diagramPlaceholder : FlowLowering
 diagramPlaceholder (diagram _ _ _)  = paragraph (text "[diagram]" ∷ []) ∷ []
 diagramPlaceholder (still _ _ _)    = paragraph (text "[diagram]" ∷ []) ∷ []
 diagramPlaceholder (animation _ _ _ _) = paragraph (text "[animation]" ∷ []) ∷ []
@@ -173,7 +174,7 @@ diagramPlaceholder b                = b ∷ []
 
 -- an animation as a still of the picture the audience is left with: the last tick of the last act
 -- (first phase, for steps over a loop); the first frame for a loop
-animationFinal : Lowering
+animationFinal : FlowLowering
 animationFinal (animation n p ms [])      = []
 animationFinal (animation n p ms (a ∷ as)) =
   still n p (layoutAt (sequence (a ∷ as)) (lastTick (totalDuration (a ∷ as)))) ∷ []
