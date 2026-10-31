@@ -39,6 +39,7 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List.Base using (List; []; _∷_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
+open import Data.Product.Base using (proj₁)
 open import Data.Container.Core using (shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Nullary using (yes; no)
@@ -61,7 +62,7 @@ Beh = List C → O.Carrier
 constB : O.Carrier → Beh
 constB x _ = x
 
-prodB : (o : Op T D) → (arity o → Beh) → Beh
+prodB : (o : Op T D) → (arity (proj₁ o) → Beh) → Beh
 prodB o k cs = hS o (λ q → k q cs)
 
 awaitB : C → Beh → Beh
@@ -128,6 +129,6 @@ inject-const : ∀ {A : Set} (f : A → O.Carrier) (s : Scene T D A) →
                ∀ cs → sem (λ a → constB (f a)) (inject s) cs O.≈ pfold (SceneC T D) hS f s
 inject-const f s = pfold-rel-translate inl (λ x b → ∀ cs → b cs O.≈ x) hom (λ a cs → O.refl) s
   where
-    hom : ∀ o (k′ : arity o → O.Carrier) k → (∀ q cs → k q cs O.≈ k′ q) →
+    hom : ∀ o (k′ : arity (proj₁ o) → O.Carrier) k → (∀ q cs → k q cs O.≈ k′ q) →
           ∀ cs → prodB o k cs O.≈ hS o k′
     hom o k′ k e cs = hS-c o (λ q → e q cs)

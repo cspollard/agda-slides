@@ -20,29 +20,48 @@ module Slides.Scene.Syntax where
 open import Level using (0ℓ)
 open import Data.Fin using (Fin)
 open import Data.Nat using (ℕ)
-open import Data.Unit using (⊤)
-open import Data.Container.Core using (Container; _▷_; _⇒_)
+open import Data.Unit using (⊤; tt)
+open import Data.Container.Core using (Container; _⇒_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
-open import Data.Product.Base using (_,_)
+open import Data.Product.Base using (Σ; _,_)
 open import Container.Pick using (pick2)
 open import Container.Lowering using (translate)
+open import Container.Tagged using (Tagged; over)
 
-data Op (T D : Set) : Set where
-  Seq Par     : Op T D
-  Hold Delay  : T → Op T D
-  Repeat      : ℕ → Op T D
-  Drive       : D → Op T D
+-- A command is a tag and a payload; the arity of a tag does not depend on the scalars.
 
-arity : ∀ {T D} → Op T D → Set
-arity Seq        = Fin 2
-arity Par        = Fin 2
-arity (Hold _)   = ⊤
-arity (Delay _)  = ⊤
-arity (Repeat _) = ⊤
-arity (Drive _)  = ⊤
+data Tag : Set where
+  seqK parK holdK delayK repeatK driveK : Tag
+
+arity : Tag → Set
+arity seqK    = Fin 2
+arity parK    = Fin 2
+arity holdK   = ⊤
+arity delayK  = ⊤
+arity repeatK = ⊤
+arity driveK  = ⊤
+
+-- the scalars a tag holds: a duration (`T`) or a driver (`D`)
+Held : Tag → Set → Set → Set
+Held holdK   T D = T
+Held delayK  T D = T
+Held repeatK T D = ℕ
+Held driveK  T D = D
+Held seqK    T D = ⊤
+Held parK    T D = ⊤
+
+Op : Set → Set → Set
+Op T D = Σ Tag (λ t → Held t T D)
+
+pattern Seq        = seqK , tt
+pattern Par        = parK , tt
+pattern Hold d     = holdK , d
+pattern Delay d    = delayK , d
+pattern Repeat n   = repeatK , n
+pattern Drive c    = driveK , c
 
 SceneC : Set → Set → Container 0ℓ 0ℓ
-SceneC T D = Op T D ▷ arity
+SceneC T D = Tagged arity (λ t → Held t T D)
 
 Scene : Set → Set → Set → Set
 Scene T D A = SceneC T D ⋆ A
@@ -65,26 +84,21 @@ module _ {T D A : Set} where
   drive : D → Scene T D A → Scene T D A
   drive c a = impure (Drive c , λ _ → a)
 
--- Change of clock and drivers: a container morphism (same arities), so scenes map by `translate`
+-- Change of clock and drivers: a container morphism with the identity on positions, so scenes map by `translate`
+
+mapP : ∀ {T₁ T₂ D₁ D₂} → (T₁ → T₂) → (D₁ → D₂) → ∀ t → Held t T₁ D₁ → Held t T₂ D₂
+mapP h g seqK    _ = tt
+mapP h g parK    _ = tt
+mapP h g holdK   d = h d
+mapP h g delayK  d = h d
+mapP h g repeatK n = n
+mapP h g driveK  c = g c
 
 mapOp : ∀ {T₁ T₂ D₁ D₂} → (T₁ → T₂) → (D₁ → D₂) → Op T₁ D₁ → Op T₂ D₂
-mapOp h g Seq        = Seq
-mapOp h g Par        = Par
-mapOp h g (Hold d)   = Hold (h d)
-mapOp h g (Delay d)  = Delay (h d)
-mapOp h g (Repeat n) = Repeat n
-mapOp h g (Drive c)  = Drive (g c)
+mapOp h g (t , p) = t , mapP h g t p
 
 mapSC : ∀ {T₁ T₂ D₁ D₂} → (T₁ → T₂) → (D₁ → D₂) → SceneC T₁ D₁ ⇒ SceneC T₂ D₂
-mapSC h g = record { shape = mapOp h g ; position = pos }
-  where
-    pos : ∀ {o} → arity (mapOp h g o) → arity o
-    pos {Seq}      p = p
-    pos {Par}      p = p
-    pos {Hold _}   p = p
-    pos {Delay _}  p = p
-    pos {Repeat _} p = p
-    pos {Drive _}  p = p
+mapSC h g = over arity (mapP h g)
 
 mapScene : ∀ {T₁ T₂ D₁ D₂ A} → (T₁ → T₂) → (D₁ → D₂) → Scene T₁ D₁ A → Scene T₂ D₂ A
 mapScene h g = translate (mapSC h g)

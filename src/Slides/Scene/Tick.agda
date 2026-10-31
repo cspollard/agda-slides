@@ -140,8 +140,8 @@ module _ {A : Set} (ℓ₁ : A → T₁ → X₁) (ℓ₂ : A → T₂ → X₂)
       (trans (cong (λ z → O₁.select (O₁._≤?_ O₁.0# t) z nothing) (cong just (trans (cong (ℓ₂ a) (param-h q t)) (ℓ-ok a _))))
              (sym (map-select (O₁._≤?_ O₁.0# t) _ nothing)))
 
-  rel-hom : ∀ o {k : arity o → S₁.Timed} {k′ : arity o → S₂.Timed} → (∀ p → R (k p) (k′ p)) →
-            R (S₁.dirH o k) (S₂.dirH (mapOp h g o) (λ q → k′ (position (mapSC h g) q)))
+  rel-hom : ∀ o {k : arity (proj₁ o) → S₁.Timed} {k′ : arity (proj₁ o) → S₂.Timed} → (∀ p → R (k p) (k′ p)) →
+            R (S₁.dirH o k) (S₂.dirH (mapOp h g o) (λ q → k′ (position (mapSC h g) {o} q)))
   rel-hom Seq        {k} {k′} e = Lg.rel-seq logical {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
   rel-hom Par        {k} {k′} e = Lg.rel-par logical {k zero} {k′ zero} {k (suc zero)} {k′ (suc zero)} (e zero) (e (suc zero))
   rel-hom (Hold d)   {k} {k′} e = Lg.rel-hold logical {x = k tt} {k′ tt} refl (e tt)
