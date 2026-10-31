@@ -123,7 +123,9 @@ Arrow a pa b pb s l =
 connectP-arrow : ∀ a pa b pb s l → a ∈ anchorNames l → b ∈ anchorNames l → Arrow a pa b pb s l
 connectP-arrow a pa b pb s (mkLayout w h ds as) ia ib
   with anchor-lookup a as ia | anchor-lookup b as ib
-... | ba , fa | bb , fb rewrite fa | fb = P.portPoint pa ba , P.portPoint pb bb , refl
+... | ba , fa | bb , fb =
+  P.portPoint pa ba , P.portPoint pb bb ,
+  cong₂ (λ x y → ds ++ P.connectArrow pa pb s x y) fa fb
 
 -- the anchors of a connection are its child's: a connection never declares a name
 connectP-anchors : ∀ a pa b pb s l → Layout.anchors (P.connectP a pa b pb s l) ≡ Layout.anchors l
