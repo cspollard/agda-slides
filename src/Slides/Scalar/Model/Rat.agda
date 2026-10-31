@@ -23,6 +23,7 @@ import Data.Rational.Unnormalised.Properties as ℚᵘP
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; subst₂)
 
 open import Slides.Scalar.Core
+import Algebra.Properties.Group ℚP.+-0-group as GP
 open import Slides.Scalar.Space
 open import Slides.Scalar.Time
 open import Slides.Scalar.Coupling
@@ -32,16 +33,11 @@ open import Relation.Nullary using (yes; no; ¬_)
 
 ratMon : OrdMon ℚ
 ratMon = record
-  { 0# = 0ℚ ; _+_ = _+_ ; _⊔_ = _⊔_ ; _≤_ = _≤_ ; _≤?_ = ℚP._≤?_
-  ; +-assoc = ℚP.+-assoc ; +-comm = ℚP.+-comm ; +-idˡ = ℚP.+-identityˡ
-  ; +-cancelˡ = λ a b c e → trans (sym (ℚP.+-identityˡ b))
-      (trans (cong (λ y → y + b) (sym (ℚP.+-inverseˡ a)))
-        (trans (ℚP.+-assoc (ℚ.- a) a b)
-          (trans (cong (λ y → (ℚ.- a) + y) e)
-            (trans (sym (ℚP.+-assoc (ℚ.- a) a c))
-              (trans (cong (λ y → y + c) (ℚP.+-inverseˡ a)) (ℚP.+-identityˡ c))))))
-  ; ≤-refl = ℚP.≤-refl ; ≤-trans = ℚP.≤-trans ; ≤-antisym = ℚP.≤-antisym ; ≤-total = ℚP.≤-total
-  ; +-mono = ℚP.+-mono-≤ ; ⊔-ub₁ = λ a b → ℚP.p≤p⊔q a b ; ⊔-ub₂ = λ a b → ℚP.p≤q⊔p a b ; ⊔-lub = ℚP.⊔-lub }
+  { 0# = 0ℚ ; _+_ = _+_ ; _⊔_ = _⊔_ ; _≤_ = _≤_
+  ; isCommutativeMonoid = ℚP.+-0-isCommutativeMonoid
+  ; +-cancelˡ = GP.∙-cancelˡ
+  ; isDecTotalOrder = ℚP.≤-isDecTotalOrder ; +-mono = ℚP.+-mono-≤
+  ; supremum = λ a b → ℚP.p≤p⊔q a b , ℚP.p≤q⊔p a b , λ _ → ℚP.⊔-lub }
 
 ratSub : Sub ratMon
 ratSub = record

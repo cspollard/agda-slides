@@ -44,10 +44,6 @@ open import Slides.Diagram.Laws Sp using (size; sizeH; size-layout; shiftDraw-ze
 NN : S → Set
 NN x = 0# ≤ x
 
-private
-  ≤-reflexive : ∀ {a b} → a ≡ b → a ≤ b
-  ≤-reflexive refl = ≤-refl
-
 nn+ : ∀ {a b} → NN a → NN b → NN (a + b)
 nn+ pa pb = ≤-trans (≤-reflexive (sym (+-idˡ 0#))) (+-mono pa pb)
 

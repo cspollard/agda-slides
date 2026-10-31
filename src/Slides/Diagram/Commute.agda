@@ -25,8 +25,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Slides.Diagram.Draw
 open Space Sp
 import Slides.Diagram.Place Sp as P
-open import Slides.Diagram.Laws Sp using (⊔-comm; ⊔-assoc; ovl)
-open import Slides.Diagram.Assoc Sp using (sub-trans; combine-assoc)
+open import Slides.Diagram.Laws Sp using (ovl)
+open import Slides.Diagram.Assoc Sp using (combine-assoc)
 
 -- the same frame, the same things drawn and named
 _≈ᵖ_ : Layout S → Layout S → Set

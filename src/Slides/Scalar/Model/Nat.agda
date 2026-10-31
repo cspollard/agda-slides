@@ -17,10 +17,10 @@ open import Data.Product.Base using (_,_)
 
 natMon : OrdMon ℕ
 natMon = record
-  { 0# = 0 ; _+_ = _+_ ; _⊔_ = ℕ._⊔_ ; _≤_ = ℕ._≤_ ; _≤?_ = ℕ._≤?_
-  ; +-assoc = ℕP.+-assoc ; +-comm = ℕP.+-comm ; +-idˡ = λ _ → refl ; +-cancelˡ = ℕP.+-cancelˡ-≡
-  ; ≤-refl = ℕP.≤-refl ; ≤-trans = ℕP.≤-trans ; ≤-antisym = ℕP.≤-antisym ; ≤-total = ℕP.≤-total
-  ; +-mono = ℕP.+-mono-≤ ; ⊔-ub₁ = ℕP.m≤m⊔n ; ⊔-ub₂ = ℕP.m≤n⊔m ; ⊔-lub = ℕP.⊔-lub }
+  { 0# = 0 ; _+_ = _+_ ; _⊔_ = ℕ._⊔_ ; _≤_ = ℕ._≤_
+  ; isCommutativeMonoid = ℕP.+-0-isCommutativeMonoid ; +-cancelˡ = ℕP.+-cancelˡ-≡
+  ; isDecTotalOrder = ℕP.≤-isDecTotalOrder ; +-mono = ℕP.+-mono-≤
+  ; supremum = λ a b → ℕP.m≤m⊔n a b , ℕP.m≤n⊔m a b , λ _ → ℕP.⊔-lub }
 
 natSub : Sub natMon
 natSub = record { _-_ = _∸_ ; sub-add = ℕP.m+[n∸m]≡n }

@@ -90,16 +90,6 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
     hom (Named _)         k k′ e = trans (cong₂ _,_ refl refl) (e tt)
     hom (Connect _ _ _ _ _) k k′ e = e tt
 
--- Sizes of connectives, from the laws of `+` and `⊔`
-
-⊔-comm : ∀ a b → a ⊔ b ≡ b ⊔ a
-⊔-comm a b = ≤-antisym (⊔-lub (⊔-ub₂ b a) (⊔-ub₁ b a)) (⊔-lub (⊔-ub₂ a b) (⊔-ub₁ a b))
-
-⊔-assoc : ∀ a b c → (a ⊔ b) ⊔ c ≡ a ⊔ (b ⊔ c)
-⊔-assoc a b c = ≤-antisym
-  (⊔-lub (⊔-lub (⊔-ub₁ a _) (≤-trans (⊔-ub₁ b c) (⊔-ub₂ a _))) (≤-trans (⊔-ub₂ b c) (⊔-ub₂ a _)))
-  (⊔-lub (≤-trans (⊔-ub₁ a b) (⊔-ub₁ _ c)) (⊔-lub (≤-trans (⊔-ub₂ a b) (⊔-ub₁ _ c)) (⊔-ub₂ _ c)))
-
 -- Layouts overlay in the join of their frames, the drawings and anchors concatenating
 ovl : Layout S → Layout S → Layout S
 ovl a b = P.overlay (P.width a ⊔ P.width b) (P.height a ⊔ P.height b) a b

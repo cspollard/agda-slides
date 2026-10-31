@@ -15,9 +15,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open OrdMon M
 open Sub Sb
 
-≤-reflexive : ∀ {a b} → a ≡ b → a ≤ b
-≤-reflexive refl = ≤-refl
-
 -- not below is above
 ≰⇒≥ : ∀ {a b} → ¬ (a ≤ b) → b ≤ a
 ≰⇒≥ {a} {b} n with ≤-total a b

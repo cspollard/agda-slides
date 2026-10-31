@@ -38,7 +38,7 @@ open import Slides.Scalar.Model.Nat
 open import Slides.Scalar.Model.Rat
 
 ι-hom : IsOrdMonHom natMon ratMon ι
-ι-hom = record { h-0 = refl ; h-+ = ι-+ ; h-mono = ι-mono ; h-reflect = ι-reflect }
+ι-hom = ordMonHom natMon ratMon ι refl ι-+ ι-mono ι-reflect
 ι-scale-hom : IsScaleHom natScale ratScale ι ι
 ι-scale-hom = record { h-· = ι-* }
 ι-time-hom : IsTimeHom natTime ratTime ι

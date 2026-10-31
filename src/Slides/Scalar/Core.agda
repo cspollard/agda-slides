@@ -2,20 +2,35 @@
 
 -- The ordered monoid shared by Space and Time, optional exact subtraction, and homomorphisms.
 --
---   OrdMon S     cancellative commutative monoid (0#, +), total decidable order, join `_⊔_`
---                (frame union; the longer duration); equality is `_≡_`
+--   OrdMon S     a cancellative commutative monoid (`0#`, `+`), a decidable total order, and the join
+--                `_⊔_` (frame union; the longer duration), as stdlib structures over `_≡_`
+--                (`IsCommutativeMonoid`, `IsDecTotalOrder`, `Supremum`): the laws are those
+--                projections, renamed (`+-assoc`, `≤-trans`, `⊔-comm`, ...) so clients read as before
 --   Sub M        exact subtraction: `b ≤ a → b + (a - b) ≡ a` (all that ℕ's monus promises)
---   IsOrdMonHom  an order embedding preserving 0 and +; from the laws alone `h-⊔`, `h-select`
---                (comparison) and, where exact, `h-sub` follow
+--   IsOrdMonHom  an order monomorphism that is a monoid homomorphism; from the laws alone `h-⊔`,
+--                `h-select` (comparison) and, where exact, `h-sub` follow
+--
+-- Categorical reading (Hyland–Power 2007): `SpaceC`/`TimeC` are the operations of a signature, an
+-- `OrdMon` with its extras is an algebra for it satisfying the equations (a model of the theory),
+-- and an `IsOrdMonHom` is an algebra morphism that also reflects order.
 --
 -- Also the sum `_⊕_` of handlers for a sum of signatures, congruent when both are (`⊕-cong`).
 
 module Slides.Scalar.Core where
 
-open import Data.Product.Base using (_×_; _,_)
+open import Level using (0ℓ)
+open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂; [_,_]′)
 open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.Lattice using (Supremum; JoinSemilattice)
+open import Relation.Binary.Structures using (IsDecTotalOrder)
+open import Relation.Binary.Morphism.Structures using (IsOrderMonomorphism)
+open import Algebra.Bundles using (CommutativeMonoid)
+open import Algebra.Structures using (IsCommutativeMonoid)
+open import Algebra.Morphism.Structures using (module MonoidMorphisms)
+import Algebra.Properties.CommutativeSemigroup as CSP
+import Relation.Binary.Lattice.Properties.JoinSemilattice as JSP
 open import Data.Empty using (⊥-elim)
 open import Data.Bool using (if_then_else_)
 open import Relation.Nullary.Decidable using (does)
@@ -29,28 +44,40 @@ record OrdMon (S : Set) : Set₁ where
     _+_  : S → S → S
     _⊔_  : S → S → S
     _≤_  : S → S → Set
-    _≤?_ : ∀ a b → Dec (a ≤ b)
-    +-assoc    : ∀ a b c → (a + b) + c ≡ a + (b + c)
-    +-comm     : ∀ a b → a + b ≡ b + a
-    +-idˡ      : ∀ a → 0# + a ≡ a
-    +-cancelˡ  : ∀ a b c → a + b ≡ a + c → b ≡ c
-    ≤-refl     : ∀ {a} → a ≤ a
-    ≤-trans    : ∀ {a b c} → a ≤ b → b ≤ c → a ≤ c
-    ≤-antisym  : ∀ {a b} → a ≤ b → b ≤ a → a ≡ b
-    ≤-total    : ∀ a b → a ≤ b ⊎ b ≤ a
-    +-mono     : ∀ {a b c d} → a ≤ b → c ≤ d → a + c ≤ b + d
-    ⊔-ub₁      : ∀ a b → a ≤ a ⊔ b
-    ⊔-ub₂      : ∀ a b → b ≤ a ⊔ b
-    ⊔-lub      : ∀ {a b c} → a ≤ c → b ≤ c → a ⊔ b ≤ c
+    isCommutativeMonoid : IsCommutativeMonoid _≡_ _+_ 0#
+    +-cancelˡ           : ∀ a b c → a + b ≡ a + c → b ≡ c
+    isDecTotalOrder     : IsDecTotalOrder _≡_ _≤_
+    +-mono              : ∀ {a b c d} → a ≤ b → c ≤ d → a + c ≤ b + d
+    supremum            : Supremum _≤_ _⊔_
 
-  +-idʳ : ∀ a → a + 0# ≡ a
-  +-idʳ a = trans (+-comm a 0#) (+-idˡ a)
+  open IsCommutativeMonoid isCommutativeMonoid public using ()
+    renaming (assoc to +-assoc; comm to +-comm; identityˡ to +-idˡ; identityʳ to +-idʳ)
+  open IsDecTotalOrder isDecTotalOrder public using (_≤?_)
+    renaming (refl to ≤-refl; trans to ≤-trans; antisym to ≤-antisym; total to ≤-total; reflexive to ≤-reflexive)
 
-  ⊔-≤ : ∀ {a b} → a ≤ b → a ⊔ b ≡ b
-  ⊔-≤ a≤b = ≤-antisym (⊔-lub a≤b ≤-refl) (⊔-ub₂ _ _)
+  ⊔-ub₁ : ∀ a b → a ≤ a ⊔ b
+  ⊔-ub₁ a b = proj₁ (supremum a b)
+  ⊔-ub₂ : ∀ a b → b ≤ a ⊔ b
+  ⊔-ub₂ a b = proj₁ (proj₂ (supremum a b))
+  ⊔-lub : ∀ {a b c} → a ≤ c → b ≤ c → a ⊔ b ≤ c
+  ⊔-lub {a} {b} = proj₂ (proj₂ (supremum a b)) _
+
+  commutativeMonoid : CommutativeMonoid 0ℓ 0ℓ
+  commutativeMonoid = record { isCommutativeMonoid = isCommutativeMonoid }
+
+  rawMonoid = CommutativeMonoid.rawMonoid commutativeMonoid
+
+  joinSemilattice : JoinSemilattice 0ℓ 0ℓ 0ℓ
+  joinSemilattice = record
+    { _∨_ = _⊔_
+    ; isJoinSemilattice = record { isPartialOrder = IsDecTotalOrder.isPartialOrder isDecTotalOrder ; supremum = supremum } }
+
+  -- the library's laws of `+` and `⊔`, under our names
+  open CSP (CommutativeMonoid.commutativeSemigroup commutativeMonoid) public using () renaming (interchange to +-interchange)
+  open JSP joinSemilattice public using () renaming (∨-comm to ⊔-comm; ∨-assoc to ⊔-assoc; x≤y⇒x∨y≈y to ⊔-≤)
 
   ⊔-≥ : ∀ {a b} → b ≤ a → a ⊔ b ≡ a
-  ⊔-≥ b≤a = ≤-antisym (⊔-lub ≤-refl b≤a) (⊔-ub₁ _ _)
+  ⊔-≥ {a} b≤a = trans (⊔-comm a _) (⊔-≤ b≤a)
 
   -- comparison as a select: `select (a ≤? b) x y` is `x` if `a ≤ b`, else `y`
   select : ∀ {A : Set} {a b} → Dec (a ≤ b) → A → A → A
@@ -70,14 +97,28 @@ record Sub {S} (M : OrdMon S) : Set where
   sub-self : ∀ a → a - a ≡ 0#
   sub-self a = sym (sub-unique ≤-refl (+-idʳ a))
 
--- A model homomorphism of ordered monoids: an order embedding.
+  -- differences compose along `x ≤ y ≤ z`
+  sub-trans : ∀ {x y z} → x ≤ y → y ≤ z → (y - x) + (z - y) ≡ z - x
+  sub-trans {x} {y} {z} x≤y y≤z =
+    sub-unique (≤-trans x≤y y≤z)
+      (trans (sym (+-assoc x (y - x) (z - y))) (trans (cong (_+ (z - y)) (sub-add x≤y)) (sub-add y≤z)))
+
+-- A model homomorphism of ordered monoids: a monoid homomorphism that is an order monomorphism.
 record IsOrdMonHom {A B} (M : OrdMon A) (N : OrdMon B) (h : A → B) : Set where
   private module M = OrdMon M ; module N = OrdMon N
+  open MonoidMorphisms M.rawMonoid N.rawMonoid using (IsMonoidHomomorphism; module IsMonoidHomomorphism)
   field
-    h-0       : h M.0# ≡ N.0#
-    h-+       : ∀ a b → h (a M.+ b) ≡ h a N.+ h b
-    h-mono    : ∀ {a b} → a M.≤ b → h a N.≤ h b
-    h-reflect : ∀ {a b} → h a N.≤ h b → a M.≤ b
+    isMonoidHom : IsMonoidHomomorphism h
+    isOrderMono : IsOrderMonomorphism _≡_ _≡_ M._≤_ N._≤_ h
+
+  h-0    : h M.0# ≡ N.0#
+  h-0    = IsMonoidHomomorphism.ε-homo isMonoidHom
+  h-+    : ∀ a b → h (a M.+ b) ≡ h a N.+ h b
+  h-+    = IsMonoidHomomorphism.homo isMonoidHom
+  h-mono : ∀ {a b} → a M.≤ b → h a N.≤ h b
+  h-mono = IsOrderMonomorphism.mono isOrderMono
+  h-reflect : ∀ {a b} → h a N.≤ h b → a M.≤ b
+  h-reflect = IsOrderMonomorphism.cancel isOrderMono
 
   -- The join is preserved, from monotonicity and totality alone.
   h-⊔ : ∀ a b → h (a M.⊔ b) ≡ h a N.⊔ h b
@@ -101,9 +142,21 @@ record IsOrdMonHom {A B} (M : OrdMon A) (N : OrdMon B) (h : A → B) : Set where
     N.+-cancelˡ (h b) _ _
       (trans (sym (h-+ b _)) (trans (cong h (Sub.sub-add SM b≤a)) (sym (Sub.sub-add SN (h-mono b≤a)))))
 
+-- Build one from the four laws: `cong` is `cong h`, injectivity is antisymmetry of the two reflections.
+ordMonHom : ∀ {A B} (M : OrdMon A) (N : OrdMon B) (h : A → B) →
+  h (OrdMon.0# M) ≡ OrdMon.0# N →
+  (∀ a b → h (OrdMon._+_ M a b) ≡ OrdMon._+_ N (h a) (h b)) →
+  (∀ {a b} → OrdMon._≤_ M a b → OrdMon._≤_ N (h a) (h b)) →
+  (∀ {a b} → OrdMon._≤_ N (h a) (h b) → OrdMon._≤_ M a b) → IsOrdMonHom M N h
+ordMonHom M N h z p mo re = record
+  { isMonoidHom = record { isMagmaHomomorphism = record { isRelHomomorphism = record { cong = cong h } ; homo = p } ; ε-homo = z }
+  ; isOrderMono = record
+      { isOrderHomomorphism = record { cong = cong h ; mono = mo }
+      ; injective = λ e → OrdMon.≤-antisym M (re (OrdMon.≤-reflexive N e)) (re (OrdMon.≤-reflexive N (sym e)))
+      ; cancel = re } }
+
 -- A handler for a sum of signatures is a pair of handlers.
 
-open import Level using (0ℓ)
 open import Data.Container.Core using (Container)
 open import Data.Container.Combinator using () renaming (_⊎_ to _⊎ᶜ_)
 open import Container.Interpret.Plain using (Handler; Congruent)

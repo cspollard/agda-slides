@@ -25,21 +25,12 @@ open import Slides.Diagram.Geometry
 open Space Sp
 import Slides.Diagram.Place Sp as P
 open P using (dbl; valignOffset; alignOffset)
-open import Slides.Diagram.Laws Sp using (⊔-assoc; shiftDraw-shift; shiftAnchor-shift; map-map)
+open import Slides.Diagram.Laws Sp using (shiftDraw-shift; shiftAnchor-shift; map-map)
 
 -- Arithmetic
 
-sub-trans : ∀ {x y z} → x ≤ y → y ≤ z → (y - x) + (z - y) ≡ z - x
-sub-trans {x} {y} {z} x≤y y≤z =
-  sub-unique (≤-trans x≤y y≤z)
-    (trans (sym (+-assoc x (y - x) (z - y)))
-           (trans (cong (_+ (z - y)) (sub-add x≤y)) (sub-add y≤z)))
-
 dbl-+ : ∀ a b → dbl a + dbl b ≡ dbl (a + b)
-dbl-+ a b = sym
-  (trans (+-assoc a b (a + b))
-    (trans (cong (a +_) (trans (sym (+-assoc b a b)) (trans (cong (_+ b) (+-comm b a)) (+-assoc a b b))))
-           (sym (+-assoc a a (b + b)))))
+dbl-+ a b = +-interchange a a b b
 
 -- the alignment offsets compose along `x ≤ y ≤ z`, like the differences they are made of
 valign-trans : ∀ al {x y z} → x ≤ y → y ≤ z → valignOffset al y x + valignOffset al z y ≡ valignOffset al z x
