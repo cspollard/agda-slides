@@ -21,14 +21,11 @@ open import Data.Product.Base using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _+_; _-_; _*_; _≤ᵇ_; -_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
-open import Slides.Plot.Data using (inv; decimal)
+open import Slides.Plot.Data using (inv; decimal; lt)
 open import Slides.Plot.Mark
 open import Slides.Scalar.Model.Rat using (ι)
 
 private
-  lt : ℚ → ℚ → Bool
-  lt a b = if b ≤ᵇ a then false else true
-
   -- the mantissa in [0.316, 3.16) and the power of ten shifted out (the fuel bounds the shifts)
   norm : ℕ → ℚ → ℤ → ℚ × ℤ
   norm zero    m k = m , k

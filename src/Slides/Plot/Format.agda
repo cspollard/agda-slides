@@ -11,7 +11,7 @@ module Slides.Plot.Format where
 open import Data.Bool using (not; if_then_else_; _∧_)
 open import Data.Char using (Char; _≈ᵇ_)
 open import Data.List using (List; []; _∷_; _++_; length; replicate; reverse; dropWhileᵇ)
-open import Data.Nat using (ℕ; zero; suc; _*_; _∸_; _≡ᵇ_)
+open import Data.Nat using (ℕ; zero; suc; _*_; _^_; _∸_; _≡ᵇ_)
 open import Data.Nat.Show using (show)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; ½; ∣_∣; _≤ᵇ_)
@@ -20,10 +20,6 @@ open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ
 open import Slides.Scalar.Model.Rat using (ι; ratFloor)
 
 private
-  pow10 : ℕ → ℕ
-  pow10 zero    = 1
-  pow10 (suc d) = 10 * pow10 d
-
   -- the digits of `n` with at least `d + 1` of them
   padded : ℕ → ℕ → List Char
   padded d n = replicate (suc d ∸ length ds) '0' ++ ds
@@ -39,7 +35,7 @@ private
 
   -- round half up, on the magnitude, to `d` places, as a whole number of 10⁻ᵈ
   scaled : ℕ → ℚ → ℕ
-  scaled d q = ratFloor (∣ q ∣ ℚ.* ι (pow10 d) ℚ.+ ½)
+  scaled d q = ratFloor (∣ q ∣ ℚ.* ι (10 ^ d) ℚ.+ ½)
 
 decimals : ℕ → ℚ → String
 decimals d q = (if neg then "−" else "") ++ˢ fromList (proj₁ sp) ++ˢ (if d ≡ᵇ 0 then "" else "." ++ˢ fromList (proj₂ sp))

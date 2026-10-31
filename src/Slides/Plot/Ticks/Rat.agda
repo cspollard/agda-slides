@@ -33,18 +33,14 @@ open import Slides.Scalar.Model.Rat using (ratMon; ι)
 open import Slides.Plot.Ticks ratMon using (ap; ap-sorted) public
 
 private
-  pow10 : ℕ → ℕ
-  pow10 zero    = 1
-  pow10 (suc k) = 10 ℕ.* pow10 k
-
   -- n / d for whole numbers, d ≥ 1 (the constructor takes d − 1)
   ratio : ℕ → ℕ → ℚ
   ratio n d = fromℚᵘ (mkℚᵘ (+ n) (d ∸ 1))
 
   -- steps as (numerator, denominator), increasing: m / 10ᵏ for k = 4 … 1, then m · 10ᵏ for k = 0 … 6
   steps : List (ℕ × ℕ)
-  steps = concatMap (λ k → map (λ m → m , pow10 k) (1 ∷ 2 ∷ 5 ∷ [])) (4 ∷ 3 ∷ 2 ∷ 1 ∷ [])
-       ++ concatMap (λ k → map (λ m → m ℕ.* pow10 k , 1) (1 ∷ 2 ∷ 5 ∷ [])) (upTo 7)
+  steps = concatMap (λ k → map (λ m → m , 10 ℕ.^ k) (1 ∷ 2 ∷ 5 ∷ [])) (4 ∷ 3 ∷ 2 ∷ 1 ∷ [])
+       ++ concatMap (λ k → map (λ m → m ℕ.* 10 ℕ.^ k , 1) (1 ∷ 2 ∷ 5 ∷ [])) (upTo 7)
 
   value : ℕ × ℕ → ℚ
   value (n , d) = ratio n d

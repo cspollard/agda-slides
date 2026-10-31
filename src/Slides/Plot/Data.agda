@@ -4,25 +4,25 @@
 
 module Slides.Plot.Data where
 
+open import Data.Bool using (Bool; not)
 open import Data.Integer using (ℤ; +_)
 open import Data.List using (List; map; upTo)
 open import Data.Nat as ℕ using (ℕ; zero; suc; _∸_)
 open import Data.Product.Base using (_×_; _,_)
-open import Data.Rational as ℚ using (ℚ; 0ℚ; _+_; _-_; _*_; ≢-nonZero; fromℚᵘ)
+open import Data.Rational as ℚ using (ℚ; 0ℚ; _+_; _-_; _*_; _≤ᵇ_; ≢-nonZero; fromℚᵘ)
 import Data.Rational.Properties as ℚP
 open import Data.Rational.Unnormalised using (mkℚᵘ)
 open import Relation.Nullary using (yes; no)
 
 open import Slides.Scalar.Model.Rat using (ι)
 
-private
-  pow10 : ℕ → ℕ
-  pow10 zero    = 1
-  pow10 (suc k) = 10 ℕ.* pow10 k
+-- strict order, decided
+lt : ℚ → ℚ → Bool
+lt a b = not (b ≤ᵇ a)
 
 -- `decimal m k` is m / 10ᵏ: `decimal (+ 125) 2` is 1.25
 decimal : ℤ → ℕ → ℚ
-decimal m k = fromℚᵘ (mkℚᵘ m (pow10 k ∸ 1))
+decimal m k = fromℚᵘ (mkℚᵘ m (10 ℕ.^ k ∸ 1))
 
 -- the reciprocal, with 0 for 0
 inv : ℚ → ℚ

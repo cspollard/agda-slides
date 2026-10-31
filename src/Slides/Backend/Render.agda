@@ -102,9 +102,6 @@ fragmentClass nothing  = "fragment"
 fragmentClass (just s) = "fragment " ++ˢ s
 
 private
-  div : String → List XMLDoc → XMLDoc
-  div cls = hElement "div" (("class" , cls) ∷ [])
-
   pct : String → ℕ → String
   pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
 

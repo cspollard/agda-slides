@@ -18,12 +18,11 @@ open import Data.Nat.Show using () renaming (show to showℕ)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.String.Base using (String; concat) renaming (_++_ to _++ˢ_)
 open import Relation.Nullary using (yes; no)
-import Data.Sign.Base as Sign
-import Data.Integer.Base as ℤ
 
 open import Data.XML.AST using (XMLDoc)
 open import Data.XML.Print using (renderXML)
-open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ; numberⱼ; jsonNumber)
+open import Data.JSON.AST using (JSON; objectFromList; trueⱼ; boolⱼ; stringⱼ)
+open import Slides.Backend.Animation using (natⱼ)
 open import Data.JSON.Print using (renderJSON)
 
 open import Slides.Program.Navigation using (next; prev)
@@ -82,10 +81,6 @@ defaultConfig = record
 
 withSource : Source → RevealConfig → RevealConfig
 withSource s cfg = record cfg { base = sourceBase s }
-
-private
-  div : String → List XMLDoc → XMLDoc
-  div cls = hElement "div" (("class" , cls) ∷ [])
 
 page : RevealConfig → Forest → XMLDoc
 page cfg slides =
@@ -157,8 +152,6 @@ options m cfg = objectFromList
   ++ optNat "height" (RevealConfig.height cfg)
   ++ optKeyboard (keyboard m (RevealConfig.binding cfg m)) )
   where
-    natⱼ : ℕ → JSON
-    natⱼ n = numberⱼ (jsonNumber Sign.+ n [] (ℤ.+ 0))
     optKatex : Maybe String → List (String × JSON)
     optKatex nothing  = []
     optKatex (just p) = ("katex" , objectFromList (("local" , stringⱼ p) ∷ [])) ∷ []

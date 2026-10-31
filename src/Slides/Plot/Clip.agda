@@ -19,14 +19,11 @@ open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _+_; _-_; _*_; _≤ᵇ_; _⊔_; _⊓_; -_)
 
-open import Slides.Plot.Data using (inv)
+open import Slides.Plot.Data using (inv; lt)
 
 private
   P : Set
   P = ℚ × ℚ
-
-  lt : ℚ → ℚ → Bool
-  lt a b = not (b ≤ᵇ a)
 
   -- bound t by the edge `p t ≤ q`
   edge : ℚ → ℚ → ℚ × ℚ → Maybe (ℚ × ℚ)

@@ -20,14 +20,14 @@ module Slides.Plot.Render where
 
 open import Data.List using (List; []; _∷_; _++_; map; reverse; foldr; concatMap; upTo)
 open import Data.Bool using (Bool; true; false; if_then_else_)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using (Maybe; just; nothing; maybe′)
 open import Data.Integer as ℤ using (ℤ; +_)
 open import Data.Nat as ℕ using (ℕ; zero; suc; _+_; _∸_; _/_; _*_; _⊔_)
 open import Data.Nat.Show using (show)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Rational as ℚ using (ℚ; _-_)
 import Data.Rational as ℚ
-open import Data.String using (String) renaming (_++_ to _++ˢ_)
+open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 
 open import Slides.Diagram.Convenience
 open import Slides.Diagram.TextMetrics using (textWidth)
@@ -99,10 +99,7 @@ private
   -- the style with a class for the kind of mark (what CSS paints: a line is stroked and open, a
   -- region filled, a dot filled)
   kind : String → Style → Style
-  kind k s = record s { cls = just (maybe′ k (λ c → c ++ˢ " " ++ˢ k) (Style.cls s)) }
-    where maybe′ : ∀ {A B : Set} → B → (A → B) → Maybe A → B
-          maybe′ d f nothing  = d
-          maybe′ d f (just a) = f a
+  kind k s = record s { cls = just (maybe′ (λ c → c ++ˢ " " ++ˢ k) k (Style.cls s)) }
 
   -- SVG path data
   mv ln : ℕ × ℕ → String
@@ -111,9 +108,6 @@ private
 
   seg : (ℕ × ℕ) → (ℕ × ℕ) → String
   seg a b = mv a ++ˢ ln b
-
-  cat : List String → String
-  cat = foldr _++ˢ_ ""
 
   -- a filled dot of radius r, as two arcs
   dot : ℕ → ℕ × ℕ → String
@@ -147,6 +141,9 @@ private
     put : ℕ → ℕ → Dia ℕ → Dia ℕ
     put = place W H
 
+    lineH : ℕ
+    lineH = fontSize * 3 / 2
+
     inFrame : Dia ℕ → Dia ℕ
     inFrame = put 0 0
 
@@ -155,10 +152,10 @@ private
 
     renderMark : Mark → Dia ℕ
     renderMark (line s ps)      = layers W H (map (λ qs → inFrame (polyline (map pt qs) (kind "plot-line" s))) (clipLine xlo xhi ylo yhi ps))
-    renderMark (scatter s ps)   = pathOf (cat (map (λ p → dot 3 (pt p)) ps)) (kind "plot-dot" s)
+    renderMark (scatter s ps)   = pathOf (concat (map (λ p → dot 3 (pt p)) ps)) (kind "plot-dot" s)
     renderMark (steps s es hs)  = inFrame (polygon (map pt (outline ylo es hs)) (kind "plot-fill" s))
     renderMark (band s ts)      = inFrame (polygon (map (λ { (x , _ , u) → pt (x , u) }) ts ++ map (λ { (x , l , _) → pt (x , l) }) (reverse ts)) (kind "plot-fill" s))
-    renderMark (errors s ts)    = pathOf (cat (map (λ { (x , y , e) → bar 3 (X x , Y (y ℚ.- e) , Y (y ℚ.+ e)) }) ts)) (kind "plot-line" s)
+    renderMark (errors s ts)    = pathOf (concat (map (λ { (x , y , e) → bar 3 (X x , Y (y ℚ.- e) , Y (y ℚ.+ e)) }) ts)) (kind "plot-line" s)
       where open import Data.Rational as ℚ using ()
     -- the function on frame pixels (in ℚ), through the axes; the curve is cut where it leaves the box
     renderMark (exact s f)      = layers W H (map inFrame (exactDia gx (ι mL) (ι (mL + bw)) (ι mT) (ι (mT + bh)) bw (kind "plot-line" s)))
@@ -166,7 +163,6 @@ private
     renderMark (hline s y)      = inFrame (polyline ((mL , Y y) ∷ (mL + bw , Y y) ∷ []) (kind "plot-line" s))
     renderMark (vline s x)      = inFrame (polyline ((X x , mT) ∷ (X x , mT + bh) ∷ []) (kind "plot-line" s))
     renderMark (note x y t)     = put (X x ∸ textWidth fontSize t / 2) (Y y ∸ lineH / 2) (text fontSize t (cls "plot-text"))
-      where lineH = fontSize * 3 / 2
 
     label : String → Dia ℕ
     label t = text fontSize t (cls "plot-text")
@@ -187,13 +183,10 @@ private
     ys : List ℚ
     ys = map proj₁ yticks
 
-    lineH : ℕ
-    lineH = fontSize * 3 / 2
-
     grid axes : Style → Dia ℕ
-    grid s = pathOf (cat (map (λ x → seg (X x , mT) (X x , mT + bh)) xs ++ map (λ y → seg (mL , Y y) (mL + bw , Y y)) ys)) s
+    grid s = pathOf (concat (map (λ x → seg (X x , mT) (X x , mT + bh)) xs ++ map (λ y → seg (mL , Y y) (mL + bw , Y y)) ys)) s
     axes s = inFrame (polyline ((mL , mT) ∷ (mL , mT + bh) ∷ (mL + bw , mT + bh) ∷ []) s)
-           ⊙ pathOf (cat (map (λ x → seg (X x , mT + bh) (X x , mT + bh + 5)) xs ++ map (λ y → seg (mL ∸ 5 , Y y) (mL , Y y)) ys)) s
+           ⊙ pathOf (concat (map (λ x → seg (X x , mT + bh) (X x , mT + bh + 5)) xs ++ map (λ y → seg (mL ∸ 5 , Y y) (mL , Y y)) ys)) s
 
     tickLabels : List (Dia ℕ)
     tickLabels = (if xlab then map (λ x → let t = trimmed 3 x in put (X x ∸ textWidth fontSize t / 2) (mT + bh + 8) (label t)) xs else [])

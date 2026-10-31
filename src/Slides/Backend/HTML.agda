@@ -51,6 +51,10 @@ hElement : String → Attrs → List (XMLM A) → XMLM A
 hElement tag attrs []       = if isVoid tag then element tag attrs [] else textElement tag attrs " "
 hElement tag attrs (c ∷ cs) = element tag attrs (c ∷ cs)
 
+-- A `div` of the given class.
+div : String → List (XMLM A) → XMLM A
+div cls = hElement "div" (("class" , cls) ∷ [])
+
 -- An element with mixed content: text, then each child followed by text.
 -- Like the other constructors, runtime strings are repaired by parsnip's
 -- `Sanitize` functions and the repairs are proved valid.
