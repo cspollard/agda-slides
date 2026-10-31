@@ -33,6 +33,12 @@ text (a monoid homomorphism to lines), SVG, width.
 connectives placing frames relative to each other) over a Space scalar.  Size is a derived
 (synthesised) attribute, not stored.
 
+The signature is a functor from scalars to containers: a command is a tag and a payload
+(`Slides.Diagram.Syntax`), the arity depends on the tag only, and the payload's scalars are found
+by structure (`fmap`).  A change of scalar is then a container morphism with the identity on
+positions (`Container.Tagged.over`), `mapDia` is `translate` along it, and its functor laws are
+`over-id`/`over-∘` from the laws of `fmap`, with no clause per command.
+
 **Layout**: the carrier of the placement fold: a frame, the primitives at resolved positions,
 named anchors.  Printers (SVG, others) are maps over its primitive list.  One drawing
 vocabulary.  Layout is natural in the scalar.
