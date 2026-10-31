@@ -16,8 +16,10 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 3, Diagram tag/payload split, `Draw.group` removed, functoriality derived (e9bf14d..67a4c31, −2 against −250).
 - [ ] Phase 3 left over: layout as a `NaturalTransformation` (§4.2); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`) are genuine per-operation handlers and stay.
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
-- [ ] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), `_≈ₛ_` as `O` in `Program.Sem`, most of §5.4.
-- [ ] Phases 5–7: program behaviours, content as containers, small duplicates.  Line budgets are a tripwire; clarity and robustness justify overshoot.
+- [ ] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), most of §5.4.
+- [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
+- [ ] Phase 5 left over: `F-Coalgebras` category for machines; `skip-inject`/`lower-supported` stay direct.
+- [ ] Phases 6–7: content as containers, small duplicates.  Line budgets are a tripwire; clarity and robustness justify overshoot.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).
