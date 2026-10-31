@@ -37,6 +37,9 @@ import Data.Rational as ℚ
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.String.Base using (String; fromList; toList; intersperse; concat) renaming (_++_ to _++ˢ_)
 open import Data.Container.FreeMonad using (pure; impure)
+open import Data.Container.Combinator using () renaming (_⊎_ to _⊎ᶜ_)
+open import Container.Interpret.Plain using (Handler; pfold)
+open import Slides.Scalar.Core using (_⊕_)
 import Data.Integer.Base as ℤ
 import Data.Sign.Base as Sign
 open import Data.Integer.Base using (ℤ)
@@ -46,9 +49,9 @@ open import Data.JSON.AST using (JSON; objectFromList; stringⱼ; numberⱼ; arr
 open import Data.JSON.Print using (renderJSON)
 
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling; ι)
-open import Slides.Scalar.Space using (Zero; Plus; Max; Minus; Lt; Pct)
-open import Slides.Scalar.Time using (Hold)
-open import Slides.Scalar.Coupling using (Ratio; Lerp; Ease; Easing; Linear; Step; StepStart; Bezier)
+open import Slides.Scalar.Space using (SpaceC; Zero; Plus; Max; Minus; Lt; Pct)
+open import Slides.Scalar.Time using (TimeC; Hold)
+open import Slides.Scalar.Coupling using (CouplingC; Ratio; Lerp; Ease; Easing; Linear; Step; StepStart; Bezier)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Geometry
 open import Slides.Diagram.Syntax
@@ -106,24 +109,33 @@ opT : ℕ → List Item → Item
 opT n xs = inj₂ (arrT (txt (natⱼ n) ∷ xs))
 
 -- a scalar: the Space and Time operations over the parameter and constants
+spaceJ : Handler SpaceC Item
+spaceJ Zero    k = txt (natⱼ 0)
+spaceJ Plus    k = opT 2 (k zero ∷ k (suc zero) ∷ [])
+spaceJ Max     k = opT 3 (k zero ∷ k (suc zero) ∷ [])
+spaceJ Minus   k = opT 4 (k zero ∷ k (suc zero) ∷ [])
+spaceJ Lt      k = opT 5 (k zero ∷ k (suc zero) ∷ k (suc (suc zero)) ∷ k (suc (suc (suc zero))) ∷ [])
+spaceJ (Pct p) k = opT 6 (txt (natⱼ p) ∷ k _ ∷ [])
+
+timeJ : Handler TimeC Item
+timeJ Hold k = opT 7 (k _ ∷ [])
+
+-- the leaves of a term: the parameter and constants
+leafJ : Maybe ℚ → Item
+leafJ nothing  = txt nullⱼ
+leafJ (just q) = txt (constⱼ q)
+
 scI : Sc → Item
-scI (pure nothing)                   = txt nullⱼ
-scI (pure (just q))                  = txt (constⱼ q)
-scI (impure (inj₁ Zero , k))         = txt (natⱼ 0)
-scI (impure (inj₁ Plus , k))         = opT 2 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
-scI (impure (inj₁ Max , k))          = opT 3 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
-scI (impure (inj₁ Minus , k))        = opT 4 (scI (k zero) ∷ scI (k (suc zero)) ∷ [])
-scI (impure (inj₁ Lt , k))           = opT 5 (scI (k zero) ∷ scI (k (suc zero)) ∷ scI (k (suc (suc zero))) ∷ scI (k (suc (suc (suc zero)))) ∷ [])
-scI (impure (inj₁ (Pct p) , k))      = opT 6 (txt (natⱼ p) ∷ scI (k _) ∷ [])
-scI (impure (inj₂ Hold , k))         = opT 7 (scI (k _) ∷ [])
+scI = pfold (SpaceC ⊎ᶜ TimeC) (spaceJ ⊕ timeJ) leafJ
 
 -- a driver: a Coupling term over the local time and constants
+couplingJ : Handler CouplingC Item
+couplingJ Ratio    k = opT 8 (k zero ∷ k (suc zero) ∷ [])
+couplingJ Lerp     k = opT 9 (k zero ∷ k (suc zero) ∷ k (suc (suc zero)) ∷ [])
+couplingJ (Ease e) k = opT 10 (txt (easingⱼ e) ∷ k _ ∷ [])
+
 drvI : Drv → Item
-drvI (pure nothing)                  = txt nullⱼ
-drvI (pure (just q))                 = txt (constⱼ q)
-drvI (impure (Ratio , k))            = opT 8 (drvI (k zero) ∷ drvI (k (suc zero)) ∷ [])
-drvI (impure (Lerp , k))             = opT 9 (drvI (k zero) ∷ drvI (k (suc zero)) ∷ drvI (k (suc (suc zero))) ∷ [])
-drvI (impure (Ease e , k))           = opT 10 (txt (easingⱼ e) ∷ drvI (k _) ∷ [])
+drvI = pfold CouplingC couplingJ leafJ
 
 -- Leaves
 
@@ -172,28 +184,27 @@ op : String → List Item → Item
 op c xs = inj₂ (arrT (txt (stringⱼ c) ∷ xs))
 
 -- the points of a polyline, x then y of each, are terms like any other scalar
-pointsT : List (Sc × Sc) → List Item
-pointsT []             = []
-pointsT ((x , y) ∷ ps) = scI x ∷ scI y ∷ pointsT ps
+diaJ : Handler (DiagramC Sc) Item
+diaJ (Rectangle w h s) k      = op "R" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
+diaJ (Segment w h s) k        = op "S" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
+diaJ (Disc r s) k             = op "D" (scI r ∷ txt (styleⱼ s) ∷ [])
+diaJ (Ellipse a b s) k        = op "E" (scI a ∷ scI b ∷ txt (styleⱼ s) ∷ [])
+diaJ (Polyline c ps s) k      = op "Y" (txt (natⱼ (if c then 1 else 0)) ∷ txt (styleⱼ s) ∷ concatMap (λ { (x , y) → scI x ∷ scI y ∷ [] }) ps)
+diaJ (Text w h n t s) k       = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ (markup t)) ∷ txt (styleⱼ s) ∷ [])
+diaJ (Path w h d s) k         = op "P" (scI w ∷ scI h ∷ txt (stringⱼ d) ∷ txt (styleⱼ s) ∷ [])
+diaJ (Spacer w h) k           = op "_" (scI w ∷ scI h ∷ [])
+diaJ (Beside al) k            = op "b" (txt (valignⱼ al) ∷ k zero ∷ k (suc zero) ∷ [])
+diaJ (Above al) k             = op "a" (txt (alignⱼ al) ∷ k zero ∷ k (suc zero) ∷ [])
+diaJ Atop k                   = op "@" (k zero ∷ k (suc zero) ∷ [])
+diaJ LabelAbove k             = op "l" (k zero ∷ k (suc zero) ∷ [])
+diaJ LabelBelow k             = op "L" (k zero ∷ k (suc zero) ∷ [])
+diaJ (Place w h x y) k        = op "p" (scI w ∷ scI h ∷ scI x ∷ scI y ∷ k _ ∷ [])
+diaJ (Overlay w h) k          = op "o" (scI w ∷ scI h ∷ k zero ∷ k (suc zero) ∷ [])
+diaJ (Named n) k              = op "n" (txt (stringⱼ n) ∷ k _ ∷ [])
+diaJ (Connect a pa b pb s) k  = op "c" (txt (stringⱼ a) ∷ txt (portⱼ pa) ∷ txt (stringⱼ b) ∷ txt (portⱼ pb) ∷ txt (styleⱼ s) ∷ k _ ∷ [])
 
 diaT : Dia Sc → Item
-diaT (impure (Rectangle w h s , k))   = op "R" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Segment w h s , k))     = op "S" (scI w ∷ scI h ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Disc r s , k))          = op "D" (scI r ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Ellipse a b s , k))     = op "E" (scI a ∷ scI b ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Polyline c ps s , k))   = op "Y" (txt (natⱼ (if c then 1 else 0)) ∷ txt (styleⱼ s) ∷ pointsT ps)
-diaT (impure (Text w h n t s , k))    = op "T" (scI w ∷ scI h ∷ txt (natⱼ n) ∷ txt (stringⱼ (markup t)) ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Path w h d s , k))      = op "P" (scI w ∷ scI h ∷ txt (stringⱼ d) ∷ txt (styleⱼ s) ∷ [])
-diaT (impure (Spacer w h , k))        = op "_" (scI w ∷ scI h ∷ [])
-diaT (impure (Beside al , k))         = op "b" (txt (valignⱼ al) ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (Above al , k))          = op "a" (txt (alignⱼ al) ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (Atop , k))              = op "@" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (LabelAbove , k))        = op "l" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (LabelBelow , k))        = op "L" (diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (Place w h x y , k))     = op "p" (scI w ∷ scI h ∷ scI x ∷ scI y ∷ diaT (k _) ∷ [])
-diaT (impure (Overlay w h , k))       = op "o" (scI w ∷ scI h ∷ diaT (k zero) ∷ diaT (k (suc zero)) ∷ [])
-diaT (impure (Named n , k))           = op "n" (txt (stringⱼ n) ∷ diaT (k _) ∷ [])
-diaT (impure (Connect a pa b pb s , k)) = op "c" (txt (stringⱼ a) ∷ txt (portⱼ pa) ∷ txt (stringⱼ b) ∷ txt (portⱼ pb) ∷ txt (styleⱼ s) ∷ diaT (k _) ∷ [])
+diaT = pfold (DiagramC Sc) diaJ (λ ())
 
 -- an event: its driver and leaf are shared
 eventT : Event Leaf → Tree
