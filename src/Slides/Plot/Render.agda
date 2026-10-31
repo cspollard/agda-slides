@@ -29,7 +29,9 @@ open import Data.Rational as ℚ using (ℚ; _-_)
 import Data.Rational as ℚ
 open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 
+open import Container.Lowering using (Lowering)
 open import Slides.Diagram.Convenience
+open import Slides.Diagram.Syntax using (DiagramC)
 open import Slides.Diagram.TextMetrics using (textWidth)
 open import Slides.Plot.Axis.Rat using (Axis; axisOf; px; flipY)
 open import Slides.Plot.Clip using (clipLine)
@@ -150,13 +152,14 @@ private
     pathOf : String → Style → Dia ℕ
     pathOf d s = inFrame (path W H d s)
 
-    renderMark : Mark → Dia ℕ
+    -- a mark is one command of `MarkC`, lowered to a diagram in the frame (the lowering of the plot
+    -- content `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` is `copairL ret renderMark`, as `lowerCurve`)
+    renderMark : Lowering MarkC (DiagramC ℕ)
     renderMark (line s ps)      = layers W H (map (λ qs → inFrame (polyline (map pt qs) (kind "plot-line" s))) (clipLine xlo xhi ylo yhi ps))
     renderMark (scatter s ps)   = pathOf (concat (map (λ p → dot 3 (pt p)) ps)) (kind "plot-dot" s)
     renderMark (steps s es hs)  = inFrame (polygon (map pt (outline ylo es hs)) (kind "plot-fill" s))
     renderMark (band s ts)      = inFrame (polygon (map (λ { (x , _ , u) → pt (x , u) }) ts ++ map (λ { (x , l , _) → pt (x , l) }) (reverse ts)) (kind "plot-fill" s))
-    renderMark (errors s ts)    = pathOf (concat (map (λ { (x , y , e) → bar 3 (X x , Y (y ℚ.- e) , Y (y ℚ.+ e)) }) ts)) (kind "plot-line" s)
-      where open import Data.Rational as ℚ using ()
+    renderMark (bars s ts)      = pathOf (concat (map (λ { (x , l , h) → bar 3 (X x , Y l , Y h) }) ts)) (kind "plot-line" s)
     -- the function on frame pixels (in ℚ), through the axes; the curve is cut where it leaves the box
     renderMark (exact s f)      = layers W H (map inFrame (exactDia gx (ι mL) (ι (mL + bw)) (ι mT) (ι (mT + bh)) bw (kind "plot-line" s)))
       where gx = λ xp → ι (mT + bh) - (f (xlo ℚ.+ (xp - ι mL) ℚ.* inv (Axis.ratio ax)) - ylo) ℚ.* Axis.ratio ay
@@ -197,12 +200,12 @@ private
            ++ put 4 2 (label ylabel) ∷ []
 
     -- a legend entry: a sample of the mark's style, then its name
-    sample : Mark → Maybe (Dia ℕ)
+    sample : Mark ℚ ℚ → Maybe (Dia ℕ)
     sample (line s _)     = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
     sample (scatter s _)  = just (path 20 12 (dot 3 (10 , 6)) (kind "plot-dot" s))
     sample (steps s _ _)  = just (rectangle 20 12 (kind "plot-fill" s))
     sample (band s _)     = just (rectangle 20 12 (kind "plot-fill" s))
-    sample (errors s _)   = just (path 20 12 (bar 3 (10 , 0 , 12)) (kind "plot-line" s))
+    sample (bars s _)     = just (path 20 12 (bar 3 (10 , 0 , 12)) (kind "plot-line" s))
     sample (hline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
     sample (vline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
     sample (note _ _ _)   = nothing

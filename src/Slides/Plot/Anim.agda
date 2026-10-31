@@ -44,23 +44,8 @@ lerp-1 a b = trans (cong (a +_) (ℚP.*-identityˡ (b - a)))
 lerp-same : ∀ t a → lerp t a a ≡ a
 lerp-same t a = trans (cong (λ z → a + t * z) (ℚP.+-inverseʳ a)) (trans (cong (a +_) (ℚP.*-zeroʳ t)) (ℚP.+-identityʳ a))
 
-private
-  lerp₂ : ℚ → ℚ × ℚ → ℚ × ℚ → ℚ × ℚ
-  lerp₂ t (x , y) (x′ , y′) = lerp t x x′ , lerp t y y′
-
-  lerp₃ : ℚ → ℚ × ℚ × ℚ → ℚ × ℚ × ℚ → ℚ × ℚ × ℚ
-  lerp₃ t (x , y , z) (x′ , y′ , z′) = lerp t x x′ , lerp t y y′ , lerp t z z′
-
-lerpMark : ℚ → Mark → Mark → Mark
-lerpMark t (line s ps)     (line _ qs)     = line s (zipWith (lerp₂ t) ps qs)
-lerpMark t (scatter s ps)  (scatter _ qs)  = scatter s (zipWith (lerp₂ t) ps qs)
-lerpMark t (steps s es hs) (steps _ es′ hs′) = steps s (zipWith (lerp t) es es′) (zipWith (lerp t) hs hs′)
-lerpMark t (band s ts)     (band _ us)     = band s (zipWith (lerp₃ t) ts us)
-lerpMark t (errors s ts)   (errors _ us)   = errors s (zipWith (lerp₃ t) ts us)
-lerpMark t (hline s y)     (hline _ y′)    = hline s (lerp t y y′)
-lerpMark t (vline s x)     (vline _ x′)    = vline s (lerp t x x′)
-lerpMark t (note x y n)    (note x′ y′ _)  = note (lerp t x x′) (lerp t y y′) n
-lerpMark t m               _               = m
+lerpMark : ℚ → Mark ℚ ℚ → Mark ℚ ℚ → Mark ℚ ℚ
+lerpMark t = zipWith⁺ (lerp t) (lerp t)
 
 lerpPlot : ℚ → Plot → Plot → Plot
 lerpPlot t a b = record a
