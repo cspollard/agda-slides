@@ -4,9 +4,12 @@
 --
 --   fold : (⟦ C ⟧ A → A) → (X → A) → C ⋆ X → A        the unique algebra map extending `f` along `pure`
 --
+-- `fold` is `pfold` (`Container.Interpret.Plain`) of the handler of the algebra.
 -- `fold-morphism` is an algebra homomorphism and `fold-unique` says it is the only one, so
 -- `FreeObj` is a free object for `Forget : Alg ⟶ Setoids`, giving the adjunction `Free⊣Forget`
--- from agda-categories.  Everything is parameterised by `Alg c ℓ C`, which fixes the levels.
+-- from agda-categories and the monad `FreeMonad` it induces (bind is fold into a free algebra).
+-- `fold-fusion`, derived from uniqueness, says algebra homomorphisms commute with folds.
+-- Everything is parameterised by `Alg c ℓ C`, which fixes the levels.
 
 module Container.FreeMonad.Algebraic where
 
@@ -20,15 +23,18 @@ open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
+open import Categories.Adjoint.Properties using (adjoint⇒monad)
 open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Category.Construction.F-Algebras using (F-Algebras)
 open import Categories.Functor using (Functor; Endofunctor)
+open import Categories.Monad using (Monad)
 open import Categories.Functor.Algebra
   using (F-Algebra; F-Algebra-Morphism)
 open import Categories.FreeObjects.Free using (FreeObject; FO⇒Functor; FO⇒LAdj)
 
 open import Container.Polynomial
 open import Container.FreeMonad
+open import Container.Interpret.Plain
 
 module Alg {s p} (c ℓ : Level) (C : Container s p) where
 
@@ -74,15 +80,11 @@ module Alg {s p} (c ℓ : Level) (C : Container s p) where
       module X = Setoid X
 
     fold : C ⋆ X.Carrier → AA.Carrier
-    fold (pure x)          = f ⟨$⟩ x
-    fold (impure (s₁ , k)) = A.α ⟨$⟩ (s₁ , λ q → fold (k q))
+    fold = pfold C (handler A.α) (f ⟨$⟩_)
 
+    -- The handler of an algebra is congruent, so the laws of `pfold` apply.
     fold-cong : ∀ {t u} → Eq X t u → fold t AA.≈ fold u
-    fold-cong {pure _}         {pure _}         (lift e)    = Func.cong f e
-    fold-cong {pure _}         {impure _}       ()
-    fold-cong {impure _}       {pure _}         ()
-    fold-cong {impure (_ , _)} {impure (_ , _)} (refl , e)  =
-      Func.cong A.α (refl ,ₚ λ q → fold-cong (e q))
+    fold-cong = pfold-cong′ A.A (handler-congruent A.α) (Func.cong f)
 
     -- The unique algebra homomorphism extending `f`.
     fold-morphism : F-Algebra-Morphism (FreeAlg X) A
@@ -101,6 +103,22 @@ module Alg {s p} (c ℓ : Level) (C : Container s p) where
       AA.trans (F-Algebra-Morphism.commutes g)
                (Func.cong A.α (refl ,ₚ λ q → fold-unique g h {k q}))
 
+  -- Fusion: an algebra homomorphism commutes with folds, `h ∘ fold A f ≈ fold B (h ∘ f)`.
+  module _ {A B : F-Algebra F} {X : Setoid c′ ℓ′} (h : F-Algebra-Morphism A B)
+           (f : Func X (F-Algebra.A A)) where
+    private
+      module h = F-Algebra-Morphism h
+      module B = Setoid (F-Algebra.A B)
+
+    hf : Func X (F-Algebra.A B)
+    hf = record { to = λ x → h.f ⟨$⟩ (f ⟨$⟩ x) ; cong = λ e → Func.cong h.f (Func.cong f e) }
+
+    fold-fusion : ∀ t → h.f ⟨$⟩ fold A f t B.≈ fold B hf t
+    fold-fusion t = fold-unique B hf
+      (record { f = record { to = λ t → h.f ⟨$⟩ fold A f t ; cong = λ e → Func.cong h.f (fold-cong A f e) }
+              ; commutes = h.commutes })
+      B.refl {t}
+
   -- `Free₀ C X` is a free object on `X` for `Forget`.
   FreeObj : (X : Setoid c′ ℓ′) → FreeObject Forget X
   FreeObj X = record
@@ -116,3 +134,7 @@ module Alg {s p} (c ℓ : Level) (C : Container s p) where
   FreeFunctor = FO⇒Functor Forget FreeObj
 
   Free⊣Forget = FO⇒LAdj Forget FreeObj
+
+  -- The tree monad: the monad of the adjunction.  Bind is fold into a free algebra.
+  FreeMonad : Monad S
+  FreeMonad = adjoint⇒monad Free⊣Forget

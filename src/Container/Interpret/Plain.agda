@@ -5,10 +5,12 @@
 --   Handler A = (a : Shape C) → (Position C a → A) → A       one clause per command
 --   pfold h leaf : C ⋆ X → A                                 the fold of a handler
 --
--- A `Congruent` handler is an `⟦ C ⟧`-algebra and `pfold` is `Container.FreeMonad.Algebraic.fold`
--- (`pfold-agrees`).  Laws, so no language re-proves them:
+-- `pfold` is the one fold: a `Congruent` handler is an `⟦ C ⟧`-algebra (`handler`, `handler-congruent`)
+-- and `Container.FreeMonad.Algebraic.fold` is defined as `pfold` of it.  Laws, so no language
+-- re-proves them:
 --
--- * `pfold-ext`, `pfold-cong`: pointwise-equal leaves, or equal programs (`_≈⋆_`), give equal folds;
+-- * `pfold-ext`, `pfold-cong`: pointwise-equal leaves, or equal programs (`_≈⋆_`), give equal folds
+--   (`pfold-cong′`: equal programs over any setoid of leaves);
 -- * `pfold-bind`: folding a substitution is folding with the substituted programs folded;
 -- * `pfold-hom`: a map commuting with each command, up to a lowering, commutes with the fold;
 -- * `pfold-translate`: folding a translation is folding with the pulled-back handler (`pull`);
@@ -21,19 +23,18 @@ open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; Shape; Position; _⇒_; shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Data.Container.Relation.Binary.Pointwise using () renaming (_,_ to _,ₚ_)
-open import Function.Bundles using (Func)
+open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
-open import Relation.Binary.PropositionalEquality.Core using (refl; cong)
+open import Relation.Binary.PropositionalEquality.Core using (refl)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
-open import Categories.Functor.Algebra using (F-Algebra)
-
-open import Container.FreeMonad.Algebraic using (module Alg)
+open import Container.Polynomial using (Poly₀)
+open import Container.FreeMonad using (Eq)
 open import Container.Lowering
 
 private
   variable
-    s p x y : Level
+    s p x y r : Level
 
 module _ (C : Container s p) where
 
@@ -61,14 +62,20 @@ module _ {C : Container s p} {a ℓ} (A : Setoid a ℓ) where
     pfold-ext e (pure v)         = e v
     pfold-ext e (impure (_ , k)) = c _ (λ q → pfold-ext e (k q))
 
-    -- Folds respect equality of programs.
+    -- Folds respect equality of programs, over any setoid of leaves on which `f` is congruent.
+    pfold-cong′ : ∀ {X : Setoid x r} {f : Setoid.Carrier X → A.Carrier} →
+                  (∀ {u v} → Setoid._≈_ X u v → f u A.≈ f v) →
+                  ∀ {t u : C ⋆ Setoid.Carrier X} → Eq X t u → pfold C h f t A.≈ pfold C h f u
+    pfold-cong′ fc {pure _}         {pure _}           (lift e)    = fc e
+    pfold-cong′ fc {pure _}         {impure _}         ()
+    pfold-cong′ fc {impure _}       {pure _}           ()
+    pfold-cong′ fc {impure (a , k)} {impure (.a , k′)} (refl , e)  =
+      c a (λ q → pfold-cong′ fc (e q))
+
+    -- ... in particular over a set of leaves (propositional equality).
     pfold-cong : ∀ {X : Set x} {f : X → A.Carrier} {t u : C ⋆ X} → t ≈⋆ u →
                  pfold C h f t A.≈ pfold C h f u
-    pfold-cong {t = pure _}         {pure _}           (lift refl) = A.refl
-    pfold-cong {t = pure _}         {impure _}         ()
-    pfold-cong {t = impure _}       {pure _}           ()
-    pfold-cong {t = impure (a , k)} {impure (.a , k′)} (refl , e)     =
-      c a (λ q → pfold-cong (e q))
+    pfold-cong = pfold-cong′ {X = ≡P.setoid _} (λ { refl → A.refl })
 
     -- The bind law.
     pfold-bind : ∀ {X : Set x} {Y : Set y} {f : X → A.Carrier} {f′ : Y → A.Carrier}
@@ -132,25 +139,11 @@ module _ {C D : Container s p} (m : C ⇒ D) {a ℓ} (A : Setoid a ℓ) {h : Han
   pfold-translate (pure v)         = Setoid.refl A
   pfold-translate (impure (a , k)) = c (shape m a) (λ q → pfold-translate (k (position m q)))
 
--- A congruent handler is an algebra of the polynomial functor, and `pfold` is its fold.
+-- A congruent handler is an algebra of the polynomial functor, and the other way round.
 
-module _ (C : Container s p) (A : Setoid (s ⊔ p) (s ⊔ p)) where
-  private
-    module A = Setoid A
-    module G = Alg 0ℓ 0ℓ C
+module _ {C : Container s p} {a ℓ} {A : Setoid a ℓ} where
+  handler : Func (Poly₀ C A) A → Handler C (Setoid.Carrier A)
+  handler α c k = α ⟨$⟩ (c , k)
 
-  toAlgebra : (h : Handler C A.Carrier) → Congruent C A h → F-Algebra G.F
-  toAlgebra h c = record
-    { A = A
-    ; α = record
-        { to   = λ { (a , k) → h a k }
-        ; cong = λ { {_ , _} {_ , _} (refl ,ₚ k≈) → c _ k≈ } } }
-
-  module _ (h : Handler C A.Carrier) (c : Congruent C A h) {X : Set (s ⊔ p)}
-           (f : X → A.Carrier) where
-    leafFunc : Func (≡P.setoid X) A
-    leafFunc = record { to = f ; cong = λ e → A.reflexive (cong f e) }
-
-    pfold-agrees : (t : C ⋆ X) → pfold C h f t A.≈ G.fold (toAlgebra h c) leafFunc t
-    pfold-agrees (pure _)         = A.refl
-    pfold-agrees (impure (a , k)) = c a (λ q → pfold-agrees (k q))
+  handler-congruent : (α : Func (Poly₀ C A) A) → Congruent C A (handler α)
+  handler-congruent α c k≈ = Func.cong α (refl ,ₚ k≈)

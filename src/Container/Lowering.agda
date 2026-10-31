@@ -19,9 +19,7 @@ open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 
 open import Relation.Binary.PropositionalEquality using (setoid)
 
-open import Container.Polynomial
 open import Container.FreeMonad
-open import Container.FreeMonad.Algebraic
 
 private
   variable

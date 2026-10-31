@@ -29,6 +29,7 @@ open import Container.Polynomial
 open import Container.FreeMonad
 open import Container.FreeMonad.Properties
 open import Container.FreeMonad.Algebraic
+open import Container.Interpret.Plain using (pfold-ext; pfold-bind; handler-congruent)
 
 open import Container.Lowering
 
@@ -111,31 +112,9 @@ lower-embed m (impure (a , k)) = refl , λ q → lower-embed m (k (position m q)
 
 -- Fusion
 
-module FoldLemmas {s p} (c ℓ : Level) (C : Container s p) where
-  open Alg c ℓ C
-
-  -- Folds with pointwise equal leaves agree.
-  fold-ext : (A : F-Algebra F) {X : Setoid c′ ℓ′} {f g : Func X (F-Algebra.A A)} →
-             (∀ x → Setoid._≈_ (F-Algebra.A A) (f ⟨$⟩ x) (g ⟨$⟩ x)) →
-             ∀ t → Setoid._≈_ (F-Algebra.A A) (fold A f t) (fold A g t)
-  fold-ext A h (pure x)         = h x
-  fold-ext A h (impure (_ , k)) =
-    Func.cong (F-Algebra.α A) (refl ,ₚ λ q → fold-ext A h (k q))
-
-  -- The fold of a bind is the fold of the head with the folded tails.
-  fold-bind-alg : (A : F-Algebra F) {X Y : Setoid c′ ℓ′}
-                  (f : Func Y (F-Algebra.A A)) (h : Func X (F-Algebra.A A))
-                  (g : Setoid.Carrier X → C ⋆ Setoid.Carrier Y) →
-                  (∀ x → Setoid._≈_ (F-Algebra.A A) (fold A f (g x)) (h ⟨$⟩ x)) →
-                  ∀ t → Setoid._≈_ (F-Algebra.A A) (fold A f (t >>= g)) (fold A h t)
-  fold-bind-alg A f h g hyp (pure x)         = hyp x
-  fold-bind-alg A f h g hyp (impure (_ , k)) =
-    Func.cong (F-Algebra.α A) (refl ,ₚ λ q → fold-bind-alg A f h g hyp (k q))
-
 module Fusion (C D : Container 0ℓ 0ℓ) (l : Lowering C D) where
   module AC = Alg 0ℓ 0ℓ C
   module AD = Alg 0ℓ 0ℓ D
-  open FoldLemmas 0ℓ 0ℓ D using (fold-ext; fold-bind-alg)
 
   -- A function out of the positions of a command is a map of setoids.
   fromPos : ∀ {a} (B : F-Algebra AD.F) →
@@ -153,7 +132,7 @@ module Fusion (C D : Container 0ℓ 0ℓ) (l : Lowering C D) where
     { A = F-Algebra.A B
     ; α = record
         { to   = λ { (a , k) → AD.fold B (fromPos B k) (l a) }
-        ; cong = λ { {a , _} {.a , _} (refl ,ₚ k≈) → fold-ext B k≈ (l a) }
+        ; cong = λ { {a , _} {.a , _} (refl ,ₚ k≈) → pfold-ext (F-Algebra.A B) (handler-congruent (F-Algebra.α B)) k≈ (l a) }
         }
     }
 
@@ -165,5 +144,5 @@ module Fusion (C D : Container 0ℓ 0ℓ) (l : Lowering C D) where
                    (AD.fold B f (lower l t)) (AC.fold (pullback B) f t)
   lower-fusion B f (pure _)         = Setoid.refl (F-Algebra.A B)
   lower-fusion B f (impure (a , k)) =
-    fold-bind-alg B f (fromPos B (λ q → AC.fold (pullback B) f (k q)))
+    pfold-bind (F-Algebra.A B) (handler-congruent (F-Algebra.α B))
       (λ q → lower l (k q)) (λ q → lower-fusion B f (k q)) (l a)
