@@ -17,7 +17,8 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] Phase 3 left over: layout as a `NaturalTransformation` (§4.2); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`) are genuine per-operation handlers and stay.
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
 - [ ] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), `_≈ₛ_` as `O` in `Program.Sem`, most of §5.4.
-- [ ] Phases 5–7: program behaviours, content as containers, small duplicates.  Line budgets are a tripwire; clarity and robustness justify overshoot.
+- [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
+- [ ] Phases 5–6: program behaviours, content as containers.  Line budgets are a tripwire; clarity and robustness justify overshoot.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).

@@ -574,7 +574,7 @@ overshoot (the author's stated position).
 | 4 | **Temporal algebra record**, scene setoid `_≈ₛ_`, monoid-homomorphism statements, Hudak axioms (§5). | −100 | **Done**, ddaf6ef..3d7dbc8, +337.  Hudak axioms that fail (`⨾` unit on leaves, `hold`∘`hold` beyond `a ≤ b`) are documented in `Scene.Equiv`.  Left: `Container.Tagged` for the Scene signature and `mapScene` laws, `_≈ₛ_` as the output setoid of `Program.Sem`, most of §5.4. |
 | 5 | **Program behaviours** `List C → O`, bisimulation ⇔ trace equality, `Via` via `mapMaybe` (§6). | −110 | Open. |
 | 6 | **Content as containers** (`BlockC`, `InlineC`, `MathC`, `MarkC`); backends and plots as handlers; generic sharing (§7, §8). | −300 | Open. |
-| 7 | **Small duplicates** (§4.4, §5.4, §8.4).  Can run in parallel with any phase, on disjoint files. | −150 | Open. |
+| 7 | **Small duplicates** (§4.4, §5.4, §8.4).  Can run in parallel with any phase, on disjoint files. | −150 | **Done** (three commits after 67f624f), −47 in `src/` (−50 with these two rows).  Skipped: `lower-inject` (a three-line direct proof; no `lower-embed` exists), `Three/Render.insert` (`Data.List.Sort` needs a total order on the pair, ties aside), `chunkFrom`/`deckFrom`/`sequence` (different combinators, not one fold), one `evalAt` (three different signatures), `lerp` (ℚ-specific, unconditional `lerp-1`), `revealHash`/`plainHash` (spec of the JS, cited in `Input.Properties`), `opt*` (four different shapes).  Left to Phase 5: Laws `map-*` already reduced, `Program` items. |
 
 Phase 1 comes first because every later phase uses its lemmas.  Phases 3, 4 and 6 touch
 disjoint layers and can run in parallel after it.  Update `docs/Objects.md` with each phase,
