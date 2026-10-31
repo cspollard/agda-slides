@@ -20,7 +20,7 @@ open import Data.Unit using (⊤; tt)
 open import Data.List using (List; []; _∷_; _++_; filterᵇ)
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _≟_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; cong; cong₂)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
@@ -79,15 +79,16 @@ usageCong⊤ (Polyline _ _ _)    e = refl
 usageCong⊤ (Text _ _ _ _ _)    e = refl
 usageCong⊤ (Path _ _ _ _)      e = refl
 usageCong⊤ (Spacer _ _)        e = refl
-usageCong⊤ (Beside _)          e rewrite e zero | e (suc zero) = refl
-usageCong⊤ (Above _)           e rewrite e zero | e (suc zero) = refl
-usageCong⊤ Atop                e rewrite e zero | e (suc zero) = refl
-usageCong⊤ LabelAbove          e rewrite e zero | e (suc zero) = refl
-usageCong⊤ LabelBelow          e rewrite e zero | e (suc zero) = refl
+usageCong⊤ (Beside _)          e = cong₂ both (e zero) (e (suc zero))
+usageCong⊤ (Above _)           e = cong₂ both (e zero) (e (suc zero))
+usageCong⊤ Atop                e = cong₂ both (e zero) (e (suc zero))
+usageCong⊤ LabelAbove          e = cong₂ both (e zero) (e (suc zero))
+usageCong⊤ LabelBelow          e = cong₂ both (e (suc zero)) (e zero)
 usageCong⊤ (Place _ _ _ _)     e = e tt
-usageCong⊤ (Overlay _ _)       e rewrite e zero | e (suc zero) = refl
-usageCong⊤ (Named _)           e rewrite e tt = refl
-usageCong⊤ (Connect _ _ _ _ _) e rewrite e tt = refl
+usageCong⊤ (Overlay _ _)       e = cong₂ both (e zero) (e (suc zero))
+usageCong⊤ (Named n)           e = cong (λ u → n ∷ proj₁ u , proj₂ u) (e tt)
+usageCong⊤ (Connect a _ b _ _) e =
+  cong (λ u → proj₁ u , proj₂ u ++ filterᵇ (λ r → not (member r (proj₁ u))) (a ∷ b ∷ [])) (e tt)
 
 usageCong : ∀ {S} → Congruent (DiagramC S) (≡P.setoid Usage) usageH
 usageCong o = usageCong⊤ (mapOp _ o)

@@ -16,8 +16,8 @@ open import Slides.Scalar.Space using (Space)
 
 module Slides.Diagram.Commute {S : Set} (Sp : Space S) where
 
-open import Data.List using (map)
-open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_)
+open import Data.List using (map; _++_)
+open import Data.List.Relation.Binary.Permutation.Propositional using (_↭_; ↭-trans; ↭-reflexive)
 import Data.List.Relation.Binary.Permutation.Propositional.Properties as ↭P
 open import Data.Product.Base using (_×_; _,_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
@@ -55,10 +55,15 @@ atop-assoc a@(mkLayout wa ha _ _) b@(mkLayout wb hb _ _) c@(mkLayout wc hc _ _) 
     W = wab ⊔ wc ; H = hab ⊔ hc ; W′ = wa ⊔ wbc ; H′ = ha ⊔ hbc
 
 atop-comm : ∀ a b → P.atop a b ≈ᵖ P.atop b a
-atop-comm (mkLayout wa ha da aa) (mkLayout wb hb db ab)
-  rewrite ⊔-comm wb wa | ⊔-comm hb ha =
-  refl , refl , ↭P.++-comm (map _ da) (map _ db) , ↭P.++-comm (map _ aa) (map _ ab)
+atop-comm (mkLayout wa ha da aa) (mkLayout wb hb db ab) =
+  ⊔-comm wa wb , ⊔-comm ha hb ,
+  ↭-trans (↭P.++-comm (map _ da) (map _ db))
+    (↭-reflexive (cong₂ (λ W H → map (P.shiftDraw (W - wb) (H - hb)) db ++ map (P.shiftDraw (W - wa) (H - ha)) da)
+                        (⊔-comm wa wb) (⊔-comm ha hb))) ,
+  ↭-trans (↭P.++-comm (map _ aa) (map _ ab))
+    (↭-reflexive (cong₂ (λ W H → map (P.shiftAnchor (W - wb) (H - hb)) ab ++ map (P.shiftAnchor (W - wa) (H - ha)) aa)
+                        (⊔-comm wa wb) (⊔-comm ha hb)))
 
 ovl-comm : ∀ a b → ovl a b ≈ᵖ ovl b a
-ovl-comm (mkLayout wa ha da aa) (mkLayout wb hb db ab)
-  rewrite ⊔-comm wb wa | ⊔-comm hb ha = refl , refl , ↭P.++-comm da db , ↭P.++-comm aa ab
+ovl-comm (mkLayout wa ha da aa) (mkLayout wb hb db ab) =
+  ⊔-comm wa wb , ⊔-comm ha hb , ↭P.++-comm da db , ↭P.++-comm aa ab
