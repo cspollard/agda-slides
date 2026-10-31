@@ -5,6 +5,7 @@
 --   Poly-⊎ : ⟦ C₁ ⊎ C₂ ⟧ A ≅ ⟦ C₁ ⟧ A ⊎ ⟦ C₂ ⟧ A         (an `Inverse` of setoids)
 --   copair-inj₁, copair-inj₂ : copair α₁ α₂ restricts to α₁, α₂
 --   copair-unique : an algebra for the sum is determined by its two restrictions
+--   copairL-inl, copairL-inr : `embed inl ⋙ copairL l m ≈ˡ l`, `embed inr ⋙ copairL l m ≈ˡ m`
 --
 -- So algebras for `C₁ ⊎ C₂` on `A` are exactly pairs of algebras (`Container.Sum.copair`).
 
@@ -22,6 +23,8 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Container.Polynomial
+open import Container.Lowering using (Lowering; embed; _⋙_)
+open import Container.Lowering.Properties using (_≈ˡ_; bind-pure≈)
 
 import Container.Sum as S
 
@@ -90,3 +93,11 @@ module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
                   ∀ {x} → β ⟨$⟩ x A.≈ copair α₁ α₂ ⟨$⟩ x
   copair-unique α₁ α₂ β h₁ h₂ {inj₁ s , f} = h₁ s f
   copair-unique α₁ α₂ β h₁ h₂ {inj₂ s , f} = h₂ s f
+
+-- Copairing of lowerings restricts to its components.
+module _ {s p} {C₁ C₂ E : Container s p} (l : Lowering C₁ E) (m : Lowering C₂ E) where
+  copairL-inl : (embed S.inl ⋙ S.copairL l m) ≈ˡ l
+  copairL-inl a = bind-pure≈ (l a)
+
+  copairL-inr : (embed S.inr ⋙ S.copairL l m) ≈ˡ m
+  copairL-inr a = bind-pure≈ (m a)

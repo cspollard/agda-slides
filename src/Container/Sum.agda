@@ -4,6 +4,8 @@
 --
 --   copair : (⟦ C₁ ⟧ A → A) → (⟦ C₂ ⟧ A → A) → (⟦ C₁ ⊎ C₂ ⟧ A → A)
 --
+--   copairL : Lowering C₁ E → Lowering C₂ E → Lowering (C₁ ⊎ C₂) E
+--
 -- This is how backends for separate vocabularies combine.  The universal property
 -- and `⟦ C₁ ⊎ C₂ ⟧ ≅ ⟦ C₁ ⟧ ⊎ ⟦ C₂ ⟧` are in `Container.Sum.Properties`.
 
@@ -22,6 +24,7 @@ open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Container.Polynomial
+open import Container.Lowering using (Lowering)
 
 -- The injections of the sum, as container morphisms.
 module _ {s₁ s₂ p} {C₁ : Container s₁ p} {C₂ : Container s₂ p} where
@@ -45,3 +48,9 @@ module _ {s₁ s₂ p c ℓ} (C₁ : Container s₁ p) (C₂ : Container s₂ p)
     ; cong = λ { {inj₁ _ , _} {inj₁ _ , _} (refl ,ₚ f≈g) → Func.cong α₁ (refl ,ₚ f≈g)
                ; {inj₂ _ , _} {inj₂ _ , _} (refl ,ₚ f≈g) → Func.cong α₂ (refl ,ₚ f≈g) }
     }
+
+-- Copairing of lowerings: the coproduct in the category of lowerings.
+module _ {s p} {C₁ C₂ E : Container s p} where
+  copairL : Lowering C₁ E → Lowering C₂ E → Lowering (C₁ ⊎ C₂) E
+  copairL l m (inj₁ a) = l a
+  copairL l m (inj₂ a) = m a

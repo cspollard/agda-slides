@@ -24,9 +24,9 @@ open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (refl)
 
-open import Container.Lowering using (Lowering; lower; translate)
+open import Container.Lowering using (Lowering; lower; translate; ret)
 open import Container.Lowering.Properties using (_≈⋆_; refl≈; lower-bind)
-open import Container.Sum using (inl)
+open import Container.Sum using (inl; copairL)
 open import Slides.Scene.Syntax using (SceneC; Scene)
 
 -- the commands a program may wait for: the set `C`
@@ -48,8 +48,7 @@ module _ {T D C : Set} where
   inject = translate inl
 
   skipOp : Lowering (ProgC T D C) (SceneC T D)
-  skipOp (inj₁ o) = impure (o , pure)
-  skipOp (inj₂ _) = pure tt
+  skipOp = copairL ret (λ _ → pure tt)
 
   skip : ∀ {A} → Program T D C A → Scene T D A
   skip = lower skipOp
