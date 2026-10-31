@@ -273,23 +273,29 @@ data Play : Set where
   steps loop : Play
   both       : ℕ → Play
 
--- the element: the first frame, the data, one fragment per step
+-- the attributes of the element: the data the page reads, the rests (one per step) and how it plays
+restsAttr : List ℚ → List (String × String)
+restsAttr []        = []
+restsAttr r@(_ ∷ _) = ("data-rests" , renderJSON (arr (map qⱼ r))) ∷ []
+
+playAttr : Play → List (String × String)
+playAttr steps    = []
+playAttr loop     = ("data-loop" , "") ∷ []
+playAttr (both n) = ("data-loop" , "") ∷ ("data-phases" , show n) ∷ []
+
+animAttrs : String → ℕ → Play → Anim → List ℚ → List (String × String)
+animAttrs name ms play a rs =
+  ("class" , "animation") ∷ ("id" , name ++ˢ "-frames") ∷ ("data-ms" , show ms)
+  ∷ ("data-duration" , renderJSON (qⱼ (Mv.duration a))) ∷ restsAttr rs ++ playAttr play
+
+-- its children: the first frame, the data, one fragment per step
+animKids : String → ℕ → Anim → List ℚ → List XMLDoc
+animKids name pct a rs =
+  hElement "div" (("class" , "frame") ∷ [])
+    ( hElement "div" (("class" , "diagram") ∷ ("id" , name) ∷ [])
+        (renderSVG qPrint name pct (firstFrame a) ∷ []) ∷ [] )
+  ∷ hText "script" (("type" , "application/json") ∷ ("class" , "events") ∷ []) (htmlSafe (eventsJSON a))
+  ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs
+
 animationEl : (name : String) (percent ms : ℕ) (play : Play) → Anim → List ℚ → XMLDoc
-animationEl name pct ms play a rs =
-  hElement "div"
-    ( ("class" , "animation") ∷ ("id" , name ++ˢ "-frames") ∷ ("data-ms" , show ms)
-    ∷ ("data-duration" , renderJSON (qⱼ (Mv.duration a)))
-    ∷ restsAttr rs ++ playAttr play )
-    ( hElement "div" (("class" , "frame") ∷ [])
-        ( hElement "div" (("class" , "diagram") ∷ ("id" , name) ∷ [])
-            (renderSVG qPrint name pct (firstFrame a) ∷ []) ∷ [] )
-    ∷ hText "script" (("type" , "application/json") ∷ ("class" , "events") ∷ []) (htmlSafe (eventsJSON a))
-    ∷ map (λ _ → hElement "span" (("class" , "fragment anim-step") ∷ []) []) rs )
-  where
-    restsAttr : List ℚ → List (String × String)
-    restsAttr []        = []
-    restsAttr r@(_ ∷ _) = ("data-rests" , renderJSON (arr (map qⱼ r))) ∷ []
-    playAttr : Play → List (String × String)
-    playAttr steps    = []
-    playAttr loop     = ("data-loop" , "") ∷ []
-    playAttr (both n) = ("data-loop" , "") ∷ ("data-phases" , show n) ∷ []
+animationEl name pct ms play a rs = hElement "div" (animAttrs name ms play a rs) (animKids name pct a rs)
