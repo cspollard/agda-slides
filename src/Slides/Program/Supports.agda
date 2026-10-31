@@ -23,6 +23,7 @@ open import Data.List.Base using (mapMaybe; []; _∷_)
 open import Data.Product.Base using (_×_; _,_; Σ-syntax)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
+open import Data.Container.Core using (Shape)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋)
@@ -32,6 +33,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 open import Data.Maybe.Properties using (just-injective)
 
 open import Container.Interpret.Plain using (Handler; Congruent)
+open import Container.FreeMonad using (All⋆)
 open import Container.Lowering using (Lowering; lower)
 open import Container.Lowering.Properties using (_≈⋆_)
 open import Slides.Scene.Syntax using (SceneC; arity)
@@ -74,10 +76,12 @@ module _ {T D C : Set} (b : Supports C) where
   skipU = lower skipUOp
 
   -- every wait of the program is supported
+  SupOp : Shape (ProgC T D C) → Set
+  SupOp (inj₁ _) = ⊤
+  SupOp (inj₂ c) = inj b c ≡ nothing → ⊥
+
   AllSup : ∀ {A} → Program T D C A → Set
-  AllSup (pure _)              = ⊤
-  AllSup (impure (inj₁ _ , k)) = ∀ q → AllSup (k q)
-  AllSup (impure (inj₂ c , k)) = (inj b c ≡ nothing → ⊥) × AllSup (k tt)
+  AllSup = All⋆ SupOp
 
   lowerP-just : ∀ {A} {s} c (k : ⊤ → Program T D C A) → inj b c ≡ just s →
                 lowerP (impure (inj₂ c , k)) ≡ impure (inj₂ s , λ _ → lowerP (k tt))
@@ -98,10 +102,10 @@ module _ {T D C : Set} (b : Supports C) where
   -- nothing to skip when everything is supported
   lower-supported : ∀ {A} (p : Program T D C A) → AllSup p → skipU p ≈⋆ p
   lower-supported (pure _) _ = lift refl
-  lower-supported (impure (inj₁ o , k)) a = refl , λ q → lower-supported (k q) (a q)
+  lower-supported (impure (inj₁ o , k)) (_ , a) = refl , λ q → lower-supported (k q) (a q)
   lower-supported (impure (inj₂ c , k)) (n , a) with inj b c in e
   ... | nothing = ⊥-elim (n refl)
-  ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) a
+  ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) (a tt)
 
 -- Soundness of the lowering
 

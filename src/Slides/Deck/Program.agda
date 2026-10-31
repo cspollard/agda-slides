@@ -24,7 +24,6 @@ open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
-import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Level using (lift)
 open import Container.Lowering using (Lowering; lower; _⋙_)
@@ -45,7 +44,10 @@ import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay 
 absent : S.Timed
 absent = 0 , λ _ _ → nothing
 
-import Slides.Program.Sem {ℕ} {⊥} {Nav} _≟N_ (≡P.setoid S.Timed) S.dirH S.dirCong absent as P
+import Slides.Scene.Equiv {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as E
+
+-- outputs are compared up to the scene setoid: equal durations, pointwise equal readings
+import Slides.Program.Sem {ℕ} {⊥} {Nav} _≟N_ E.TimedS S.dirH E.dirCong≈ absent as P
 
 -- Pause as a wait
 

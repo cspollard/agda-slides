@@ -10,6 +10,7 @@ module Slides.Backend.Input.Properties where
 
 open import Data.Bool.Base using (true)
 open import Data.Empty using (⊥)
+open import Level using (lift)
 open import Data.Maybe.Base using (Maybe; just; nothing)
 open import Data.Product.Base using (Σ-syntax; _,_; proj₂)
 open import Data.Sum.Base using (inj₁; inj₂)
@@ -58,9 +59,9 @@ module _ {T D : Set} (b : Supports Nav) (tot : ∀ n → Σ[ s ∈ Supports.S b 
     no-nothing refl ()
 
   allSup : ∀ {A} (p : Program T D Nav A) → Sup.AllSup b p
-  allSup (pure _)              = tt
-  allSup (impure (inj₁ _ , k)) = λ q → allSup (k q)
-  allSup (impure (inj₂ c , k)) = no-nothing (proj₂ (tot c)) , allSup (k tt)
+  allSup (pure _)              = lift tt
+  allSup (impure (inj₁ _ , k)) = tt , λ q → allSup (k q)
+  allSup (impure (inj₂ c , k)) = no-nothing (proj₂ (tot c)) , λ q → allSup (k q)
 
   -- presenting a program on `b` leaves it unchanged
   presents : ∀ {A} (p : Program T D Nav A) → Sup.skipU b p ≈⋆ p
