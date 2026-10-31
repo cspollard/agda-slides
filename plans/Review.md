@@ -582,6 +582,50 @@ disjoint layers and can run in parallel after it.  Update `docs/Objects.md` with
 especially the one-paragraph categorical statements: Lowerings as Kleisli of `(−)*`, machines
 as coalgebras, size and layout as monoid homomorphisms.
 
+### 9.1 Phase 9: how the objects relate
+
+Agreed with the author after two read-only audits (semantics; `rewrite` and clarity).  The
+relations are recorded in `docs/Objects.md`, "How the objects relate"; items in `plans/TODO.md`.
+
+- **Meanings.**  Three domains independent of syntax: `Layout S` (spatial), models of the
+  temporal theory (`Timed`, `Media`; `events-sample` a model homomorphism), and behaviours
+  `List C → O`, the terminal Moore coalgebra (interactive).
+- **Chain.**  Plot ⊂ Diagram (a subset of meanings: `W × H` drawings) ⊂ Animation (split mono:
+  `pure`, read a frame) ⊂ Program (sub-bialgebra: `inject`, `hd`).  Deck is not a sub-object but
+  a reindexing of the step-clock stream along the navigation position map; "deck = program" holds
+  per slide only (no preemption, by design).  Backend support is a reindexing along `mapMaybe dec`.
+- **Extensions.**  Curve, Program and (planned) Plot are `translate inl` with a lowering
+  `copairL ret h` as retraction; one generic lemma.  Direction: Diagram ⊂ Plot in syntax,
+  Plot ⊂ Diagram in meanings.
+- **Time.**  Three clocks (deck steps ℕ, wall clock ℚ, driver-local time); each command restarts
+  the real-time reading (random-access navigation).
+
+| Step | Work | Status |
+|---|---|---|
+| S0 | Docs: relations, forms, statuses, where things live | Done (this commit) |
+| S1 | Generic extension retract in `Container.Sum.Properties`; `Semantics/Behaviour` (final Moore coalgebra); `Program/Machine`, `Program/Sem` ported | Planned |
+| S4 | One notion of step (fixes the step-count mismatch with the pages); deck as a reindexing | Planned |
+| S5 | Plot as framed diagrams; plot content as an extension | Planned |
+| — | `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`) | Planned |
+| S2 | Models layer (powers are models, Hudak laws for programs); read-at-start retraction law, only if conditional laws stay small | Later |
+| S3 | Deck behaviour stated once | Later |
+| — | `rewrite` batches 1, 4, 5; clarity audit medium and low items | Later |
+
+**Not worth doing** (recorded so it is not retried):
+- `mu-Bialgebras` / `DistributiveLaw` from agda-categories: they cover simple laws `T F ⇒ F T`;
+  `await` steps to itself on other commands, the abstract-GSOS shape, which they do not cover.
+- Layout as a `NaturalTransformation`: `ι`, the one instance used, is natural only on the
+  `OkDia` subfunctor (deferred twice already for this reason).
+- A preemption operator in `ProgC` to make "deck = program" hold syntactically: reindexing gives
+  the semantic statement, and preemption reopens full FRP.
+- Programs as scenes over the clock `List C`: the Time theory needs a total order, and the
+  prefix order is not one.
+- Client handlers as `F-Algebra`s: `Handler`/`Congruent` stay (Phase 1); a model is just their
+  bundle with a setoid.
+- A category of presentations with languages as subcategories and backends as functors that
+  must commute: the languages are objects related by split monos and reindexings, backends print
+  syntax, and agreement with the JS players is tested, not proved.
+
 
 ## 10. Literature (to add to `Objects.md`)
 

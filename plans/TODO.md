@@ -16,14 +16,27 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 3, Diagram tag/payload split, `Draw.group` removed, functoriality derived (e9bf14d..67a4c31, −2 against −250).
 - [ ] Phase 3 left over: layout as a `NaturalTransformation` (§4.2); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`) are genuine per-operation handlers and stay.
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
-- [ ] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), most of §5.4.
+- [x] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), done in Phase 8; the rest of §5.4 stays open.
 - [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
 - [ ] Phase 5 left over: `F-Coalgebras` category for machines; `skip-inject`/`lower-supported` stay direct.
 - [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
 - [x] Phase 6, content as containers (7d2d405..529df14, +177 against −300).
-- [x] Phase 8 (§4.3, Phase 4/6 leftovers): size into envelope semigroups, layout `Action`/`Placement`, `IsSemigroup`/`Monoid` packaging, `cut`; scene signature on `Container.Tagged`; `FlowLowering` rename; `Program/Embed` into `Scene.Animation`; `toLaTeX-bind`; `glueMonoid` and `chunks` as `IsMonoidHomomorphism` (+238; 23 `rewrite` removed).
+- [x] Phase 8 (§4.3, Phase 4/6 leftovers): size into envelope semigroups, layout `Action`/`Placement`, `IsSemigroup`/`Monoid` packaging, `cut`; scene signature on `Container.Tagged`; `FlowLowering` rename; the former `Program/Embed` module folded into `Scene.Animation` (no longer a module); `toLaTeX-bind`; `glueMonoid` and `chunks` as `IsMonoidHomomorphism` (+238; 23 `rewrite` removed).
 - [ ] Left: layout as a `NaturalTransformation` (§4.2, deferred twice); `_≈ᵖ_` as a permutation `Setoid` with `atop` commutative; `Overlay` on stdlib structures and out of `Diagram`; `Natural` offsets per connective.
-- [ ] No `rewrite` (`docs/Contributing.md`): remaining uses to be listed by the read-only audit.  Line budgets are a tripwire; clarity and robustness justify overshoot.
+- [x] No `rewrite` (`docs/Contributing.md`): the read-only audit listed 99 uses in 22 files, in five batches (Phase 9 below).  Line budgets are a tripwire; clarity and robustness justify overshoot.
+
+## Phase 9: how the objects relate (`plans/Review.md` §9.1, `docs/Objects.md` "How the objects relate")
+- [x] (a) Docs: how the objects relate (forms, sections and retractions, statuses) and where things live, in `docs/Objects.md`; layers in `src/Slides.agda`.
+- [ ] (b) S1: one generic extension retract, `lower (copairL ret h) (translate inl t) ≈⋆ t` in `Container.Sum.Properties` (`lower-inject`, `skip-inject` as instances); `Semantics/Behaviour`: behaviours as `Terminal (F-Coalgebras Moore)` with `mapO`, `reindex`, `hd`; `Program/Machine` and `Program/Sem` ported (generic `sem-inject`).
+- [ ] (c) S4: one notion of step, and the deck as a reindexing of it.
+  - Known bug: the model counts fewer steps than the pages take.  The renderer emits a `.fragment` for each later chunk, each `fragment` block, each incremental bullet `li` and each animation rest (`Backend/Animation.agda:287`); `plain.js` and reveal step through every `.fragment`; `ticks s = length (chunkL s)` (`Deck/Syntax.agda:143`) counts chunks only.  `visible`, `deckM`, `goto` and `render-events` are wrong for slides using the other three (Intro, Talk, Showcase).
+- [ ] (d) S5: `Plot` as framed diagrams (`Framed W H`, `render` into it; marks layer a homomorphism for fixed axes, if it is); plot content as an extension `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` lowered by `copairL ret renderMark`.
+- [ ] (e) `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Diagram/Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`).
+- [ ] (f) Later:
+  - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
+  - S3: the deck behaviour stated once (`deckBeh`), `pause-agree` restated against it.
+  - `rewrite` batches 1 (Scalar, Backend), 4 (Program, Deck/Read, Deck/Machine), 5 (Scene; needs the pos-free sampling lemmas first).
+  - Clarity audit, medium and low: `InlineC`/`MathC` as `Tagged`; one `map-fuse` lemma for the nine `map-∘`/`map-cong` chains; one `Draw` traversal (`mapXY`) for the five hand-spelled copies; `Names/Soundness` clauses via `pfold-rel`; dead code (`deckOf`, `kids`, `noSupports`, `niceStep`, `lerp-same`); unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`); header slips (`Valid` first sentence twice, `Natural` orphan comments, `Mark` says `zipWith`, `Deck/Lower` parenthetical); `besideMonoid`/`aboveMonoid` duplication.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).
