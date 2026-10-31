@@ -8,14 +8,14 @@
 -- (m = 1, z = 0), so decade ticks and their labels are exact.  The approximation is checked on
 -- closed values below; monotonicity of the polynomial is not proved.
 --
--- `logMark` maps a mark into log space.  An error bar keeps its end points exact: its centre is the
--- middle of the logs of its ends, so the dot (a separate scatter) and the bar's middle differ.
+-- `logMark` maps a mark into log space: `bimap` of `log₁₀` over the y's (`Slides.Plot.Mark`).  An error
+-- bar keeps its end points exact, as it is stored by its ends: the bar's middle is the middle of
+-- the logs of its ends, so it differs from the dot (a separate scatter).
 
 module Slides.Plot.Log where
 
 open import Data.Bool using (Bool; true; false; if_then_else_; _∧_)
 open import Data.Integer as ℤ using (ℤ; +_; -[1+_])
-open import Data.List using (List; map)
 open import Data.Nat as ℕ using (ℕ; zero; suc)
 open import Data.Product.Base using (_×_; _,_)
 open import Data.Rational as ℚ using (ℚ; 0ℚ; 1ℚ; _+_; _-_; _*_; _≤ᵇ_; -_)
@@ -55,18 +55,8 @@ tenPow (+ n)    = ι (p n)
         p (suc k) = 10 ℕ.* p k
 tenPow -[1+ n ] = inv (tenPow (+ suc n))
 
-logMark : Mark → Mark
-logMark (line s ps)     = line s (map (λ { (x , y) → x , log10 y }) ps)
-logMark (scatter s ps)  = scatter s (map (λ { (x , y) → x , log10 y }) ps)
-logMark (steps s es hs) = steps s es (map log10 hs)
-logMark (band s ts)     = band s (map (λ { (x , l , h) → x , log10 l , log10 h }) ts)
-logMark (errors s ts)   = errors s (map (λ { (x , y , e) →
-                            let l = log10 (y - e) ; h = log10 (y + e)
-                            in x , (l + h) * decimal (+ 5) 1 , (h - l) * decimal (+ 5) 1 }) ts)
-logMark (hline s y)     = hline s (log10 y)
-logMark (vline s x)     = vline s x
-logMark (exact s f)     = exact s (λ x → log10 (f x))
-logMark (note x y t)    = note x (log10 y) t
+logMark : Mark ℚ ℚ → Mark ℚ ℚ
+logMark = bimap (λ x → x) log10
 
 private
   near : ℚ → ℚ → Bool
