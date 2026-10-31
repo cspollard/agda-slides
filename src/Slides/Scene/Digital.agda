@@ -3,7 +3,7 @@
 -- The ℕ tick clock, read through `ι : ℕ → ℚ`.
 --
 -- A scene on whole ticks has ℕ durations, drivers that are Space/Time terms in the local tick
--- (`Dn`), and leaves that are diagrams of such terms attached by sides (`SLeaf`).  Mapped along
+-- (`Sc`), and leaves that are diagrams of such terms attached by sides (`SLeaf`).  Mapped along
 -- `ι`, scalars are lowered by `lowerS` (`a - b` to `(a ⊔ b) - b`, `pct` to `hold (pct ..)`).
 --
 --   digital   the ℚ frame of the mapped scene at `ι n`, up to `ι`, is the ℕ frame at `n`
@@ -16,6 +16,7 @@ open import Slides.Scalar.Hom using (PctDigital)
 module Slides.Scene.Digital (pct-ok : PctDigital) where
 
 open import Data.Fin using (zero; suc)
+open import Function.Base using (flip)
 open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.Maybe using (Maybe; just; nothing; maybe)
 import Data.Maybe as Maybe
@@ -53,21 +54,18 @@ open import Slides.Scene.Syntax using (Scene; mapScene)
 Sc : Set
 Sc = ScC ⋆ Maybe ℕ
 
-Dn : Set
-Dn = Sc
-
 -- ℕ: the variable is the local tick, `just k` the constant `k`
-valN : Dn → ℕ → ℕ
+valN : Sc → ℕ → ℕ
 valN c τ = pfold ScC scNat (maybe (λ k → k) τ) c
 
 -- ℚ: the lowered term, at the tick `τ`, constants read through `ι`
 valuation : ℚ → Maybe ℕ → ℚ
 valuation τ = maybe ι τ
 
-valQ : Dn → ℚ → ℚ
+valQ : Sc → ℚ → ℚ
 valQ c τ = pfold ScC scRat (valuation τ) c
 
-lowerD : Dn → Dn
+lowerD : Sc → Sc
 lowerD = lower lowerS
 
 cQ : Congruent ScC (≡P.setoid ℚ) scRat
@@ -172,38 +170,35 @@ SLeaf : Set
 SLeaf = Σ[ a ∈ Dia Sc ] SidesDia a
 
 -- a leaf at the parameter `p`: its scalars read on each clock (ℚ: lowered, constants through `ι`)
-evN : ℕ → Sc → ℕ
-evN p = pfold ScC scNat (maybe (λ k → k) p)
-
 evQ : ℚ → Sc → ℚ
 evQ p t = pfold ScC scRat (valuation p) (lowerD t)
 
 ℓN : SLeaf → ℕ → Layout ℕ
-ℓN (a , _) p = LN.layout (mapDia (evN p) a)
+ℓN (a , _) p = LN.layout (mapDia (flip valN p) a)
 
 ℓQ : SLeaf → ℚ → Layout ℚ
 ℓQ (a , _) p = LQ.layout (mapDia (evQ p) a)
 
 ℓ-ok : ∀ a p → ℓQ a (ι p) ≡ mapLayout ι (ℓN a p)
-ℓ-ok (a , sides) p = leaf-ok (evN p) (evQ (ι p)) (λ t → sym (digit-term p t)) a sides
+ℓ-ok (a , sides) p = leaf-ok (flip valN p) (evQ (ι p)) (λ t → sym (digit-term p t)) a sides
 
 import Slides.Scene.Animation natSpace natTime valN as AN
 import Slides.Scene.Animation ratSpace ratTime valQ as AQ
 
-open import Slides.Scene.Tick {ℕ} {ℚ} {Dn} {Dn} {Layout ℕ} {Layout ℚ}
+open import Slides.Scene.Tick {ℕ} {ℚ} {Sc} {Sc} {Layout ℕ} {Layout ℚ}
   (Space.ord natSpace) (Space.sub natSpace) (Space.ord ratSpace) (Space.sub ratSpace)
   ι ι-hom valN valQ lowerD g-val AN.layoutOverlay AQ.layoutOverlay (mapLayout ι) N.overlay-hom
   using (tick-hom)
 
-import Slides.Scene.Sample {D = Dn} {Layout ℕ} (Space.ord natSpace) (Space.sub natSpace) valN AN.layoutOverlay as SN
-import Slides.Scene.Sample {D = Dn} {Layout ℚ} (Space.ord ratSpace) (Space.sub ratSpace) valQ AQ.layoutOverlay as SQ
+import Slides.Scene.Sample {D = Sc} {Layout ℕ} (Space.ord natSpace) (Space.sub natSpace) valN AN.layoutOverlay as SN
+import Slides.Scene.Sample {D = Sc} {Layout ℚ} (Space.ord ratSpace) (Space.sub ratSpace) valQ AQ.layoutOverlay as SQ
 
 -- the frame of a scene at the whole tick `n`, on the ℕ clock
-frameN : Scene ℕ Dn SLeaf → ℕ → Maybe (Layout ℕ)
+frameN : Scene ℕ Sc SLeaf → ℕ → Maybe (Layout ℕ)
 frameN s n = proj₂ (SN.sample ℓN s) n nothing
 
 -- ... and on the ℚ clock, at the tick `ι n`, of the scene mapped along `ι`
-frameQ : Scene ℚ Dn SLeaf → ℕ → Maybe (Layout ℚ)
+frameQ : Scene ℚ Sc SLeaf → ℕ → Maybe (Layout ℚ)
 frameQ s n = proj₂ (SQ.sample ℓQ s) (ι n) nothing
 
 -- The tick clock reading: the ℚ frame of the mapped scene at `ι n`, up to `ι`, is the ℕ frame.
