@@ -20,10 +20,13 @@ open import Data.String using (String; concat; fromList; toList) renaming (_++_ 
 open import Data.Char using (Char)
 open import Function.Base using (_∘_)
 open import Data.Container.Core using (Container; _▷_)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
+import Data.List.Properties as ListP
+open import Function.Nary.NonDependent using (congₙ)
+import Relation.Binary.PropositionalEquality as ≡P
 
 open import Container.Pick using (pick2)
-open import Container.Interpret.Plain using (Handler; pfold)
+open import Container.Interpret.Plain using (Handler; pfold; Congruent; pfold-bind)
 
 data Greek : Set where
   alpha beta gamma delta epsilon theta lambda mu nu pi rho sigma tau phi chi psi omega : Greek
@@ -197,6 +200,50 @@ latex (_ , tupleO n)    k = commaSep (tabulate k)
 
 toLaTeX : Math → String
 toLaTeX = pfold MathC latex (λ s → s)
+
+-- The printer respects pointwise-equal children: each command reads its children at finitely many
+-- positions, so it is a function of those values, and `cong` through that function applies the
+-- equalities at those positions (a command of arity 2 or 3 is `latex` at `pick2` or `pick3`; of arity 1, at a constant family).
+private
+  pick3 : ∀ {A : Set} → A → A → A → Fin 3 → A
+  pick3 a b c zero               = a
+  pick3 a b c (suc zero)         = b
+  pick3 a b c (suc (suc zero))   = c
+
+latex-cong : Congruent MathC (≡P.setoid String) latex
+latex-cong (_ , numO _)    e = ≡P.refl
+latex-cong (_ , greekO _)  e = ≡P.refl
+latex-cong (_ , textO _)   e = ≡P.refl
+latex-cong (_ , rawO _)    e = ≡P.refl
+latex-cong (_ , negO) e = ≡P.cong (λ x → latex (_ , negO) (λ _ → x)) (e zero)
+latex-cong (_ , sqrtO) e = ≡P.cong (λ x → latex (_ , sqrtO) (λ _ → x)) (e zero)
+latex-cong (_ , parenO) e = ≡P.cong (λ x → latex (_ , parenO) (λ _ → x)) (e zero)
+latex-cong (_ , vecO) e = ≡P.cong (λ x → latex (_ , vecO) (λ _ → x)) (e zero)
+latex-cong (_ , hatO) e = ≡P.cong (λ x → latex (_ , hatO) (λ _ → x)) (e zero)
+latex-cong (_ , barO) e = ≡P.cong (λ x → latex (_ , barO) (λ _ → x)) (e zero)
+latex-cong (_ , calO) e = ≡P.cong (λ x → latex (_ , calO) (λ _ → x)) (e zero)
+latex-cong (_ , bbO) e = ≡P.cong (λ x → latex (_ , bbO) (λ _ → x)) (e zero)
+latex-cong (_ , ddO) e = ≡P.cong (λ x → latex (_ , ddO) (λ _ → x)) (e zero)
+latex-cong (_ , fnO f) e = ≡P.cong (λ x → latex (_ , fnO f) (λ _ → x)) (e zero)
+latex-cong (_ , addO) e = ≡P.cong₂ (λ x y → latex (_ , addO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , subO) e = ≡P.cong₂ (λ x y → latex (_ , subO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , mulO) e = ≡P.cong₂ (λ x y → latex (_ , mulO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , fracO) e = ≡P.cong₂ (λ x y → latex (_ , fracO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , powO) e = ≡P.cong₂ (λ x y → latex (_ , powO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , idxO) e = ≡P.cong₂ (λ x y → latex (_ , idxO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , juxtO) e = ≡P.cong₂ (λ x y → latex (_ , juxtO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , relO r) e = ≡P.cong₂ (λ x y → latex (_ , relO r) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , sumO) e = congₙ 3 (λ x y z → latex (_ , sumO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , integralO) e = congₙ 3 (λ x y z → latex (_ , integralO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , prodO) e = congₙ 3 (λ x y z → latex (_ , prodO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , callO n)   e = ≡P.cong₂ (λ x y → x ++ˢ "\\left(" ++ˢ y ++ˢ "\\right)") (e zero) (≡P.cong commaSep (ListP.tabulate-cong (e ∘ suc)))
+latex-cong (_ , tupleO n)  e = ≡P.cong commaSep (ListP.tabulate-cong e)
+
+-- Substitution commutes with printing: print the formula with each identifier replaced by the
+-- print of its substitute (`pfold-bind` at the setoid of strings).
+toLaTeX-bind : ∀ (m : Math) (σ : String → Math) →
+               toLaTeX (m >>= σ) ≡P.≡ pfold MathC latex (λ x → toLaTeX (σ x)) m
+toLaTeX-bind m σ = pfold-bind (≡P.setoid String) latex-cong σ (λ _ → ≡P.refl) m
 
 -- Authoring: operators
 

@@ -12,7 +12,7 @@ open import IO using (Main; run; _>>_)
 
 import Slides.Backend.Reveal as Reveal
 import Slides.Backend.Plain as Plain
-open import Slides.Deck.Lower using (lowerTalk; stripNotes; diagramPlaceholder; animationFinal; _⋙_)
+open import Slides.Deck.Lower using (lowerTalk; stripNotes; diagramPlaceholder; animationFinal; _⋙ᶠ_)
 open import Slides.Driver
 open import Slides.Examples.Showcase using (showcase)
 
@@ -36,6 +36,6 @@ main = run
   ( writeRevealDeck "out/showcase" revealConfig showcase
   >> writePlainDeck "out/showcase-plain" plainConfig showcase
   >> writePlainDeck "out/showcase-lowered" plainConfig
-       (lowerTalk (stripNotes ⋙ diagramPlaceholder) showcase)
+       (lowerTalk (stripNotes ⋙ᶠ diagramPlaceholder) showcase)
   >> writePlainDeck "out/showcase-still" plainConfig
-       (lowerTalk (stripNotes ⋙ animationFinal) showcase) )
+       (lowerTalk (stripNotes ⋙ᶠ animationFinal) showcase) )

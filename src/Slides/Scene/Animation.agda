@@ -7,6 +7,7 @@
 -- absence is the unit).
 --
 --   frame s n       the frame at tick `n`, the reading at `tick n`
+--   diagram-frame   a diagram, the scene `pure d`, is shown from 0 for ever, laid out at parameter 0
 --   frame-assembly  it is the overlay of the layouts of the leaves active at `n`, each at its
 --                   local time (from `Slides.Scene.Laws`)
 
@@ -19,8 +20,10 @@ open import Data.List using (List; []; _∷_; _++_; map)
 import Data.List.Properties as ListP
 open import Data.Maybe using (Maybe; just; nothing; maybe)
 open import Data.Nat using (ℕ)
+open import Data.Bool.Base using (if_then_else_)
+open import Relation.Nullary.Decidable using (dec-true)
 open import Data.Product.Base using (proj₂)
-open import Data.Container.FreeMonad using (_⋆_)
+open import Data.Container.FreeMonad using (_⋆_; pure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym; trans)
 
 open import Container.Interpret.Plain using (Handler; pfold)
@@ -34,7 +37,7 @@ import Slides.Diagram.Place Sp as P
 open import Slides.Diagram.Laws Sp using (ovl; layoutOverlay) public
 open import Slides.Diagram.Layout Sp using (layout)
 open import Slides.Scene.Syntax
-open Space Sp using (_⊔_; _-_)
+open Space Sp using (_⊔_; _-_; 0#; _≤_; _≤?_)
 
 -- Frames overlay
 
@@ -75,6 +78,14 @@ frameAt s t = proj₂ (sample leafLayout s) t nothing
 -- the frame at the whole tick `n`
 frame : Anim → ℕ → Maybe (Layout T)
 frame s n = frameAt s (Time.tick Tm n)
+
+-- a diagram, as a scene, is shown from time 0 on, laid out at the parameter 0
+diagram-const : ∀ (l : Leaf) t → 0# ≤ t → frameAt (pure l) t ≡ just (leafLayout l 0#)
+diagram-const l t le = cong (λ b → if b then just (leafLayout l 0#) else nothing) (dec-true (0# ≤? t) le)
+
+-- at a whole tick (the model fact is the hypothesis: ticks are non-negative)
+diagram-frame : (∀ n → 0# ≤ Time.tick Tm n) → ∀ (l : Leaf) n → frame (pure l) n ≡ just (leafLayout l 0#)
+diagram-frame tick-nonneg l n = diagram-const l (Time.tick Tm n) (tick-nonneg n)
 
 -- The assembly: the frame is the overlay of the layouts of the leaves active at that tick.
 frame-assembly : ∀ s n →

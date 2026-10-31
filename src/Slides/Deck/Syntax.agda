@@ -22,7 +22,12 @@ open import Data.Maybe.Base using (Maybe)
 open import Data.Nat.Base using (ℕ; suc)
 open import Data.String.Base using (String)
 open import Data.Container.FreeMonad using (pure; _>>=_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; sym)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; isEquivalence)
+import Data.List.Properties as ListP
+open import Level using (0ℓ)
+open import Data.Product.Base using (_,′_)
+open import Algebra.Bundles using (Monoid)
+open import Algebra.Morphism.Structures using (module MagmaMorphisms; module MonoidMorphisms)
 
 open import Slides.Scene.Syntax
 open import Slides.Deck.Content
@@ -61,19 +66,67 @@ glueL c (e ∷ es) ys       = c ∷ toList (glueL e es ys)
 glue : List⁺ Flow → List⁺ Flow → List⁺ Flow
 glue (c ∷ cs) = glueL c cs
 
-private
-  glue-nil : ∀ ys → glue ([] ∷ []) ys ≡ ys
-  glue-nil (d ∷ ds) = refl
+glue-nil : ∀ ys → glue ([] ∷ []) ys ≡ ys
+glue-nil (d ∷ ds) = refl
 
+private
   addBlock-glue : ∀ b xs ys → addBlock b (glue xs ys) ≡ glue (addBlock b xs) ys
   addBlock-glue b (c ∷ [])     (d ∷ ds) = refl
   addBlock-glue b (c ∷ e ∷ es) ys       = refl
 
 chunks-++ : ∀ xs ys → chunks (xs ++ ys) ≡ glue (chunks xs) (chunks ys)
 chunks-++ []             ys = sym (glue-nil (chunks ys))
-chunks-++ (block b ∷ xs) ys rewrite chunks-++ xs ys = addBlock-glue b (chunks xs) (chunks ys)
+chunks-++ (block b ∷ xs) ys = trans (cong (addBlock b) (chunks-++ xs ys)) (addBlock-glue b (chunks xs) (chunks ys))
 chunks-++ (pause ∷ xs)   ys with chunks xs | chunks (xs ++ ys) | chunks-++ xs ys
 ... | c ∷ cs | _ | refl = refl
+
+-- `glue` is a monoid on `List⁺ Flow`, unit a single empty chunk
+private
+  consHead : Flow → List⁺ Flow → List⁺ Flow
+  consHead c (d ∷ ds) = (c ++ d) ∷ ds
+
+  glueL-++ : ∀ c d ds ys → glueL (c ++ d) ds ys ≡ consHead c (glueL d ds ys)
+  glueL-++ c d []       (e ∷ es) = cong (_∷ es) (ListP.++-assoc c d e)
+  glueL-++ c d (_ ∷ ds) ys       = refl
+
+  glueL-assoc : ∀ c cs ys zs → glue (glueL c cs ys) zs ≡ glueL c cs (glue ys zs)
+  glueL-assoc c []       (d ∷ ds) zs = glueL-++ c d ds zs
+  glueL-assoc c (e ∷ es) ys       zs = cong (λ r → c ∷ toList r) (glueL-assoc e es ys zs)
+
+  glueL-unitʳ : ∀ c cs → glueL c cs ([] ∷ []) ≡ c ∷ cs
+  glueL-unitʳ c []       = cong (_∷ []) (ListP.++-identityʳ c)
+  glueL-unitʳ c (e ∷ es) = cong (λ r → c ∷ toList r) (glueL-unitʳ e es)
+
+glue-assoc : ∀ xs ys zs → glue (glue xs ys) zs ≡ glue xs (glue ys zs)
+glue-assoc (c ∷ cs) = glueL-assoc c cs
+
+glue-unitʳ : ∀ xs → glue xs ([] ∷ []) ≡ xs
+glue-unitʳ (c ∷ cs) = glueL-unitʳ c cs
+
+glueMonoid : Monoid 0ℓ 0ℓ
+glueMonoid = record
+  { Carrier  = List⁺ Flow
+  ; _≈_      = _≡_
+  ; _∙_      = glue
+  ; ε        = [] ∷ []
+  ; isMonoid = record
+      { isSemigroup = record
+          { isMagma = record { isEquivalence = isEquivalence ; ∙-cong = cong₂ glue }
+          ; assoc   = glue-assoc }
+      ; identity = glue-nil ,′ glue-unitʳ }
+  }
+
+-- ... and `chunks` is a monoid homomorphism from bodies under concatenation
+module _ where
+  open MonoidMorphisms (Monoid.rawMonoid (ListP.++-monoid Item)) (Monoid.rawMonoid glueMonoid)
+  open MagmaMorphisms (Monoid.rawMagma (ListP.++-monoid Item)) (Monoid.rawMagma glueMonoid)
+
+  chunks-isMonoidHomomorphism : IsMonoidHomomorphism chunks
+  chunks-isMonoidHomomorphism = record
+    { isMagmaHomomorphism = record
+        { isRelHomomorphism = record { cong = cong chunks }
+        ; homo = chunks-++ }
+    ; ε-homo = refl }
 
 -- Scenes
 
