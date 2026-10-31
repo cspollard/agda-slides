@@ -53,7 +53,6 @@ shiftDraw dx dy (line a b c d s)   = line (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (arrow a b c d s)  = arrow (a + dx) (b + dy) (c + dx) (d + dy) s
 shiftDraw dx dy (label x y n t s)  = label (x + dx) (y + dy) n t s
 shiftDraw dx dy (path x y d s)     = path (x + dx) (y + dy) d s
-shiftDraw dx dy (group x y ds)     = group (x + dx) (y + dy) ds
 
 shiftBox : S → S → Box S → Box S
 shiftBox dx dy (box l t w h) = box (l + dx) (t + dy) w h

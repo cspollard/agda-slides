@@ -6,7 +6,7 @@
 
 module Slides.Examples.AnimRef where
 
-open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.List using (List; []; _∷_; map; _++_; concatMap)
 open import Data.Bool using (if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Nat using (ℕ; zero; suc; _*_)
@@ -24,7 +24,7 @@ open import Slides.Deck.DSL
 open import Slides.Deck.Anim
 import Slides.Diagram.Syntax as D
 open import Slides.Diagram.Geometry using (east; west)
-open import Slides.Diagram.Draw using (Draw; rect; circle; ellipse; poly; line; arrow; label; path; group; Layout)
+open import Slides.Diagram.Draw using (Draw; rect; circle; ellipse; poly; line; arrow; label; path; Layout)
 open import Slides.Backend.Animation using (qⱼ; natⱼ)
 open import Slides.Examples.Intro using (mover; counter)
 
@@ -92,15 +92,11 @@ private
   drawⱼ (arrow a b c d _)   = cmd "line" (half a ∷ half b ∷ half c ∷ half d ∷ []) ∷ []
   drawⱼ (label x y _ _ _)   = cmd "text" (half x ∷ half y ∷ []) ∷ []
   drawⱼ (path _ _ _ _)      = []
-  drawⱼ (group _ _ _)       = []
 
-  drawsⱼ : List (Draw ℚ) → List JSON
-  drawsⱼ []       = []
-  drawsⱼ (d ∷ ds) = drawⱼ d ++ drawsⱼ ds
 
   layoutⱼ : Maybe (Layout ℚ) → JSON
   layoutⱼ nothing  = nullⱼ
-  layoutⱼ (just l) = arrayⱼ (drawsⱼ (Layout.draws l))
+  layoutⱼ (just l) = arrayⱼ (concatMap drawⱼ (Layout.draws l))
 
   at : Anim → ℕ → JSON
   at a k = objectFromList (("t" , qⱼ t) ∷ ("ds" , layoutⱼ (frameAt a t)) ∷ [])

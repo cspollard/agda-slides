@@ -79,45 +79,33 @@ fold-mapDia f A c t = pfold-translate (mapC f) A c {X = ⊥} {f = λ ()} t
 
 -- Layouts
 
-mutual
-  mapDraw-id : ∀ {S} (d : Draw S) → mapDraw id d ≡ d
-  mapDraw-id (rect _ _ _ _ _)  = refl
-  mapDraw-id (circle _ _ _ _)  = refl
-  mapDraw-id (ellipse _ _ _ _ _) = refl
-  mapDraw-id (poly c ps s)     = cong (λ qs → poly c qs s) (ListP.map-id ps)
-  mapDraw-id (line _ _ _ _ _)  = refl
-  mapDraw-id (arrow _ _ _ _ _) = refl
-  mapDraw-id (label _ _ _ _ _) = refl
-  mapDraw-id (path _ _ _ _)    = refl
-  mapDraw-id (group x y ds)    = cong (group x y) (mapDraws-id ds)
+mapDraw-id : ∀ {S} (d : Draw S) → mapDraw id d ≡ d
+mapDraw-id (rect _ _ _ _ _)  = refl
+mapDraw-id (circle _ _ _ _)  = refl
+mapDraw-id (ellipse _ _ _ _ _) = refl
+mapDraw-id (poly c ps s)     = cong (λ qs → poly c qs s) (ListP.map-id ps)
+mapDraw-id (line _ _ _ _ _)  = refl
+mapDraw-id (arrow _ _ _ _ _) = refl
+mapDraw-id (label _ _ _ _ _) = refl
+mapDraw-id (path _ _ _ _)    = refl
 
-  mapDraws-id : ∀ {S} (ds : List (Draw S)) → mapDraws id ds ≡ ds
-  mapDraws-id []       = refl
-  mapDraws-id (d ∷ ds) = cong₂ _∷_ (mapDraw-id d) (mapDraws-id ds)
+mapDraw-∘ : ∀ {S T U} (g : T → U) (f : S → T) (d : Draw S) → mapDraw g (mapDraw f d) ≡ mapDraw (g ∘ f) d
+mapDraw-∘ g f (rect _ _ _ _ _)  = refl
+mapDraw-∘ g f (circle _ _ _ _)  = refl
+mapDraw-∘ g f (ellipse _ _ _ _ _) = refl
+mapDraw-∘ g f (poly c ps s)     = cong (λ qs → poly c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps))
+mapDraw-∘ g f (line _ _ _ _ _)  = refl
+mapDraw-∘ g f (arrow _ _ _ _ _) = refl
+mapDraw-∘ g f (label _ _ _ _ _) = refl
+mapDraw-∘ g f (path _ _ _ _)    = refl
 
+-- both are `map` laws once the elements obey them
 mapLayout-id : ∀ {S} (l : Layout S) → mapLayout id l ≡ l
 mapLayout-id (mkLayout w h ds as) =
-  cong₂ (mkLayout w h) (mapDraws-id ds) (ListP.map-id as)
-
-mutual
-  mapDraw-∘ : ∀ {S T U} (g : T → U) (f : S → T) (d : Draw S) → mapDraw g (mapDraw f d) ≡ mapDraw (g ∘ f) d
-  mapDraw-∘ g f (rect _ _ _ _ _)  = refl
-  mapDraw-∘ g f (circle _ _ _ _)  = refl
-  mapDraw-∘ g f (ellipse _ _ _ _ _) = refl
-  mapDraw-∘ g f (poly c ps s)     = cong (λ qs → poly c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps))
-  mapDraw-∘ g f (line _ _ _ _ _)  = refl
-  mapDraw-∘ g f (arrow _ _ _ _ _) = refl
-  mapDraw-∘ g f (label _ _ _ _ _) = refl
-  mapDraw-∘ g f (path _ _ _ _)    = refl
-  mapDraw-∘ g f (group x y ds)    = cong (group _ _) (mapDraws-∘ g f ds)
-
-  mapDraws-∘ : ∀ {S T U} (g : T → U) (f : S → T) (ds : List (Draw S)) →
-               mapDraws g (mapDraws f ds) ≡ mapDraws (g ∘ f) ds
-  mapDraws-∘ g f []       = refl
-  mapDraws-∘ g f (d ∷ ds) = cong₂ _∷_ (mapDraw-∘ g f d) (mapDraws-∘ g f ds)
+  cong₂ (mkLayout w h) (trans (ListP.map-cong mapDraw-id ds) (ListP.map-id ds)) (ListP.map-id as)
 
 mapLayout-∘ : ∀ {S T U} (g : T → U) (f : S → T) (l : Layout S) →
               mapLayout g (mapLayout f l) ≡ mapLayout (g ∘ f) l
 mapLayout-∘ g f (mkLayout w h ds as) =
-  cong₂ (mkLayout _ _) (mapDraws-∘ g f ds)
+  cong₂ (mkLayout _ _) (trans (sym (ListP.map-∘ ds)) (ListP.map-cong (mapDraw-∘ g f) ds))
         (trans (sym (ListP.map-∘ as)) (ListP.map-cong (λ _ → refl) as))

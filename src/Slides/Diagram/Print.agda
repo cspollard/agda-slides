@@ -133,11 +133,6 @@ module _ {S : Set} (P : Print S) where
         body (l ∷ [])             = element "text" attrs (tspans sz "" l)
         body ls                   = element "text" attrs (rows ("-" ++ˢ show ((length ls ∸ 1) * (sz * 3 / 2) / 2)) ls)
     renderDraw n (path x y d s)    = SVG.path d (translate (pos x) (pos y) ++ shapeAttrs s)
-    renderDraw n (group x y ds)    = SVG.g (translate (pos x) (pos y) ++ commonAttrs defaultStyle) (renderDraws n ds)
-
-    renderDraws : String → List (Draw S) → List (XMLM A)
-    renderDraws n []       = []
-    renderDraws n (d ∷ ds) = renderDraw n d ∷ renderDraws n ds
 
   -- the arrowhead, drawn in the current colour
   marker : String → XMLM A
@@ -155,4 +150,4 @@ module _ {S : Set} (P : Print S) where
     SVG.svg
       ( ("viewBox" , "0 0 " ++ˢ unit (Layout.width l) ++ˢ " " ++ˢ unit (Layout.height l))
       ∷ ("style" , "width:" ++ˢ show percent ++ˢ "%;height:auto;") ∷ [] )
-      (marker n ∷ renderDraws n (Layout.draws l))
+      (marker n ∷ map (renderDraw n) (Layout.draws l))

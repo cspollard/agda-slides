@@ -35,6 +35,7 @@ import Data.Maybe as Maybe
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.String using (String; _≟_)
 open import Data.Unit using (⊤; tt)
+import Data.List.Properties as ListP
 open import Data.Container.Core using (position)
 open import Data.Container.FreeMonad using (pure; impure)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
@@ -78,41 +79,31 @@ align-nat right   p = trans (dbl-nat _) (cong PT.dbl (hsub p))
 -- Shifting, framing, overlaying: only `+` is used
 
 -- `mapPt h` commutes with a pointwise change of the points
-pts-nat : ∀ (g : S × S → S × S) (g′ : T × T → T × T) → (∀ p → mapPt h (g p) ≡ g′ (mapPt h p)) →
-          ∀ ps → map (mapPt h) (map g ps) ≡ map g′ (map (mapPt h) ps)
-pts-nat g g′ e []       = refl
-pts-nat g g′ e (p ∷ ps) = cong₂ _∷_ (e p) (pts-nat g g′ e ps)
+
+-- `map` commutes with a pointwise-natural change of the elements
+map-nat : ∀ {A B C D : Set} (f : A → B) (g : B → D) (f′ : A → C) (g′ : C → D) →
+          (∀ x → g (f x) ≡ g′ (f′ x)) → ∀ xs → map g (map f xs) ≡ map g′ (map f′ xs)
+map-nat f g f′ g′ e xs = trans (sym (ListP.map-∘ xs)) (trans (ListP.map-cong e xs) (ListP.map-∘ xs))
 
 shiftDraw-nat : ∀ dx dy d → mapDraw h (PS.shiftDraw dx dy d) ≡ PT.shiftDraw (h dx) (h dy) (mapDraw h d)
 shiftDraw-nat dx dy (rect x y w ht s)   rewrite h-+ x dx | h-+ y dy = refl
 shiftDraw-nat dx dy (circle x y r s)    rewrite h-+ x dx | h-+ y dy = refl
 shiftDraw-nat dx dy (ellipse x y a b s) rewrite h-+ x dx | h-+ y dy = refl
 shiftDraw-nat dx dy (poly c ps s)       =
-  cong (λ qs → poly c qs s) (pts-nat (PS.shiftPt dx dy) (PT.shiftPt (h dx) (h dy)) (λ p → cong₂ _,_ (h-+ _ dx) (h-+ _ dy)) ps)
+  cong (λ qs → poly c qs s) (map-nat (PS.shiftPt dx dy) (mapPt h) (mapPt h) (PT.shiftPt (h dx) (h dy)) (λ p → cong₂ _,_ (h-+ _ dx) (h-+ _ dy)) ps)
 shiftDraw-nat dx dy (line a b c d s)    rewrite h-+ a dx | h-+ b dy | h-+ c dx | h-+ d dy = refl
 shiftDraw-nat dx dy (arrow a b c d s)   rewrite h-+ a dx | h-+ b dy | h-+ c dx | h-+ d dy = refl
 shiftDraw-nat dx dy (label x y n t s)   rewrite h-+ x dx | h-+ y dy = refl
 shiftDraw-nat dx dy (path x y d s)      rewrite h-+ x dx | h-+ y dy = refl
-shiftDraw-nat dx dy (group x y ds)      rewrite h-+ x dx | h-+ y dy = refl
 
-mapDraws-shift : ∀ dx dy ds → mapDraws h (map (PS.shiftDraw dx dy) ds) ≡ map (PT.shiftDraw (h dx) (h dy)) (mapDraws h ds)
-mapDraws-shift dx dy []       = refl
-mapDraws-shift dx dy (d ∷ ds) = cong₂ _∷_ (shiftDraw-nat dx dy d) (mapDraws-shift dx dy ds)
-
-mapDraws-++ : ∀ xs ys → mapDraws h (xs ++ ys) ≡ mapDraws h xs ++ mapDraws h ys
-mapDraws-++ []       ys = refl
-mapDraws-++ (x ∷ xs) ys = cong (mapDraw h x ∷_) (mapDraws-++ xs ys)
+mapDraws-shift : ∀ dx dy ds → map (mapDraw h) (map (PS.shiftDraw dx dy) ds) ≡ map (PT.shiftDraw (h dx) (h dy)) (map (mapDraw h) ds)
+mapDraws-shift dx dy = map-nat _ _ _ _ (shiftDraw-nat dx dy)
 
 shiftAnchor-nat : ∀ dx dy a → mapAnchor h (PS.shiftAnchor dx dy a) ≡ PT.shiftAnchor (h dx) (h dy) (mapAnchor h a)
 shiftAnchor-nat dx dy (n , box l t w ht) rewrite h-+ l dx | h-+ t dy = refl
 
 anchors-shift : ∀ dx dy as → map (mapAnchor h) (map (PS.shiftAnchor dx dy) as) ≡ map (PT.shiftAnchor (h dx) (h dy)) (map (mapAnchor h) as)
-anchors-shift dx dy []       = refl
-anchors-shift dx dy (a ∷ as) = cong₂ _∷_ (shiftAnchor-nat dx dy a) (anchors-shift dx dy as)
-
-anchors-++ : ∀ (xs ys : List (String × Box S)) → map (mapAnchor h) (xs ++ ys) ≡ map (mapAnchor h) xs ++ map (mapAnchor h) ys
-anchors-++ []       ys = refl
-anchors-++ (x ∷ xs) ys = cong (mapAnchor h x ∷_) (anchors-++ xs ys)
+anchors-shift dx dy = map-nat _ _ _ _ (shiftAnchor-nat dx dy)
 
 inFrame-nat : ∀ w ht dx dy l →
   mapLayout h (PS.inFrame w ht dx dy l) ≡ PT.inFrame (h w) (h ht) (h dx) (h dy) (mapLayout h l)
@@ -122,7 +113,7 @@ inFrame-nat w ht dx dy (mkLayout _ _ ds as) =
 overlay-nat : ∀ w ht a b →
   mapLayout h (PS.overlay w ht a b) ≡ PT.overlay (h w) (h ht) (mapLayout h a) (mapLayout h b)
 overlay-nat w ht (mkLayout _ _ d₁ a₁) (mkLayout _ _ d₂ a₂) =
-  cong₂ (mkLayout (h w) (h ht)) (mapDraws-++ d₁ d₂) (anchors-++ a₁ a₂)
+  cong₂ (mkLayout (h w) (h ht)) (ListP.map-++ (mapDraw h) d₁ d₂) (ListP.map-++ (mapAnchor h) a₁ a₂)
 
 -- layouts overlay the same way before and after `h`
 overlay-hom : IsOverlayHom LawsS.layoutOverlay LawsT.layoutOverlay (mapLayout h)
@@ -158,7 +149,7 @@ extent-nat g g′ e (p ∷ ps) = trans (h-⊔ (g p) _) (cong₂ B._⊔_ (e p) (e
 polyline-nat : ∀ c ps s → mapLayout h (PS.polyline c ps s) ≡ PT.polyline c (map (mapPt h) ps) s
 polyline-nat c ps s
   rewrite extent-nat proj₁ proj₁ (λ _ → refl) ps | extent-nat proj₂ proj₂ (λ _ → refl) ps
-        | pts-nat PS.dblPt PT.dblPt (λ p → cong₂ _,_ (dbl-nat _) (dbl-nat _)) ps = refl
+        | map-nat PS.dblPt (mapPt h) (mapPt h) PT.dblPt (λ p → cong₂ _,_ (dbl-nat _) (dbl-nat _)) ps = refl
 
 segment-nat : ∀ w ht s → mapLayout h (PS.segment w ht s) ≡ PT.segment (h w) (h ht) s
 segment-nat w ht s rewrite h-0 | dbl-nat w | dbl-nat ht = refl
@@ -255,7 +246,7 @@ at-nat pn west   p (box l t w ht) rewrite h-+ t (A.pct p (PS.dbl ht)) | pn p (PS
 at-nat pn middle p b              = side-nat middle b
 
 connectArrow-nat : ∀ pa pb s ma mb → PortNat pa → PortNat pb →
-  mapDraws h (PS.connectArrow pa pb s ma mb)
+  map (mapDraw h) (PS.connectArrow pa pb s ma mb)
     ≡ PT.connectArrow pa pb s (Maybe.map (mapBox h) ma) (Maybe.map (mapBox h) mb)
 connectArrow-nat pa pb s (just ba) (just bb) npa npb rewrite npa ba | npb bb = refl
 connectArrow-nat pa pb s (just _)  nothing   _ _ = refl
@@ -264,7 +255,7 @@ connectArrow-nat pa pb s nothing   _         _ _ = refl
 connectP-nat : ∀ a pa b pb s l → PortNat pa → PortNat pb →
   mapLayout h (PS.connectP a pa b pb s l) ≡ PT.connectP a pa b pb s (mapLayout h l)
 connectP-nat a pa b pb s (mkLayout w ht ds as) npa npb
-  rewrite find-map a as | find-map b as | mapDraws-++ ds (PS.connectArrow pa pb s (PS.findAnchor a as) (PS.findAnchor b as))
+  rewrite find-map a as | find-map b as | ListP.map-++ (mapDraw h) ds (PS.connectArrow pa pb s (PS.findAnchor a as) (PS.findAnchor b as))
         | connectArrow-nat pa pb s (PS.findAnchor a as) (PS.findAnchor b as) npa npb = refl
 
 -- One command at a time

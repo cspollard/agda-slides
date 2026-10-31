@@ -162,7 +162,6 @@ shiftDraw-zero (line a b c d s)   rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-id�
 shiftDraw-zero (arrow a b c d s)  rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
 shiftDraw-zero (label x y n t s)  rewrite +-idʳ x | +-idʳ y = refl
 shiftDraw-zero (path x y d s)     rewrite +-idʳ x | +-idʳ y = refl
-shiftDraw-zero (group x y ds)     rewrite +-idʳ x | +-idʳ y = refl
 
 shiftDraw-shift : ∀ a b c d e → P.shiftDraw a b (P.shiftDraw c d e) ≡ P.shiftDraw (c + a) (d + b) e
 shiftDraw-shift a b c d (rect x y w h s)   rewrite +-assoc x c a | +-assoc y d b = refl
@@ -173,7 +172,6 @@ shiftDraw-shift a b c d (line x y z u s)   rewrite +-assoc x c a | +-assoc y d b
 shiftDraw-shift a b c d (arrow x y z u s)  rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
 shiftDraw-shift a b c d (label x y n t s)  rewrite +-assoc x c a | +-assoc y d b = refl
 shiftDraw-shift a b c d (path x y e s)     rewrite +-assoc x c a | +-assoc y d b = refl
-shiftDraw-shift a b c d (group x y ds)     rewrite +-assoc x c a | +-assoc y d b = refl
 
 shiftAnchor-zero : ∀ x → P.shiftAnchor 0# 0# x ≡ x
 shiftAnchor-zero (n , box l t w h) rewrite +-idʳ l | +-idʳ t = refl
@@ -181,17 +179,11 @@ shiftAnchor-zero (n , box l t w h) rewrite +-idʳ l | +-idʳ t = refl
 shiftAnchor-shift : ∀ a b c d x → P.shiftAnchor a b (P.shiftAnchor c d x) ≡ P.shiftAnchor (c + a) (d + b) x
 shiftAnchor-shift a b c d (n , box l t w h) rewrite +-assoc l c a | +-assoc t d b = refl
 
-map-pointwise : ∀ {A B : Set} {f g : A → B} → (∀ x → f x ≡ g x) → ∀ xs → map f xs ≡ map g xs
-map-pointwise e []       = refl
-map-pointwise e (x ∷ xs) = cong₂ _∷_ (e x) (map-pointwise e xs)
-
 map-id : ∀ {A : Set} {f : A → A} → (∀ x → f x ≡ x) → ∀ xs → map f xs ≡ xs
-map-id e []       = refl
-map-id e (x ∷ xs) = cong₂ _∷_ (e x) (map-id e xs)
+map-id e xs = trans (ListP.map-cong e xs) (ListP.map-id xs)
 
 map-map : ∀ {A B C : Set} (f : B → C) (g : A → B) (h : A → C) → (∀ x → f (g x) ≡ h x) → ∀ xs → map f (map g xs) ≡ map h xs
-map-map f g h e []       = refl
-map-map f g h e (x ∷ xs) = cong₂ _∷_ (e x) (map-map f g h e xs)
+map-map f g h e xs = trans (sym (ListP.map-∘ xs)) (ListP.map-cong e xs)
 
 shift-zero : ∀ l → P.shift 0# 0# l ≡ l
 shift-zero (mkLayout w h ds as) = cong₂ (mkLayout w h) (map-id shiftDraw-zero ds) (map-id shiftAnchor-zero as)
