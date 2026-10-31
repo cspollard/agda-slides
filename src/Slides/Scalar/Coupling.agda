@@ -19,6 +19,7 @@ open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat using (ℕ)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Unit using (⊤)
+open import Function.Nary.NonDependent using (congₙ)
 open import Relation.Nullary using (¬_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; cong₂)
 import Relation.Binary.PropositionalEquality.Properties as ≡P
@@ -99,5 +100,5 @@ module _ {K} {Tm : Time K} {Sb : Sub (Time.ord Tm)} {Sc : Scale (Time.ord Tm) K}
 
   couplingCong : Congruent CouplingC (≡P.setoid K) couplingH
   couplingCong Ratio    e = cong₂ ratio (e zero) (e (suc zero))
-  couplingCong Lerp {k} {k′} e rewrite e zero | e (suc zero) | e (suc (suc zero)) = refl
+  couplingCong Lerp e = congₙ 3 lerp (e zero) (e (suc zero)) (e (suc (suc zero)))
   couplingCong (Ease x) e = cong (ease x) (e _)

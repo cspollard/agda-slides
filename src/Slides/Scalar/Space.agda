@@ -91,6 +91,9 @@ module _ {S} (Sp : Space S) where
   spaceCong Plus    e = cong₂ _+_ (e zero) (e (suc zero))
   spaceCong Max     e = cong₂ _⊔_ (e zero) (e (suc zero))
   spaceCong Minus    e = cong₂ _-_ (e zero) (e (suc zero))
-  spaceCong Lt {k} {k′} e
-    rewrite e zero | e (suc zero) | e (suc (suc zero)) | e (suc (suc (suc zero))) = refl
+  spaceCong Lt e = select-cong (e zero) (e (suc zero)) (e (suc (suc zero))) (e (suc (suc (suc zero))))
+    where -- the comparison is a `Dec` indexed by its operands, so match `refl` on variables
+          select-cong : ∀ {a a′ b b′ x x′ y y′ : S} → a ≡ a′ → b ≡ b′ → x ≡ x′ → y ≡ y′ →
+                        select (a ≤? b) x y ≡ select (a′ ≤? b′) x′ y′
+          select-cong refl refl refl refl = refl
   spaceCong (Pct p) e = cong (pct p) (e _)

@@ -91,8 +91,8 @@ module _ (pct-ok : PctDigital) where
 
     monus-max : ∀ a b → a ∸ b ≡ (a ℕ.⊔ b) ∸ b
     monus-max a b with ℕP.≤-total a b
-    ... | inj₁ a≤b rewrite ℕP.m≤n⇒m⊔n≡n a≤b = trans (ℕP.m≤n⇒m∸n≡0 a≤b) (sym (ℕP.n∸n≡0 b))
-    ... | inj₂ b≤a rewrite ℕP.m≥n⇒m⊔n≡m b≤a = refl
+    ... | inj₁ a≤b = trans (ℕP.m≤n⇒m∸n≡0 a≤b) (sym (trans (cong (_∸ b) (ℕP.m≤n⇒m⊔n≡n a≤b)) (ℕP.n∸n≡0 b)))
+    ... | inj₂ b≤a = sym (cong (_∸ b) (ℕP.m≥n⇒m⊔n≡m b≤a))
 
     -- ι of each ℕ command is the lowered command in ℚ
     cmd : ∀ a (v : Position ScC a → ℕ) →

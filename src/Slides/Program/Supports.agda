@@ -29,7 +29,7 @@ open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Definitions using (DecidableEquality)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst)
 open import Data.Maybe.Properties using (just-injective)
 
 open import Container.Interpret.Plain using (Handler; Congruent)
@@ -53,11 +53,6 @@ open Supports
 idSupports : ∀ {C} → DecidableEquality C → Supports C
 idSupports d = record { S = _ ; _≟S_ = d ; inj = just ; dec = just
                       ; dec-inj = λ { refl → refl } ; inj-dec = λ { refl → refl } }
-
--- a backend with no commands (a print backend): everything is skipped
-noSupports : ∀ {C} → Supports C
-noSupports = record { S = ⊥ ; _≟S_ = λ () ; inj = λ _ → nothing ; dec = λ () ; dec-inj = λ ()
-                    ; inj-dec = λ { {s = ()} } }
 
 module _ {T D C : Set} (b : Supports C) where
 
@@ -85,19 +80,19 @@ module _ {T D C : Set} (b : Supports C) where
 
   lowerP-just : ∀ {A} {s} c (k : ⊤ → Program T D C A) → inj b c ≡ just s →
                 lowerP (impure (inj₂ c , k)) ≡ impure (inj₂ s , λ _ → lowerP (k tt))
-  lowerP-just c k e rewrite e = refl
+  lowerP-just c k e = cong (λ m → maybe′ (λ s → await s) (pure tt) m >>= λ q → lowerP (k q)) e
 
   lowerP-nothing : ∀ {A} c (k : ⊤ → Program T D C A) → inj b c ≡ nothing →
                    lowerP (impure (inj₂ c , k)) ≡ lowerP (k tt)
-  lowerP-nothing c k e rewrite e = refl
+  lowerP-nothing c k e = cong (λ m → maybe′ (λ s → await s) (pure tt) m >>= λ q → lowerP (k q)) e
 
   skipU-just : ∀ {A} {s} c (k : ⊤ → Program T D C A) → inj b c ≡ just s →
                skipU (impure (inj₂ c , k)) ≡ impure (inj₂ c , λ _ → skipU (k tt))
-  skipU-just c k e rewrite e = refl
+  skipU-just c k e = cong (λ m → maybe′ (λ _ → await c) (pure tt) m >>= λ q → skipU (k q)) e
 
   skipU-nothing : ∀ {A} c (k : ⊤ → Program T D C A) → inj b c ≡ nothing →
                   skipU (impure (inj₂ c , k)) ≡ skipU (k tt)
-  skipU-nothing c k e rewrite e = refl
+  skipU-nothing c k e = cong (λ m → maybe′ (λ _ → await c) (pure tt) m >>= λ q → skipU (k q)) e
 
   -- nothing to skip when everything is supported
   lower-supported : ∀ {A} (p : Program T D C A) → AllSup p → skipU p ≈⋆ p
@@ -105,7 +100,7 @@ module _ {T D C : Set} (b : Supports C) where
   lower-supported (impure (inj₁ o , k)) (_ , a) = refl , λ q → lower-supported (k q) (a q)
   lower-supported (impure (inj₂ c , k)) (n , a) with inj b c in e
   ... | nothing = ⊥-elim (n refl)
-  ... | just s rewrite skipU-just {s = s} c k e = refl , λ _ → lower-supported (k tt) (a tt)
+  ... | just s = refl , λ _ → lower-supported (k tt) (a tt)
 
 -- Soundness of the lowering
 
@@ -139,20 +134,31 @@ module _ {T D C : Set} (b : Supports C) (dC : DecidableEquality C) (O : Setoid 0
                ∀ cs → SS.awaitB s kS cs O.≈ SC.awaitB c kC (mapMaybe (dec b) cs)
   wait-sound e kS kC h [] = O.refl
   wait-sound {c} {s} e kS kC h (s′ ∷ cs) with dec b s′ in e′
-  ... | nothing rewrite coh-none e e′ = wait-sound e kS kC h cs
-  ... | just c′ rewrite coh-just e e′ with ⌊ dC c′ c ⌋
-  ...   | true  = h cs
-  ...   | false = wait-sound e kS kC h cs
+  ... | nothing = O.trans (O.reflexive (cong pick (coh-none e e′))) (wait-sound e kS kC h cs)
+    where pick = λ x → if x then kS cs else SS.awaitB s kS cs
+  ... | just c′ = O.trans (O.reflexive (cong pick (coh-just e e′))) (go ⌊ dC c′ c ⌋)
+    where pick = λ x → if x then kS cs else SS.awaitB s kS cs
+          go : ∀ x → pick x O.≈ (if x then kC (mapMaybe (dec b) cs) else SC.awaitB c kC (mapMaybe (dec b) cs))
+          go true  = h cs
+          go false = wait-sound e kS kC h cs
 
   lower-sound : ∀ {A} (ls : A → SS.Beh) (lc : A → SC.Beh) →
                 (∀ a cs → ls a cs O.≈ lc a (mapMaybe (dec b) cs)) →
                 ∀ p cs → SS.sem ls (lowerP b p) cs O.≈ SC.sem lc (skipU b p) (mapMaybe (dec b) cs)
   lower-sound ls lc l (pure a) = l a
   lower-sound ls lc l (impure (inj₁ o , k)) cs = hS-c o (λ q → lower-sound ls lc l (k q) cs)
-  lower-sound ls lc l (impure (inj₂ c , k)) with inj b c in e
-  ... | nothing rewrite lowerP-nothing b c k e | skipU-nothing b c k e = lower-sound ls lc l (k tt)
-  ... | just s rewrite lowerP-just b {s = s} c k e | skipU-just b {s = s} c k e =
-    wait-sound e _ _ (lower-sound ls lc l (k tt))
+  lower-sound ls lc l (impure (inj₂ c , k)) cs = by (inj b c) refl
+    where
+    -- case on `inj b c` as a variable `m`, so the equations are usable (a `with` would abstract it in the goal)
+    by : ∀ m → inj b c ≡ m →
+         SS.sem ls (lowerP b (impure (inj₂ c , k))) cs O.≈
+         SC.sem lc (skipU b (impure (inj₂ c , k))) (mapMaybe (dec b) cs)
+    by nothing e = O.trans (O.reflexive (cong (λ q → SS.sem ls q cs) (lowerP-nothing b c k e)))
+                  (O.trans (lower-sound ls lc l (k tt) cs)
+                           (O.reflexive (cong (λ q → SC.sem lc q (mapMaybe (dec b) cs)) (sym (skipU-nothing b c k e)))))
+    by (just s) e = O.trans (O.reflexive (cong (λ q → SS.sem ls q cs) (lowerP-just b c k e)))
+                   (O.trans (wait-sound e _ _ (lower-sound ls lc l (k tt)) cs)
+                            (O.reflexive (cong (λ q → SC.sem lc q (mapMaybe (dec b) cs)) (sym (skipU-just b c k e)))))
 
   -- with every wait supported the backend behaviour is the program's, decoded
   lower-supported-sound : ∀ {A} (ls : A → SS.Beh) (lc : A → SC.Beh) →

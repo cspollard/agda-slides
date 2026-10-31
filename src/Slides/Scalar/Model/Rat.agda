@@ -20,7 +20,7 @@ open import Data.Rational as ℚ using (ℚ; mkℚ; _/_; _+_; _*_; _-_; _⊔_; _
 import Data.Rational.Properties as ℚP
 open import Data.Rational.Unnormalised as ℚᵘ using (*≡*)
 import Data.Rational.Unnormalised.Properties as ℚᵘP
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; subst₂)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong; subst; subst₂; cong₂)
 
 open import Slides.Scalar.Core
 import Algebra.Properties.Group ℚP.+-0-group as GP
@@ -89,8 +89,9 @@ toℚᵘ-ι n = ℚᵘP.≃-refl
 
 -- the comparison, as a boolean, is preserved and reflected
 ι-≤ᵇ : ∀ a b → (ι a ℚ.≤ᵇ ι b) ≡ (a ℕ.≤ᵇ b)
-ι-≤ᵇ a b rewrite ℕP.*-identityʳ a | ℕP.*-identityʳ b
-               | ℤP.+◃n≡+n a | ℤP.+◃n≡+n b = refl
+ι-≤ᵇ a b = cong₂ ℤ._≤ᵇ_ (num a) (num b)
+  where num : ∀ n → (+ n ℤ.* + 1) ≡ + n
+        num n = trans (sym (ℤP.pos-* n 1)) (cong +_ (ℕP.*-identityʳ n))
 
 ι-mono : ∀ {a b} → a ℕ.≤ b → ι a ≤ ι b
 ι-mono {a} {b} h = ℚP.≤ᵇ⇒≤ {ι a} {ι b} (subst T (sym (ι-≤ᵇ a b)) (ℕP.≤⇒≤ᵇ h))
@@ -119,8 +120,10 @@ private
   ratFloor-pos m d c = trans (ℤP.abs-◃ _ _) (ℕP.+-identityʳ _)
 
 ratFloor-gal : ∀ n x → 0ℚ ≤ x → (ι n ≤ x → n ℕ.≤ ratFloor x) × (n ℕ.≤ ratFloor x → ι n ≤ x)
-ratFloor-gal n (mkℚ (+ m) d c) _ rewrite ratFloor-pos m d c =
-  (λ h → proj₁ (div-gal n m d) (proj₁ (ι≤ n m d c) h)) , (λ h → proj₂ (ι≤ n m d c) (proj₂ (div-gal n m d) h))
+ratFloor-gal n (mkℚ (+ m) d c) _ =
+  -- the floor occurs in the type, so transport along `ratFloor-pos`
+  subst (λ f → (ι n ≤ mkℚ (+ m) d c → n ℕ.≤ f) × (n ℕ.≤ f → ι n ≤ mkℚ (+ m) d c)) (sym (ratFloor-pos m d c))
+  ((λ h → proj₁ (div-gal n m d) (proj₁ (ι≤ n m d c) h)) , (λ h → proj₂ (ι≤ n m d c) (proj₂ (div-gal n m d) h)))
 ratFloor-gal n (mkℚ ℤ.-[1+ k ] d c) (ℚ.*≤* ())
 
 ratTime : Time ℚ

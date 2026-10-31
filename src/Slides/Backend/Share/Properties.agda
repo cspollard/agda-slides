@@ -79,13 +79,17 @@ nth-top []       x = refl
 nth-top (y ∷ ys) x = nth-top ys x
 
 at-cons : ∀ u x i → i < length u → at (x ∷ u) i ≡ at u i
-at-cons u x i p rewrite Listₚ.unfold-reverse x u = nth-snoc (reverse u) x i (subst (i <_) (sym (Listₚ.length-reverse u)) p)
+at-cons u x i p =
+  trans (cong (λ r → nth r i) (Listₚ.unfold-reverse x u))
+        (nth-snoc (reverse u) x i (subst (i <_) (sym (Listₚ.length-reverse u)) p))
 
 at-top : ∀ u x {n} → n ≡ length u → at (x ∷ u) n ≡ x
-at-top u x refl rewrite Listₚ.unfold-reverse x u = subst (λ n → nth (reverse u ++ x ∷ []) n ≡ x) (Listₚ.length-reverse u) (nth-top (reverse u) x)
+at-top u x refl =
+  trans (cong (λ r → nth r (length u)) (Listₚ.unfold-reverse x u))
+        (subst (λ n → nth (reverse u ++ x ∷ []) n ≡ x) (Listₚ.length-reverse u) (nth-top (reverse u) x))
 
 stable : ∀ {d d′ i} → d ⊑ d′ → i < length d → at (unshare d′) i ≡ at (unshare d) i
-stable (here rs) p rewrite Pointwise.Pointwise-≡⇒≡ rs = refl
+stable (here rs) p = cong (λ e → at (unshare e) _) (sym (Pointwise.Pointwise-≡⇒≡ rs))
 stable {d} {e ∷ d′} {i} (there q) p =
   trans (at-cons (unshare d′) _ i (subst (i <_) (sym (length-unshare d′)) (ℕₚ.<-≤-trans p (⊑-length q)))) (stable q p)
 
@@ -99,7 +103,7 @@ WF []             = ⊤
 WF ((h , rs) ∷ d) = All (_< length d) rs × WF d
 
 ⊑-WF : ∀ {d d′} → d ⊑ d′ → WF d′ → WF d
-⊑-WF (here rs) w       rewrite Pointwise.Pointwise-≡⇒≡ rs = w
+⊑-WF (here rs) w       = subst WF (sym (Pointwise.Pointwise-≡⇒≡ rs)) w   -- the table is in the type of `WF`
 ⊑-WF (there q) (_ , w) = ⊑-WF q w
 
 -- a found entry sits at the position `length t` above a table `t`
