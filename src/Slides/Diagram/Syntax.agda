@@ -84,6 +84,10 @@ fmap f (const _) x = x
 fmap f ptList   ps = map (mapPt f) ps
 fmap f (A ⊗ B)   p = fmap f A (proj₁ p) , fmap f B (proj₂ p)
 
+-- two `map`s fuse when the composite is pointwise `h`
+map-fuse : ∀ {A B C : Set} {f : A → B} {g : B → C} {h : A → C} → (∀ x → g (f x) ≡ h x) → ∀ xs → map g (map f xs) ≡ map h xs
+map-fuse e xs = trans (sym (ListP.map-∘ xs)) (ListP.map-cong e xs)
+
 fmap-id : ∀ {S} A (p : ⟦ A ⟧ S) → fmap id A p ≡ p
 fmap-id scalar    _ = refl
 fmap-id (const _) _ = refl
@@ -93,7 +97,7 @@ fmap-id (A ⊗ B)   p = cong₂ _,_ (fmap-id A _) (fmap-id B _)
 fmap-∘ : ∀ {S T U} (g : T → U) (f : S → T) A (p : ⟦ A ⟧ S) → fmap g A (fmap f A p) ≡ fmap (g ∘ f) A p
 fmap-∘ g f scalar    _ = refl
 fmap-∘ g f (const _) _ = refl
-fmap-∘ g f ptList   ps = trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps)
+fmap-∘ g f ptList   ps = map-fuse (λ _ → refl) ps
 fmap-∘ g f (A ⊗ B)   p = cong₂ _,_ (fmap-∘ g f A _) (fmap-∘ g f B _)
 
 data Tag : Set where

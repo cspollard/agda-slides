@@ -60,7 +60,7 @@ mapDraw-∘ : ∀ {S T U} (g : T → U) (f : S → T) (d : Draw S) → mapDraw g
 mapDraw-∘ g f (rect _ _ _ _ _)  = refl
 mapDraw-∘ g f (circle _ _ _ _)  = refl
 mapDraw-∘ g f (ellipse _ _ _ _ _) = refl
-mapDraw-∘ g f (poly c ps s)     = cong (λ qs → poly c qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ _ → refl) ps))
+mapDraw-∘ g f (poly c ps s)     = cong (λ qs → poly c qs s) (map-fuse (λ _ → refl) ps)
 mapDraw-∘ g f (line _ _ _ _ _)  = refl
 mapDraw-∘ g f (arrow _ _ _ _ _) = refl
 mapDraw-∘ g f (label _ _ _ _ _) = refl
@@ -74,5 +74,5 @@ mapLayout-id (mkLayout w h ds as) =
 mapLayout-∘ : ∀ {S T U} (g : T → U) (f : S → T) (l : Layout S) →
               mapLayout g (mapLayout f l) ≡ mapLayout (g ∘ f) l
 mapLayout-∘ g f (mkLayout w h ds as) =
-  cong₂ (mkLayout _ _) (trans (sym (ListP.map-∘ ds)) (ListP.map-cong (mapDraw-∘ g f) ds))
-        (trans (sym (ListP.map-∘ as)) (ListP.map-cong (λ _ → refl) as))
+  cong₂ (mkLayout _ _) (map-fuse (mapDraw-∘ g f) ds)
+        (map-fuse (λ _ → refl) as)

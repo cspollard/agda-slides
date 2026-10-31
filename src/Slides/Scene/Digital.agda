@@ -136,7 +136,7 @@ module _ (f₁ : Sc → ℕ) (f₂ : Sc → ℚ) (e : ∀ x → ι (f₁ x) ≡ 
   digit (Ellipse a b s)   kk = cong₂ (λ x y → PQ.ellipseL x y s) (e a) (e b)
   digit (Polyline c ps s) kk =
     cong (λ qs → PQ.polyline c qs s)
-         (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (e (proj₁ p)) (e (proj₂ p))) ps))
+         (map-fuse (λ p → cong₂ _,_ (e (proj₁ p)) (e (proj₂ p))) ps)
   digit (Text w h n t s)  kk = cong₂ (λ a b → PQ.text a b n t s) (e w) (e h)
   digit (Path w h d s)    kk = cong₂ (λ a b → PQ.pathL a b d s) (e w) (e h)
   digit (Spacer w h)      kk = cong₂ PQ.spacer (e w) (e h)

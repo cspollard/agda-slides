@@ -81,7 +81,7 @@ align-nat right   p = trans (dbl-nat _) (cong PT.dbl (hsub p))
 -- `map` commutes with a pointwise-natural change of the elements
 map-nat : ∀ {A B C D : Set} (f : A → B) (g : B → D) (f′ : A → C) (g′ : C → D) →
           (∀ x → g (f x) ≡ g′ (f′ x)) → ∀ xs → map g (map f xs) ≡ map g′ (map f′ xs)
-map-nat f g f′ g′ e xs = trans (sym (ListP.map-∘ xs)) (trans (ListP.map-cong e xs) (ListP.map-∘ xs))
+map-nat f g f′ g′ e xs = trans (map-fuse e xs) (sym (map-fuse (λ _ → refl) xs))
 
 shiftDraw-nat : ∀ dx dy d → mapDraw h (PS.shiftDraw dx dy d) ≡ PT.shiftDraw (h dx) (h dy) (mapDraw h d)
 shiftDraw-nat dx dy (rect x y w ht s)   = cong₂ (λ u v → rect u v (h w) (h ht) s) (h-+ x dx) (h-+ y dy)

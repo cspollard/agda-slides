@@ -201,7 +201,7 @@ listAct : ∀ {X} → Action X → Action (List X)
 listAct A = record
   { act = λ p → map (act p)
   ; act-zero = λ xs → trans (ListP.map-cong act-zero xs) (ListP.map-id xs)
-  ; act-⊕ = λ p o xs → trans (sym (ListP.map-∘ xs)) (ListP.map-cong (act-⊕ p o) xs) }
+  ; act-⊕ = λ p o xs → map-fuse (act-⊕ p o) xs }
   where open Action A
 
 _×ᵃ_ : ∀ {X Y} → Action X → Action Y → Action (X × Y)
@@ -227,7 +227,7 @@ drawAct = record { act = λ p → P.shiftDraw (proj₁ p) (proj₂ p) ; act-zero
     shift′ c d a b (rect x y w h s)   = cong₂ (λ x y → rect x y w h s) (+-assoc x c a) (+-assoc y d b)
     shift′ c d a b (circle x y r s)   = cong₂ (λ x y → circle x y r s) (+-assoc x c a) (+-assoc y d b)
     shift′ c d a b (ellipse x y p q s) = cong₂ (λ x y → ellipse x y p q s) (+-assoc x c a) (+-assoc y d b)
-    shift′ c d a b (poly cl ps s)     = cong (λ qs → poly cl qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps))
+    shift′ c d a b (poly cl ps s)     = cong (λ qs → poly cl qs s) (map-fuse (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps)
     shift′ c d a b (line x y z u s)   = cong₂ (λ (x , y) (z , u) → line x y z u s) (cong₂ _,_ (+-assoc x c a) (+-assoc y d b)) (cong₂ _,_ (+-assoc z c a) (+-assoc u d b))
     shift′ c d a b (arrow x y z u s)  = cong₂ (λ (x , y) (z , u) → arrow x y z u s) (cong₂ _,_ (+-assoc x c a) (+-assoc y d b)) (cong₂ _,_ (+-assoc z c a) (+-assoc u d b))
     shift′ c d a b (label x y n t s)  = cong₂ (λ x y → label x y n t s) (+-assoc x c a) (+-assoc y d b)
