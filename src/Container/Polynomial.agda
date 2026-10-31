@@ -4,8 +4,9 @@
 --
 -- A container `S ▷ P` gives the functor `⟦ C ⟧ X = Σ[ s ∈ S ] (P s → X)`; two elements are
 -- equal when their shapes are propositionally equal and their continuations pointwise equal
--- in `X`.  Proved: this is an equivalence (`poly-isEquivalence`), and `Poly₁` (post-compose the
--- continuation) makes `Poly C` a functor.
+-- in `X` (`Data.Container.Relation.Binary.Equality.Setoid`).  `Poly₁` (post-compose the
+-- continuation) makes `Poly C` a functor.  Shapes stay `Set`s compared with `≡`: no signature here
+-- needs a quotient on shapes.
 
 module Container.Polynomial where
 
@@ -14,12 +15,11 @@ open import Data.Product.Base using (_,_)
 open import Data.Container.Core using (Container; ⟦_⟧)
 import Data.Container.Core as CC
 open import Data.Container.Relation.Binary.Pointwise
-  using (Pointwise) renaming (_,_ to _,ₚ_)
+  using () renaming (_,_ to _,ₚ_)
 open import Function.Bundles using (Func; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
-open import Relation.Binary.Structures using (IsEquivalence)
-open import Relation.Binary.PropositionalEquality.Core
-  using (refl; sym; trans)
+open import Relation.Binary.PropositionalEquality.Core using (refl)
+import Data.Container.Relation.Binary.Equality.Setoid as EqS
 
 open import Categories.Category.Instance.Setoids using (Setoids)
 open import Categories.Functor using (Functor)
@@ -28,32 +28,10 @@ private
   variable
     s p c ℓ : Level
 
-module _ (C : Container s p) (X : Setoid c ℓ) where
-  private module X = Setoid X
+-- Equality of extensions is the standard-library setoid; `Poly₀ C X` is the setoid of `⟦ C ⟧ X`.
 
-  -- Equality of extensions is an equivalence relation.
-
-  poly-isEquivalence : IsEquivalence (Pointwise C X._≈_)
-  poly-isEquivalence = record
-    { refl  = refl ,ₚ λ _ → X.refl
-    ; sym   = sym′
-    ; trans = trans′
-    }
-    where
-      sym′ : ∀ {x y} → Pointwise C X._≈_ x y → Pointwise C X._≈_ y x
-      sym′ {_ , _} {_ , _} (refl ,ₚ f≈g) = refl ,ₚ λ p → X.sym (f≈g p)
-
-      trans′ : ∀ {x y z} → Pointwise C X._≈_ x y → Pointwise C X._≈_ y z →
-               Pointwise C X._≈_ x z
-      trans′ {_ , _} {_ , _} {_ , _} (refl ,ₚ f≈g) (refl ,ₚ g≈h) =
-        refl ,ₚ λ p → X.trans (f≈g p) (g≈h p)
-
-  Poly₀ : Setoid (s ⊔ p ⊔ c) (s ⊔ p ⊔ ℓ)
-  Poly₀ = record
-    { Carrier       = ⟦ C ⟧ X.Carrier
-    ; _≈_           = Pointwise C X._≈_
-    ; isEquivalence = poly-isEquivalence
-    }
+Poly₀ : (C : Container s p) (X : Setoid c ℓ) → Setoid (s ⊔ p ⊔ c) (s ⊔ p ⊔ ℓ)
+Poly₀ C X = EqS.setoid X C
 
 -- Action on morphisms: post-compose the continuation.
 
