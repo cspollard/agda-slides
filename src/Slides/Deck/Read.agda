@@ -3,8 +3,12 @@
 -- Reading a deck: `visible s n`, the `Flow` the audience sees at tick `n` (`nothing` outside
 -- the deck), by `Slides.Scene.Sample` on the ℕ clock with leaves overlaid by `++`.
 -- `Slides.Deck.Machine` runs on this reading.
---   `chunk-visible`   at tick k < ticks a slide shows chunks 0..k
---   `fragment-index`  the events of a slide's scene are its chunks, each at its number of pauses
+-- A tick is a page step, a fragment (`Slides.Deck.Steps`).  `visible` is at chunk granularity:
+-- at tick t a slide shows the chunks whose own fragment has appeared (`accumL`), whole; the
+-- fragments inside a chunk (bullets, `fragment` blocks, animation acts) are not modelled, so
+-- those blocks are present from the tick their chunk is.
+--   `chunk-visible`   at tick t < ticks a slide shows the chunks revealed by t
+--   `fragment-index`  the events of a slide's scene are its chunks, each at its step (`gap`)
 --   `steps-deck`      the slides' ticks add up
 --   `deck-visible`    at tick n a deck shows the slide it is in, at its local tick
 
@@ -21,7 +25,8 @@ import Data.Nat.Properties as ℕP
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
 open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure; _>>=_)
-open import Relation.Nullary using (yes; no)
+open import Relation.Nullary using (yes; no; Dec; does; ¬_)
+open import Data.Bool.Base using (if_then_else_)
 open import Relation.Nullary.Decidable using (dec-true; dec-false)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; sym; trans; subst)
 import Data.List.Properties as ListP
@@ -30,6 +35,7 @@ open import Slides.Scalar.Model.Nat using (natMon; natSub)
 open import Slides.Scene.Syntax
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
+open import Slides.Deck.Steps using (gap)
 
 open import Slides.Deck.Clock using (module E; module S)
 open import Slides.Diagram.Overlay using (listOverlay)
@@ -41,42 +47,54 @@ open import Slides.Diagram.Overlay using (listOverlay)
 visible : Scene ℕ ⊥ Flow → ℕ → Maybe Flow
 visible s n = proj₂ (S.sample ℓ s) n nothing
 
--- the chunks so far: 0..k of the chunks `c ∷ cs`
+-- a comparison that is decided
+sel-yes : ∀ {A : Set} {P : Set} (d : Dec P) → P → (x y : A) → (if does d then x else y) ≡ x
+sel-yes d p x y = cong (λ b → if b then x else y) (dec-true d p)
+
+sel-no : ∀ {A : Set} {P : Set} (d : Dec P) → ¬ P → (x y : A) → (if does d then x else y) ≡ y
+sel-no d p x y = cong (λ b → if b then x else y) (dec-false d p)
+
+-- The chunks revealed by tick `t`: chunk `d` after chunk `c` appears at `gap c d` ticks after `c`
+-- (`Slides.Deck.Steps`).  Inner fragments (bullets, `fragment` blocks, animation acts) are
+-- not modelled: a chunk is shown whole once its own fragment is.
 accumL : Flow → List Flow → ℕ → Flow
-accumL c []       k       = c
-accumL c (d ∷ ds) zero    = c
-accumL c (d ∷ ds) (suc k) = c ++ accumL d ds k
+accumL c []       t = c
+accumL c (d ∷ ds) t = if does (gap c d ℕP.≤? t) then c ++ accumL d ds (t ∸ gap c d) else c
 
 accum : List⁺ Flow → ℕ → Flow
 accum (c ∷ cs) = accumL c cs
 
 -- One slide
 
-go-visible : ∀ c cs t → t < suc (length cs) → visible (chunkFrom c cs) t ≡ just (accumL c cs t)
-go-visible c []       zero     _ = refl
-go-visible c []       (suc t) (s≤s ())
-go-visible c (d ∷ ds) zero     _ = refl
-go-visible c (d ∷ ds) (suc t)  (s≤s lt) rewrite go-visible d ds t lt = refl
+-- overlaying a leaf with what a window shows
+merge-if : ∀ {P : Set} (d : Dec P) c (y : Maybe Flow) z → y ≡ just z →
+           S.merge (just c) (if does d then y else nothing) ≡ just (if does d then c ++ z else c)
+merge-if (yes _) c y z e = cong (S.merge (just c)) e
+merge-if (no _)  c y z e = refl
+
+go-visible : ∀ c cs t → visible (chunkFrom c cs) t ≡ just (accumL c cs t)
+go-visible c []       t = refl
+go-visible c (d ∷ ds) t = merge-if (gap c d ℕP.≤? t) c _ _ (go-visible d ds (t ∸ gap c d))
 
 -- a held scene is itself inside its window
 hold-visible : ∀ s w t → t < w → visible (hold w s) t ≡ visible s t
-hold-visible s w t lt rewrite dec-false (w ℕP.≤? t) (ℕP.<⇒≱ lt) = refl
+hold-visible s w t lt = sel-no (w ℕP.≤? t) (ℕP.<⇒≱ lt) nothing _
 
-chunk-inner : ∀ s k → k < ticks s → visible (chunkScene (Slide.chunkL s)) k ≡ just (accum (Slide.chunkL s) k)
-chunk-inner (slide l (c ∷ cs)) k lt = go-visible c cs k lt
+chunk-inner : ∀ s k → visible (chunkScene (Slide.chunkL s)) k ≡ just (accum (Slide.chunkL s) k)
+chunk-inner (slide l (c ∷ cs)) k = go-visible c cs k
 
 chunk-visible : ∀ s k → k < ticks s → visible (slideScene s) k ≡ just (accum (Slide.chunkL s) k)
-chunk-visible s k lt = trans (hold-visible (chunkScene (Slide.chunkL s)) _ k lt) (chunk-inner s k lt)
+chunk-visible s k lt = trans (hold-visible (chunkScene (Slide.chunkL s)) _ k lt) (chunk-inner s k)
 
 -- Fragment index = start tick
 
 ol : ∀ {A} → E.Event A → ℕ × A
 ol e = E.onset e , E.leaf e
 
--- the chunk `i` of a slide starts at tick `i`
+-- chunk `d` after `c` starts `gap c d` ticks after `c`
 index : Flow → List Flow → List (ℕ × Flow)
 index c []       = (0 , c) ∷ []
-index c (d ∷ ds) = (0 , c) ∷ map (λ x → suc (proj₁ x) , proj₂ x) (index d ds)
+index c (d ∷ ds) = (0 , c) ∷ map (λ x → gap c d + proj₁ x , proj₂ x) (index d ds)
 
 fragment-index : ∀ c cs → map ol (E.events (chunkFrom c cs)) ≡ index c cs
 fragment-index c []       = refl
@@ -85,7 +103,7 @@ fragment-index c (d ∷ ds) =
     (trans (sym (ListP.map-∘ (E.events (chunkFrom d ds))))
            (trans (ListP.map-cong (λ e → refl) (E.events (chunkFrom d ds)))
                   (trans (ListP.map-∘ (E.events (chunkFrom d ds)))
-                         (cong (map (λ x → suc (proj₁ x) , proj₂ x)) (fragment-index d ds)))))
+                         (cong (map (λ x → gap c d + proj₁ x , proj₂ x)) (fragment-index d ds)))))
 
 -- A deck: the slide the audience is in
 
@@ -132,22 +150,44 @@ locate-out s (t ∷ ts) n le with n ℕP.<? ticks s
 ... | no ¬lt = locate-out t ts (n ∸ ticks s) (ℕP.m+n≤o⇒m≤o∸n (total t ts) (subst (_≤ n) (ℕP.+-comm (ticks s) (total t ts)) le))
 
 hold-out : ∀ s w t → w ≤ t → visible (hold w s) t ≡ nothing
-hold-out s w t le rewrite dec-true (w ℕP.≤? t) le = refl
+hold-out s w t le = sel-yes (w ℕP.≤? t) le nothing _
 
 slide-read : ∀ s n → proj₂ (slideT s) n nothing ≡ show (locate s [] n)
 slide-read s n with n ℕP.<? ticks s
 ... | yes lt = chunk-visible s n lt
 ... | no ¬lt = hold-out (chunkScene (Slide.chunkL s)) (ticks s) n (ℕP.≮⇒≥ ¬lt)
 
+-- a slide, then the rest: the slide is read inside its window, the rest shifted past it and
+-- inside its own
+seq-nested : ∀ s (X : Deck) n → nested (pure s ⨾ X) n ≡
+  S.merge (if does (ticks s ℕP.≤? n) then nothing else proj₂ (slideT s) n nothing)
+          (if does (ticks s ℕP.≤? n)
+             then (if does (proj₁ (S.timed slideT X) ℕP.≤? (n ∸ ticks s)) then nothing else nested X (n ∸ ticks s))
+             else nothing)
+seq-nested s X n = refl
+
 deck-read : ∀ s ss n → nested (deckFrom s ss) n ≡ show (locate s ss n)
 deck-read s []       n = slide-read s n
 deck-read s (t ∷ ts) n with n ℕP.<? ticks s
-... | yes lt rewrite dec-false (ticks s ℕP.≤? n) (ℕP.<⇒≱ lt) = trans (S.merge-nothing _) (chunk-inner s n lt)
-... | no ¬lt rewrite dec-true (ticks s ℕP.≤? n) (ℕP.≮⇒≥ ¬lt) | steps-deck t ts
-  with (n ∸ ticks s) ℕP.<? total t ts
-...   | yes lt′ rewrite dec-false (total t ts ℕP.≤? (n ∸ ticks s)) (ℕP.<⇒≱ lt′) = deck-read t ts (n ∸ ticks s)
-...   | no ¬lt′ rewrite dec-true (total t ts ℕP.≤? (n ∸ ticks s)) (ℕP.≮⇒≥ ¬lt′)
-                      | locate-out t ts (n ∸ ticks s) (ℕP.≮⇒≥ ¬lt′) = refl
+... | yes lt =
+  trans (seq-nested s (deckFrom t ts) n)
+        (trans (cong₂ S.merge (sel-no (ticks s ℕP.≤? n) (ℕP.<⇒≱ lt) _ _) (sel-no (ticks s ℕP.≤? n) (ℕP.<⇒≱ lt) _ _))
+               (trans (S.merge-nothing _) (chunk-visible s n lt)))
+... | no ¬lt =
+  trans (seq-nested s (deckFrom t ts) n)
+        (trans (cong₂ S.merge (sel-yes (ticks s ℕP.≤? n) le _ _) (sel-yes (ticks s ℕP.≤? n) le _ _))
+               (inner (n ∸ ticks s)))
+  where
+    le = ℕP.≮⇒≥ ¬lt
+    inner : ∀ m → (if does (proj₁ (S.timed slideT (deckFrom t ts)) ℕP.≤? m) then nothing else nested (deckFrom t ts) m)
+                  ≡ show (locate t ts m)
+    inner m = trans (cong (λ k → if does (k ℕP.≤? m) then nothing else nested (deckFrom t ts) m) (steps-deck t ts))
+                    (by (m ℕP.<? total t ts))
+      where
+        by : Dec (m < total t ts) → (if does (total t ts ℕP.≤? m) then nothing else nested (deckFrom t ts) m) ≡ show (locate t ts m)
+        by (yes lt′) = trans (sel-no (total t ts ℕP.≤? m) (ℕP.<⇒≱ lt′) _ _) (deck-read t ts m)
+        by (no ¬lt′) = trans (sel-yes (total t ts ℕP.≤? m) (ℕP.≮⇒≥ ¬lt′) _ _)
+                             (sym (cong show (locate-out t ts m (ℕP.≮⇒≥ ¬lt′))))
 
 -- At tick `n` a deck shows the slide it is in, at its local tick: the chunks so far.
 deck-visible : ∀ s ss n → visible (flat (deckFrom s ss)) n ≡ show (locate s ss n)
