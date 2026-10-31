@@ -34,6 +34,7 @@ open import Slides.Math using (toLaTeX)
 open import Container.Interpret.Plain using (Handler; pfold)
 open import Slides.Text using (css; Inline; Wrap; InlineC; textO; codeO; brO; mathO; citeO; wrapO; emphW; strongW; subW; supW; styledW; linkW; fromKids)
 open import Slides.Deck.Content
+open import Slides.Deck.Steps using (aside?)
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Backend.HTML
@@ -45,17 +46,16 @@ Forest = List XMLDoc
 
 -- Inline markup
 
-private
-  Piece : Set
-  Piece = String ⊎ XMLDoc
+Piece : Set
+Piece = String ⊎ XMLDoc
 
-  -- merge adjacent text into the text slots of mixed content
-  normalise : List Piece → String × List (XMLDoc × String)
-  normalise []              = "" , []
-  normalise (inj₁ s ∷ ps)   with normalise ps
-  ... | t , cs = (s ++ˢ t) , cs
-  normalise (inj₂ x ∷ ps)   with normalise ps
-  ... | t , cs = "" , (x , t) ∷ cs
+-- merge adjacent text into the text slots of mixed content
+normalise : List Piece → String × List (XMLDoc × String)
+normalise []              = "" , []
+normalise (inj₁ s ∷ ps)   with normalise ps
+... | t , cs = (s ++ˢ t) , cs
+normalise (inj₂ x ∷ ps)   with normalise ps
+... | t , cs = "" , (x , t) ∷ cs
 
 -- the element a wrapper becomes
 wrapEl : Wrap → String × Attrs
@@ -104,26 +104,25 @@ fragmentClass : Maybe String → String
 fragmentClass nothing  = "fragment"
 fragmentClass (just s) = "fragment " ++ˢ s
 
-private
-  pct : String → ℕ → String
-  pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
+pct : String → ℕ → String
+pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
 
-  -- a bullet's text, then its sub-bullets as a nested list
-  mutual
-    bulletEl : Bool → Bullet → XMLDoc
-    bulletEl inc (bullet t cs) with normalise (pieces t)
-    ... | s , xs = hMixed "li" (if inc then ("class" , "fragment") ∷ [] else []) (s , xs ++ nest inc cs)
+-- a bullet's text, then its sub-bullets as a nested list
+mutual
+  bulletEl : Bool → Bullet → XMLDoc
+  bulletEl inc (bullet t cs) with normalise (pieces t)
+  ... | s , xs = hMixed "li" (if inc then ("class" , "fragment") ∷ [] else []) (s , xs ++ nest inc cs)
 
-    nest : Bool → List Bullet → List (XMLDoc × String)
-    nest inc [] = []
-    nest inc cs = (hElement "ul" [] (bulletList inc cs) , "") ∷ []
+  nest : Bool → List Bullet → List (XMLDoc × String)
+  nest inc [] = []
+  nest inc cs = (hElement "ul" [] (bulletList inc cs) , "") ∷ []
 
-    bulletList : Bool → List Bullet → List XMLDoc
-    bulletList inc []       = []
-    bulletList inc (c ∷ cs) = bulletEl inc c ∷ bulletList inc cs
+  bulletList : Bool → List Bullet → List XMLDoc
+  bulletList inc []       = []
+  bulletList inc (c ∷ cs) = bulletEl inc c ∷ bulletList inc cs
 
-  row : String → List Text → XMLDoc
-  row cell cs = hElement "tr" [] (map (rich cell []) cs)
+row : String → List Text → XMLDoc
+row cell cs = hElement "tr" [] (map (rich cell []) cs)
 
 
 mutual
@@ -176,11 +175,6 @@ mutual
   renderColumns (c ∷ cs) = div "column" (renderFlow c) ∷ renderColumns cs
 
 -- Slides: the first chunk is shown, each later chunk is a fragment
-
-aside? : Block → Bool
-aside? (notes _)  = true
-aside? (script _) = true
-aside? _          = false
 
 -- a later chunk: its visible blocks in a fragment, its notes and scripts beside it
 renderStep : Flow → Forest
