@@ -6,6 +6,8 @@
 --   copair-inj₁, copair-inj₂ : copair α₁ α₂ restricts to α₁, α₂
 --   copair-unique : an algebra for the sum is determined by its two restrictions
 --   copairL-inl, copairL-inr : `embed inl ⋙ copairL l m ≈ˡ l`, `embed inr ⋙ copairL l m ≈ˡ m`
+--   lower-copairL-inl : `lower (copairL ret h) (translate inl t) ≈⋆ t`, the extension C ↪ C ⊕ E is a
+--                       split mono with any lowering `h` of the new commands as retraction
 --
 -- So algebras for `C₁ ⊎ C₂` on `A` are exactly pairs of algebras (`Container.Sum.copair`).
 
@@ -18,13 +20,15 @@ open import Data.Container.Core using (Container)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.Relation.Binary.Pointwise
   using (Pointwise) renaming (_,_ to _,ₚ_)
+open import Data.Container.FreeMonad using (_⋆_)
 open import Function.Bundles using (Func; Inverse; _⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality.Core using (refl)
 
 open import Container.Polynomial
-open import Container.Lowering using (Lowering; embed; _⋙_)
-open import Container.Lowering.Properties using (_≈ˡ_; bind-pure≈)
+open import Container.Lowering using (Lowering; embed; _⋙_; lower; translate; ret; _≈⋆_)
+open import Container.Lowering.Properties
+  using (_≈ˡ_; bind-pure≈; trans≈; sym≈; lower-cong; lower-⋙; lower-embed; lower-ret; refl≈)
 
 import Container.Sum as S
 
@@ -101,3 +105,12 @@ module _ {s p} {C₁ C₂ E : Container s p} (l : Lowering C₁ E) (m : Lowering
 
   copairL-inr : (embed S.inr ⋙ S.copairL l m) ≈ˡ m
   copairL-inr a = bind-pure≈ (m a)
+
+-- The extension C ↪ C ⊕ E: translating along `inl` and then lowering the new commands by any `h`
+-- (and the old ones by `ret`) is the identity.
+module _ {s p c} {C E : Container s p} {X : Set c} (h : Lowering E C) where
+  lower-copairL-inl : (t : C ⋆ X) → lower (S.copairL ret h) (translate S.inl t) ≈⋆ t
+  lower-copairL-inl t =
+    trans≈ (lower-cong (λ a → refl≈ _) (sym≈ (lower-embed S.inl t)))
+      (trans≈ (sym≈ (lower-⋙ (embed S.inl) (S.copairL ret h) t))
+        (trans≈ (lower-cong (copairL-inl ret h) (refl≈ t)) (lower-ret t)))
