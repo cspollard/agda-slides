@@ -114,8 +114,8 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
     hom (Beside _)        k k′ e = cong₂ _∙ᵇ_ (e zero) (e (suc zero))
     hom (Above _)         k k′ e = cong₂ _∙ᵃ_ (e zero) (e (suc zero))
     hom Atop              k k′ e = cong₂ _∙ᵗ_ (e zero) (e (suc zero))
-    hom LabelAbove        k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
-    hom LabelBelow        k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
+    hom LabelAbove        k k′ e = cong₂ (λ a b → proj₁ a ⊔ proj₁ b , proj₂ a + (proj₂ b + proj₂ a)) (e zero) (e (suc zero))
+    hom LabelBelow        k k′ e = cong₂ (λ a b → proj₁ a ⊔ proj₁ b , proj₂ a + (proj₂ b + proj₂ a)) (e zero) (e (suc zero))
     hom (Place _ _ _ _)   k k′ e = refl
     hom (Overlay _ _)     k k′ e = refl
     hom (Named _)         k k′ e = trans (cong₂ _,_ refl refl) (e tt)
@@ -130,7 +130,8 @@ layoutOverlay = record { _⊙_ = ovl ; ⊙-assoc = assoc }
   where
     assoc : ∀ a b c → ovl (ovl a b) c ≡ ovl a (ovl b c)
     assoc (mkLayout wa ha da aa) (mkLayout wb hb db ab) (mkLayout wc hc dc ac)
-      rewrite ⊔-assoc wa wb wc | ⊔-assoc ha hb hc | ListP.++-assoc da db dc | ListP.++-assoc aa ab ac = refl
+      = cong₂ (λ (w , h) (d , a) → mkLayout w h d a) (cong₂ _,_ (⊔-assoc wa wb wc) (⊔-assoc ha hb hc))
+                                                       (cong₂ _,_ (ListP.++-assoc da db dc) (ListP.++-assoc aa ab ac))
 
 -- the monoid laws of the envelope semigroups, as laws of the sizes
 size-beside-assoc : ∀ a b c → size (beside (beside a b) c) ≡ size (beside a (beside b c))
@@ -214,31 +215,31 @@ drawAct : Action (Draw S)
 drawAct = record { act = λ p → P.shiftDraw (proj₁ p) (proj₂ p) ; act-zero = zero′ ; act-⊕ = λ p o → shift′ (proj₁ p) (proj₂ p) (proj₁ o) (proj₂ o) }
   where
     zero′ : ∀ d → P.shiftDraw 0# 0# d ≡ d
-    zero′ (rect x y w h s)   rewrite +-idʳ x | +-idʳ y = refl
-    zero′ (circle x y r s)   rewrite +-idʳ x | +-idʳ y = refl
-    zero′ (ellipse x y a b s) rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (rect x y w h s)   = cong₂ (λ x y → rect x y w h s) (+-idʳ x) (+-idʳ y)
+    zero′ (circle x y r s)   = cong₂ (λ x y → circle x y r s) (+-idʳ x) (+-idʳ y)
+    zero′ (ellipse x y a b s) = cong₂ (λ x y → ellipse x y a b s) (+-idʳ x) (+-idʳ y)
     zero′ (poly c ps s)      = cong (λ qs → poly c qs s) (trans (ListP.map-cong (λ p → cong₂ _,_ (+-idʳ (proj₁ p)) (+-idʳ (proj₂ p))) ps) (ListP.map-id ps))
-    zero′ (line a b c d s)   rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
-    zero′ (arrow a b c d s)  rewrite +-idʳ a | +-idʳ b | +-idʳ c | +-idʳ d = refl
-    zero′ (label x y n t s)  rewrite +-idʳ x | +-idʳ y = refl
-    zero′ (path x y d s)     rewrite +-idʳ x | +-idʳ y = refl
+    zero′ (line a b c d s)   = cong₂ (λ (a , b) (c , d) → line a b c d s) (cong₂ _,_ (+-idʳ a) (+-idʳ b)) (cong₂ _,_ (+-idʳ c) (+-idʳ d))
+    zero′ (arrow a b c d s)  = cong₂ (λ (a , b) (c , d) → arrow a b c d s) (cong₂ _,_ (+-idʳ a) (+-idʳ b)) (cong₂ _,_ (+-idʳ c) (+-idʳ d))
+    zero′ (label x y n t s)  = cong₂ (λ x y → label x y n t s) (+-idʳ x) (+-idʳ y)
+    zero′ (path x y d s)     = cong₂ (λ x y → Draw.path x y d s) (+-idʳ x) (+-idʳ y)
     shift′ : ∀ c d a b e → P.shiftDraw a b (P.shiftDraw c d e) ≡ P.shiftDraw (c + a) (d + b) e
-    shift′ c d a b (rect x y w h s)   rewrite +-assoc x c a | +-assoc y d b = refl
-    shift′ c d a b (circle x y r s)   rewrite +-assoc x c a | +-assoc y d b = refl
-    shift′ c d a b (ellipse x y p q s) rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (rect x y w h s)   = cong₂ (λ x y → rect x y w h s) (+-assoc x c a) (+-assoc y d b)
+    shift′ c d a b (circle x y r s)   = cong₂ (λ x y → circle x y r s) (+-assoc x c a) (+-assoc y d b)
+    shift′ c d a b (ellipse x y p q s) = cong₂ (λ x y → ellipse x y p q s) (+-assoc x c a) (+-assoc y d b)
     shift′ c d a b (poly cl ps s)     = cong (λ qs → poly cl qs s) (trans (sym (ListP.map-∘ ps)) (ListP.map-cong (λ p → cong₂ _,_ (+-assoc (proj₁ p) c a) (+-assoc (proj₂ p) d b)) ps))
-    shift′ c d a b (line x y z u s)   rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
-    shift′ c d a b (arrow x y z u s)  rewrite +-assoc x c a | +-assoc y d b | +-assoc z c a | +-assoc u d b = refl
-    shift′ c d a b (label x y n t s)  rewrite +-assoc x c a | +-assoc y d b = refl
-    shift′ c d a b (path x y e s)     rewrite +-assoc x c a | +-assoc y d b = refl
+    shift′ c d a b (line x y z u s)   = cong₂ (λ (x , y) (z , u) → line x y z u s) (cong₂ _,_ (+-assoc x c a) (+-assoc y d b)) (cong₂ _,_ (+-assoc z c a) (+-assoc u d b))
+    shift′ c d a b (arrow x y z u s)  = cong₂ (λ (x , y) (z , u) → arrow x y z u s) (cong₂ _,_ (+-assoc x c a) (+-assoc y d b)) (cong₂ _,_ (+-assoc z c a) (+-assoc u d b))
+    shift′ c d a b (label x y n t s)  = cong₂ (λ x y → label x y n t s) (+-assoc x c a) (+-assoc y d b)
+    shift′ c d a b (path x y e s)     = cong₂ (λ x y → Draw.path x y e s) (+-assoc x c a) (+-assoc y d b)
 
 anchorAct : Action (String × Box S)
 anchorAct = record { act = λ p → P.shiftAnchor (proj₁ p) (proj₂ p) ; act-zero = zero′ ; act-⊕ = λ p o → shift′ (proj₁ p) (proj₂ p) (proj₁ o) (proj₂ o) }
   where
     zero′ : ∀ x → P.shiftAnchor 0# 0# x ≡ x
-    zero′ (n , box l t w h) rewrite +-idʳ l | +-idʳ t = refl
+    zero′ (n , box l t w h) = cong₂ (λ l t → n , box l t w h) (+-idʳ l) (+-idʳ t)
     shift′ : ∀ c d a b x → P.shiftAnchor a b (P.shiftAnchor c d x) ≡ P.shiftAnchor (c + a) (d + b) x
-    shift′ c d a b (n , box l t w h) rewrite +-assoc l c a | +-assoc t d b = refl
+    shift′ c d a b (n , box l t w h) = cong₂ (λ l t → n , box l t w h) (+-assoc l c a) (+-assoc t d b)
 
 -- what a layout holds besides its frame: the drawings and the anchors
 Items : Set
