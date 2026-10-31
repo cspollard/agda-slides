@@ -37,7 +37,7 @@ open Space Sp
 import Slides.Diagram.Place Sp as P
 open P using (dbl; valignOffset; alignOffset)
 open import Slides.Diagram.Layout Sp using (layout)
-open import Slides.Diagram.Laws Sp using (size; sizeH; size-layout; shiftDraw-zero; shiftAnchor-zero; map-id)
+open import Slides.Diagram.Laws Sp using (size; sizeH; size-layout; shift-zero)
 
 -- Valid diagrams
 
@@ -124,36 +124,32 @@ align-self left    x = refl
 align-self centred x = sub-self x
 align-self right   x = trans (cong dbl (sub-self x)) dbl-zero
 
--- a layout shifted by nothing
-shift0 : ∀ l → P.inFrame (P.width l) (P.height l) 0# 0# l ≡ l
-shift0 (mkLayout w h ds as) = cong₂ (mkLayout w h) (map-id shiftDraw-zero ds) (map-id shiftAnchor-zero as)
-
 besideA-unitˡ : ∀ al a → NN (P.height a) → P.besideA al empty a ≡ a
 besideA-unitˡ al (mkLayout w h ds as) 0≤h
-  rewrite ⊔-≤ 0≤h | +-idˡ w | dbl-zero | valign-self al h | +-idˡ 0# = shift0 (mkLayout w h ds as)
+  rewrite ⊔-≤ 0≤h | +-idˡ w | dbl-zero | valign-self al h | +-idˡ 0# = shift-zero (mkLayout w h ds as)
 
 besideA-unitʳ : ∀ al a → NN (P.height a) → P.besideA al a empty ≡ a
 besideA-unitʳ al (mkLayout w h ds as) 0≤h
   rewrite ⊔-≥ 0≤h | +-idʳ w | valign-self al h
-  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift0 (mkLayout w h ds as))
+  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift-zero (mkLayout w h ds as))
 
 aboveA-unitˡ : ∀ al a → NN (P.width a) → P.aboveA al empty a ≡ a
 aboveA-unitˡ al (mkLayout w h ds as) 0≤w
-  rewrite ⊔-≤ 0≤w | +-idˡ h | dbl-zero | align-self al w | +-idˡ 0# = shift0 (mkLayout w h ds as)
+  rewrite ⊔-≤ 0≤w | +-idˡ h | dbl-zero | align-self al w | +-idˡ 0# = shift-zero (mkLayout w h ds as)
 
 aboveA-unitʳ : ∀ al a → NN (P.width a) → P.aboveA al a empty ≡ a
 aboveA-unitʳ al (mkLayout w h ds as) 0≤w
   rewrite ⊔-≥ 0≤w | +-idʳ h | align-self al w
-  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift0 (mkLayout w h ds as))
+  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift-zero (mkLayout w h ds as))
 
 atop-unitˡ : ∀ a → NN (P.width a) → NN (P.height a) → P.atop empty a ≡ a
 atop-unitˡ (mkLayout w h ds as) 0≤w 0≤h
-  rewrite ⊔-≤ 0≤w | ⊔-≤ 0≤h | sub-self w | sub-self h = shift0 (mkLayout w h ds as)
+  rewrite ⊔-≤ 0≤w | ⊔-≤ 0≤h | sub-self w | sub-self h = shift-zero (mkLayout w h ds as)
 
 atop-unitʳ : ∀ a → NN (P.width a) → NN (P.height a) → P.atop a empty ≡ a
 atop-unitʳ (mkLayout w h ds as) 0≤w 0≤h
   rewrite ⊔-≥ 0≤w | ⊔-≥ 0≤h | sub-self w | sub-self h
-  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift0 (mkLayout w h ds as))
+  = trans (cong₂ (mkLayout w h) (ListP.++-identityʳ _) (ListP.++-identityʳ _)) (shift-zero (mkLayout w h ds as))
 
 -- ... for the layouts of valid diagrams, with the empty diagram `spacer 0 0`
 layout-beside-unitˡ : ∀ al d → Valid d → layout (besideA al (spacer 0# 0#) d) ≡ layout d

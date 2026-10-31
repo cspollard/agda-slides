@@ -10,7 +10,8 @@
 module Slides.Diagram.TextMetrics where
 
 open import Data.Char using (Char; toℕ)
-open import Data.List using (List; []; _∷_; foldr; map)
+open import Data.List using (List; []; _∷_; foldr; map; head; drop)
+open import Data.Maybe using (fromMaybe)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _/_; _∸_; _⊔_)
 open import Data.String using (String; toList)
 open import Slides.Text using (Inline; sub; sup; plainT; parse; lines)
@@ -25,16 +26,11 @@ private
     333 ∷ 556 ∷ 556 ∷ 500 ∷ 556 ∷ 556 ∷ 278 ∷ 556 ∷ 556 ∷ 222 ∷ 222 ∷ 500 ∷ 222 ∷ 833 ∷ 556 ∷ 556 ∷
     556 ∷ 556 ∷ 333 ∷ 500 ∷ 278 ∷ 556 ∷ 500 ∷ 722 ∷ 500 ∷ 500 ∷ 500 ∷ 334 ∷ 260 ∷ 334 ∷ 584 ∷ []
 
-  nth : List ℕ → ℕ → ℕ → ℕ
-  nth []       _       d = d
-  nth (w ∷ ws) 0       d = w
-  nth (w ∷ ws) (suc n) d = nth ws n d
-
   fallback : ℕ
   fallback = 600
 
   charWidth : Char → ℕ
-  charWidth c = (nth table (toℕ c ∸ 32) fallback * 92) / 100
+  charWidth c = (fromMaybe fallback (head (drop (toℕ c ∸ 32) table)) * 92) / 100
 
   run : String → ℕ
   run t = foldr (λ c n → charWidth c + n) 0 (toList t)

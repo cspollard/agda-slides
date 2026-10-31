@@ -23,6 +23,7 @@ import Data.Maybe as Maybe
 open import Data.Nat using (ℕ)
 open import Data.Nat.Show using (show)
 import Data.List.Properties as ListP
+open import Data.Maybe.Properties using (<∣>-identityʳ; <∣>-assoc)
 open import Data.Char using (Char; _≟_)
 open import Data.List using (List; []; _∷_; _++_; reverse; [_]; concatMap)
 open import Relation.Nullary.Decidable using (⌊_⌋)
@@ -48,23 +49,15 @@ private
   style≡ : ∀ {c c′ w w′ z z′} → c ≡ c′ → w ≡ w′ → z ≡ z′ → style c w z ≡ style c′ w′ z′
   style≡ refl refl refl = refl
 
-  or-idʳ : ∀ {A : Set} (x : Maybe A) → x <∣> nothing ≡ x
-  or-idʳ (just _) = refl
-  or-idʳ nothing  = refl
-
-  or-assoc : ∀ {A : Set} (x y z : Maybe A) → (x <∣> y) <∣> z ≡ x <∣> (y <∣> z)
-  or-assoc (just _) _ _ = refl
-  or-assoc nothing  _ _ = refl
-
 <>-idˡ : ∀ s → noStyle <> s ≡ s
-<>-idˡ (style c w z) = style≡ (or-idʳ c) (or-idʳ w) (or-idʳ z)
+<>-idˡ (style c w z) = style≡ (<∣>-identityʳ c) (<∣>-identityʳ w) (<∣>-identityʳ z)
 
 <>-idʳ : ∀ s → s <> noStyle ≡ s
 <>-idʳ s = refl
 
 <>-assoc : ∀ s t u → (s <> t) <> u ≡ s <> (t <> u)
 <>-assoc (style c w z) (style c′ w′ z′) (style c″ w″ z″) =
-  style≡ (sym (or-assoc c″ c′ c)) (sym (or-assoc w″ w′ w)) (sym (or-assoc z″ z′ z))
+  style≡ (sym (<∣>-assoc c″ c′ c)) (sym (<∣>-assoc w″ w′ w)) (sym (<∣>-assoc z″ z′ z))
 
 data Inline : Set where
   text codeSpan : String → Inline
