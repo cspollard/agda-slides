@@ -2,7 +2,8 @@
 
 -- Laws of scenes, on events and on readings.
 --
---   events-bind, sample-bind, reading-bind   both meanings respect substitution
+--   events-bind, sample-bind, reading-bind   both meanings respect substitution; `sample-fmap`
+--                   is naturality in the leaves
 --   nest-window     a scene in a windowed, delayed leaf is clipped and shifted
 --   delay-delay     delays add
 --   par-comm-events Par commutes up to permutation of events; `read-perm`: on readings, if `⊙` commutes
@@ -54,6 +55,11 @@ events-bind f h s = pfold-bind (≡P.setoid (Media _)) evCong h (λ a → refl) 
 sample-bind : ∀ {A B : Set} (g : B → Timed) (h : A → Scene T D B) (s : Scene T D A) →
               timed g (s >>= h) ≡ timed (λ a → timed g (h a)) s
 sample-bind g h s = pfold-bind (≡P.setoid Timed) dirCong h (λ a → refl) s
+
+-- naturality in the leaves: renaming leaves is reading with the renamed reading
+sample-fmap : ∀ {A B : Set} (ℓ : B → T → X) (f : A → B) (s : Scene T D A) →
+              sample ℓ (s >>= λ a → pure (f a)) ≡ sample (λ a → ℓ (f a)) s
+sample-fmap ℓ f s = sample-bind (leafT ℓ) (λ a → pure (f a)) s
 
 -- the events of a substituted scene, read, are the outer scene read with each leaf read as
 -- the scene substituted for it

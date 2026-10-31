@@ -21,9 +21,15 @@ open import Slides.Diagram.Overlay using (Overlays; module Absent)
 
 module Slides.Scene.Sample {T D X : Set} (M : OrdMon T) (Sb : Sub M) (val : D → T → T) (O : Overlays X) where
 
+open import Level using (0ℓ)
+open import Algebra.Bundles using (Monoid)
+open import Algebra.Morphism.Structures using (module MonoidMorphisms)
+open import Algebra.Structures using (IsMonoid)
+import Algebra.Construct.Pointwise as Pointwise
 open import Data.Empty using (⊥-elim)
 open import Data.Fin using (zero; suc)
 open import Data.List using (List; []; _∷_; _++_; map; mapMaybe)
+import Data.List.Properties as ListP
 open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.All.Properties using (++⁺; map⁺)
 open import Data.Maybe using (Maybe; just; nothing)
@@ -36,6 +42,8 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong
 import Relation.Binary.PropositionalEquality.Properties as ≡P
 
 open import Container.Interpret.Plain using (Handler; Congruent; pfold; pfold-rel; pfold-bind)
+module PwT = Pointwise T
+module PwQ = Pointwise (Maybe D)
 open import Slides.Scene.Syntax
 open import Slides.Scene.Events {T} {D} M Sb
 import Slides.Scene.Algebra
@@ -90,6 +98,27 @@ Rd = T → Maybe D → Maybe X
 
 Timed : Set
 Timed = T × Rd
+
+-- Readings under pointwise overlay form a monoid, absence the unit; reading an event list is a
+-- monoid homomorphism from `(List Event, ++, [])` into it (Elliott's type class morphism).
+RdMonoid : Monoid 0ℓ 0ℓ
+RdMonoid = record { isMonoid = PwT.isMonoid (PwQ.isMonoid isMonoid) }
+  where
+    isMonoid : IsMonoid _≡_ merge nothing
+    isMonoid = record
+      { isSemigroup = record { isMagma = record { isEquivalence = ≡P.isEquivalence ; ∙-cong = cong₂ merge }
+                             ; assoc = merge-assoc }
+      ; identity = (λ _ → refl) , merge-nothing }
+
+module _ {L : Set} (ℓ : L → T → X) where
+  open MonoidMorphisms (Monoid.rawMonoid (ListP.++-monoid (Event L))) (Monoid.rawMonoid RdMonoid)
+
+  readE-hom : IsMonoidHomomorphism (readE ℓ)
+  readE-hom = record
+    { isMagmaHomomorphism = record
+        { isRelHomomorphism = record { cong = λ { refl _ _ → refl } }
+        ; homo = λ es fs t q → read-++ ℓ es fs t q }
+    ; ε-homo = λ _ _ → refl }
 
 -- present on [0, w)
 win : T → T → Maybe X → Maybe X
