@@ -31,7 +31,8 @@ open import Slides.Scalar.Model.Nat using (natSpace)
 open import Slides.Diagram.Print using (natPrint; renderSVG)
 import Slides.Diagram.Layout natSpace as DL
 open import Slides.Math using (toLaTeX)
-open import Slides.Text using (css)
+open import Container.Interpret.Plain using (Handler; pfold)
+open import Slides.Text using (css; Inline; Wrap; InlineC; textO; codeO; brO; mathO; citeO; wrapO; emphW; strongW; subW; supW; styledW; linkW; fromKids)
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
@@ -56,27 +57,29 @@ private
   normalise (inj₂ x ∷ ps)   with normalise ps
   ... | t , cs = "" , (x , t) ∷ cs
 
-mutual
-  pieces : List Inline → List Piece
-  pieces []       = []
-  pieces (i ∷ is) = piece i ++ pieces is
+-- the element a wrapper becomes
+wrapEl : Wrap → String × Attrs
+wrapEl emphW       = "em" , []
+wrapEl strongW     = "strong" , []
+wrapEl subW        = "sub" , []
+wrapEl supW        = "sup" , []
+wrapEl (styledW s) = "span" , ("style" , css s) ∷ []
+wrapEl (linkW u)   = "a" , ("href" , u) ∷ []
 
-  piece : Inline → List Piece
-  piece (text s)       = inj₁ s ∷ []
-  piece (inlineMath m) = inj₁ ("\\(" ++ˢ toLaTeX m ++ˢ "\\)") ∷ []
-  piece (emph is)      = inj₂ (rich "em" [] is) ∷ []
-  piece (strong is)    = inj₂ (rich "strong" [] is) ∷ []
-  piece br             = inj₂ (hElement "br" [] []) ∷ []
-  piece (styled s is)  = inj₂ (rich "span" (("style" , css s) ∷ []) is) ∷ []
-  piece (sub is)       = inj₂ (rich "sub" [] is) ∷ []
-  piece (sup is)       = inj₂ (rich "sup" [] is) ∷ []
-  piece (codeSpan s)   = inj₂ (hText "code" [] s) ∷ []
-  piece (link u is)    = inj₂ (rich "a" (("href" , u) ∷ []) is) ∷ []
-  piece (cite k)       = inj₂ (hText "span" (("class" , "cite") ∷ []) ("[" ++ˢ k ++ˢ "]")) ∷ []
+pieceH : Handler InlineC (List Piece)
+pieceH (_ , textO s)   _ = inj₁ s ∷ []
+pieceH (_ , codeO s)   _ = inj₂ (hText "code" [] s) ∷ []
+pieceH (_ , brO)       _ = inj₂ (hElement "br" [] []) ∷ []
+pieceH (_ , mathO m)   _ = inj₁ ("\\(" ++ˢ toLaTeX m ++ˢ "\\)") ∷ []
+pieceH (_ , citeO k)   _ = inj₂ (hText "span" (("class" , "cite") ∷ []) ("[" ++ˢ k ++ˢ "]")) ∷ []
+pieceH (_ , wrapO w _) k = inj₂ (hMixed (proj₁ (wrapEl w)) (proj₂ (wrapEl w)) (normalise (fromKids k))) ∷ []
 
-  -- an element whose content is running text
-  rich : String → Attrs → List Inline → XMLDoc
-  rich tag attrs is = hMixed tag attrs (normalise (pieces is))
+pieces : List Inline → List Piece
+pieces = concatMap (pfold InlineC pieceH (λ ()))
+
+-- an element whose content is running text
+rich : String → Attrs → List Inline → XMLDoc
+rich tag attrs is = hMixed tag attrs (normalise (pieces is))
 
 -- Blocks
 

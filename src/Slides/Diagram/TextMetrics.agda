@@ -14,7 +14,7 @@ open import Data.List using (List; []; _∷_; foldr; map; head; drop)
 open import Data.Maybe using (fromMaybe)
 open import Data.Nat using (ℕ; suc; _+_; _*_; _/_; _∸_; _⊔_)
 open import Data.String using (String; toList)
-open import Slides.Text using (Inline; sub; sup; plainT; parse; lines)
+open import Slides.Text using (Inline; Sub; Sup; plainI; parse; lines)
 
 private
   table : List ℕ   -- ' ' … '~' (codes 32 … 126)
@@ -38,9 +38,9 @@ private
   -- a construct other than a script is measured by its plain text
   go : List Inline → ℕ
   go []            = 0
-  go (sub u ∷ ss)  = (run (plainT u) * 7) / 10 + go ss
-  go (sup u ∷ ss)  = (run (plainT u) * 7) / 10 + go ss
-  go (i ∷ ss)      = run (plainT (i ∷ [])) + go ss
+  go (i@Sub ∷ ss)  = (run (plainI i) * 7) / 10 + go ss
+  go (i@Sup ∷ ss)  = (run (plainI i) * 7) / 10 + go ss
+  go (i ∷ ss)      = run (plainI i) + go ss
 
 -- width of a label at a font size, in the diagram's units: its widest line (a style is not measured)
 inlineWidth : ℕ → List Inline → ℕ

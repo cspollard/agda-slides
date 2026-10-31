@@ -25,9 +25,17 @@ open import Data.Nat.Show using (show)
 import Data.List.Properties as ListP
 open import Data.Maybe.Properties using (<∣>-identityʳ; <∣>-assoc)
 open import Data.Char using (Char; _≟_)
-open import Data.List using (List; []; _∷_; _++_; reverse; [_]; concatMap)
+open import Level using (0ℓ)
+open import Data.Empty using (⊥)
+open import Data.Fin using (Fin)
+open import Data.List using (List; []; _∷_; _++_; reverse; [_]; concatMap; concat; map; lookup; tabulate; length)
+open import Data.Product.Base using (Σ; _,_; proj₁)
+open import Function.Base using (_∘_)
+open import Data.Container.Core using (Container; _▷_)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure)
+open import Container.Interpret.Plain using (Handler; pfold)
 open import Relation.Nullary.Decidable using (⌊_⌋)
-open import Data.String using (String; fromList; toList; concat) renaming (_++_ to _++ˢ_)
+open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_; concat to concatˢ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym)
 
 open import Slides.Math using (Math; toLaTeX)
@@ -59,43 +67,94 @@ private
 <>-assoc (style c w z) (style c′ w′ z′) (style c″ w″ z″) =
   style≡ (sym (<∣>-assoc c″ c′ c)) (sym (<∣>-assoc w″ w′ w)) (sym (<∣>-assoc z″ z′ z))
 
-data Inline : Set where
-  text codeSpan : String → Inline
-  emph strong sub sup : List Inline → Inline
-  styled     : TextStyle → List Inline → Inline
-  br         : Inline                            -- a line break
-  inlineMath : Math → Inline
-  link       : (url : String) → List Inline → Inline
-  cite       : (key : String) → Inline          -- a bibliography key (checked by `Slides.Deck.DSL`)
+-- A run is a command with no sub-runs (`text`, `codeSpan`, `br`, `inlineMath`, `cite`) or a wrapper
+-- of `n` sub-runs; the positions of a command are `Fin n`.  Inlines are the free monad of that
+-- signature over no variables; each consumer is a handler read by `pfold`.
+data Wrap : Set where
+  emphW strongW subW supW : Wrap
+  styledW : TextStyle → Wrap
+  linkW   : (url : String) → Wrap
+
+data InlineOp : ℕ → Set where
+  textO codeO : String → InlineOp 0
+  brO         : InlineOp 0                       -- a line break
+  mathO       : Math → InlineOp 0
+  citeO       : (key : String) → InlineOp 0      -- a bibliography key (checked by `Slides.Deck.DSL`)
+  wrapO       : Wrap → (n : ℕ) → InlineOp n
+
+InlineC : Container 0ℓ 0ℓ
+InlineC = Σ ℕ InlineOp ▷ (Fin ∘ proj₁)
+
+Inline : Set
+Inline = InlineC ⋆ ⊥
 
 Text : Set
 Text = List Inline
 
+-- the constructors of the surface language
+
+private
+  node : ∀ {n} → InlineOp n → (Fin n → Inline) → Inline
+  node o k = impure ((_ , o) , k)
+
+  atom : InlineOp 0 → Inline
+  atom o = node o λ ()
+
+  wrap : Wrap → Text → Inline
+  wrap w is = node (wrapO w (length is)) (lookup is)
+
+text codeSpan cite : String → Inline
+text s     = atom (textO s)
+codeSpan s = atom (codeO s)
+cite k     = atom (citeO k)
+
+br : Inline
+br = atom brO
+
+inlineMath : Math → Inline
+inlineMath m = atom (mathO m)
+
+emph strong sub sup : Text → Inline
+emph = wrap emphW; strong = wrap strongW; sub = wrap subW; sup = wrap supW
+
+styled : TextStyle → Text → Inline
+styled s = wrap (styledW s)
+
+link : (url : String) → Text → Inline
+link u = wrap (linkW u)
+
+-- the same, to match on (the root of an inline)
+pattern Run s     = impure ((_ , textO s) , _)
+pattern Br        = impure ((_ , brO) , _)
+pattern Sub       = impure ((_ , wrapO subW _) , _)
+pattern Sup       = impure ((_ , wrapO supW _) , _)
+pattern Styled s  = impure ((_ , wrapO (styledW s) _) , _)
+
 -- the strings of a text, in order: a monoid homomorphism to lists (`runs-++`); plain text is
 -- their concatenation (strings have no stdlib monoid laws, lists do)
-mutual
-  runsI : Inline → List String
-  runsI (text s)       = [ s ]
-  runsI (codeSpan s)   = [ s ]
-  runsI (emph is)      = runsT is
-  runsI (strong is)    = runsT is
-  runsI (sub is)       = runsT is
-  runsI (sup is)       = runsT is
-  runsI (styled _ is)  = runsT is
-  runsI br             = [ "\n" ]
-  runsI (inlineMath m) = [ toLaTeX m ]
-  runsI (link _ is)    = runsT is
-  runsI (cite k)       = [ "[" ++ˢ k ++ˢ "]" ]
+-- the results for the sub-runs of a wrapper, in order
+fromKids : ∀ {n} {A : Set} → (Fin n → List A) → List A
+fromKids k = concat (tabulate k)
 
-  runsT : Text → List String
-  runsT []       = []
-  runsT (i ∷ is) = runsI i ++ runsT is
+runsH : Handler InlineC (List String)
+runsH (_ , textO s)   _ = [ s ]
+runsH (_ , codeO s)   _ = [ s ]
+runsH (_ , brO)       _ = [ "\n" ]
+runsH (_ , mathO m)   _ = [ toLaTeX m ]
+runsH (_ , citeO k)   _ = [ "[" ++ˢ k ++ˢ "]" ]
+runsH (_ , wrapO _ _) k = fromKids k
+
+runsI : Inline → List String
+runsI = pfold InlineC runsH (λ ())
+
+runsT : Text → List String
+runsT = concatMap runsI
 
 plainI : Inline → String
-plainI i = concat (runsI i)
+plainI i = concatˢ (runsI i)
 
 plainT : Text → String
-plainT is = concat (runsT is)
+plainT is = concatˢ (runsT is)
 
 private
   mutual
@@ -125,17 +184,23 @@ parse : String → Text
 parse t = runs [] (toList t)
 
 runs-++ : ∀ xs ys → runsT (xs ++ ys) ≡ runsT xs ++ runsT ys
-runs-++ []       ys = refl
-runs-++ (i ∷ xs) ys = trans (cong (runsI i ++_) (runs-++ xs ys)) (sym (ListP.++-assoc (runsI i) _ _))
+runs-++ = ListP.concatMap-++ runsI
+
+-- a wrapper has the strings of its sub-runs
+wrap-runs : ∀ w is → runsI (wrap w is) ≡ runsT is
+wrap-runs w is = cong concat (trans (sym (ListP.map-tabulate (lookup is) runsI)) (cong (map runsI) (ListP.tabulate-lookup is)))
 
 -- nested styles collapse: the inner one overrides the outer, as `<>` says, and the text is the same
 styled-compose : ∀ s t is → runsI (styled s [ styled t is ]) ≡ runsI (styled (s <> t) is)
-styled-compose s t is = ListP.++-identityʳ (runsT is)
+styled-compose s t is =
+  trans (wrap-runs (styledW s) [ styled t is ])
+    (trans (ListP.++-identityʳ (runsI (styled t is)))
+      (trans (wrap-runs (styledW t) is) (sym (wrap-runs (styledW (s <> t)) is))))
 
 -- the lines of a text, split at its breaks (at least one)
 lines : Text → List Text
 lines []        = [] ∷ []
-lines (br ∷ is) = [] ∷ lines is
+lines (Br ∷ is) = [] ∷ lines is
 lines (i ∷ is)  = cons i (lines is)
   where cons : Inline → List Text → List Text
         cons j []       = [ j ] ∷ []
@@ -158,10 +223,11 @@ private
 
 -- a label back to its markup (the browser-side player parses it again)
 markup : Text → String
-markup []             = ""
-markup (sub is ∷ js)  = script "_" (plainT is) ++ˢ markup js
-markup (sup is ∷ js)  = script "^" (plainT is) ++ˢ markup js
-markup (i ∷ js)       = fromList (concatMap esc (toList (plainI i))) ++ˢ markup js
+markup = concatˢ ∘ map mk
+  where mk : Inline → String
+        mk i@Sub = script "_" (plainI i)
+        mk i@Sup = script "^" (plainI i)
+        mk i     = fromList (concatMap esc (toList (plainI i)))
 
 -- `parse` reads the markup, `plainT` drops exactly the markup, `markup` writes it back
 _ : parse "x_i^2" ≡ text "x" ∷ sub [ text "i" ] ∷ sup [ text "2" ] ∷ []

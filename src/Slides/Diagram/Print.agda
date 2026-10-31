@@ -28,7 +28,7 @@ import Data.SVG as SVG
 
 open import Slides.Diagram.Style using (Style; defaultStyle)
 open import Slides.Diagram.Draw
-open import Slides.Text using (Inline; Text; text; sub; sup; styled; plainT; lines; TextStyle; style; noStyle)
+open import Slides.Text using (Inline; Text; Run; Sub; Sup; Styled; plainI; lines; TextStyle; style; noStyle)
 
 -- how a scalar is written: a size, and a position given in half units
 record Print (S : Set) : Set where
@@ -78,16 +78,16 @@ private
   -- a construct other than a script is written as its plain text, with its style if it has one
   tspans : ℕ → String → List Inline → List (XMLM A)
   tspans sz pending []           = []
-  tspans sz pending (sub t ∷ ss) =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []) (padText (plainT t))
+  tspans sz pending (i@Sub ∷ ss) =
+    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , show (sz / 4)) ∷ []) (padText (plainI i))
       ∷ tspans sz ("-" ++ˢ show (sz / 4)) ss
-  tspans sz pending (sup t ∷ ss) =
-    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []) (padText (plainT t))
+  tspans sz pending (i@Sup ∷ ss) =
+    textElement "tspan" (("font-size" , show (sz * 7 / 10)) ∷ ("dy" , "-" ++ˢ show (sz / 3)) ∷ []) (padText (plainI i))
       ∷ tspans sz (show (sz / 3)) ss
   tspans sz pending (i ∷ ss)     =
-    textElement "tspan" (opt "dy" (undo pending) ++ styleAttrs sz (styleOf i)) (padText (plainT (i ∷ []))) ∷ tspans sz "" ss
+    textElement "tspan" (opt "dy" (undo pending) ++ styleAttrs sz (styleOf i)) (padText (plainI i)) ∷ tspans sz "" ss
     where styleOf : Inline → TextStyle
-          styleOf (styled s _) = s
+          styleOf (Styled s) = s
           styleOf _            = noStyle
           undo : String → Maybe String
           undo "" = nothing
@@ -128,7 +128,7 @@ module _ {S : Set} (P : Print S) where
         rows dy []       = []
         rows dy (l ∷ ls) = element "tspan" (("x" , pos x) ∷ ("dy" , dy) ∷ []) (tspans sz "" l) ∷ rows (show (sz * 3 / 2)) ls
         body : List Text → XMLM A
-        body ((text u ∷ []) ∷ []) = textElement "text" attrs (padText u)
+        body ((Run u ∷ []) ∷ []) = textElement "text" attrs (padText u)
         body ([] ∷ [])            = textElement "text" attrs " "
         body (l ∷ [])             = element "text" attrs (tspans sz "" l)
         body ls                   = element "text" attrs (rows ("-" ++ˢ show ((length ls ∸ 1) * (sz * 3 / 2) / 2)) ls)
