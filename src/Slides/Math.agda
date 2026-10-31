@@ -22,6 +22,7 @@ open import Function.Base using (_∘_)
 open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 import Data.List.Properties as ListP
+open import Function.Nary.NonDependent using (congₙ)
 import Relation.Binary.PropositionalEquality as ≡P
 
 open import Container.Pick using (pick2)
@@ -201,35 +202,42 @@ toLaTeX : Math → String
 toLaTeX = pfold MathC latex (λ s → s)
 
 -- The printer respects pointwise-equal children: each command reads its children at finitely many
--- positions, so the equalities at those positions rewrite the goal.
+-- positions, so it is a function of those values, and `cong` through that function applies the
+-- equalities at those positions (a command of arity 2 or 3 is `latex` at `pick2` or `pick3`; of arity 1, at a constant family).
+private
+  pick3 : ∀ {A : Set} → A → A → A → Fin 3 → A
+  pick3 a b c zero               = a
+  pick3 a b c (suc zero)         = b
+  pick3 a b c (suc (suc zero))   = c
+
 latex-cong : Congruent MathC (≡P.setoid String) latex
 latex-cong (_ , numO _)    e = ≡P.refl
 latex-cong (_ , greekO _)  e = ≡P.refl
 latex-cong (_ , textO _)   e = ≡P.refl
 latex-cong (_ , rawO _)    e = ≡P.refl
-latex-cong (_ , negO)      e rewrite e zero = ≡P.refl
-latex-cong (_ , sqrtO)     e rewrite e zero = ≡P.refl
-latex-cong (_ , parenO)    e rewrite e zero = ≡P.refl
-latex-cong (_ , vecO)      e rewrite e zero = ≡P.refl
-latex-cong (_ , hatO)      e rewrite e zero = ≡P.refl
-latex-cong (_ , barO)      e rewrite e zero = ≡P.refl
-latex-cong (_ , calO)      e rewrite e zero = ≡P.refl
-latex-cong (_ , bbO)       e rewrite e zero = ≡P.refl
-latex-cong (_ , ddO)       e rewrite e zero = ≡P.refl
-latex-cong (_ , fnO _)     e rewrite e zero = ≡P.refl
-latex-cong (_ , addO)      e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , subO)      e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , mulO)      e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , fracO)     e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , powO)      e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , idxO)      e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , juxtO)     e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , relO _)    e rewrite e zero | e (suc zero) = ≡P.refl
-latex-cong (_ , sumO)      e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
-latex-cong (_ , integralO) e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
-latex-cong (_ , prodO)     e rewrite e zero | e (suc zero) | e (suc (suc zero)) = ≡P.refl
-latex-cong (_ , callO n)   e rewrite e zero | ListP.tabulate-cong (e ∘ suc) = ≡P.refl
-latex-cong (_ , tupleO n)  e rewrite ListP.tabulate-cong e = ≡P.refl
+latex-cong (_ , negO) e = ≡P.cong (λ x → latex (_ , negO) (λ _ → x)) (e zero)
+latex-cong (_ , sqrtO) e = ≡P.cong (λ x → latex (_ , sqrtO) (λ _ → x)) (e zero)
+latex-cong (_ , parenO) e = ≡P.cong (λ x → latex (_ , parenO) (λ _ → x)) (e zero)
+latex-cong (_ , vecO) e = ≡P.cong (λ x → latex (_ , vecO) (λ _ → x)) (e zero)
+latex-cong (_ , hatO) e = ≡P.cong (λ x → latex (_ , hatO) (λ _ → x)) (e zero)
+latex-cong (_ , barO) e = ≡P.cong (λ x → latex (_ , barO) (λ _ → x)) (e zero)
+latex-cong (_ , calO) e = ≡P.cong (λ x → latex (_ , calO) (λ _ → x)) (e zero)
+latex-cong (_ , bbO) e = ≡P.cong (λ x → latex (_ , bbO) (λ _ → x)) (e zero)
+latex-cong (_ , ddO) e = ≡P.cong (λ x → latex (_ , ddO) (λ _ → x)) (e zero)
+latex-cong (_ , fnO f) e = ≡P.cong (λ x → latex (_ , fnO f) (λ _ → x)) (e zero)
+latex-cong (_ , addO) e = ≡P.cong₂ (λ x y → latex (_ , addO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , subO) e = ≡P.cong₂ (λ x y → latex (_ , subO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , mulO) e = ≡P.cong₂ (λ x y → latex (_ , mulO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , fracO) e = ≡P.cong₂ (λ x y → latex (_ , fracO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , powO) e = ≡P.cong₂ (λ x y → latex (_ , powO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , idxO) e = ≡P.cong₂ (λ x y → latex (_ , idxO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , juxtO) e = ≡P.cong₂ (λ x y → latex (_ , juxtO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , relO r) e = ≡P.cong₂ (λ x y → latex (_ , relO r) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , sumO) e = congₙ 3 (λ x y z → latex (_ , sumO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , integralO) e = congₙ 3 (λ x y z → latex (_ , integralO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , prodO) e = congₙ 3 (λ x y z → latex (_ , prodO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
+latex-cong (_ , callO n)   e = ≡P.cong₂ (λ x y → x ++ˢ "\\left(" ++ˢ y ++ˢ "\\right)") (e zero) (≡P.cong commaSep (ListP.tabulate-cong (e ∘ suc)))
+latex-cong (_ , tupleO n)  e = ≡P.cong commaSep (ListP.tabulate-cong e)
 
 -- Substitution commutes with printing: print the formula with each identifier replaced by the
 -- print of its substitute (`pfold-bind` at the setoid of strings).

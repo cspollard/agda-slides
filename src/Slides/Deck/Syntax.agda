@@ -76,7 +76,7 @@ private
 
 chunks-++ : ∀ xs ys → chunks (xs ++ ys) ≡ glue (chunks xs) (chunks ys)
 chunks-++ []             ys = sym (glue-nil (chunks ys))
-chunks-++ (block b ∷ xs) ys rewrite chunks-++ xs ys = addBlock-glue b (chunks xs) (chunks ys)
+chunks-++ (block b ∷ xs) ys = trans (cong (addBlock b) (chunks-++ xs ys)) (addBlock-glue b (chunks xs) (chunks ys))
 chunks-++ (pause ∷ xs)   ys with chunks xs | chunks (xs ++ ys) | chunks-++ xs ys
 ... | c ∷ cs | _ | refl = refl
 

@@ -20,6 +20,7 @@ open import Data.List using (List; []; _∷_; _++_; map)
 import Data.List.Properties as ListP
 open import Data.Maybe using (Maybe; just; nothing; maybe)
 open import Data.Nat using (ℕ)
+open import Data.Bool.Base using (if_then_else_)
 open import Relation.Nullary.Decidable using (dec-true)
 open import Data.Product.Base using (proj₂)
 open import Data.Container.FreeMonad using (_⋆_; pure)
@@ -80,7 +81,7 @@ frame s n = frameAt s (Time.tick Tm n)
 
 -- a diagram, as a scene, is shown from time 0 on, laid out at the parameter 0
 diagram-const : ∀ (l : Leaf) t → 0# ≤ t → frameAt (pure l) t ≡ just (leafLayout l 0#)
-diagram-const l t le rewrite dec-true (0# ≤? t) le = refl
+diagram-const l t le = cong (λ b → if b then just (leafLayout l 0#) else nothing) (dec-true (0# ≤? t) le)
 
 -- at a whole tick (the model fact is the hypothesis: ticks are non-negative)
 diagram-frame : (∀ n → 0# ≤ Time.tick Tm n) → ∀ (l : Leaf) n → frame (pure l) n ≡ just (leafLayout l 0#)
