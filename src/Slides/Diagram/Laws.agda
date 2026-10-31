@@ -20,9 +20,13 @@ open import Slides.Scalar.Space using (Space)
 
 module Slides.Diagram.Laws {S : Set} (Sp : Space S) where
 
+open import Level using (0ℓ)
+open import Algebra.Bundles using (CommutativeSemigroup; CommutativeMonoid)
+import Algebra.Construct.DirectProduct as DP
+import Relation.Binary.PropositionalEquality.Properties as ≡P
 open import Data.Fin using (zero; suc)
 open import Data.List using (List; []; _∷_; map)
-open import Data.Product.Base using (_×_; _,_; proj₁; proj₂)
+open import Data.Product.Base using (_×_; _,_; proj₁; proj₂; uncurry)
 open import Data.Sum.Base using (inj₁; inj₂)
 open import Data.Unit using (tt)
 open import Data.Container.FreeMonad using (pure; impure)
@@ -42,7 +46,33 @@ import Slides.Diagram.Place Sp as P
 open P using (dbl)
 open import Slides.Diagram.Layout Sp using (layoutH; layout)
 
--- Size is a fold
+-- Size is a fold into envelope monoids (Yorgey): the sizes of the connectives are products of the
+-- semigroups (S,+) and (S,⊔), so their laws are the semigroup laws
+
+sumSG joinSG : CommutativeSemigroup 0ℓ 0ℓ
+sumSG  = CommutativeMonoid.commutativeSemigroup commutativeMonoid
+joinSG = record
+  { Carrier = S ; _≈_ = _≡_ ; _∙_ = _⊔_
+  ; isCommutativeSemigroup = record
+      { isSemigroup = record { isMagma = record { isEquivalence = ≡P.isEquivalence ; ∙-cong = cong₂ _⊔_ } ; assoc = ⊔-assoc }
+      ; comm = ⊔-comm } }
+
+-- beside: widths add, heights join; above the reverse; atop joins both
+besideSG aboveSG atopSG : CommutativeSemigroup 0ℓ 0ℓ
+besideSG = DP.commutativeSemigroup sumSG joinSG
+aboveSG  = DP.commutativeSemigroup joinSG sumSG
+atopSG   = DP.commutativeSemigroup joinSG joinSG
+
+private
+  module B = CommutativeSemigroup besideSG
+  module A = CommutativeSemigroup aboveSG
+  module T = CommutativeSemigroup atopSG
+
+-- the size of the connective is the product operation
+_∙ᵇ_ _∙ᵃ_ _∙ᵗ_ : S × S → S × S → S × S
+_∙ᵇ_ = B._∙_
+_∙ᵃ_ = A._∙_
+_∙ᵗ_ = T._∙_
 
 sizeH : Handler (DiagramC S) (S × S)
 sizeH (Rectangle w h _) k = w , h
@@ -53,9 +83,9 @@ sizeH (Polyline _ ps _) k = P.extent (map proj₁ ps) , P.extent (map proj₂ ps
 sizeH (Text w h _ _ _)  k = w , h
 sizeH (Path w h _ _)    k = w , h
 sizeH (Spacer w h)      k = w , h
-sizeH (Beside _)        k = proj₁ (k zero) + proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
-sizeH (Above _)         k = proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + proj₂ (k (suc zero))
-sizeH Atop              k = proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) ⊔ proj₂ (k (suc zero))
+sizeH (Beside _)        k = k zero ∙ᵇ k (suc zero)
+sizeH (Above _)         k = k zero ∙ᵃ k (suc zero)
+sizeH Atop              k = k zero ∙ᵗ k (suc zero)
 sizeH LabelAbove        k = proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + (proj₂ (k (suc zero)) + proj₂ (k zero))
 sizeH LabelBelow        k = proj₁ (k zero) ⊔ proj₁ (k (suc zero)) , proj₂ (k zero) + (proj₂ (k (suc zero)) + proj₂ (k zero))
 sizeH (Place w h _ _)   k = w , h
@@ -80,9 +110,9 @@ size-layout = pfold-rel (λ l z → (P.width l , P.height l) ≡ z) hom (λ ())
     hom (Text _ _ _ _ _)  k k′ e = refl
     hom (Path _ _ _ _)    k k′ e = refl
     hom (Spacer _ _)      k k′ e = refl
-    hom (Beside _)        k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
-    hom (Above _)         k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
-    hom Atop              k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
+    hom (Beside _)        k k′ e = cong₂ _∙ᵇ_ (e zero) (e (suc zero))
+    hom (Above _)         k k′ e = cong₂ _∙ᵃ_ (e zero) (e (suc zero))
+    hom Atop              k k′ e = cong₂ _∙ᵗ_ (e zero) (e (suc zero))
     hom LabelAbove        k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
     hom LabelBelow        k k′ e rewrite sym (e zero) | sym (e (suc zero)) = refl
     hom (Place _ _ _ _)   k k′ e = refl
@@ -101,18 +131,18 @@ layoutOverlay = record { _⊙_ = ovl ; ⊙-assoc = assoc }
     assoc (mkLayout wa ha da aa) (mkLayout wb hb db ab) (mkLayout wc hc dc ac)
       rewrite ⊔-assoc wa wb wc | ⊔-assoc ha hb hc | ListP.++-assoc da db dc | ListP.++-assoc aa ab ac = refl
 
+-- the monoid laws of the envelope semigroups, as laws of the sizes
 size-beside-assoc : ∀ a b c → size (beside (beside a b) c) ≡ size (beside a (beside b c))
-size-beside-assoc a b c =
-  cong₂ _,_ (+-assoc _ _ _) (⊔-assoc _ _ _)
+size-beside-assoc a b c = uncurry (cong₂ _,_) (B.assoc (size a) (size b) (size c))
 
 size-above-assoc : ∀ a b c → size (above (above a b) c) ≡ size (above a (above b c))
-size-above-assoc a b c = cong₂ _,_ (⊔-assoc _ _ _) (+-assoc _ _ _)
+size-above-assoc a b c = uncurry (cong₂ _,_) (A.assoc (size a) (size b) (size c))
 
 size-atop-assoc : ∀ a b c → size (atop (atop a b) c) ≡ size (atop a (atop b c))
-size-atop-assoc a b c = cong₂ _,_ (⊔-assoc _ _ _) (⊔-assoc _ _ _)
+size-atop-assoc a b c = uncurry (cong₂ _,_) (T.assoc (size a) (size b) (size c))
 
 size-atop-comm : ∀ a b → size (atop a b) ≡ size (atop b a)
-size-atop-comm a b = cong₂ _,_ (⊔-comm _ _) (⊔-comm _ _)
+size-atop-comm a b = uncurry (cong₂ _,_) (T.comm (size a) (size b))
 
 -- a caption above or below takes the same room
 size-labels : ∀ l d → size (labelAbove l d) ≡ size (labelBelow l d)
