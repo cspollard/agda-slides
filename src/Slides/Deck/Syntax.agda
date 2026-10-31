@@ -164,8 +164,5 @@ deckFrom : Slide → List Slide → Deck
 deckFrom s []       = pure s
 deckFrom s (t ∷ ts) = pure s ⨾ deckFrom t ts
 
-deckOf : List⁺ Slide → Deck
-deckOf (s ∷ ss) = deckFrom s ss
-
 flat : Deck → Scene ℕ ⊥ Flow
 flat d = d >>= slideScene

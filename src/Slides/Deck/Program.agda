@@ -16,7 +16,6 @@
 module Slides.Deck.Program where
 
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Fin using (Fin; zero; suc)
 open import Data.List.Base using (List; []; _∷_; _++_; length; replicate)
 open import Data.Maybe.Base using (Maybe; just; nothing)
 open import Data.Nat.Base using (ℕ; zero; suc; _<_; _≤_; s≤s)
@@ -29,7 +28,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; tran
 open import Level using (lift)
 open import Container.Lowering using (Lowering; lower; _⋙_)
 open import Container.Lowering.Properties using (_≈⋆_; _≈ˡ_; refl≈; sym≈; trans≈; lower-⋙; lower-cong)
-open import Container.Pick using (pick2)
 open import Slides.Scalar.Model.Nat using (natMon; natSub)
 open import Slides.Scene.Syntax
 open import Slides.Program.Syntax
@@ -86,9 +84,6 @@ slideP c cs = P.sem leafB (elab (chunkFrom c cs))
 -- what the output reads at time 0
 now : S.Timed → Maybe Flow
 now t = proj₂ t 0 nothing
-
-kids : Flow → Flow → List Flow → Fin 2 → P.Beh
-kids c d ds q = P.sem leafB (elab (pick2 (pure c) (delay 1 (chunkFrom d ds)) q))
 
 -- `w` waits for `next` before the rest: with `t` nexts given, the rest starts once `w ≤ t`, on the
 -- `t - w` left; before that nothing is shown
