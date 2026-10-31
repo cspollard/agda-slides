@@ -3,16 +3,17 @@
 -- The machine of a deck: a Moore machine whose state is a tick position and whose output is the
 -- visible slide (`Slides.Deck.Read.visible`), with `goto` by slide label.
 --
---   deckM d = navM (steps d ∸ 1) (labels d) (visible (flat d))
+--   deckM d = the reading `visible (flat d)` reindexed along the position map `pos d`
+--             (`feed-deckM`: `feed (deckM d) cs ≡ visible (flat d) (pos d cs)`)
 --
--- The accumulated view is derived, not a second machine (`accum-step`: a tick adds one chunk).
--- The visible view also covers content that leaves, makes `prev` and `goto` replay-free, and
--- agrees with a backend that renders a slide.
+-- A position is a page step (`Slides.Deck.Steps`): `steps d` is the sum of the slides' ticks, as
+-- many as the page has fragments plus one per slide.  The visible view also covers content that
+-- leaves, makes `prev` and `goto` replay-free, and agrees with a backend that renders a slide.
 --   `slide-starts`        the events of a deck of slides are the slides at the running sums of ticks
 --   `labelIn-++`          overlay takes the first table's match
---   `start-visible`       going to the start of any slide shows its first chunk
---   `goto-label-visible`  `gotoLabel l` shows the first chunk of the slide labelled `l`
---   `accum-step`          accumL c cs (suc k) ≡ accumL c cs k ++ at cs k
+--   `start-visible`       going to the start of any slide shows it fresh, with nothing revealed
+--   `label-pos`           `gotoLabel l` moves the position to the start of the slide labelled `l`
+--   `goto-label-visible`  ... so the machine shows that slide fresh
 
 module Slides.Deck.Machine where
 
@@ -32,6 +33,7 @@ import Data.Nat.Properties as ℕP
 import Data.Nat.Base as ℕ
 open import Data.Product.Base using (_×_; _,_; proj₁; proj₂; ∃)
 open import Data.String.Base using (String)
+open import Data.Unit.Base using (tt)
 import Data.String.Properties as Str
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋; dec-false)
@@ -84,8 +86,27 @@ labels d = labelIn (map (ol {Slide}) (slideEvents d))
 
 -- The machine
 
+-- the navigation position of a deck: the state of `navM`, read after a list of commands
+posM : Deck → Machine.Machine Nav ℕ
+posM d = navM (steps d ∸ 1) (labels d) (λ n → n)
+
+pos : Deck → List Nav → ℕ
+pos d = Machine.feed (posM d)
+
+-- the machine of the deck is the reading of the deck reindexed along the position map
 deckM : Deck → Machine.Machine Nav (Maybe Flow)
-deckM d = navM (steps d ∸ 1) (labels d) (visible (flat d))
+deckM d = reindexOut (visible (flat d)) (posM d)
+  where reindexOut : ∀ {V W : Set} → (V → W) → Machine.Machine Nav V → Machine.Machine Nav W
+        reindexOut f M = record { State = Machine.State M ; init = Machine.init M ; step = Machine.step M
+                                ; out = λ q → f (Machine.out M q) }
+
+-- reindexing the output leaves the states, so a run
+runs-deckM : ∀ d q cs → Machine.runs (deckM d) q cs ≡ Machine.runs (posM d) q cs
+runs-deckM d q []       = refl
+runs-deckM d q (c ∷ cs) = runs-deckM d _ cs
+
+feed-deckM : ∀ d cs → Machine.feed (deckM d) cs ≡ visible (flat d) (pos d cs)
+feed-deckM d cs = cong (visible (flat d)) (runs-deckM d _ cs)
 
 -- The events of a deck of slides: each slide at the sum of the ticks before it
 
@@ -96,8 +117,9 @@ starts s (t ∷ ts) = (0 , s) ∷ map (λ x → ticks s + proj₁ x , proj₂ x)
 -- a window keeps what starts inside it
 clipE-keep : ∀ w es → All (λ e → E.onset e < w) es → map (ol {Slide}) (E.clipE w es) ≡ map (ol {Slide}) es
 clipE-keep w []       _          = refl
-clipE-keep w (e ∷ es) (lt ∷ all) rewrite dec-false (w ℕP.≤? E.onset e) (ℕP.<⇒≱ lt) =
-  cong (ol {Slide} e ∷_) (clipE-keep w es all)
+clipE-keep w (e ∷ es) (lt ∷ all) with w ℕ.≤ᵇ E.onset e in eq
+... | true  = ⊥-elim (ℕP.<⇒≱ lt (ℕP.≤ᵇ⇒≤ w _ (subst T (sym eq) tt)))
+... | false = cong (ol {Slide} e ∷_) (clipE-keep w es all)
 
 steps-from : ∀ s ss → steps (deckFrom s ss) ≡ total s ss
 steps-from s []       = refl
@@ -157,34 +179,24 @@ locate-start s (t′ ∷ ts) (here refl) = refl
 locate-start s (t′ ∷ ts) {i} {t} (there p) with ∈-map⁻ (λ x → ticks s + proj₁ x , proj₂ x) p
 ... | (j , u) , m , refl with (ticks s + j) ℕP.<? ticks s
 ...   | yes lt = ⊥-elim (ℕP.<⇒≱ lt (ℕP.m≤m+n (ticks s) j))
-...   | no _   rewrite ℕP.m+n∸m≡n (ticks s) j = locate-start t′ ts m
+...   | no _   = trans (cong (locate t′ ts) (ℕP.m+n∸m≡n (ticks s) j)) (locate-start t′ ts m)
 
 -- going to the start of any slide shows its first chunk: a fresh slide
 start-visible : ∀ s ss {i t} → (i , t) ∈ starts s ss →
                 visible (flat (deckFrom s ss)) i ≡ just (accum (Slide.chunkL t) 0)
 start-visible s ss p = trans (deck-visible s ss _) (cong show (locate-start s ss p))
 
--- `gotoLabel l` shows the first chunk of a slide with that label
+-- `gotoLabel l` moves to the start of the slide labelled `l`: a statement about the position map
+label-pos : ∀ s ss l {i} {t′} → labels (deckFrom s ss) l ≡ just i → ∀ q → (i , t′) ∈ starts s ss →
+            Machine.step (posM (deckFrom s ss)) q (gotoLabel l) ≡ i
+label-pos s ss l {i} e q m =
+  trans (gotoLabel-goto (steps (deckFrom s ss) ∸ 1) (labels (deckFrom s ss)) (λ n → n) q l i e)
+        (ℕP.m≤n⇒m⊓n≡m (ℕP.<⇒≤pred (subst (i <_) (sym (steps-from s ss)) (starts-lt s ss m))))
+
+-- ... so the machine shows the first tick of that slide: the reading reindexed along `pos`
 goto-label-visible : ∀ s ss l {i} → labels (deckFrom s ss) l ≡ just i → ∀ p →
   ∃ λ t → matches (Slide.label t) l ≡ true ×
           Machine.out (deckM (deckFrom s ss)) (Machine.step (deckM (deckFrom s ss)) p (gotoLabel l))
             ≡ just (accum (Slide.chunkL t) 0)
 goto-label-visible s ss l {i} e p with labelIn-∈ (starts s ss) l (trans (sym (table-deck s ss l)) e)
-... | t , m , ok = t , ok ,
-  trans (cong (visible (flat (deckFrom s ss))) (trans (gotoLabel-goto (steps (deckFrom s ss) ∸ 1) (labels (deckFrom s ss)) (visible (flat (deckFrom s ss))) p l i e)
-          (ℕP.m≤n⇒m⊓n≡m (ℕP.<⇒≤pred (subst (i <_) (sym (steps-from s ss)) (starts-lt s ss m))))))
-        (start-visible s ss m)
-
--- The accumulated view: a tick adds the next chunk
-
-at : List Flow → ℕ → Flow
-at []       _       = []
-at (d ∷ ds) zero    = d
-at (d ∷ ds) (suc k) = at ds k
-
-accum-step : ∀ c cs k → accumL c cs (suc k) ≡ accumL c cs k ++ at cs k
-accum-step c []       k       = sym (ListP.++-identityʳ c)
-accum-step c (d ∷ [])     zero    = refl
-accum-step c (d ∷ e ∷ es) zero    = refl
-accum-step c (d ∷ ds) (suc k) =
-  trans (cong (c ++_) (accum-step d ds k)) (sym (ListP.++-assoc c (accumL d ds k) (at ds k)))
+... | t , m , ok = t , ok , trans (cong (visible (flat (deckFrom s ss))) (label-pos s ss l e p m)) (start-visible s ss m)

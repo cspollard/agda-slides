@@ -3,8 +3,9 @@
 -- Decks: a scene of scenes over content leaves.
 --
 --   Body        what an author writes for a slide: blocks and `pause`s (the free monoid)
---   chunks b    the blocks between pauses; chunk i appears at tick i
---   slideScene  `chunk 0 ∥ delay 1 (chunk 1 ∥ delay 1 (...))`, held for `1 + pauses` ticks
+--   chunks b    the blocks between pauses
+--   slideScene  `chunk 0 ∥ delay (gap 0 1) (chunk 1 ∥ delay (gap 1 2) (...))`, held for `ticks` ticks:
+--               a tick is a page step, a fragment (`Slides.Deck.Steps`), not a chunk
 --   Deck        a scene whose leaves are slides in sequence: a scene of scenes
 --   flat        the deck as one scene over `Flow`: substitution of each slide's scene, `_>>=_`
 --
@@ -31,6 +32,7 @@ open import Algebra.Morphism.Structures using (module MagmaMorphisms; module Mon
 
 open import Slides.Scene.Syntax
 open import Slides.Deck.Content
+open import Slides.Deck.Steps using (chunkSteps; gap)
 
 data Item : Set where
   block : Block → Item
@@ -139,14 +141,14 @@ record Slide : Set where
 mkSlide : Maybe String → Body → Slide
 mkSlide l b = slide l (chunks b)
 
--- the number of ticks (states) of a slide
+-- the number of ticks (states) of a slide: the first chunk, then one per fragment the page reveals
 ticks : Slide → ℕ
-ticks s = L⁺.length (Slide.chunkL s)
+ticks s = suc (chunkSteps (Slide.chunkL s))
 
--- chunk i from tick i
+-- chunk `d` from the step at which its fragment appears, `gap c d` after `c`'s
 chunkFrom : Flow → List Flow → Scene ℕ ⊥ Flow
 chunkFrom c []       = pure c
-chunkFrom c (d ∷ ds) = pure c ∥ delay 1 (chunkFrom d ds)
+chunkFrom c (d ∷ ds) = pure c ∥ delay (gap c d) (chunkFrom d ds)
 
 chunkScene : List⁺ Flow → Scene ℕ ⊥ Flow
 chunkScene (c ∷ cs) = chunkFrom c cs
