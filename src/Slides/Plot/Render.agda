@@ -29,7 +29,9 @@ open import Data.Rational as ℚ using (ℚ; _-_)
 import Data.Rational as ℚ
 open import Data.String using (String; concat) renaming (_++_ to _++ˢ_)
 
+open import Container.Lowering using (Lowering)
 open import Slides.Diagram.Convenience
+open import Slides.Diagram.Syntax using (DiagramC)
 open import Slides.Diagram.TextMetrics using (textWidth)
 open import Slides.Plot.Axis.Rat using (Axis; axisOf; px; flipY)
 open import Slides.Plot.Clip using (clipLine)
@@ -150,7 +152,9 @@ private
     pathOf : String → Style → Dia ℕ
     pathOf d s = inFrame (path W H d s)
 
-    renderMark : Mark ℚ ℚ → Dia ℕ
+    -- a mark is one command of `MarkC`, lowered to a diagram in the frame (the lowering of the plot
+    -- content `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` is `copairL ret renderMark`, as `lowerCurve`)
+    renderMark : Lowering MarkC (DiagramC ℕ)
     renderMark (line s ps)      = layers W H (map (λ qs → inFrame (polyline (map pt qs) (kind "plot-line" s))) (clipLine xlo xhi ylo yhi ps))
     renderMark (scatter s ps)   = pathOf (concat (map (λ p → dot 3 (pt p)) ps)) (kind "plot-dot" s)
     renderMark (steps s es hs)  = inFrame (polygon (map pt (outline ylo es hs)) (kind "plot-fill" s))
