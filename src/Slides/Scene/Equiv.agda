@@ -84,7 +84,7 @@ sceneSetoid A = record
   ; isEquivalence = record { refl = λ _ → TS.refl ; sym = λ e ℓ → TS.sym (e ℓ) ; trans = λ e f ℓ → TS.trans (e ℓ) (f ℓ) } }
 
 -- every operation respects it
-impure-cong : ∀ {A : Set} o {k k′ : arity o → Scene T D A} → (∀ q → k q ≈ₛ k′ q) → impure (o , k) ≈ₛ impure (o , k′)
+impure-cong : ∀ {A : Set} o {k k′ : arity (proj₁ o) → Scene T D A} → (∀ q → k q ≈ₛ k′ q) → impure (o , k) ≈ₛ impure (o , k′)
 impure-cong o e ℓ = dirCong≈ o (λ q → e q ℓ)
 
 -- equal meanings (events) are equal scenes
