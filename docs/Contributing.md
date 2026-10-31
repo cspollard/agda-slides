@@ -9,6 +9,10 @@ that are not yet restated: `docs/Dropped.md`.
   laws and general invariants where the structure is stated; generic facts go in `Container.*`,
   never per language.  Derive lemmas from the laws of a theory, not by computing in ℚ; state model
   facts as named hypotheses.
+- **No `rewrite`.**  Write proofs as `cong`/`cong₂`/`trans` chains or `≡-Reasoning`, or derive
+  them from a generic lemma (`pfold-cong`, `tabulate-cong`, ...); use `subst` only where a type
+  must change.  `rewrite` hides which equation is used and breaks when terms are restated.  New
+  code adds none; code that is touched loses its uses.
 - **Small.**  Say a line budget up front.  A change that exceeds it, or adds more than it
   deletes, stops and reports before continuing.
 - **Gate.**  `make check` clean (no postulates, no unsolved metas, no instance search in core,
