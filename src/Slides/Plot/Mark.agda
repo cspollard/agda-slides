@@ -12,7 +12,7 @@
 --   note     text at a data position
 --   exact    the graph of a function, sampled and drawn as a smooth curve (`Slides.Diagram.Curve`)
 --
--- A mark is functorial in the type of its x and y coordinates (`bimap`, `zipWith`), so a map of
+-- A mark is functorial in the type of its x and y coordinates (`bimap`, `zipWith⁺`), so a map of
 -- values is a map of marks: `logMark` maps `log₁₀` over the y's and `lerpMark` zips with `lerp`.
 -- The function of `exact` is read at an x in data coordinates (ℚ), so only its values are mapped.
 

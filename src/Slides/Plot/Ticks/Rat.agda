@@ -3,7 +3,7 @@
 -- Ticks over ℚ: a "nice" step (1, 2 or 5 times a power of ten), and the multiples of it that fall
 -- in the range, as the progression of `Slides.Plot.Ticks`.
 --
--- `niceStep n span` is the smallest nice step for which `n` steps cover `span` (the largest
+-- `stepFor n span` (its first component the step) is the smallest nice step for which `n` steps cover `span` (the largest
 -- candidate, 5·10⁶, when none does; the smallest is 10⁻⁴).  The ticks are `k · step` for the
 -- integers `k` with `lo ≤ k · step ≤ hi`, from the least `k = ⌈lo / step⌉` to the greatest
 -- `⌊hi / step⌋`; a step is a ratio of whole numbers, so dividing by it is multiplying by the
@@ -58,9 +58,6 @@ private
 -- the step as a pair
 stepFor : ℕ → ℚ → ℕ × ℕ
 stepFor target span = pick span target steps
-
-niceStep : ℕ → ℚ → ℚ
-niceStep target span = value (stepFor target span)
 
 -- ticks of `lo … hi`: about `target` of them.  The progression starts one step below the first
 -- multiple in range and runs one past the last, and is then cut to the range, so that every tick

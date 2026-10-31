@@ -152,8 +152,11 @@ private
     pathOf : String → Style → Dia ℕ
     pathOf d s = inFrame (path W H d s)
 
-    -- a mark is one command of `MarkC`, lowered to a diagram in the frame (the lowering of the plot
-    -- content `(DiagramC ℕ ⊎ MarkC) ⋆ ⊥` is `copairL ret renderMark`, as `lowerCurve`)
+    -- a mark is one command of `MarkC`, lowered to a diagram in the frame.  The plot content is a
+    -- `List Series`, not a term over `DiagramC ⊕ MarkC` (as a program's content is over `SceneC ⊕ Await`):
+    -- a mark is lowered here, with the frame, the axes and the log transform of this very plot
+    -- (`Geo`), and a series also carries a legend entry, which is not a diagram command but is
+    -- read off all the series together.  `marks` below is the layer these lowerings make.
     renderMark : Lowering MarkC (DiagramC ℕ)
     renderMark (line s ps)      = layers W H (map (λ qs → inFrame (polyline (map pt qs) (kind "plot-line" s))) (clipLine xlo xhi ylo yhi ps))
     renderMark (scatter s ps)   = pathOf (concat (map (λ p → dot 3 (pt p)) ps)) (kind "plot-dot" s)
@@ -228,17 +231,34 @@ private
       where es = entries ss
             legendW = foldr (λ e w → (28 + textWidth fontSize (proj₁ e)) ⊔ w) 0 es
 
+    -- the marks, in the frame: the last series on top (`marks-++` in `Slides.Plot.Laws`).  `panel`
+    -- splices the list `reverse (markDiasOf ss)` flat into its layers (the events keep the tree of
+    -- the diagram, so a nested `marksOf` would change the output); `marksOf` is the same drawings
+    -- as one layer, and has the same layout
+    markDiasOf : List Series → List (Dia ℕ)
+    markDiasOf = map (λ x → renderMark (Series.mark x))
+
+    marksOf : List Series → Dia ℕ
+    marksOf ss = layers W H (reverse (markDiasOf ss))
+
     -- everything, the top layer first: legend, titles, tick labels, axes, marks (the last on top), grid
     layersOf : List Series → List (Dia ℕ)
     layersOf ss = legend ss
                 ∷ titles ++ tickLabels ++ axes (cls "plot-axis")
-                ∷ map (λ x → renderMark (Series.mark x)) (reverse ss) ++ grid (cls "plot-grid") ∷ []
+                ∷ reverse (markDiasOf ss) ++ grid (cls "plot-grid") ∷ []
 
 -- the drawings of one panel (`xl`: with x tick labels and title), the top layer first
 panel : Bool → Plot → List (Dia ℕ)
 panel xl p = layersOf g (map mk (Plot.content p))
   where g = geo xl p
         mk = λ x → record x { mark = if Geo.ylog g then logMark (Series.mark x) else Series.mark x }
+
+-- the marks layer of a panel, for the axes and frame of `p` (its own content is not used)
+markDias : Bool → Plot → List Series → List (Dia ℕ)
+markDias xl p = markDiasOf (geo xl p)
+
+marks : Bool → Plot → List Series → Dia ℕ
+marks xl p = marksOf (geo xl p)
 
 render : Plot → Dia ℕ
 render p = layers (Plot.width p) (Plot.height p) (panel true p)

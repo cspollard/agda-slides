@@ -40,10 +40,6 @@ lerp-1 a b = trans (cong (a +_) (ℚP.*-identityˡ (b - a)))
             (trans (ℚP.+-assoc b (ℚ.- a) a)
             (trans (cong (b +_) (ℚP.+-inverseˡ a)) (ℚP.+-identityʳ b))))
 
--- a point that does not move
-lerp-same : ∀ t a → lerp t a a ≡ a
-lerp-same t a = trans (cong (λ z → a + t * z) (ℚP.+-inverseʳ a)) (trans (cong (a +_) (ℚP.*-zeroʳ t)) (ℚP.+-identityʳ a))
-
 lerpMark : ℚ → Mark ℚ ℚ → Mark ℚ ℚ → Mark ℚ ℚ
 lerpMark t = zipWith⁺ (lerp t) (lerp t)
 
