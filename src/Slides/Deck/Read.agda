@@ -31,9 +31,8 @@ open import Slides.Scene.Syntax
 open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 
-import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
+open import Slides.Deck.Clock using (module E; module S)
 open import Slides.Diagram.Overlay using (listOverlay)
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
 ℓ : Flow → ℕ → Flow
 ℓ a _ = a
@@ -71,7 +70,7 @@ chunk-visible s k lt = trans (hold-visible (chunkScene (Slide.chunkL s)) _ k lt)
 
 -- Fragment index = start tick
 
-ol : E.Event Flow → ℕ × Flow
+ol : ∀ {A} → E.Event A → ℕ × A
 ol e = E.onset e , E.leaf e
 
 -- the chunk `i` of a slide starts at tick `i`

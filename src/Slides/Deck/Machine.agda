@@ -9,9 +9,7 @@
 -- The visible view also covers content that leaves, makes `prev` and `goto` replay-free, and
 -- agrees with a backend that renders a slide.
 --   `slide-starts`        the events of a deck of slides are the slides at the running sums of ticks
---   `labelOf-++`, `labelOf-shift`, `labelOf-leaf`
---                         overlay takes the first table's match; delay by k shifts labels by k;
---                         a labelled leaf is at its onset
+--   `labelIn-++`          overlay takes the first table's match
 --   `start-visible`       going to the start of any slide shows its first chunk
 --   `goto-label-visible`  `gotoLabel l` shows the first chunk of the slide labelled `l`
 --   `accum-step`          accumL c cs (suc k) ≡ accumL c cs k ++ at cs k
@@ -49,7 +47,7 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Read
 
-import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
+open import Slides.Deck.Clock using (module E)
 
 -- Slide events: each slide leaf lasts its own ticks
 
@@ -69,32 +67,20 @@ matches : Maybe String → String → Bool
 matches nothing  l = false
 matches (just m) l = ⌊ m Str.≟ l ⌋
 
--- the onset of the first slide with the label
-labelOf : List (E.Event Slide) → String → Maybe ℕ
-labelOf []       l = nothing
-labelOf (e ∷ es) l = if matches (Slide.label (E.leaf e)) l then just (E.onset e) else labelOf es l
+-- the first slide, in a list of (onset, slide), with the label
+labelIn : List (ℕ × Slide) → String → Maybe ℕ
+labelIn []              l = nothing
+labelIn ((i , s) ∷ xs)  l = if matches (Slide.label s) l then just i else labelIn xs l
 
-labelOf-++ : ∀ es fs l → labelOf (es ++ fs) l ≡ (labelOf es l <∣> labelOf fs l)
-labelOf-++ []       fs l = refl
-labelOf-++ (e ∷ es) fs l with matches (Slide.label (E.leaf e)) l
+-- overlay takes the first table's match
+labelIn-++ : ∀ xs ys l → labelIn (xs ++ ys) l ≡ (labelIn xs l <∣> labelIn ys l)
+labelIn-++ []             ys l = refl
+labelIn-++ ((i , s) ∷ xs) ys l with matches (Slide.label s) l
 ... | true  = refl
-... | false = labelOf-++ es fs l
-
--- delaying a scene by `k` shifts its labels by `k`
-labelOf-shift : ∀ k es l → labelOf (map (E.shiftE k) es) l ≡ Maybe.map (k +_) (labelOf es l)
-labelOf-shift k []       l = refl
-labelOf-shift k (e ∷ es) l with matches (Slide.label (E.leaf e)) l
-... | true  = refl
-... | false = labelOf-shift k es l
-
--- a labelled slide is at its onset
-labelOf-leaf : ∀ s l sp → Slide.label s ≡ just l → labelOf (E.event 0 sp nothing s ∷ []) l ≡ just 0
-labelOf-leaf s l sp e rewrite e with l Str.≟ l
-... | yes _ = refl
-... | no ¬p = ⊥-elim (¬p refl)
+... | false = labelIn-++ xs ys l
 
 labels : Deck → String → Maybe ℕ
-labels d = labelOf (slideEvents d)
+labels d = labelIn (map (ol {Slide}) (slideEvents d))
 
 -- The machine
 
@@ -107,14 +93,11 @@ starts : Slide → List Slide → List (ℕ × Slide)
 starts s []       = (0 , s) ∷ []
 starts s (t ∷ ts) = (0 , s) ∷ map (λ x → ticks s + proj₁ x , proj₂ x) (starts t ts)
 
-ol′ : E.Event Slide → ℕ × Slide
-ol′ e = E.onset e , E.leaf e
-
 -- a window keeps what starts inside it
-clipE-keep : ∀ w es → All (λ e → E.onset e < w) es → map ol′ (E.clipE w es) ≡ map ol′ es
+clipE-keep : ∀ w es → All (λ e → E.onset e < w) es → map (ol {Slide}) (E.clipE w es) ≡ map (ol {Slide}) es
 clipE-keep w []       _          = refl
 clipE-keep w (e ∷ es) (lt ∷ all) rewrite dec-false (w ℕP.≤? E.onset e) (ℕP.<⇒≱ lt) =
-  cong (ol′ e ∷_) (clipE-keep w es all)
+  cong (ol {Slide} e ∷_) (clipE-keep w es all)
 
 steps-from : ∀ s ss → steps (deckFrom s ss) ≡ total s ss
 steps-from s []       = refl
@@ -126,12 +109,12 @@ clip-below w (e ∷ es) with w ℕ.≤ᵇ E.onset e in eq
 ... | true  = clip-below w es
 ... | false = ℕP.≰⇒> (λ le → subst T eq (ℕP.≤⇒≤ᵇ le)) ∷ clip-below w es
 
-shift-ol : ∀ k es → map ol′ (map (E.shiftE k) es) ≡ map (λ x → k + proj₁ x , proj₂ x) (map ol′ es)
+shift-ol : ∀ k es → map (ol {Slide}) (map (E.shiftE k) es) ≡ map (λ x → k + proj₁ x , proj₂ x) (map (ol {Slide}) es)
 shift-ol k es = trans (sym (ListP.map-∘ es)) (ListP.map-∘ es)
 
 -- a slide, then the rest `Y` (which lasts `n`, with its events inside): the slides' starts add
 seq-starts : ∀ s (Y : E.Media Slide) n → proj₁ Y ≡ n → All (λ e → E.onset e < n) (proj₂ Y) →
-             map ol′ (proj₂ (E.seqM (slideM s) Y)) ≡ (0 , s) ∷ map (λ x → ticks s + proj₁ x , proj₂ x) (map ol′ (proj₂ Y))
+             map (ol {Slide}) (proj₂ (E.seqM (slideM s) Y)) ≡ (0 , s) ∷ map (λ x → ticks s + proj₁ x , proj₂ x) (map (ol {Slide}) (proj₂ Y))
 seq-starts s Y n refl all = cong ((0 , s) ∷_) (trans (shift-ol (ticks s) _) (cong (map _) (clipE-keep _ _ all)))
 
 seq-below : ∀ s (Y : E.Media Slide) n → proj₁ Y ≡ n → All (λ e → E.onset e < n) (proj₂ Y) →
@@ -144,7 +127,7 @@ below : ∀ s ss → All (λ e → E.onset e < total s ss) (slideEvents (deckFro
 below s []       = ℕP.0<1+n ∷ []
 below s (t ∷ ts) = seq-below s (E.media slideM (deckFrom t ts)) (total t ts) (steps-from t ts) (below t ts)
 
-slide-starts : ∀ s ss → map ol′ (slideEvents (deckFrom s ss)) ≡ starts s ss
+slide-starts : ∀ s ss → map (ol {Slide}) (slideEvents (deckFrom s ss)) ≡ starts s ss
 slide-starts s []       = refl
 slide-starts s (t ∷ ts) =
   trans (seq-starts s (E.media slideM (deckFrom t ts)) (total t ts) (steps-from t ts) (below t ts))
@@ -152,20 +135,9 @@ slide-starts s (t ∷ ts) =
 
 -- Labels of a deck of slides
 
-labelIn : List (ℕ × Slide) → String → Maybe ℕ
-labelIn []              l = nothing
-labelIn ((i , s) ∷ xs)  l = if matches (Slide.label s) l then just i else labelIn xs l
-
-labelOf-ol : ∀ es l → labelOf es l ≡ labelIn (map ol′ es) l
-labelOf-ol []       l = refl
-labelOf-ol (e ∷ es) l with matches (Slide.label (E.leaf e)) l
-... | true  = refl
-... | false = labelOf-ol es l
-
 -- the table of a deck of slides is the first match among the running starts
 table-deck : ∀ s ss l → labels (deckFrom s ss) l ≡ labelIn (starts s ss) l
-table-deck s ss l = trans (labelOf-ol (slideEvents (deckFrom s ss)) l)
-                          (cong (λ z → labelIn z l) (slide-starts s ss))
+table-deck s ss l = cong (λ z → labelIn z l) (slide-starts s ss)
 
 labelIn-∈ : ∀ xs l {i} → labelIn xs l ≡ just i → ∃ λ t → (i , t) ∈ xs × matches (Slide.label t) l ≡ true
 labelIn-∈ ((j , t) ∷ xs) l e with matches (Slide.label t) l in m

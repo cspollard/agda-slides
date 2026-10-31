@@ -11,7 +11,7 @@ module Slides.Deck.Digital where
 open import Data.Empty using (⊥)
 open import Data.List.Base using (_++_)
 open import Data.Maybe.Base using (Maybe; just; nothing)
-import Data.Maybe.Base as Maybe
+open import Data.Maybe.Properties using (map-id)
 open import Data.Nat.Base using (ℕ)
 open import Data.Product.Base using (proj₁; proj₂)
 open import Data.Rational using (ℚ)
@@ -26,7 +26,7 @@ open import Slides.Deck.Syntax
 open import Slides.Deck.Read using (ℓ; visible)
 
 open import Slides.Diagram.Overlay using (listOverlay)
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as SN
+open import Slides.Deck.Clock using (module S)
 import Slides.Scene.Sample {ℚ} {⊥} {Flow} ratMon ratSub (λ ()) listOverlay as SQ
 
 open import Slides.Scene.Tick {ℕ} {ℚ} {⊥} {⊥} {Flow} {Flow} natMon natSub ratMon ratSub ι ι-hom
@@ -40,14 +40,9 @@ open import Slides.Scene.Tick {ℕ} {ℚ} {⊥} {⊥} {Flow} {Flow} natMon natSu
 visibleQ : Scene ℚ ⊥ Flow → ℕ → Maybe Flow
 visibleQ s n = proj₂ (SQ.sample ℓQ s) (ι n) nothing
 
-private
-  map-id : ∀ {A : Set} (m : Maybe A) → Maybe.map (λ x → x) m ≡ m
-  map-id nothing  = refl
-  map-id (just _) = refl
-
 deck-digital : ∀ (s : Scene ℕ ⊥ Flow) n → visibleQ (mapScene ι (λ ()) s) n ≡ visible s n
 deck-digital s n = trans (proj₂ (tick-hom ℓ ℓQ (λ a p → refl) s) n nothing) (map-id _)
 
 deck-digital-duration : ∀ (s : Scene ℕ ⊥ Flow) →
-  proj₁ (SQ.sample ℓQ (mapScene ι (λ ()) s)) ≡ ι (proj₁ (SN.sample ℓ s))
+  proj₁ (SQ.sample ℓQ (mapScene ι (λ ()) s)) ≡ ι (proj₁ (S.sample ℓ s))
 deck-digital-duration s = proj₁ (tick-hom ℓ ℓQ (λ a p → refl) s)

@@ -25,7 +25,7 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Talk
 open import Slides.Deck.Read using (index; ol; fragment-index)
-import Slides.Scene.Events {ℕ} {⊥} natMon natSub as E
+open import Slides.Deck.Clock using (module E)
 open import Slides.Backend.Render
 
 renderFlow-++ : ∀ xs ys → renderFlow (xs ++ ys) ≡ renderFlow xs ++ renderFlow ys

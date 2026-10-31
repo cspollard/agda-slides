@@ -37,8 +37,8 @@ open import Slides.Deck.Content
 open import Slides.Deck.Syntax
 open import Slides.Deck.Read using (ℓ; accumL; go-visible; visible)
 
+open import Slides.Deck.Clock using (module S)
 open import Slides.Diagram.Overlay using (listOverlay)
-import Slides.Scene.Sample {ℕ} {⊥} {Flow} natMon natSub (λ ()) listOverlay as S
 
 -- a waiting machine shows nothing
 absent : S.Timed
