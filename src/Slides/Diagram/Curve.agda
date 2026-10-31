@@ -35,9 +35,9 @@ open import Data.Container.Core using (Container; _▷_)
 open import Data.Container.Combinator using (_⊎_)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 
-open import Container.Lowering using (Lowering; lower; translate)
-open import Container.Sum using (inl)
-open import Data.Sum.Base using (inj₁; inj₂)
+open import Container.Lowering using (Lowering; lower; translate; ret)
+open import Container.Sum using (inl; copairL)
+open import Data.Sum.Base using (inj₂)
 open import Slides.Diagram.Style using (Style)
 open import Slides.Diagram.Syntax using (Dia; DiagramC; Op; Path)
 
@@ -111,8 +111,7 @@ module _ {S : Set} (sm : Sampler S) where
 
 -- the lowering: diagrams stay, a curve becomes its path
 lowerCurve : ∀ {S} → Sampler S → ℕ → Lowering (DiagramC S ⊎ CurveC S) (DiagramC S)
-lowerCurve sm n (inj₁ a)                        = impure (a , pure)
-lowerCurve sm n (inj₂ (Function f lo hi s))     = impure (curve sm n f lo hi s , λ ())
+lowerCurve sm n = copairL ret λ { (Function f lo hi s) → impure (curve sm n f lo hi s , λ ()) }
 
 lowerDia : ∀ {S} → Sampler S → ℕ → Dia⁺ S → Dia S
 lowerDia sm n = lower (lowerCurve sm n)
