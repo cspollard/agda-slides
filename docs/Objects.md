@@ -48,7 +48,16 @@ shifting, sequence, repetition, driving a leaf by a moving value) over those lea
 Hudak's temporal media.  Meaning: a sparse list of events (onset, duration, leaf in local
 time), in which sequence and repetition are derived (a window and a shift under overlay); the
 pointwise reading "time to maybe-leaf" is a fold of it, with relative windows and a shift
-action so nested clocks are one law.  **[decided]** Interpolation is in scope: a moving value
+action so nested clocks are one law.  Both meanings are folds of one *temporal algebra*
+(`Scene.Algebra`: a payload with none, par, clip, shift, drive; duration, sequence and repetition
+derived), related by one logical relation (`Scene.Relation`).  Reading events is a monoid
+homomorphism from `(List Event, ++, [])` to readings under pointwise overlay (`readE-hom`), and
+scenes are equal in a setoid `_≈ₛ_` (equal durations, pointwise equal readings) in which the
+signature is congruent and Hudak's axioms are equations (`Scene.Equiv`: `∥` associative,
+commutative, absence its unit; `⨾` associative; delays add; `hold`, `delay`, `drive` distribute
+over `∥`).  The unit of `⨾` holds only for windowed scenes and `hold a (hold b s)` is the narrow
+window only for `a ≤ b`, since leaves are eternal and `hold` keeps its given duration.
+**[decided]** Interpolation is in scope: a moving value
 is a term of Coupling, so no separate track datatype exists.  An *animation* is a scene of
 diagrams with a time variable; a *deck* is a scene of scenes with content leaves
 (**[decided]**); a pause is a one-tick delay.
