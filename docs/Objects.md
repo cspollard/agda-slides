@@ -35,6 +35,21 @@ model homomorphism `IsOrdMonHom` is an `IsMonoidHomomorphism` with an `IsOrderMo
 math, link, citation) shared by prose and diagram labels.  Every consumer is a fold: HTML, plain
 text (a monoid homomorphism to lines), SVG, width.
 
+Formulas and runs are free monads of small signatures, a node of `n` sub-terms having positions
+`Fin n`.  `Math = MathC ⋆ String` has identifiers as variables, so substitution is `>>=` and
+`toLaTeX` is a handler.  `Inline = InlineC ⋆ ⊥` has leaf commands (text, code, break, math,
+citation) and one wrapper command carrying a `Wrap` (emphasis, strong, sub, sup, style, link);
+plain runs and HTML pieces are handlers read by `pfold`, width, `tspan`s and markup match the
+root.  `wrap-runs`: a wrapper has the strings of its sub-runs.  `Block` stays a rose tree over
+lists: `Flow` must remain a monoid under `++` as the leaf carrier of scenes, so deck lowerings
+keep their own recursion.  `Slides.Deck.Clock` instantiates events and sampling once for decks.
+
+**Plot marks**: `Mark X Y` is a bifunctor in its coordinate types (`bimap`, `zipWith⁺`, with
+`bimap-id`, `bimap-∘`), so `logMark = bimap id log₁₀` and `lerpMark t` is a zip; error bars are
+stored by their ends (`bars`), exact in log space.  `MarkC = Mark ℚ ℚ ▷ λ _ → ⊥` is a signature
+of arity-⊥ commands and `renderMark : Lowering MarkC (DiagramC ℕ)`; plot content stays a list of
+series (legends, `reveal` and `morph` read the list).  `exact` samples with `Curve.curve`.
+
 **Diagram**: the free algebra of the layout signature (primitives with intrinsic size;
 connectives placing frames relative to each other) over a Space scalar.  Size is a derived
 (synthesised) attribute, not stored.
@@ -102,7 +117,11 @@ the animation (not an attribute: entity-escaped quotes tripled the size), with `
 as `\uXXXX`.  Diagrams and scalar terms of the events are trees; the shipped form is their finite
 DAG (a table of nodes whose children are earlier positions; equal subtrees are one entry, an entry
 used once is written in place).  `unshare` reads it back and `readBack (shareTop ts []) ≡ ts` is
-proved (`Slides.Backend.Share.Properties`); the page resolves a reference when it is reached
+proved (`Slides.Backend.Share.Properties`), as the stdlib bundle `sharing : List Tree ↪ (List Entry
+× Tab)`; the table only grows at its new end (`Suffix _≡_`).  The trees are made by handlers:
+`scI = pfold (spaceJ ⊕ timeJ) leafJ`, `drvI = pfold couplingJ leafJ`, `diaT = pfold diaJ`.
+Hash-consing stays a fold over printed text: a generic one over `C ⋆ ⊥` would need decidable
+equality on every payload.  The page resolves a reference when it is reached
 (`assets/animation.js`, tested against Agda's frames by `make test-anim-ref`).  Loops and steps in
 flight stand still while printing.
 

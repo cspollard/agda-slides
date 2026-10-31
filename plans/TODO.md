@@ -20,7 +20,9 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
 - [ ] Phase 5 left over: `F-Coalgebras` category for machines; `skip-inject`/`lower-supported` stay direct.
 - [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
-- [ ] Phase 6: content as containers.  Line budgets are a tripwire; clarity and robustness justify overshoot.
+- [x] Phase 6, content as containers (7d2d405..529df14, +177 against −300).
+- [ ] Phase 6 left over: `chunks-++` as `IsMonoidHomomorphism` (glue monoid on `List⁺ Flow`); `Math` substitution law; `Lower.Lowering` name clash with `Container.Lowering`; `Program/Embed` into `Animation`.
+- [ ] Never assigned: size and layout as monoids (§4.3); `lower`/`translate` as folds (§2).  Line budgets are a tripwire; clarity and robustness justify overshoot.
 
 ## Phase 1: simplification and consolidation
 - [x] Deck DSL: each content command stated once (`Prims` in `Deck/DSL.agda`, commit 82a3f05).
