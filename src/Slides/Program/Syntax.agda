@@ -27,6 +27,7 @@ open import Relation.Binary.PropositionalEquality using (refl)
 open import Container.Lowering using (Lowering; lower; translate; ret)
 open import Container.Lowering.Properties using (_≈⋆_; refl≈; lower-bind)
 open import Container.Sum using (inl; copairL)
+open import Container.Sum.Properties using (lower-copairL-inl)
 open import Slides.Scene.Syntax using (SceneC; Scene)
 
 -- the commands a program may wait for: the set `C`
@@ -54,8 +55,7 @@ module _ {T D C : Set} where
   skip = lower skipOp
 
   skip-inject : ∀ {A} (s : Scene T D A) → skip (inject {A = A} s) ≈⋆ s
-  skip-inject (pure _)         = lift refl
-  skip-inject (impure (o , k)) = refl , λ q → skip-inject (k q)
+  skip-inject = lower-copairL-inl (λ _ → pure tt)
 
   skip-bind : ∀ {A B} (p : Program T D C A) (f : A → Program T D C B) →
               skip (p >>= f) ≈⋆ (skip p >>= λ a → skip (f a))

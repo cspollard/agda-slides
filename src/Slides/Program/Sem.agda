@@ -4,7 +4,7 @@
 --
 --   commands so far --> scene reading
 --
--- Behaviours `List C → O` are the final Moore machine (`Slides.Program.Machine`), and with a scene
+-- Behaviours `List C → O` are the final Moore machine (`Semantics.Behaviour`), and with a scene
 -- algebra `hS` on `O` (congruent), a leaf behaviour `l a`, they are an algebra of the program
 -- signature: the fold is `sem`, the unique map out of the free monad.
 --
@@ -22,7 +22,8 @@
 --   inject-const           a program that never waits is a constant behaviour, the scene's meaning
 --   await-hit, await-miss  the awaited command starts the rest; others change nothing
 --
--- Equality of behaviours is pointwise (`BehS`), which is trace equality of machines.
+-- Equality of behaviours is pointwise (`Semantics.Behaviour.Beh`), which is trace equality of machines.
+-- `prodB` is the pointwise (power) operation of the layer; `awaitB` inspects the word, so it is not.
 
 open import Level using (0ℓ)
 open import Relation.Binary.Bundles using (Setoid)
@@ -40,27 +41,28 @@ open import Data.List.Base using (List; []; _∷_)
 open import Data.Sum.Base using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Product.Base using (proj₁)
+open import Function.Bundles using (_⟨$⟩_)
 open import Data.Container.Core using (shape; position)
 open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
 open import Relation.Nullary using (yes; no)
 open import Relation.Nullary.Decidable using (⌊_⌋)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 
 open import Container.Interpret.Plain using (pfold; pfold-bind; pfold-cong; pfold-ext; pfold-rel-translate)
 open import Container.Lowering.Properties using (_≈⋆_)
 open import Container.Sum using (inl)
 open import Slides.Scene.Syntax using (Scene; Op; arity)
 open import Slides.Program.Syntax
-open import Slides.Program.Machine using (BehS)
+import Semantics.Behaviour as B
 private module O = Setoid O
 
 -- The behaviour algebra
 
 Beh : Set
-Beh = List C → O.Carrier
+Beh = Setoid.Carrier (B.Beh C O)
 
 constB : O.Carrier → Beh
-constB x _ = x
+constB x = B.const {C} {O} ⟨$⟩ x
 
 prodB : (o : Op T D) → (arity (proj₁ o) → Beh) → Beh
 prodB o k cs = hS o (λ q → k q cs)
@@ -79,7 +81,7 @@ awaitB-cong c e (c′ ∷ cs) with ⌊ dC c′ c ⌋
 ... | true  = e cs
 ... | false = awaitB-cong c e cs
 
-hP-cong : Congruent (ProgC T D C) (BehS O C) hP
+hP-cong : Congruent (ProgC T D C) (B.Beh C O) hP
 hP-cong (inj₁ o) e cs = hS-c o (λ q → e q cs)
 hP-cong (inj₂ c) e    = awaitB-cong c (e tt)
 
@@ -88,15 +90,15 @@ sem : ∀ {A : Set} → (A → Beh) → Program T D C A → Beh
 sem = pfold (ProgC T D C) hP
 
 sem-cong : ∀ {A} {l : A → Beh} {p q : Program T D C A} → p ≈⋆ q → ∀ cs → sem l p cs O.≈ sem l q cs
-sem-cong = pfold-cong (BehS O C) hP-cong
+sem-cong = pfold-cong (B.Beh C O) hP-cong
 
 sem-ext : ∀ {A} {l l′ : A → Beh} → (∀ a cs → l a cs O.≈ l′ a cs) → ∀ p cs → sem l p cs O.≈ sem l′ p cs
-sem-ext = pfold-ext (BehS O C) hP-cong
+sem-ext = pfold-ext (B.Beh C O) hP-cong
 
 -- The bind law: the fold of a substitution is the fold with the substituted programs folded.
 sem-bind : ∀ {A B} (l : B → Beh) (f : A → Program T D C B) (p : Program T D C A) →
            ∀ cs → sem l (p >>= f) cs O.≈ sem (λ a → sem l (f a)) p cs
-sem-bind l f = pfold-bind (BehS O C) hP-cong f (λ a cs → O.refl)
+sem-bind l f = pfold-bind (B.Beh C O) hP-cong f (λ a cs → O.refl)
 
 -- Waiting
 
@@ -117,10 +119,10 @@ private
 
 -- the awaited command starts the rest on what follows; others are ignored
 await-hit : ∀ k c cs → awaitB c k (c ∷ cs) ≡ k cs
-await-hit k c cs rewrite ⌊⌋-refl c = refl
+await-hit k c cs = cong (λ b → if b then k cs else awaitB c k cs) (⌊⌋-refl c)
 
 await-miss : ∀ k {c c′} cs → (c′ ≡ c → ⊥) → awaitB c k (c′ ∷ cs) ≡ awaitB c k cs
-await-miss k cs n rewrite ⌊⌋-no n = refl
+await-miss k {c} {c′} cs n = cong (λ b → if b then k cs else awaitB c k cs) (⌊⌋-no n)
 
 -- A scene is a program that never waits
 
