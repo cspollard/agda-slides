@@ -33,14 +33,12 @@ import Categories.Category.Construction.EilenbergMoore as EilenbergMooreC
 open import Container.FreeMonad
 open import Container.FreeMonad.Properties
 open import Container.FreeMonad.Algebraic
-open import Container.FreeMonad.Algebraic.Properties
 
 module Monadic {s p} (c ℓ : Level) (C : Container s p) where
   open Alg c ℓ C
-  module Ag = Agreement c ℓ C
 
   T : Monad S
-  T = Ag.AdjMonad
+  T = FreeMonad
 
   module EMM = EilenbergMooreC T
   open EMM using (Module; Module⇒; EilenbergMoore)

@@ -15,8 +15,7 @@ open import Level using (Level; _⊔_; Lift; lift)
 open import Data.Empty using (⊥)
 open import Data.Product.Base using (_,_; Σ-syntax)
 open import Data.Container.Core using (Container; Position)
-open import Data.Container.FreeMonad using (_⋆_; pure; impure; _>>=_)
-open import Function.Base using (id)
+open import Data.Container.FreeMonad using (_⋆_; pure; impure)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.Structures using (IsEquivalence)
 open import Relation.Binary.PropositionalEquality.Core using (_≡_; refl; subst)
@@ -68,13 +67,3 @@ Free₀ C X = record
   ; isEquivalence = Eq-isEquivalence X
   }
 
-
--- Operations on carriers.
-
-module _ {C : Container s p} where
-
-  fmap : ∀ {a b} {A : Set a} {B : Set b} → (A → B) → C ⋆ A → C ⋆ B
-  fmap f t = t >>= λ x → pure (f x)
-
-  join : ∀ {a} {A : Set a} → C ⋆ (C ⋆ A) → C ⋆ A
-  join t = t >>= id
