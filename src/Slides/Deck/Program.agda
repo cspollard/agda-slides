@@ -26,6 +26,8 @@ open import Data.Container.FreeMonad using (pure; impure; _>>=_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym; subst)
 
 open import Level using (lift)
+open import Function.Bundles using (Func)
+import Relation.Binary.PropositionalEquality as ≡
 open import Container.Lowering using (Lowering; lower; _⋙_)
 open import Container.Lowering.Properties using (_≈⋆_; _≈ˡ_; refl≈; sym≈; trans≈; lower-⋙; lower-cong)
 open import Slides.Scalar.Model.Nat using (natMon; natSub)
@@ -84,6 +86,10 @@ slideP c cs = P.sem leafB (elab (chunkFrom c cs))
 -- what the output reads at time 0
 now : S.Timed → Maybe Flow
 now t = proj₂ t 0 nothing
+
+-- ... as a map of setoids (equal readings read equal at 0), so it applies to behaviours (`mapO`)
+nowF : Func E.TimedS (≡.setoid (Maybe Flow))
+nowF = record { to = now ; cong = λ e → proj₂ e 0 nothing }
 
 -- `w` waits for `next` before the rest: with `t` nexts given, the rest starts once `w ≤ t`, on the
 -- `t - w` left; before that nothing is shown
