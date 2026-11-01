@@ -37,10 +37,12 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] (e) `rewrite` batches 2 (`Diagram/Natural`, 27) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`, 20): none left; `placed-unitˡ`/`placed-unitʳ`, shared `validMonoid`.
   - [x] `⊔-idem` moved to `Scalar/Core` (Phase 10).
 - [ ] (f) Later (Phase 10 did the `rewrite` batches and most of the clarity audit):
-  - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
+  - [ ] S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
+  - [ ] `sem-inject` generic in the signature (one instance today, from (b)).
+  - [ ] S3 remainder: a slide's stream as the deck's stream shifted to the slide's start.
   - [x] S3 (Phase 11): `Slides.Deck.Behaviour`: `stream`, `deckBeh` as a `reindex`, `deckM-beh`, `deckM-unique`, `slide-beh`.  Not done: the slide's stream as the deck's shifted to its start.
   - [x] Clarity audit, closed in Phase 11: `Names/Soundness` stays a hand induction **[decided]** (`Draws` mentions the child's layout, so it is not a plain fold, and a catch-all handler clause is stuck on a variable operation, so `pfold-rel` moves the 17-way split into the hom and `clean` without removing it); `chunks-isMonoidHomomorphism` kept as the documented law (`render-glue` needs only its `homo` field, `chunks-++`).
-  - `visible` below chunk granularity (a reveal operation on flows).
+  - [ ] `visible` below chunk granularity (a reveal operation on flows).
 
 ## Phase 10: page steps proved, last `rewrite`s, clarity (`plans/Review.md` §9.2)
 - [x] `BlockLaw` proved: `Backend/Fragments` (counting `.fragment`), `Render/{Inline,Sane,Svg,Properties}`; `render-fragments` and `ticks-fragments` given the decidable `saneSlide` (class strings, `language-` classes, draw style classes); `Render/Shipped` checks every shipped deck by `tt`.
@@ -65,6 +67,13 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] README and module-level documentation with geometric intuition, written as each module is touched.
 - [x] Compilation time: measured, not slow (loading dominates).
 - [x] Collider run time (40 s to about 19 s to about 10 s): sharing looked entries up linearly by decidable equality; `Slides.Backend.Share` now uses an AVL index (validated hint, proof unchanged).  Then measured by stubbing, not guessed: interning was never the main cost (only ~10 000 tree nodes, ~4 000 distinct).  The deck's own `_⊓_` on ℕ recurses on the value (millions), 7 s; replaced by built-in subtraction.  `ship` was quadratic (a `where` definition is lifted and recomputed at every use, so its use counts were rebuilt per position); it is now one pass with indexed maps.  Left (~4 s over a 5.7 s floor): interning lookups, rendering, and the Title animation's terms.  Sharing before the events are expanded is no longer worth it.
+
+## Semantics bridges (`plans/Image.md`, `plans/FRP.md`)
+- [ ] Layout → Image (`plans/Image.md` §4): `⟦_⟧` a fold over `draws`, generic in `prim : Draw S → Image A` for a monoid `A`; laws: overlay to `over`, translation equivariance, naturality under a change of scalar.
+- [ ] Plot support (`plans/Image.md` §4, law 4): a rendered plot's image is transparent outside `[0, W] × [0, H]` (today `size-render` only fixes the frame).
+- [ ] Concrete `prim`s: regions (`Bool` under `∨`), then a colour model; the SVG printer as one more interpretation (tested, not proved).
+- [ ] Program → FRP (`plans/FRP.md` §5): the `switcher` from `Beh C Timed` to `Event C → Behaviour (Maybe X)` (timed commands, read at `t − t_last`); prove it causal and a homomorphism of the scene operations.
+- [ ] Animations as `Image^T` (`plans/Image.md` §5): `⟦_⟧` pointwise in time; Diagram ⊂ Animation to constant images.
 
 ## Theory
 - [ ] Setoid equality throughout the scalar theories (laws up to a carried equivalence; non-canonical models such as an unnormalised ℚ): planned, wanted for the mathematics, not a speed-up (`plans/Rationals.md`).  Until then raw `ℚᵘ` arithmetic is usable as is.
