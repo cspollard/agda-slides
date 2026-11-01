@@ -14,7 +14,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 1, container spine (b05e69d..763437f, −297 lines against −350).
 - [x] Phase 2, theories on stdlib structures (78f3403, +23 against −60).
 - [x] Phase 3, Diagram tag/payload split, `Draw.group` removed, functoriality derived (e9bf14d..67a4c31, −2 against −250).
-- [ ] Phase 3 left over: layout as a `NaturalTransformation` (§4.2); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `soundness`, `digit`) are genuine per-operation handlers and stay.
+- [x] Phase 3 left over: layout as a `NaturalTransformation` (§4.2) is not worth doing (`ι` is natural only on `OkDia`; `plans/Review.md` §9.1); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `digit`) are genuine per-operation handlers and stay (`soundness`: Phase 11).
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
 - [x] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), done in Phase 8; the rest of §5.4 stays open.
 - [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
@@ -22,7 +22,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 7, small duplicates (−47 in `src/` against −150; skipped items in `plans/Review.md` §9).
 - [x] Phase 6, content as containers (7d2d405..529df14, +177 against −300).
 - [x] Phase 8 (§4.3, Phase 4/6 leftovers): size into envelope semigroups, layout `Action`/`Placement`, `IsSemigroup`/`Monoid` packaging, `cut`; scene signature on `Container.Tagged`; `FlowLowering` rename; the former `Program/Embed` module folded into `Scene.Animation` (no longer a module); `toLaTeX-bind`; `glueMonoid` and `chunks` as `IsMonoidHomomorphism` (+238; 23 `rewrite` removed).
-- [ ] Left: layout as a `NaturalTransformation` (§4.2, deferred twice); `_≈ᵖ_` as a permutation `Setoid` with `atop` commutative; `Overlay` on stdlib structures and out of `Diagram`; `Natural` offsets per connective.
+- [ ] Left: `_≈ᵖ_` as a permutation `Setoid` with `atop` commutative; `Overlay` on stdlib structures and out of `Diagram`; `Natural` offsets per connective.
 - [x] No `rewrite` (`docs/Contributing.md`): the read-only audit listed 99 uses in 22 files, in five batches (Phase 9 below).  Line budgets are a tripwire; clarity and robustness justify overshoot.
 
 ## Phase 9: how the objects relate (`plans/Review.md` §9.1, `docs/Objects.md` "How the objects relate")
