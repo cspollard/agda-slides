@@ -93,11 +93,12 @@ Temporal operators become functors on it, and FRP types become LTL formulas (Jef
 - Programs mean `List C → Timed`, and each command restarts the real-time reading.  The candidate
   bridge to §1: given timed commands `[(tᵢ, cᵢ)]`, at time `t` take the commands before `t`,
   their output, and read it at `t − t_last`.  That is a `switcher` whose event is the command
-  stream, so it maps `Beh C Timed` into `Event C → Behaviour (Maybe X)`.  To check: it is
-  causal, and a homomorphism of the scene operations.
+  stream, so it maps `Beh C Timed` into `Event C → Behaviour (Maybe X)`.  Done
+  (`Semantics.FRP`, `Slides.Program.FRP`): causal, future-blind, a map of setoids, natural in the
+  output.  Open: a homomorphism of the scene operations, which needs sorted events.
 - Fran's animations are `Behaviour Image`.  Our animations are `Timed` over `Layout`, so the
-  image side of that statement depends on a denotation of `Layout` as an image (not yet written;
-  see Elliott, *Functional Images*, and Porter and Duff for `over`).
+  image side of that statement depends on a denotation of `Layout` as an image (`Slides.Diagram.Image`, generic in the
+  primitive; `plans/Image.md` §4).
 
 `lit/Elliott-2003-Functional-Images.pdf`, `lit/Porter-Duff-1984-Compositing.pdf`.
 

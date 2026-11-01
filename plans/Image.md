@@ -50,7 +50,8 @@ What we have:
 - `Framed W H` (`Slides.Diagram.Framed`): layouts of frame exactly `W × H`, a monoid under
   overlay.  Plot ⊂ Diagram is `renderF`, landing in it.
 
-What is missing is the map to images:
+The map to images (`Semantics.Image`, `Slides.Diagram.Image`; laws 1–3 done, generic in `prim`,
+with `∙` as "then", i.e. `over` flipped):
 
     ⟦_⟧ : Layout S → Image Colour
 

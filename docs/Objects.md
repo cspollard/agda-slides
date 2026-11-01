@@ -153,7 +153,7 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
 | Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:39); `Framed W H` (Diagram/Framed.agda:25, any `Space`), `renderF`, `marks-hom` (Plot/Laws.agda:47,71); whole-plot `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
 | Diagram ⊂ Animation | split mono | `pure` / `firstFrame`, `animationFinal` | holds pointwise: `diagram-const` (Scene/Animation.agda:83); the retraction law: planned, later (S2) |
 | Animation ⊂ Program | sub-bialgebra | `inject` / `hd` | holds: `inject-const` (Program/Sem.agda:130), `hd∘const` (Semantics/Behaviour.agda:121); generic in the signature: not done (one instance) |
-| Deck → Program | reindexing of the step stream along `pos` | none | holds: `deckBeh d = reindex (ticks⋆ ∘ pos d) (stream d)`, `deckM-beh`, `deckM-unique` (Deck/Behaviour.agda), from `feed-deckM` (Deck/Machine.agda:109); per slide: `slide-beh` (Deck/Behaviour.agda), from `pause-agree` (Deck/Program.agda:109); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:159), given `saneSlide`, which every shipped deck passes (`Render/Shipped`) |
+| Deck → Program | reindexing of the step stream along `pos` | none | holds: `deckBeh d = reindex (ticks⋆ ∘ pos d) (stream d)`, `deckM-beh`, `deckM-unique` (Deck/Behaviour.agda), from `feed-deckM` (Deck/Machine.agda:109); per slide: `slide-beh` (Deck/Behaviour.agda), from `pause-agree` (Deck/Program.agda:109); a slide's stream is the deck's shifted to the slide's start, on the slide's steps: `slide-shift`, `slide-shift-beh` (past its end the slide saturates, `slideStream-sat`, and the deck moves on); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:159), given `saneSlide`, which every shipped deck passes (`Render/Shipped`) |
 | Backend support → Program | reindexing along `mapMaybe dec` | none | holds: `lower-sound` (Program/Supports.agda:147) |
 | Dia ⊂ Dia⁺ (syntax) | extension | `inject` / `lowerDia` (`lowerCurve`) | holds: `lower-inject` (Diagram/Curve/Properties.agda:17) |
 | Scene ⊂ Program (syntax) | extension | `inject` / `skip` (`skipOp`) | holds: `skip-inject` (Program/Syntax.agda:56) |
@@ -161,6 +161,8 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
 | any extension | split mono, one lemma | `translate inl` / `lower (copairL ret h)` | holds: `lower-copairL-inl` (Container/Sum/Properties.agda:112) |
 | behaviours | terminal Moore coalgebra | — | holds: `final` (Semantics/Behaviour.agda:101) |
 | behaviours over a model | power model `O^(List C)` | — | planned, later (S2) |
+| Layout → Image | fold of `draws`, generic in `prim : Draw S → Image A` | none | holds: overlay to `∙` (`⟦⟧-ovl`, a monoid homomorphism of drawings), translation (`⟦⟧-shift`, for an `Equivariant` prim and a `Translation`), change of scalar (`⟦⟧-map`, for a natural prim) (Diagram/Image.agda); concrete prims and plot support: not done |
+| Program → FRP | `switch`: `Beh C O` to `Event C ⇉ (T ⇉ P)` | none | holds: causal (`switch-causal`), future-blind (`switch-future`), a map of setoids, natural in the output (`switch-natural`) (Semantics/FRP.agda; `program` in Program/FRP.agda); a homomorphism of the scene operations: not done (needs sorted events) |
 | reading at the start | model homomorphism and retraction | constant sections / `firstFrame`, `now`, `hd` | planned, later (S2) |
 
 ## Where things live
@@ -174,17 +176,20 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
 - Diagram: `Slides.Diagram.Syntax` (the signature), `.Draw` (`Layout`, `mapXY` the one traversal of a draw's coordinates), `.Place` (`Placement`),
   `.DrawLaws` (`mapXY` laws), `.Framed` (drawings of a fixed size, a monoid under overlay),
   `.Layout` (the fold), `.Laws` (`Action`, sizes), `.Assoc`, `.Valid`, `.Commute`, `.Overlay`,
-  `.Names`, `.Natural`, `.Functoriality`, `.Print` (SVG), `.Convenience`; curves
+  `.Names`, `.Natural`, `.Functoriality`, `.Print` (SVG), `.Image` (`⟦_⟧[_]`, the image of a layout), `.Convenience`; curves
   `Slides.Diagram.Curve` (`CurveC`, `Dia⁺`, `lowerCurve`).
 - Scene: `Slides.Scene.Syntax`, `.Algebra` (`Payload`, `Temporal`; `holdC-≤`, `delayC-≤`, `seqC-≤`
   for non-negative durations), `.Events`, `.Sample`,
   `.Relation`, `.Equiv` (`_≈ₛ_`, Hudak's axioms), `.Tick`, `.Moving`, `.Animation` (`frameAt`,
   `diagram-const`).
 - Behaviours (no syntax): `Semantics.Behaviour` (`Moore`, `final`, `mapO`, `reindex`, `const`/`hd`).
+  Images: `Semantics.Image` (the pointwise monoid, `reindex`, `denote`, `denote-rel`); FRP:
+  `Semantics.FRP` (`Behaviour`, `Event`, `switch`).
 - Program: `Slides.Program.Syntax` (`ProgC`, `inject`, `skip`), `.Sem` (`sem`, behaviours),
-  `.Machine` (Moore machines), `.Navigation` (`navM`), `.Supports` (`lower-sound`).
+  `.Machine` (Moore machines), `.Navigation` (`navM`), `.Supports` (`lower-sound`),
+  `.FRP` (`program`, the switcher for `Timed`).
 - Deck: `Slides.Deck.Content` (`Block`, `Flow`), `.Syntax` (`Slide`, `ticks`, `flat`), `.Read`
-  (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Behaviour` (`stream`, `deckBeh`, `slide-beh`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
+  (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Behaviour` (`stream`, `deckBeh`, `slide-beh`, `slide-shift`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
   (`FlowLowering`), `.DSL`, `.Anim`, `.Talk`.
 - Plot: `Slides.Plot.Mark` (`Mark`, `MarkC`), `.Render` (`render`, `renderMark`), `.Laws`
   (`renderF`, `marks-hom`), `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
