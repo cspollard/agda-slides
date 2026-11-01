@@ -14,7 +14,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [x] Phase 1, container spine (b05e69d..763437f, −297 lines against −350).
 - [x] Phase 2, theories on stdlib structures (78f3403, +23 against −60).
 - [x] Phase 3, Diagram tag/payload split, `Draw.group` removed, functoriality derived (e9bf14d..67a4c31, −2 against −250).
-- [x] Phase 3 left over: layout as a `NaturalTransformation` (§4.2) is not worth doing (`ι` is natural only on `OkDia`; `plans/Review.md` §9.1); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `digit`) are genuine per-operation handlers and stay (`soundness`: Phase 11).
+- [x] Phase 3 left over: layout as a `NaturalTransformation` (§4.2) is not worth doing (`ι` is natural only on `OkDia`; `plans/Review.md` §9.1); the 17-way handler splits (`layoutCong`, `okOp`, `clean`, `digit`) are genuine per-operation handlers and stay (`soundness` too, Phase 11).
 - [x] Phase 4, temporal algebra, scene setoid and Hudak axioms (ddaf6ef..3d7dbc8, +337 against −100).
 - [x] Phase 4 left over: `Container.Tagged` for the Scene signature (`mapScene` laws), done in Phase 8; the rest of §5.4 stays open.
 - [x] Phase 5, program behaviours, bisimulation ⇔ trace equality, `Via` as `mapMaybe` (589e306..79d3c10, −31 against −110).
@@ -39,7 +39,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
 - [ ] (f) Later (Phase 10 did the `rewrite` batches and most of the clarity audit):
   - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
   - S3: the deck behaviour stated once (`deckBeh`), `pause-agree` restated against it.
-  - Clarity audit, left: `Names/Soundness` clauses via `pfold-rel`; unused `chunks-isMonoidHomomorphism` (use it in `Render/Properties`, `Deck/Read`, or drop it).
+  - [x] Clarity audit, closed in Phase 11: `Names/Soundness` stays a hand induction **[decided]** (`Draws` mentions the child's layout, so it is not a plain fold, and a catch-all handler clause is stuck on a variable operation, so `pfold-rel` moves the 17-way split into the hom and `clean` without removing it); `chunks-isMonoidHomomorphism` kept as the documented law (`render-glue` needs only its `homo` field, `chunks-++`).
   - `visible` below chunk granularity (a reveal operation on flows).
 
 ## Phase 10: page steps proved, last `rewrite`s, clarity (`plans/Review.md` §9.2)
