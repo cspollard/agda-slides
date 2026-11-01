@@ -5,7 +5,7 @@
 --   stream d     the deck's meaning is a stream on the step clock: `Beh ⊤ O`, and `List ⊤ ≅ ℕ`
 --   deckBeh d    its interactive behaviour: that stream reindexed along the position map
 --   deckM-beh    the deck's machine (`Slides.Deck.Machine.deckM`) has exactly that behaviour
---   deckM-hom    ... and `deckBeh d` is the image of the machine under the unique map to the final machine
+--   deckM-unique ... and any coalgebra map out of the machine sends its initial state to `deckBeh d`
 --
 -- Per slide, the program of a slide (`slideP`) given `t` nexts shows, at its start, the slide's stream at `t`:
 --   `slide-beh`  `now` after `slideP`, reindexed along `map (λ _ → next)`, is `slideStream`
@@ -19,13 +19,12 @@ open import Data.List.Base using (List; []; _∷_; map; length; replicate)
 open import Data.Maybe.Base using (Maybe)
 open import Data.Nat.Base using (ℕ)
 open import Data.Unit.Base using (⊤; tt)
-open import Function.Bundles using (Func; _⟨$⟩_)
+open import Function.Bundles using (_⟨$⟩_)
 open import Relation.Binary.Bundles using (Setoid)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
 import Relation.Binary.PropositionalEquality as ≡
 import Data.List.Properties as ListP
 
-open import Categories.Category.Construction.F-Coalgebras using (F-Coalgebras)
 open import Categories.Functor.Coalgebra using (F-Coalgebra-Morphism)
 
 open import Semantics.Behaviour using (Beh; reindex; mapO; obs-unique; behCoalg)
