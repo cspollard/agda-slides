@@ -38,7 +38,7 @@ open legacy theorems in `docs/Dropped.md`).  Order: simplify first, then 3D, the
   - [x] `⊔-idem` moved to `Scalar/Core` (Phase 10).
 - [ ] (f) Later (Phase 10 did the `rewrite` batches and most of the clarity audit):
   - S2: models layer (theories as data, powers are models, Hudak laws for programs) and the read-at-start retraction law, only if the conditional laws stay small.
-  - S3: the deck behaviour stated once (`deckBeh`), `pause-agree` restated against it.
+  - [x] S3 (Phase 11): `Slides.Deck.Behaviour`: `stream`, `deckBeh` as a `reindex`, `deckM-beh`, `deckM-unique`, `slide-beh`.  Not done: the slide's stream as the deck's shifted to its start.
   - [x] Clarity audit, closed in Phase 11: `Names/Soundness` stays a hand induction **[decided]** (`Draws` mentions the child's layout, so it is not a plain fold, and a catch-all handler clause is stuck on a variable operation, so `pfold-rel` moves the 17-way split into the hom and `clean` without removing it); `chunks-isMonoidHomomorphism` kept as the documented law (`render-glue` needs only its `homo` field, `chunks-++`).
   - `visible` below chunk granularity (a reveal operation on flows).
 

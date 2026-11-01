@@ -608,7 +608,7 @@ relations are recorded in `docs/Objects.md`, "How the objects relate"; items in 
 | S5 | Plot as framed diagrams; plot content as an extension | Done (content stays `List Series`, see TODO) |
 | — | `rewrite` batches 2 (`Diagram/Natural`) and 3 (`Valid`, `Convenience/Properties`, `Commute`, `Names`, `Names/Soundness`) | Done |
 | S2 | Models layer (powers are models, Hudak laws for programs); read-at-start retraction law, only if conditional laws stay small | Later |
-| S3 | Deck behaviour stated once | Later |
+| S3 | Deck behaviour stated once | Done in Phase 11 (`Deck.Behaviour`) |
 | — | `rewrite` batches 1, 4, 5; clarity audit medium and low items | Done in Phase 10 (§9.2) |
 
 **Not worth doing** (recorded so it is not retried):
@@ -641,7 +641,13 @@ Why `saneSlide` stays a check: `fragment (just s)` and `language-lang` count tok
 author chose; the `String` lemmas that would make them theorems for all `s` are not `--safe`.
 Lesson for Agda: lemmas about the sanitiser's `element`/`textElement` must take tag, attributes and
 children explicitly; leaving them to unification through `fixName`/`fixAttrs` stalls the checker.
-Left: `Names/Soundness` via `pfold-rel`; unused `chunks-isMonoidHomomorphism`; S2, S3.
+Left after Phase 10: `Names/Soundness` via `pfold-rel`; unused `chunks-isMonoidHomomorphism`; S2, S3.
+
+Phase 11: S3 done (`Slides.Deck.Behaviour`, `deckBeh` literally a `reindex`, `deckM-beh`,
+`deckM-unique`, `slide-beh`).  `Names/Soundness` stays a hand induction **[decided]**: `Draws`
+mentions the child's layout, and a catch-all handler clause is stuck on a variable operation,
+so `pfold-rel` would move the 17-way split, not remove it.  `chunks-isMonoidHomomorphism` kept as
+the documented law.  Left: S2.
 
 ## 10. Literature (to add to `Objects.md`)
 

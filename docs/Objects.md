@@ -74,13 +74,19 @@ larger as the part that ignores the new dimension.
   one-command behaviour (a stream).  Navigation precomposes it with the position map
   `pos d : List Nav → ℕ` (the navigation machine run on positions): `deckM` is defined as that
   reindexing and `feed-deckM : feed (deckM d) cs ≡ visible (flat d) (pos d cs)`
-  (Deck/Machine.agda:108); `label-pos` says where `goto` lands.  The position map is not a monoid homomorphism
+  (Deck/Machine.agda:109); `label-pos` says where `goto` lands.  The position map is not a monoid homomorphism
   (`prev`, clamping at the ends), which is why `prev` and `goto` need no history.  "A deck is a
-  program" holds per slide (`pause-agree`, Deck/Program.agda:108: `elab` of one slide after `t`
+  program" holds per slide (`pause-agree`, Deck/Program.agda:109: `elab` of one slide after `t`
   nexts shows the chunks whose fragment has appeared by step `t`), not per deck: `elab` keeps the sequence of slides as a
   scene operation and a behaviour is read at time 0 after each command, so slide 2 never shows.
   Removing slide 1 on `next` needs preemption, which `ProgC` lacks **[decided]**: it reopens full
-  FRP.  The deck behaviour stated once, `pause-agree` restated against it: planned, later (S3).
+  FRP.  `Slides.Deck.Behaviour` states both once, over `O = ≡.setoid (Maybe Flow)`: the deck's
+  meaning is the stream `stream d ts = visible (flat d) (length ts) : Beh ⊤ O` (the step clock is
+  `List ⊤ ≅ ℕ`), its behaviour is `deckBeh d = reindex (ticks⋆ ∘ pos d) (stream d)`, the machine
+  has it (`deckM-beh`) and any coalgebra map out of the machine gives it (`deckM-unique`, by
+  `obs-unique`); per slide, `slide-beh` says the slide's program read at its start (`mapO nowF`),
+  reindexed along `nexts : List ⊤ → List Nav`, is the slide's stream.  Not stated: the slide's
+  stream as the deck's shifted to the slide's start (`start-visible` gives only its first step).
 - *Backend support* is a reindexing too: a backend that binds a subset of the commands means the
   program's behaviour precomposed with `mapMaybe dec` (`lower-sound`, Program/Supports.agda:147).
 
@@ -147,7 +153,7 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
 | Plot ⊂ Diagram (meanings) | sub-object: `W × H` drawings, closed under overlay | inclusion / none | holds for the frame: `size-render` (Plot/Laws.agda:39); `Framed W H` (Diagram/Framed.agda:25, any `Space`), `renderF`, `marks-hom` (Plot/Laws.agda:47,71); whole-plot `render` a homomorphism: does not hold (clipping, rounding; legend and axes read all series) |
 | Diagram ⊂ Animation | split mono | `pure` / `firstFrame`, `animationFinal` | holds pointwise: `diagram-const` (Scene/Animation.agda:83); the retraction law: planned, later (S2) |
 | Animation ⊂ Program | sub-bialgebra | `inject` / `hd` | holds: `inject-const` (Program/Sem.agda:130), `hd∘const` (Semantics/Behaviour.agda:121); generic in the signature: not done (one instance) |
-| Deck → Program | reindexing of the step stream along `pos` | none | holds: `feed-deckM` (Deck/Machine.agda:109); per slide: `pause-agree` (Deck/Program.agda:103); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:159), given `saneSlide`, which every shipped deck passes (`Render/Shipped`); deck behaviour stated once: planned, later (S3) |
+| Deck → Program | reindexing of the step stream along `pos` | none | holds: `deckBeh d = reindex (ticks⋆ ∘ pos d) (stream d)`, `deckM-beh`, `deckM-unique` (Deck/Behaviour.agda), from `feed-deckM` (Deck/Machine.agda:109); per slide: `slide-beh` (Deck/Behaviour.agda), from `pause-agree` (Deck/Program.agda:109); per deck: does not hold (needs preemption, **[decided]** out); steps = page fragments: `render-fragments` (Backend/Render/Properties.agda:159), given `saneSlide`, which every shipped deck passes (`Render/Shipped`) |
 | Backend support → Program | reindexing along `mapMaybe dec` | none | holds: `lower-sound` (Program/Supports.agda:147) |
 | Dia ⊂ Dia⁺ (syntax) | extension | `inject` / `lowerDia` (`lowerCurve`) | holds: `lower-inject` (Diagram/Curve/Properties.agda:17) |
 | Scene ⊂ Program (syntax) | extension | `inject` / `skip` (`skipOp`) | holds: `skip-inject` (Program/Syntax.agda:56) |
@@ -178,7 +184,7 @@ fragments inside a chunk are not modelled (that needs a reveal operation on flow
 - Program: `Slides.Program.Syntax` (`ProgC`, `inject`, `skip`), `.Sem` (`sem`, behaviours),
   `.Machine` (Moore machines), `.Navigation` (`navM`), `.Supports` (`lower-sound`).
 - Deck: `Slides.Deck.Content` (`Block`, `Flow`), `.Syntax` (`Slide`, `ticks`, `flat`), `.Read`
-  (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
+  (`visible`), `.Steps` (steps as page fragments), `.Machine` (`deckM`, `pos`), `.Behaviour` (`stream`, `deckBeh`, `slide-beh`), `.Program` (`elab`, `pause-agree`), `.Clock`, `.Lower`
   (`FlowLowering`), `.DSL`, `.Anim`, `.Talk`.
 - Plot: `Slides.Plot.Mark` (`Mark`, `MarkC`), `.Render` (`render`, `renderMark`), `.Laws`
   (`renderF`, `marks-hom`), `.Axis`, `.Ticks`, `.Log`, `.Clip`, `.Exact`, `.Anim`, `.Csv`.
