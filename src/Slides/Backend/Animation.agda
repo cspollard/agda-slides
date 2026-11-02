@@ -177,6 +177,7 @@ styleⱼ : Style → JSON
 styleⱼ s = objectFromList
   ( opt "stroke" (Style.stroke s) ++ opt "fill" (Style.fill s) ++ opt "cls" (Style.cls s)
   ++ opt "id" (Style.ident s) ++ opt "dash" (Style.dash s) ++ opt "anchor" (Style.anchor s)
+  ++ opt "rot" (Style.rotate s)
   ++ optN "sw" (Style.strokeWidth s) ++ optN "rx" (Style.rx s) ++ optN "op" (Style.opacity s) )
 
 -- a diagram over terms: one letter per constructor, children last

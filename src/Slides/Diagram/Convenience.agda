@@ -20,7 +20,7 @@ open import Data.List using (List; []; _∷_; foldl; foldr; map)
 open import Data.Nat using (ℕ)
 open import Data.String using (String)
 
-open import Slides.Diagram.Style using (Style; defaultStyle; withClass; withId; rounded) public
+open import Slides.Diagram.Style using (Style; defaultStyle; withClass; withId; rounded; rotated) public
 open import Slides.Diagram.Syntax hiding (text) public
 
 infixr 8 _⊙_

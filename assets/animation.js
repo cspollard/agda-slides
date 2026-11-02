@@ -180,6 +180,7 @@ function SlidesAnimation(shown) {
       case 'label':
         a = common(s, { x: r3(d.x / 2), y: r3(d.y / 2), 'font-size': d.n, 'text-anchor': s.anchor || 'middle',
                         'dominant-baseline': 'central', fill: s.fill || 'currentColor' });
+        if (s.rot) a.transform = 'rotate(' + s.rot + ' ' + r3(d.x / 2) + ' ' + r3(d.y / 2) + ')';
         var sg = segs(d.t), e = el('text', a), pend = '';
         sg.forEach(function (g) {
           var t = document.createElementNS(SVGNS, 'tspan');

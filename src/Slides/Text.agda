@@ -39,7 +39,7 @@ open import Relation.Nullary.Decidable using (⌊_⌋)
 open import Data.String using (String; fromList; toList) renaming (_++_ to _++ˢ_; concat to concatˢ)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; cong₂; trans; sym)
 
-open import Slides.Math using (Math; toLaTeX)
+open import Slides.Math using (Math; toLaTeX; raw)
 
 -- optional colour, weight (CSS values) and size (percent); `s <> t` is "inside `s`, then `t`", the
 -- inner one winning as in a CSS cascade
@@ -127,6 +127,7 @@ link u = wrap (linkW u)
 -- the same, to match on (the root of an inline)
 pattern Run s     = impure ((_ , textO s) , _)
 pattern Br        = impure ((_ , brO) , _)
+pattern MathI m   = impure ((_ , mathO m) , _)
 pattern Sub       = impure ((_ , wrapO subW _) , _)
 pattern Sup       = impure ((_ , wrapO supW _) , _)
 pattern Styled s  = impure ((_ , wrapO (styledW s) _) , _)
@@ -165,7 +166,14 @@ private
     runs acc ('\n' ∷ cs)      = flush acc (br ∷ runs [] cs)
     runs acc ('_' ∷ cs)       = flush acc (scripted sub cs)
     runs acc ('^' ∷ cs)       = flush acc (scripted sup cs)
+    runs acc ('$' ∷ cs)       = flush acc (mathed [] cs)
     runs acc (c ∷ cs)         = runs (c ∷ acc) cs
+
+    mathed : List Char → List Char → Text
+    mathed acc []              = inlineMath (raw (fromList (reverse acc))) ∷ []
+    mathed acc ('\\' ∷ c ∷ cs) = mathed (c ∷ '\\' ∷ acc) cs
+    mathed acc ('$' ∷ cs)      = inlineMath (raw (fromList (reverse acc))) ∷ runs [] cs
+    mathed acc (c ∷ cs)        = mathed (c ∷ acc) cs
 
     scripted : (Text → Inline) → List Char → Text
     scripted k []         = []
@@ -215,7 +223,7 @@ css (style c w z) = prop "color" c ++ˢ prop "font-weight" w ++ˢ prop "font-siz
 
 private
   esc : Char → List Char
-  esc c = if ⌊ c ≟ '\\' ⌋ ∨ ⌊ c ≟ '_' ⌋ ∨ ⌊ c ≟ '^' ⌋ then '\\' ∷ c ∷ [] else [ c ]
+  esc c = if ⌊ c ≟ '\\' ⌋ ∨ ⌊ c ≟ '_' ⌋ ∨ ⌊ c ≟ '^' ⌋ ∨ ⌊ c ≟ '$' ⌋ then '\\' ∷ c ∷ [] else [ c ]
 
   script : String → String → String
   script m u with toList u
@@ -226,9 +234,10 @@ private
 markup : Text → String
 markup = concatˢ ∘ map mk
   where mk : Inline → String
-        mk i@Sub = script "_" (plainI i)
-        mk i@Sup = script "^" (plainI i)
-        mk i     = fromList (concatMap esc (toList (plainI i)))
+        mk i@Sub     = script "_" (plainI i)
+        mk i@Sup     = script "^" (plainI i)
+        mk (MathI m) = "$" ++ˢ toLaTeX m ++ˢ "$"
+        mk i         = fromList (concatMap esc (toList (plainI i)))
 
 -- `parse` reads the markup, `plainT` drops exactly the markup, `markup` writes it back
 _ : parse "x_i^2" ≡ text "x" ∷ sub [ text "i" ] ∷ sup [ text "2" ] ∷ []

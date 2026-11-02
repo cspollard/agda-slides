@@ -13,21 +13,22 @@ open import Data.String using (String)
 record Style : Set where
   constructor mkStyle
   field
-    stroke fill cls ident dash anchor : Maybe String
-    strokeWidth rx opacity            : Maybe ℕ   -- opacity in percent; rx a rectangle's corner
+    stroke fill cls ident dash anchor rotate : Maybe String
+    strokeWidth rx opacity                   : Maybe ℕ   -- opacity in percent; rx a rectangle's corner
     -- `cls`: CSS class; `ident`: element id (unique in the deck); `dash`: stroke-dasharray;
-    -- `anchor`: text-anchor of a label (start, middle, end)
+    -- `anchor`: text-anchor of a label (start, middle, end); `rotate`: degrees around the label's point
 
 defaultStyle : Style
-defaultStyle = mkStyle nothing nothing nothing nothing nothing nothing nothing nothing nothing
+defaultStyle = mkStyle nothing nothing nothing nothing nothing nothing nothing nothing nothing nothing
 
-stroked filled withClass withId dashed anchored : String → Style → Style
+stroked filled withClass withId dashed anchored rotated : String → Style → Style
 stroked c s  = record s { stroke = just c }
 filled c s   = record s { fill = just c }
 withClass c s = record s { cls = just c }
 withId i s   = record s { ident = just i }
 dashed d s   = record s { dash = just d }
 anchored a s = record s { anchor = just a }
+rotated r s  = record s { rotate = just r }
 
 thick rounded faded : ℕ → Style → Style
 thick n s   = record s { strokeWidth = just n }

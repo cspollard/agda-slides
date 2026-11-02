@@ -118,18 +118,36 @@ private
   style-quiet sz (style c w z) =
     ++⁺ {xs = opt "fill" c} (opt-quiet "fill" (λ _ → refl) c) (++⁺ {xs = opt "font-weight" w} (opt-quiet "font-weight" (λ _ → refl) w) (opt-quiet "font-size" (λ _ → refl) _))
 
-  tspan-quiet : ∀ sz pending k i → Quiet (tspanAttrs sz pending k i)
-  tspan-quiet sz pending sub   i = refl ∷ refl ∷ []
-  tspan-quiet sz pending sup   i = refl ∷ refl ∷ []
-  tspan-quiet sz pending plain i = ++⁺ {xs = opt "dy" (undo pending)} (opt-quiet "dy" (λ _ → refl) _) (style-quiet sz (styleOf i))
+  mathFont-quiet : ∀ mf → Quiet (mathFontAttrs mf)
+  mathFont-quiet noMath = []
+  mathFont-quiet mathRm = refl ∷ []
+  mathFont-quiet mathIt = refl ∷ refl ∷ []
 
-  -- labels: tspans carry only sizes, shifts and the colours of their styles
-  tspan-count : ∀ sz pending k i → fragCount (tspan sz pending k i) ≡ 0
-  tspan-count sz pending k i = quiet-text "tspan" (tspanAttrs sz pending k i) (padText (plainI i)) (tspan-quiet sz pending k i)
+  rotate-quiet : ∀ x y m → Quiet (rotateAttr x y m)
+  rotate-quiet x y nothing  = []
+  rotate-quiet x y (just _) = refl ∷ []
 
-  tspans-count : ∀ sz pending is → forestCount (tspans sz pending is) ≡ 0
-  tspans-count sz pending []       = refl
-  tspans-count sz pending (i ∷ is) = cong₂ _+_ (tspan-count sz pending (scriptOf i) i) (tspans-count sz _ is)
+  seg-quiet : ∀ sz prev g → Quiet (segAttrs sz prev g)
+  seg-quiet sz prev (seg sub   mf st _) =
+    refl ∷ ++⁺ {xs = opt "dy" (dyBetween sz prev sub)} (opt-quiet "dy" (λ _ → refl) _)
+               (++⁺ {xs = mathFontAttrs mf} (mathFont-quiet mf) (style-quiet sz st))
+  seg-quiet sz prev (seg sup   mf st _) =
+    refl ∷ ++⁺ {xs = opt "dy" (dyBetween sz prev sup)} (opt-quiet "dy" (λ _ → refl) _)
+               (++⁺ {xs = mathFontAttrs mf} (mathFont-quiet mf) (style-quiet sz st))
+  seg-quiet sz prev (seg plain mf st _) =
+    ++⁺ {xs = opt "dy" (dyBetween sz prev plain)} (opt-quiet "dy" (λ _ → refl) _)
+        (++⁺ {xs = mathFontAttrs mf} (mathFont-quiet mf) (style-quiet sz st))
+
+  -- labels: tspans carry only sizes, shifts, fonts and the colours of their styles
+  tspanSeg-count : ∀ sz prev g → fragCount (tspanSeg sz prev g) ≡ 0
+  tspanSeg-count sz prev g = quiet-text "tspan" (segAttrs sz prev g) (padSpan (Seg.body g)) (seg-quiet sz prev g)
+
+  tspanSegs-count : ∀ sz prev gs → forestCount (tspanSegs sz prev gs) ≡ 0
+  tspanSegs-count sz prev []       = refl
+  tspanSegs-count sz prev (g ∷ gs) = cong₂ _+_ (tspanSeg-count sz prev g) (tspanSegs-count sz (Seg.scr g) gs)
+
+  tspans-count : ∀ sz is → forestCount (tspans sz is) ≡ 0
+  tspans-count sz is = tspanSegs-count sz plain (inlineSegs is)
 
 module _ {S : Set} (P : Print S) where
   private
@@ -139,16 +157,20 @@ module _ {S : Set} (P : Print S) where
     labelRows-count : ∀ x sz dy ls → forestCount (labelRows P x sz dy ls) ≡ 0
     labelRows-count x sz dy []       = refl
     labelRows-count x sz dy (l ∷ ls) =
-      cong₂ _+_ (quiet₀ "tspan" (("x" , Print.pos P x) ∷ ("dy" , dy) ∷ []) (tspans sz "" l) (refl ∷ refl ∷ []) (tspans-count sz "" l))
+      cong₂ _+_ (quiet₀ "tspan" (("x" , Print.pos P x) ∷ ("dy" , dy) ∷ []) (tspans sz l) (refl ∷ refl ∷ []) (tspans-count sz l))
                 (labelRows-count x sz _ ls)
 
     label-quiet : ∀ x y sz st → T (clsOK (Style.cls st)) → Quiet (labelAttrs P x y sz st)
-    label-quiet x y sz st h = refl ∷ refl ∷ refl ∷ refl ∷ refl ∷ refl ∷ common-quiet st h
+    label-quiet x y sz st h =
+      refl ∷ refl ∷ refl ∷ refl ∷ refl ∷ refl
+      ∷ ++⁺ {xs = rotateAttr (Print.pos P x) (Print.pos P y) (Style.rotate st)}
+            (rotate-quiet (Print.pos P x) (Print.pos P y) (Style.rotate st))
+            (common-quiet st h)
 
     labelEl-count : ∀ x y sz st → T (clsOK (Style.cls st)) → ∀ L → fragCount (labelEl P x y sz st L) ≡ 0
     labelEl-count x y sz st h (oneRun u)  = quiet-text "text" (labelAttrs P x y sz st) (padText u) (label-quiet x y sz st h)
     labelEl-count x y sz st h blank       = quiet-text "text" (labelAttrs P x y sz st) " " (label-quiet x y sz st h)
-    labelEl-count x y sz st h (oneRow l)  = quiet₀ "text" (labelAttrs P x y sz st) (tspans sz "" l) (label-quiet x y sz st h) (tspans-count sz "" l)
+    labelEl-count x y sz st h (oneRow l)  = quiet₀ "text" (labelAttrs P x y sz st) (tspans sz l) (label-quiet x y sz st h) (tspans-count sz l)
     labelEl-count x y sz st h (rowsOf ls) =
       quiet₀ "text" (labelAttrs P x y sz st) (labelRows P x sz (firstDy P sz ls) ls) (label-quiet x y sz st h) (labelRows-count x sz _ ls)
 

@@ -18,7 +18,7 @@
 
 module Slides.Plot.Render where
 
-open import Data.List using (List; []; _∷_; _++_; map; reverse; foldr; concatMap; upTo)
+open import Data.List using (List; []; _∷_; _++_; map; reverse; foldr; concatMap; upTo; length)
 open import Data.Bool using (Bool; true; false; if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing; maybe′)
 open import Data.Integer as ℤ using (ℤ; +_)
@@ -56,18 +56,25 @@ axisSpec logAxis : ℚ → ℚ → String → AxisSpec
 axisSpec lo hi l = mkAxis lo hi l false
 logAxis  lo hi l = mkAxis lo hi l true
 
+data LegendPos : Set where
+  topRight topLeft bottomRight bottomLeft : LegendPos
+
 record Plot : Set where
-  constructor plot
+  constructor plotAt
   field
     width height : ℕ
     xaxis yaxis  : AxisSpec
+    legendPos    : LegendPos
     content      : List Series
 
+plot : ℕ → ℕ → AxisSpec → AxisSpec → List Series → Plot
+plot w h ax ay = plotAt w h ax ay topRight
+
 private
-  -- the plot box inside the frame: room at the left for y tick labels, below for x tick labels
+  -- the plot box inside the frame: room at the left for y title and tick labels, below for x tick labels
   mL mT mR fontSize : ℕ
-  mL = 64
-  mT = 40
+  mL = 92
+  mT = 20
   mR = 20
   fontSize = 20
 
@@ -78,6 +85,7 @@ private
       xlo xhi ylo yhi : ℚ      -- the ranges as axes see them (y in log space on a log axis)
       ylog xlab : Bool         -- a log y axis; x tick labels and title drawn
       xlabel ylabel : String
+      lpos : LegendPos
 
   -- the room below the box: tick labels and title, or none (the upper panel of a stack)
   mB : Bool → ℕ
@@ -90,7 +98,8 @@ private
     ; ay = axisOf ylo yhi bh
     ; xlo = xlo ; xhi = xhi ; ylo = ylo ; yhi = yhi
     ; ylog = AxisSpec.log (Plot.yaxis p) ; xlab = xl
-    ; xlabel = AxisSpec.label (Plot.xaxis p) ; ylabel = AxisSpec.label (Plot.yaxis p) }
+    ; xlabel = AxisSpec.label (Plot.xaxis p) ; ylabel = AxisSpec.label (Plot.yaxis p)
+    ; lpos = Plot.legendPos p }
     where W = Plot.width p ; H = Plot.height p
           bw = W ∸ mL ∸ mR ; bh = H ∸ mT ∸ mB xl
           yl = Plot.yaxis p
@@ -152,6 +161,15 @@ private
     pathOf : String → Style → Dia ℕ
     pathOf d s = inFrame (path W H d s)
 
+    label : String → Dia ℕ
+    label t = text fontSize t (cls "plot-text")
+
+    labelAt : String → String → Dia ℕ
+    labelAt a t = tagged a fontSize t (cls "plot-text")
+
+    vlabel : String → Dia ℕ
+    vlabel t = tagged "middle" fontSize t (rotated "-90" (cls "plot-text"))
+
     -- a mark is one command of `MarkC`, lowered to a diagram in the frame.  The plot content is a
     -- `List Series`, not a term over `DiagramC ⊕ MarkC` (as a program's content is over `SceneC ⊕ Await`):
     -- a mark is lowered here, with the frame, the axes and the log transform of this very plot
@@ -168,10 +186,7 @@ private
       where gx = λ xp → ι (mT + bh) - (f (xlo ℚ.+ (xp - ι mL) ℚ.* inv (Axis.ratio ax)) - ylo) ℚ.* Axis.ratio ay
     renderMark (hline s y)      = inFrame (polyline ((mL , Y y) ∷ (mL + bw , Y y) ∷ []) (kind "plot-line" s))
     renderMark (vline s x)      = inFrame (polyline ((X x , mT) ∷ (X x , mT + bh) ∷ []) (kind "plot-line" s))
-    renderMark (note x y t)     = put (X x ∸ textWidth fontSize t / 2) (Y y ∸ lineH / 2) (text fontSize t (cls "plot-text"))
-
-    label : String → Dia ℕ
-    label t = text fontSize t (cls "plot-text")
+    renderMark (note x y t)     = put (X x) (Y y ∸ lineH / 2) (labelAt "middle" t)
 
     -- grid, axes, tick marks and their labels, from the axis ticks
     xs : List ℚ
@@ -195,12 +210,12 @@ private
            ⊙ pathOf (concat (map (λ x → seg (X x , mT + bh) (X x , mT + bh + 5)) xs ++ map (λ y → seg (mL ∸ 5 , Y y) (mL , Y y)) ys)) s
 
     tickLabels : List (Dia ℕ)
-    tickLabels = (if xlab then map (λ x → let t = trimmed 3 x in put (X x ∸ textWidth fontSize t / 2) (mT + bh + 8) (label t)) xs else [])
-              ++ map (λ { (y , t) → put (mL ∸ 8 ∸ textWidth fontSize t) (Y y ∸ lineH / 2) (label t) }) yticks
+    tickLabels = (if xlab then map (λ x → let t = trimmed 3 x in put (X x) (mT + bh + 8) (labelAt "middle" t)) xs else [])
+              ++ map (λ { (y , t) → put (mL ∸ 8) (Y y ∸ lineH / 2) (labelAt "end" t) }) yticks
 
     titles : List (Dia ℕ)
-    titles = (if xlab then put (mL + bw / 2 ∸ textWidth fontSize xlabel / 2) (H ∸ lineH) (label xlabel) ∷ [] else [])
-           ++ put 4 2 (label ylabel) ∷ []
+    titles = (if xlab then put (mL + bw / 2) (H ∸ lineH) (labelAt "middle" xlabel) ∷ [] else [])
+           ++ put 16 (mT + bh / 2 ∸ lineH / 2) (vlabel ylabel) ∷ []
 
     -- a legend entry: a sample of the mark's style, then its name
     sample : Mark ℚ ℚ → Maybe (Dia ℕ)
@@ -223,13 +238,26 @@ private
     entries (series _ nothing ∷ ss)   = entries ss
 
     entryDia : String × Dia ℕ → Dia ℕ
-    entryDia (n , d) = hcat 8 (d ∷ label n ∷ [])
+    entryDia (n , d) = hcat 8 (d ∷ labelAt "start" n ∷ [])
 
-    -- the legend, at the top right of the box
+    legendX : ℕ → LegendPos → ℕ
+    legendX lw topRight    = mL + bw ∸ lw ∸ 12
+    legendX lw bottomRight = mL + bw ∸ lw ∸ 12
+    legendX lw topLeft     = mL + 16
+    legendX lw bottomLeft  = mL + 16
+
+    legendY : ℕ → LegendPos → ℕ
+    legendY lh topRight    = mT + 8
+    legendY lh topLeft     = mT + 8
+    legendY lh bottomRight = mT + bh ∸ lh ∸ 8
+    legendY lh bottomLeft  = mT + bh ∸ lh ∸ 8
+
+    -- the legend, placed in the chosen corner of the box
     legend : List Series → Dia ℕ
-    legend ss = put (mL + bw ∸ legendW ∸ 12) (mT + 8) (vcatA left 4 (map entryDia es))
+    legend ss = put (legendX legendW lpos) (legendY legendH lpos) (vcatA left 4 (map entryDia es))
       where es = entries ss
             legendW = foldr (λ e w → (28 + textWidth fontSize (proj₁ e)) ⊔ w) 0 es
+            legendH = length es * (lineH + 4) ∸ 4
 
     -- the marks, in the frame: the last series on top (`marks-++` in `Slides.Plot.Laws`).  `panel`
     -- splices the list `reverse (markDiasOf ss)` flat into its layers (the events keep the tree of
