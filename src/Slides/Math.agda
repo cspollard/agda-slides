@@ -273,7 +273,7 @@ _+_ _-_ _*_ _/_ _^_ _·_ _₍_₎ : Math → Math → Math
 _+_ = add
 _-_ = sub
 _*_ = mul
-_/_ = frac
+_/_ = div
 _^_ = pow
 _·_ = cat
 _₍_₎ = idx
