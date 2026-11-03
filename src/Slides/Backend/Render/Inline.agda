@@ -9,6 +9,9 @@
 -- The induction over the program is `pfold-rel` (`Container.Interpret.Plain`) with the invariant
 -- "the pieces count nothing" against the trivial fold.
 
+-- TODO
+-- provide a printf-like function?
+
 module Slides.Backend.Render.Inline where
 
 open import Data.List.Base using (List; []; _∷_; _++_; map; concat; concatMap; tabulate)

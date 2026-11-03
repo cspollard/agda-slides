@@ -58,7 +58,7 @@ data Op : ℕ → Set where
   textO rawO              : String → Op 0               -- upright text; LaTeX, verbatim
   negO sqrtO parenO       : Op 1
   vecO hatO barO calO bbO : Op 1                        -- \vec, \hat, \bar, \mathcal, \mathbb
-  ddO                     : Op 1                        -- \mathrm{d}x, with a thin space before
+  dO                      : Op 1                        -- \mathrm{d}x
   fnO                     : Fn → Op 1                   -- \sin\left(…\right)
   addO subO mulO divO     : Op 2                        -- a + b, a - b, a \cdot b
   fracO powO idxO juxtO catO : Op 2
@@ -108,9 +108,9 @@ add sub mul div frac pow idx juxt cat : Math → Math → Math
 add = bin addO; sub = bin subO; mul = bin mulO; div = bin divO
 frac = bin fracO; pow = bin powO; idx = bin idxO; juxt = bin juxtO; cat = bin catO
 
-neg sqrt paren vec hat bar cal bb dd : Math → Math
+neg sqrt paren vec hat bar cal bb d : Math → Math
 neg = un negO; sqrt = un sqrtO; paren = un parenO; vec = un vecO; hat = un hatO
-bar = un barO; cal = un calO; bb = un bbO; dd = un ddO
+bar = un barO; cal = un calO; bb = un bbO; d = un dO
 
 fn : Fn → Math → Math
 fn f = un (fnO f)
@@ -193,7 +193,7 @@ latex (_ , hatO)        k = "\\hat" ++ˢ grp (k zero)
 latex (_ , barO)        k = "\\bar" ++ˢ grp (k zero)
 latex (_ , calO)        k = "\\mathcal" ++ˢ grp (k zero)
 latex (_ , bbO)         k = "\\mathbb" ++ˢ grp (k zero)
-latex (_ , ddO)         k = "\\,\\mathrm{d}" ++ˢ k zero
+latex (_ , dO)          k = "\\mathrm{d}" ++ˢ k zero
 latex (_ , fnO f)       k = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ k zero ++ˢ "\\right)"
 latex (_ , addO)        k = k zero ++ˢ " + " ++ˢ k (suc zero)
 latex (_ , subO)        k = k zero ++ˢ " - " ++ˢ k (suc zero)
@@ -236,7 +236,7 @@ latex-cong (_ , hatO) e = ≡P.cong (λ x → latex (_ , hatO) (λ _ → x)) (e 
 latex-cong (_ , barO) e = ≡P.cong (λ x → latex (_ , barO) (λ _ → x)) (e zero)
 latex-cong (_ , calO) e = ≡P.cong (λ x → latex (_ , calO) (λ _ → x)) (e zero)
 latex-cong (_ , bbO) e = ≡P.cong (λ x → latex (_ , bbO) (λ _ → x)) (e zero)
-latex-cong (_ , ddO) e = ≡P.cong (λ x → latex (_ , ddO) (λ _ → x)) (e zero)
+latex-cong (_ , dO)  e = ≡P.cong (λ x → latex (_ , dO) (λ _ → x)) (e zero)
 latex-cong (_ , fnO f) e = ≡P.cong (λ x → latex (_ , fnO f) (λ _ → x)) (e zero)
 latex-cong (_ , addO) e = ≡P.cong₂ (λ x y → latex (_ , addO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , subO) e = ≡P.cong₂ (λ x y → latex (_ , subO) (pick2 x y)) (e zero) (e (suc zero))
