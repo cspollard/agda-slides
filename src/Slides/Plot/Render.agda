@@ -219,15 +219,15 @@ private
 
     -- a legend entry: a sample of the mark's style, then its name
     sample : Mark ℚ ℚ → Maybe (Dia ℕ)
-    sample (line s _)     = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
+    sample (line s _)     = just (polyline ((0 , 0) ∷ (20 , 0) ∷ []) (kind "plot-line" s))
     sample (scatter s _)  = just (path 20 12 (dot 3 (10 , 6)) (kind "plot-dot" s))
     sample (steps s _ _)  = just (rectangle 20 12 (kind "plot-fill" s))
     sample (band s _)     = just (rectangle 20 12 (kind "plot-fill" s))
     sample (bars s _)     = just (path 20 12 (bar 3 (10 , 0 , 12)) (kind "plot-line" s))
-    sample (hline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
-    sample (vline s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
+    sample (hline s _)    = just (polyline ((0 , 0) ∷ (20 , 0) ∷ []) (kind "plot-line" s))
+    sample (vline s _)    = just (polyline ((10 , 0) ∷ (10 , 12) ∷ []) (kind "plot-line" s))
     sample (note _ _ _)   = nothing
-    sample (exact s _)    = just (polyline ((0 , 6) ∷ (20 , 6) ∷ []) (kind "plot-line" s))
+    sample (exact s _)    = just (polyline ((0 , 0) ∷ (20 , 0) ∷ []) (kind "plot-line" s))
 
     -- the named entries, as (name, sample)
     entries : List Series → List (String × Dia ℕ)

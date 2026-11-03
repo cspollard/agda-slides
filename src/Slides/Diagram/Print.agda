@@ -251,7 +251,7 @@ inlineSegs = concatMap inlineSeg
 mathFontAttrs : MathFont → Attrs
 mathFontAttrs noMath = []
 mathFontAttrs mathRm = ("font-family" , "KaTeX_Main, STIX Two Text, Times New Roman, serif") ∷ []
-mathFontAttrs mathIt = ("font-family" , "KaTeX_Math, STIX Two Text, Times New Roman, serif") ∷ ("font-style" , "italic") ∷ []
+mathFontAttrs mathIt = ("font-family" , "KaTeX_Main, STIX Two Text, Times New Roman, serif") ∷ ("font-style" , "italic") ∷ []
 
 dyBetween : ℕ → Script → Script → Maybe String
 dyBetween sz plain plain = nothing

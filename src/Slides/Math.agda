@@ -8,6 +8,11 @@
 -- the output has no unbalanced group or ambiguous superscript.  `raw` is the escape hatch.
 -- With `Slides.Deck.Literals` in scope, `2` is `num 2` and `"x"` the identifier `x`.
 
+-- TODO
+-- - use enbracket throughout
+-- - provide more helper functions
+
+
 module Slides.Math where
 
 open import Level using (0ℓ)
@@ -28,6 +33,11 @@ import Relation.Binary.PropositionalEquality as ≡P
 
 open import Container.Pick using (pick2)
 open import Container.Interpret.Plain using (Handler; pfold; Congruent; pfold-bind)
+
+private
+  enbracket : String → String
+  enbracket s = "{" ++ˢ s ++ˢ "}"
+
 
 data Greek : Set where
   alpha beta gamma delta epsilon theta lambda mu nu pi rho sigma tau phi chi psi omega : Greek
@@ -50,8 +60,8 @@ data Op : ℕ → Set where
   vecO hatO barO calO bbO : Op 1                        -- \vec, \hat, \bar, \mathcal, \mathbb
   ddO                     : Op 1                        -- \mathrm{d}x, with a thin space before
   fnO                     : Fn → Op 1                   -- \sin\left(…\right)
-  addO subO mulO          : Op 2                        -- a + b, a - b, a \cdot b
-  fracO powO idxO juxtO   : Op 2                        -- juxtaposed with a thin space
+  addO subO mulO divO     : Op 2                        -- a + b, a - b, a \cdot b
+  fracO powO idxO juxtO catO : Op 2
   relO                    : Rel → Op 2
   sumO integralO prodO    : Op 3                        -- lower, upper, body
   callO                   : (n : ℕ) → Op (suc n)        -- f\left(a, b\right): the head, then n arguments
@@ -94,9 +104,9 @@ text raw : String → Math         -- upright text; LaTeX, verbatim
 text s = atom (textO s)
 raw s  = atom (rawO s)
 
-add sub mul frac pow idx juxt : Math → Math → Math
-add = bin addO; sub = bin subO; mul = bin mulO; frac = bin fracO
-pow = bin powO; idx = bin idxO; juxt = bin juxtO
+add sub mul div frac pow idx juxt cat : Math → Math → Math
+add = bin addO; sub = bin subO; mul = bin mulO; div = bin divO
+frac = bin fracO; pow = bin powO; idx = bin idxO; juxt = bin juxtO; cat = bin catO
 
 neg sqrt paren vec hat bar cal bb dd : Math → Math
 neg = un negO; sqrt = un sqrtO; paren = un parenO; vec = un vecO; hat = un hatO
@@ -188,9 +198,11 @@ latex (_ , fnO f)       k = "\\" ++ˢ fnName f ++ˢ "\\left(" ++ˢ k zero ++ˢ "
 latex (_ , addO)        k = k zero ++ˢ " + " ++ˢ k (suc zero)
 latex (_ , subO)        k = k zero ++ˢ " - " ++ˢ k (suc zero)
 latex (_ , mulO)        k = k zero ++ˢ " \\cdot " ++ˢ k (suc zero)
+latex (_ , divO)        k = k zero ++ˢ " / " ++ˢ k (suc zero)
 latex (_ , fracO)       k = "\\frac" ++ˢ grp (k zero) ++ˢ grp (k (suc zero))
 latex (_ , powO)        k = grp (k zero) ++ˢ "^" ++ˢ grp (k (suc zero))
 latex (_ , idxO)        k = grp (k zero) ++ˢ "_" ++ˢ grp (k (suc zero))
+latex (_ , catO)        k = k zero ++ˢ " " ++ˢ k (suc zero)
 latex (_ , juxtO)       k = k zero ++ˢ "\\, " ++ˢ k (suc zero)
 latex (_ , relO r)      k = k zero ++ˢ " " ++ˢ relSymbol r ++ˢ " " ++ˢ k (suc zero)
 latex (_ , sumO)        k = big "\\sum_" k
@@ -229,9 +241,11 @@ latex-cong (_ , fnO f) e = ≡P.cong (λ x → latex (_ , fnO f) (λ _ → x)) (
 latex-cong (_ , addO) e = ≡P.cong₂ (λ x y → latex (_ , addO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , subO) e = ≡P.cong₂ (λ x y → latex (_ , subO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , mulO) e = ≡P.cong₂ (λ x y → latex (_ , mulO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , divO) e = ≡P.cong₂ (λ x y → latex (_ , divO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , fracO) e = ≡P.cong₂ (λ x y → latex (_ , fracO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , powO) e = ≡P.cong₂ (λ x y → latex (_ , powO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , idxO) e = ≡P.cong₂ (λ x y → latex (_ , idxO) (pick2 x y)) (e zero) (e (suc zero))
+latex-cong (_ , catO) e = ≡P.cong₂ (λ x y → latex (_ , catO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , juxtO) e = ≡P.cong₂ (λ x y → latex (_ , juxtO) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , relO r) e = ≡P.cong₂ (λ x y → latex (_ , relO r) (pick2 x y)) (e zero) (e (suc zero))
 latex-cong (_ , sumO) e = congₙ 3 (λ x y z → latex (_ , sumO) (pick3 x y z)) (e zero) (e (suc zero)) (e (suc (suc zero)))
@@ -251,15 +265,17 @@ toLaTeX-bind m σ = pfold-bind (≡P.setoid String) latex-cong σ (λ _ → ≡P
 infixl 6 _+_ _-_
 infixl 7 _*_ _/_
 infixr 8 _^_
+infixl 8 _·_
 infixl 9 _₍_₎
 infix  4 _≡_ _≢_ _<_ _>_ _≤_ _≥_ _≈_ _⟶_
 
-_+_ _-_ _*_ _/_ _^_ _₍_₎ : Math → Math → Math
+_+_ _-_ _*_ _/_ _^_ _·_ _₍_₎ : Math → Math → Math
 _+_ = add
 _-_ = sub
 _*_ = mul
 _/_ = frac
 _^_ = pow
+_·_ = cat
 _₍_₎ = idx
 
 _≡_ _≢_ _<_ _>_ _≤_ _≥_ _≈_ _⟶_ : Math → Math → Math
@@ -271,3 +287,9 @@ _≤_ = rel le
 _≥_ = rel ge
 _≈_ = rel approx
 _⟶_ = rel to
+
+varε : Math
+varε = raw "\\varepsilon"
+
+mathrm : String → Math
+mathrm s = raw ("\\mathrm" ++ˢ enbracket s)
