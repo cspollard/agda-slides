@@ -49,7 +49,7 @@ joint =
        (M.integral (M.greek M.Psi) (M.var "")
           (M.juxt (p (ψ ∷ []))
              (M.juxt (M.prod (M.rel M.eq "i" 1) N (p (M.rel M.mid x₁ (M.tuple (θ ∷ ψ ∷ [])) ∷ [])))
-                     (M.dd ψ)))))
+                     (M.d ψ)))))
 
 -- T_ω(X) = (1/N) ∑ᵢ t_ω(xᵢ)
 meanPool : M.Math
