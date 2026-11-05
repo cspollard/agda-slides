@@ -5,6 +5,8 @@ out/
 .DS_Store
 node_modules/
 .claude/
+package-lock.json
+package.json
 
 # Private talks: kept out of version control
 talks-private/
@@ -12,3 +14,4 @@ drawings/
 build/
 html/
 lit/
+scratch/
