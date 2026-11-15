@@ -40,7 +40,7 @@ fragClass c = if any (_== "fragment") (words c) then 1 else 0
 
 mutual
   bulletSteps : Bullet → ℕ
-  bulletSteps (bullet _ cs) = suc (bulletsSteps cs)
+  bulletSteps (bulletWith _ _ cs) = suc (bulletsSteps cs)
 
   bulletsSteps : List Bullet → ℕ
   bulletsSteps []       = 0
@@ -48,7 +48,7 @@ mutual
 
 mutual
   blockSteps : Block → ℕ
-  blockSteps (bulletTree inc is)            = if inc then bulletsSteps is else 0
+  blockSteps (bulletTree inc _ is)          = if inc then bulletsSteps is else 0
   blockSteps (animation _ _ _ as)           = length (rests as)
   blockSteps (animationBoth _ _ _ _ _ rs)   = length rs
   blockSteps (columns cs)                   = columnsSteps cs

@@ -27,7 +27,8 @@ open import Slides.Deck.Literals public
 open import Slides.Math using (Math)
 open import Slides.Deck.Content hiding (cite; plain; heading; paragraph; bullets; code; displayMath; figure; notes; table;
                                        references; diagram; script; mount; columns; box; fragment; classed; placed)
-open import Slides.Deck.Content using (Inline; Text; Flow; Block; text; codeSpan; emph; strong; inlineMath; link) public
+open import Slides.Deck.Content using (Inline; Text; Flow; Block; ListKind; unordered; ordered; Bullet; bulletWith; bullet; orderedBullet; leaf;
+                                       text; codeSpan; emph; strong; inlineMath; link) public
 import Slides.Deck.Content as C
 open import Slides.Deck.Syntax using (Item; Body; block; mkSlide)
 open import Slides.Deck.Syntax using (Body) public
@@ -60,11 +61,15 @@ module Prims (X : Set) (one : Block → X) where
   heading n t = one (C.heading n t)
   paragraph : Text → X
   paragraph t = one (C.paragraph t)
-  bullets incremental : List Text → X
+  bullets incremental numbered numberedIncremental : List Text → X
   bullets xs = one (C.bullets false xs)
   incremental xs = one (C.bullets true xs)
+  numbered xs = one (C.orderedBullets false xs)
+  numberedIncremental xs = one (C.orderedBullets true xs)
   nested : Bool → List C.Bullet → X
-  nested b is = one (C.bulletTree b is)
+  nested b is = one (C.bulletTree b C.unordered is)
+  nestedWith : Bool → C.ListKind → List C.Bullet → X
+  nestedWith b k is = one (C.bulletTree b k is)
   code : (language source : String) → X
   code l s = one (C.code l s)
   displayMath : Math → X

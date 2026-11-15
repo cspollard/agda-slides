@@ -107,15 +107,19 @@ fragmentClass (just s) = "fragment " ++ˢ s
 pct : String → ℕ → String
 pct name n = name ++ˢ ":" ++ˢ show n ++ˢ "%;"
 
+listTag : ListKind → String
+listTag unordered = "ul"
+listTag ordered   = "ol"
+
 -- a bullet's text, then its sub-bullets as a nested list
 mutual
   bulletEl : Bool → Bullet → XMLDoc
-  bulletEl inc (bullet t cs) with normalise (pieces t)
-  ... | s , xs = hMixed "li" (if inc then ("class" , "fragment") ∷ [] else []) (s , xs ++ nest inc cs)
+  bulletEl inc (bulletWith t k cs) with normalise (pieces t)
+  ... | s , xs = hMixed "li" (if inc then ("class" , "fragment") ∷ [] else []) (s , xs ++ nest inc k cs)
 
-  nest : Bool → List Bullet → List (XMLDoc × String)
-  nest inc [] = []
-  nest inc cs = (hElement "ul" [] (bulletList inc cs) , "") ∷ []
+  nest : Bool → ListKind → List Bullet → List (XMLDoc × String)
+  nest inc k [] = []
+  nest inc k cs = (hElement (listTag k) [] (bulletList inc cs) , "") ∷ []
 
   bulletList : Bool → List Bullet → List XMLDoc
   bulletList inc []       = []
@@ -127,9 +131,9 @@ row cell cs = hElement "tr" [] (map (rich cell []) cs)
 
 mutual
   renderBlock : Block → Forest
-  renderBlock (heading n t)    = rich (hTag n) [] t ∷ []
-  renderBlock (paragraph t)    = rich "p" [] t ∷ []
-  renderBlock (bulletTree inc is) = hElement "ul" [] (bulletList inc is) ∷ []
+  renderBlock (heading n t)         = rich (hTag n) [] t ∷ []
+  renderBlock (paragraph t)         = rich "p" [] t ∷ []
+  renderBlock (bulletTree inc k is) = hElement (listTag k) [] (bulletList inc is) ∷ []
   renderBlock (code lang src)  =
     hElement "pre" [] (hText "code" (("class" , "language-" ++ˢ lang) ∷ ("data-trim" , "") ∷ []) src ∷ []) ∷ []
   renderBlock (displayMath m)  = hText "div" (("class" , "math") ∷ []) ("\\[ " ++ˢ toLaTeX m ++ˢ " \\]") ∷ []

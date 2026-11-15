@@ -71,7 +71,7 @@ mutual
   sane (placed _ _ _ _ f)             = saneF f
   sane (heading _ _)                  = true
   sane (paragraph _)                  = true
-  sane (bulletTree _ _)               = true
+  sane (bulletTree _ _ _)             = true
   sane (displayMath _)                = true
   sane (figure _ _ _)                 = true
   sane (notes _)                      = true
@@ -122,24 +122,24 @@ private
   incHit false = refl
 
   -- an item is its own class, its text (no fragment) and its nested list
-  bulletEl-core : ∀ inc t cs → fragCount (bulletEl inc (bullet t cs)) ≡ (if inc then 1 else 0) + forestCount (map proj₁ (nest inc cs))
-  bulletEl-core inc t cs with normalise (pieces t) | normalise-count (pieces t)
+  bulletEl-core : ∀ inc t k cs → fragCount (bulletEl inc (bulletWith t k cs)) ≡ (if inc then 1 else 0) + forestCount (map proj₁ (nest inc k cs))
+  bulletEl-core inc t k cs with normalise (pieces t) | normalise-count (pieces t)
   ... | s , xs | h =
-    trans (hMixed-count "li" (if inc then ("class" , "fragment") ∷ [] else []) s (xs ++ nest inc cs))
+    trans (hMixed-count "li" (if inc then ("class" , "fragment") ∷ [] else []) s (xs ++ nest inc k cs))
           (cong₂ _+_ (incHit inc)
-                 (trans (cong forestCount (ListP.map-++ proj₁ xs (nest inc cs)))
-                        (trans (forestCount-++ (map proj₁ xs) (map proj₁ (nest inc cs)))
-                               (cong (_+ forestCount (map proj₁ (nest inc cs))) (trans h (pieces-count t))))))
+                 (trans (cong forestCount (ListP.map-++ proj₁ xs (nest inc k cs)))
+                        (trans (forestCount-++ (map proj₁ xs) (map proj₁ (nest inc k cs)))
+                               (cong (_+ forestCount (map proj₁ (nest inc k cs))) (trans h (pieces-count t))))))
 
 mutual
   bulletEl-count : ∀ inc b → fragCount (bulletEl inc b) ≡ stepsB inc b
-  bulletEl-count true  (bullet t cs) = trans (bulletEl-core true t cs)  (cong suc (nest-count true cs))
-  bulletEl-count false (bullet t cs) = trans (bulletEl-core false t cs) (nest-count false cs)
+  bulletEl-count true  (bulletWith t k cs) = trans (bulletEl-core true t k cs)  (cong suc (nest-count true k cs))
+  bulletEl-count false (bulletWith t k cs) = trans (bulletEl-core false t k cs) (nest-count false k cs)
 
-  nest-count : ∀ inc cs → forestCount (map proj₁ (nest inc cs)) ≡ stepsBs inc cs
-  nest-count true  []         = refl
-  nest-count false []         = refl
-  nest-count inc   cs@(_ ∷ _) = sing (hElement "ul" [] (bulletList inc cs)) (trans (hElement-count "ul" [] (bulletList inc cs)) (bulletList-count inc cs))
+  nest-count : ∀ inc k cs → forestCount (map proj₁ (nest inc k cs)) ≡ stepsBs inc cs
+  nest-count true  k []         = refl
+  nest-count false k []         = refl
+  nest-count inc   k cs@(_ ∷ _) = sing (hElement (listTag k) [] (bulletList inc cs)) (trans (hElement-count (listTag k) [] (bulletList inc cs)) (bulletList-count inc cs))
 
   bulletList-count : ∀ inc bs → forestCount (bulletList inc bs) ≡ stepsBs inc bs
   bulletList-count true  []       = refl
@@ -168,9 +168,9 @@ mutual
   block-count : ∀ b → T (sane b) → forestCount (renderBlock b) ≡ blockSteps b
   block-count (heading n t)    _ = sing (rich (hTag n) [] t) (rich-count (hTag n) [] t)
   block-count (paragraph t)    _ = sing (rich "p" [] t) (rich-count "p" [] t)
-  block-count (bulletTree inc is) _ =
-    sing (hElement "ul" [] (bulletList inc is))
-         (trans (hElement-count "ul" [] (bulletList inc is)) (add₀ refl (trans (bulletList-count inc is) (stepsBs≡ inc is))))
+  block-count (bulletTree inc k is) _ =
+    sing (hElement (listTag k) [] (bulletList inc is))
+         (trans (hElement-count (listTag k) [] (bulletList inc is)) (add₀ refl (trans (bulletList-count inc is) (stepsBs≡ inc is))))
     where stepsBs≡ : ∀ inc is → stepsBs inc is ≡ (if inc then bulletsSteps is else 0)
           stepsBs≡ true  is = refl
           stepsBs≡ false is = refl

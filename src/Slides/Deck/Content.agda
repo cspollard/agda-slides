@@ -16,6 +16,7 @@ open import Data.Bool.Base using (Bool)
 open import Data.List.Base using (List; []; _∷_; _++_; map; concatMap)
 open import Data.Maybe.Base using (Maybe)
 open import Data.Nat.Base using (ℕ; zero; suc)
+open import Data.Nat.Show using (show)
 open import Data.Product.Base using (_×_; proj₁; proj₂)
 open import Data.String.Base using (String; intersperse; concat) renaming (_++_ to _++ˢ_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans; sym)
@@ -29,9 +30,18 @@ open import Slides.Diagram.Draw using (Layout)
 open import Slides.Scalar.Model.Rat using (ratSpace; ratTime; ratCoupling)
 import Slides.Scene.Moving ratSpace ratTime ratCoupling as Mv
 
+data ListKind : Set where
+  unordered ordered : ListKind
+
 -- a bullet with its sub-bullets (a rose tree); a flat list is a list of `leaf`s
 data Bullet : Set where
-  bullet : Text → List Bullet → Bullet
+  bulletWith : Text → ListKind → List Bullet → Bullet
+
+bullet : Text → List Bullet → Bullet
+bullet t cs = bulletWith t unordered cs
+
+orderedBullet : Text → List Bullet → Bullet
+orderedBullet t cs = bulletWith t ordered cs
 
 leaf : Text → Bullet
 leaf t = bullet t []
@@ -39,7 +49,7 @@ leaf t = bullet t []
 data Block : Set where
   heading     : ℕ → Text → Block
   paragraph   : Text → Block
-  bulletTree  : (incremental : Bool) → List Bullet → Block
+  bulletTree  : (incremental : Bool) → ListKind → List Bullet → Block
   code        : (language source : String) → Block
   displayMath : Math → Block
   -- an image file with a caption; the width is a percent of the slide's content width (none: the
@@ -72,23 +82,30 @@ Flow : Set
 Flow = List Block
 
 bullets : Bool → List Text → Block
-bullets inc ts = bulletTree inc (map leaf ts)
+bullets inc ts = bulletTree inc unordered (map leaf ts)
+
+orderedBullets : Bool → List Text → Block
+orderedBullets inc ts = bulletTree inc ordered (map leaf ts)
 
 -- Plain text
 
 -- a bullet is a line indented by its depth, then its sub-bullets
 mutual
-  plainBullet : ℕ → Bullet → List String
-  plainBullet d (bullet t cs) = indent d (plainT t) ∷ plainBullets (suc d) cs
+  plainBullet : String → ℕ → Bullet → List String
+  plainBullet marker d (bulletWith t k cs) = indent d (marker ++ˢ plainT t) ∷ plainBullets k (suc d) cs
     where indent : ℕ → String → String
-          indent zero    s = "- " ++ˢ s
+          indent zero    s = s
           indent (suc n) s = "  " ++ˢ indent n s
 
-  plainBullets : ℕ → List Bullet → List String
-  plainBullets d []       = []
-  plainBullets d (i ∷ is) = plainBullet d i ++ plainBullets d is
+  plainBullets : ListKind → ℕ → List Bullet → List String
+  plainBullets unordered d []       = []
+  plainBullets unordered d (i ∷ is) = plainBullet "- " d i ++ plainBullets unordered d is
+  plainBullets ordered   d is       = go 1 is
+    where go : ℕ → List Bullet → List String
+          go n []       = []
+          go n (i ∷ js) = plainBullet (show n ++ˢ ". ") d i ++ go (suc n) js
 
-plain-flat : ∀ ts → plainBullets 0 (map leaf ts) ≡ map (λ t → "- " ++ˢ plainT t) ts
+plain-flat : ∀ ts → plainBullets unordered 0 (map leaf ts) ≡ map (λ t → "- " ++ˢ plainT t) ts
 plain-flat []       = refl
 plain-flat (t ∷ ts) = cong (_ ∷_) (plain-flat ts)
 
@@ -96,7 +113,7 @@ mutual
   plainB : Block → List String
   plainB (heading _ t)   = plainT t ∷ []
   plainB (paragraph t)   = plainT t ∷ []
-  plainB (bulletTree _ is) = plainBullets 0 is
+  plainB (bulletTree _ k is) = plainBullets k 0 is
   plainB (code _ s)      = s ∷ []
   plainB (displayMath m) = toLaTeX m ∷ []
   plainB (figure _ _ c)  = plainT c ∷ []

@@ -27,7 +27,7 @@
 }
 .reveal h3 { font-size: 1.05em; margin: .1em 0 .3em; color: var(--ink); }
 .reveal p, .reveal li { line-height: 1.35; }
-.reveal ul { margin-left: .9em; }
+.reveal ul, .reveal ol { margin-left: .9em; }
 .reveal li::marker { color: var(--muted); }
 .reveal a { color: var(--blue); }
 .reveal em { color: var(--crimson); font-style: normal; }
